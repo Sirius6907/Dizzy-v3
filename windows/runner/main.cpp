@@ -23,7 +23,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
       GetCommandLineArguments();
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
-  project.set_impeller_switch(flutter::ImpellerSwitch::Disabled);
 
   FlutterWindow window(project);
   // Get screen dimensions
