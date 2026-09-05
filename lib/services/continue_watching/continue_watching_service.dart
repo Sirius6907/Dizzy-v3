@@ -755,7 +755,7 @@ class ContinueWatchingService {
           builder: (_) => AnimeStreamSheet(
             anime: anime,
             episodeNumber: episodeNum,
-            autoPlay: false,
+            autoPlay: true,
           ),
         );
       }
