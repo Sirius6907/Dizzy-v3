@@ -3,13 +3,13 @@
 ;  Built by CI from: build\windows\x64\runner\Release\
 ; ──────────────────────────────────────────────────────────────────────────────
 
-#define MyAppName      "PlayTorrio"
+#define MyAppName      "Dizzy"
 #ifndef MyAppVersion
 #define MyAppVersion   "1.1.3"
 #endif
 #define MyAppPublisher "ayman708-UX"
-#define MyAppExeName   "playtorrio.exe"
-#define MyAppURL       "https://github.com/ayman708-UX/PlayTorrioV3"
+#define MyAppExeName   "dizzy.exe"
+#define MyAppURL       "https://github.com/Sirius6907/Dizzy-v3"
 
 [Setup]
 AppId={{9B8C7D6E-5F4E-3D2C-1B0A-9F8E7D6C5B4A}
@@ -23,7 +23,7 @@ DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 SetupIconFile=..\..\windows\runner\resources\app_icon.ico
 OutputDir=Output
-OutputBaseFilename=PlayTorrio-Windows-Setup
+OutputBaseFilename=Dizzy-Windows-Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
