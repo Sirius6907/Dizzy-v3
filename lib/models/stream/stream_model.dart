@@ -11,7 +11,7 @@ class StreamSource {
   final String addonName;
   final Map<String, dynamic>? behaviorHints;
   final List<String>? sources;
-  final Map<String, String>? headers;
+  Map<String, String>? headers;
 
   StreamSource({
     this.name,
@@ -70,6 +70,34 @@ class StreamSource {
       behaviorHints: hints,
       sources: srcList,
       headers: headersMap,
+    );
+  }
+
+  StreamSource copyWith({
+    String? name,
+    String? title,
+    String? url,
+    String? externalUrl,
+    String? description,
+    String? infoHash,
+    int? fileIdx,
+    String? addonName,
+    Map<String, dynamic>? behaviorHints,
+    List<String>? sources,
+    Map<String, String>? headers,
+  }) {
+    return StreamSource(
+      name: name ?? this.name,
+      title: title ?? this.title,
+      url: url ?? this.url,
+      externalUrl: externalUrl ?? this.externalUrl,
+      description: description ?? this.description,
+      infoHash: infoHash ?? this.infoHash,
+      fileIdx: fileIdx ?? this.fileIdx,
+      addonName: addonName ?? this.addonName,
+      behaviorHints: behaviorHints ?? this.behaviorHints,
+      sources: sources ?? this.sources,
+      headers: headers ?? this.headers,
     );
   }
 

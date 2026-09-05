@@ -8,6 +8,7 @@ import '../../services/theme/app_theme_service.dart';
 import '../player/player_screen.dart';
 
 import '../../services/anime/extractors/anidb_extractor.dart';
+import '../../services/stream/stream_health_checker.dart';
 
 class AnimeStreamSheet extends StatefulWidget {
   final AnimeMedia anime;
@@ -65,7 +66,14 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
       episodeNumber: widget.episodeNumber,
     )
         .listen(
-      (source) {
+      (source) async {
+        // Pre-stream health probe: filters out dead/403/500 streams and accepts cookies
+        final alive = await StreamHealthChecker.isAlive(source);
+        if (!alive) {
+          debugPrint('[AnimeStreamSheet] Pre-stream probe discarded dead/unreachable source: ${source.name} (${source.url})');
+          return;
+        }
+
         if (mounted) {
           setState(() {
             _allSources.add(source);
