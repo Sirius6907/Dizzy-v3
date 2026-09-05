@@ -130,7 +130,7 @@ class StreamService {
     final controller = StreamController<StreamSource>();
 
     final addons = AddonManager.instance.activeStreamAddons;
-    final isHttpActive = AddonManager.instance.isPlayTorrioHttpActive;
+    final isHttpActive = AddonManager.instance.isDizzyHttpActive;
 
     if (addons.isEmpty && !isHttpActive) {
       controller.close();
@@ -141,7 +141,7 @@ class StreamService {
 
     int pending = addons.length + (isHttpActive ? 1 : 0);
 
-    // Local PlayTorrioHTTP scrapers (if active)
+    // Local DizzyHTTP scrapers (if active)
     if (isHttpActive) {
       final isImdb = id.startsWith('tt');
       final cleanImdbId = isImdb ? id.split(':')[0] : null;
@@ -181,8 +181,8 @@ class StreamService {
 
   /// Fetches streams specifically for a targeted provider/addon that was previously used by the user.
   ///
-  /// - If [targetAddonName] == 'PlayTorrioHTTP': Only scrapes built-in alive HTTP scrapers.
-  /// - If [targetAddonName] == 'PlayTorrio': Only scrapes built-in torrent scrapers.
+  /// - If [targetAddonName] == 'DizzyHTTP': Only scrapes built-in alive HTTP scrapers.
+  /// - If [targetAddonName] == 'Dizzy': Only scrapes built-in torrent scrapers.
   /// - If [targetAddonName] matches a Stremio addon (e.g. 'Torrentio', 'CyberFlix'): Only calls that specific addon.
   static Stream<StreamSource> fetchStreamsForTargetAddon({
     required String targetAddonName,
@@ -268,12 +268,12 @@ class StreamService {
       );
     }
 
-    // Check if targeting built-in PlayTorrioHTTP / PlayTorrio
-    final isLocalPlayTorrio = normalizedTarget == 'playtorriohttp' ||
-        normalizedTarget == 'playtorrio' ||
-        normalizedTarget.contains('playtorrio');
+    // Check if targeting built-in DizzyHTTP / Dizzy
+    final isLocalDizzy = normalizedTarget == 'dizzyhttp' ||
+        normalizedTarget == 'dizzy' ||
+        normalizedTarget.contains('dizzy');
 
-    if (isLocalPlayTorrio) {
+    if (isLocalDizzy) {
       _registerBuiltInScrapers();
 
       final isImdb = id.startsWith('tt');
@@ -289,13 +289,13 @@ class StreamService {
       ).listen(
         (source) {
           if (!controller.isClosed) {
-            // If target was specifically PlayTorrioHTTP, only yield HTTP streams
-            if (normalizedTarget == 'playtorriohttp' &&
+            // If target was specifically DizzyHTTP, only yield HTTP streams
+            if (normalizedTarget == 'dizzyhttp' &&
                 (source.infoHash != null && source.infoHash!.isNotEmpty)) {
               return;
             }
-            // If target was specifically PlayTorrio (torrent), only yield torrent streams
-            if (normalizedTarget == 'playtorrio' &&
+            // If target was specifically Dizzy (torrent), only yield torrent streams
+            if (normalizedTarget == 'dizzy' &&
                 (source.infoHash == null || source.infoHash!.isEmpty)) {
               return;
             }

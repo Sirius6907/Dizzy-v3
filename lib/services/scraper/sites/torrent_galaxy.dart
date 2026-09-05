@@ -7,7 +7,7 @@ import '../../../utils/torrent/parse_torrent_title.dart';
 
 class TorrentGalaxyScraper extends StreamScraper {
   @override
-  String get name => 'PlayTorrio';
+  String get name => 'Dizzy';
 
   @override
   Future<List<StreamSource>> scrape({
@@ -148,8 +148,8 @@ class TorrentGalaxyScraper extends StreamScraper {
           .toList();
 
       return StreamSource(
-        name: 'PlayTorrio',
-        addonName: 'PlayTorrio',
+        name: 'Dizzy',
+        addonName: 'Dizzy',
         title: '$torrentName\n$size 👥 $seeders',
         infoHash: infoHash,
         sources: trackers.isNotEmpty ? trackers : null,

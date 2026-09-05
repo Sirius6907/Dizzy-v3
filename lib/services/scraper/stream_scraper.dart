@@ -56,7 +56,7 @@ class ScraperManager {
   }
 
   void unregisterTorrentScrapers() {
-    _scrapers.removeWhere((s) => s.name == 'PlayTorrio');
+    _scrapers.removeWhere((s) => s.name == 'Dizzy');
   }
 
   Stream<StreamSource> scrapeAll({
@@ -71,7 +71,7 @@ class ScraperManager {
 
     final p2pAllowed = P2pSettingsService.isP2pEnabled.value;
     final activeScrapers = _scrapers.where((s) {
-      if (!p2pAllowed && s.name == 'PlayTorrio') {
+      if (!p2pAllowed && s.name == 'Dizzy') {
         return false;
       }
       return true;
@@ -111,7 +111,7 @@ class ScraperManager {
 
           // If P2P is disabled, strictly discard any torrent source
           if (!p2pAllowed &&
-              (source.addonName == 'PlayTorrio' ||
+              (source.addonName == 'Dizzy' ||
                   (source.infoHash != null && source.infoHash!.isNotEmpty))) {
             return;
           }

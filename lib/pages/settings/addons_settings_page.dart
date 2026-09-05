@@ -156,8 +156,8 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
 
   void _confirmRemove(InstalledAddon addon) {
     if (addon.baseUrl.startsWith('builtin:') ||
-        addon.manifest.id == 'builtin.playtorrio' ||
-        addon.manifest.id == 'builtin.playtorriohttp') {
+        addon.manifest.id == 'builtin.dizzy' ||
+        addon.manifest.id == 'builtin.dizzyhttp') {
       return;
     }
 
@@ -400,8 +400,8 @@ class _AddonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = addon.manifest;
-    final isP2p = addon.manifest.id == 'builtin.playtorrio' || addon.baseUrl == 'builtin:playtorrio';
-    final isHttp = addon.manifest.id == 'builtin.playtorriohttp' || addon.baseUrl == 'builtin:playtorriohttp';
+    final isP2p = addon.manifest.id == 'builtin.dizzy' || addon.baseUrl == 'builtin:dizzy';
+    final isHttp = addon.manifest.id == 'builtin.dizzyhttp' || addon.baseUrl == 'builtin:dizzyhttp';
     final isBuiltIn = isP2p || isHttp || addon.baseUrl.startsWith('builtin:');
 
     final hasCatalogs = m.supportsCatalog || m.catalogs.isNotEmpty;

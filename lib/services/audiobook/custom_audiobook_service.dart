@@ -131,10 +131,10 @@ class CustomAudiobookService {
     Directory? targetDir;
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
-      targetDir = Directory(p.join(appDocDir.path, 'PlayTorrio', 'CustomAudiobooks'));
+      targetDir = Directory(p.join(appDocDir.path, 'Dizzy', 'CustomAudiobooks'));
     } catch (_) {
       final temp = await getTemporaryDirectory();
-      targetDir = Directory(p.join(temp.path, 'PlayTorrio', 'CustomAudiobooks'));
+      targetDir = Directory(p.join(temp.path, 'Dizzy', 'CustomAudiobooks'));
     }
 
     final id = DateTime.now().millisecondsSinceEpoch.toString();
