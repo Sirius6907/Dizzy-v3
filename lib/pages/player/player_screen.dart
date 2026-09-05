@@ -363,6 +363,11 @@ class _PlayerScreenState extends State<PlayerScreen>
             if (ua != null && ua.isNotEmpty) {
               await platform.setProperty('user-agent', ua);
             }
+            final cookie = playerHeaders['Cookie'] ?? playerHeaders['cookie'];
+            if (cookie != null && cookie.isNotEmpty) {
+              await platform.setProperty('cookies', 'yes');
+              await platform.setProperty('http-header-fields', 'Cookie: $cookie');
+            }
           }
         } catch (e) {
           print('[PlayerScreen] Warning setting native header properties: $e');
