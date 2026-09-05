@@ -280,8 +280,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final traktAuth = await TraktService.instance.isAuthenticated();
     final simklAuth = await SimklService.instance.isAuthenticated();
     final pkg = await PackageInfo.fromPlatform().catchError((_) => PackageInfo(
-          appName: 'PlayTorrio',
-          packageName: 'com.playtorrio',
+          appName: 'Dizzy',
+          packageName: 'com.dizzy',
           version: '1.1.3',
           buildNumber: '14',
         ));
@@ -480,7 +480,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-              // 4. Built-in P2P Torrent Source Toggle (PlayTorrio)
+              // 4. Built-in P2P Torrent Source Toggle (Dizzy)
               ValueListenableBuilder<bool>(
                 valueListenable: P2pSettingsService.isP2pEnabled,
                 builder: (context, isP2p, _) {
@@ -489,8 +489,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     iconColor: isP2p ? const Color(0xFFF59E0B) : Colors.white54,
                     title: 'Built-in P2P Torrent Source',
                     subtitle: isP2p
-                        ? 'PlayTorrio torrent swarms (Knaben, TorrentGalaxy) active'
-                        : 'P2P disabled. Using only direct HTTP streaming (PlayTorrioHTTP)',
+                        ? 'Dizzy torrent swarms (Knaben, TorrentGalaxy) active'
+                        : 'P2P disabled. Using only direct HTTP streaming (DizzyHTTP)',
                     badgeText: isP2p ? 'P2P Active' : 'HTTP Only',
                     badgeColor: isP2p ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                     value: isP2p,
@@ -631,11 +631,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-              // 9. About PlayTorrio
+              // 9. About Dizzy
               _SettingsCategoryTile(
                 icon: Icons.info_outline_rounded,
                 iconColor: Colors.white70,
-                title: 'About PlayTorrio',
+                title: 'About Dizzy',
                 subtitle: 'Architecture, video engine, and credits',
                 onTap: () => _navigateTo(const AboutSettingsPage()),
               ),
