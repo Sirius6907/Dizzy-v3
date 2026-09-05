@@ -36,6 +36,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
   final List<StreamSource> _allSources = [];
   String _selectedCategory = 'all'; // 'all', 'sub', 'dub'
   bool _isScraping = true;
+  bool _hasAutoPlayed = false;
   String? _error;
   StreamSubscription<StreamSource>? _streamSub;
 
@@ -70,8 +71,9 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
             _allSources.add(source);
           });
 
-          if (widget.autoPlay && _allSources.length == 1) {
-            _playSource(source);
+          if (widget.autoPlay && !_hasAutoPlayed && _allSources.isNotEmpty) {
+            _hasAutoPlayed = true;
+            _playSource(_allSources.first);
           }
         }
       },
