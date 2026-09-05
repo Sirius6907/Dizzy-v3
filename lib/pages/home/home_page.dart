@@ -476,40 +476,60 @@ class _HomePageState extends State<HomePage> {
         curve: Curves.easeInOut,
         child: Container(
           color: const Color(0xFF080A0F),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/icon.png',
-                  width: iconSize * 1.5,
-                  height: iconSize * 1.5,
-                  fit: BoxFit.contain,
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/icon.png',
+                      width: iconSize * 1.5,
+                      height: iconSize * 1.5,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      'Dizzy',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your Cinema Universe',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: subtitleSize,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white54,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 32),
-                Text(
-                  'Dizzy',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -1,
+              ),
+              Positioned(
+                bottom: 40,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    'by sirius',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.45),
+                      letterSpacing: 3,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your Cinema Universe',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: subtitleSize,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white54,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
