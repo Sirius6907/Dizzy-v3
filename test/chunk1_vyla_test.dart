@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:playtorrio/services/scraper/sites/vidup.dart';
-import 'package:playtorrio/services/scraper/sites/flaxmovies.dart';
-import 'package:playtorrio/services/scraper/sites/vidgod.dart';
-import 'package:playtorrio/services/scraper/sites/vidfast.dart';
-import 'package:playtorrio/services/scraper/sites/peestream.dart';
+import 'package:dizzy/services/scraper/sites/vidup.dart';
+import 'package:dizzy/services/scraper/sites/flaxmovies.dart';
+import 'package:dizzy/services/scraper/sites/vidgod.dart';
+import 'package:dizzy/services/scraper/sites/vidfast.dart';
+import 'package:dizzy/services/scraper/sites/peestream.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 

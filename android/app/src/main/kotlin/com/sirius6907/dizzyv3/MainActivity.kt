@@ -1,4 +1,4 @@
-package com.example.playtorrio
+package com.sirius6907.dizzyv3
 
 import android.content.Context
 import android.net.wifi.WifiManager
