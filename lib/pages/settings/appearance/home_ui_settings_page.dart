@@ -259,12 +259,14 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12151E),
+                      color: palette.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? palette.primaryColor
-                            : Colors.white.withValues(alpha: 0.08),
+                            : (palette.isMetallic
+                                ? palette.silverAccent.withValues(alpha: 0.12)
+                                : Colors.white.withValues(alpha: 0.08)),
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -312,12 +314,15 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                isSelected ? 'Active Theme' : 'Tap to apply',
+                                isSelected
+                                    ? (palette.id == 'dizzy_metallic' ? 'Active • Logo Match' : 'Active Theme')
+                                    : (palette.id == 'dizzy_metallic' ? 'Dizzy Logo Match' : 'Tap to apply'),
                                 style: TextStyle(
                                   fontSize: 10.5,
+                                  fontWeight: palette.isMetallic ? FontWeight.w600 : FontWeight.normal,
                                   color: isSelected
                                       ? palette.primaryColor
-                                      : Colors.white.withValues(alpha: 0.35),
+                                      : (palette.isMetallic ? palette.primaryColor.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.35)),
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

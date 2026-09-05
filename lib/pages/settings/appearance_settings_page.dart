@@ -97,13 +97,14 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                   return ValueListenableBuilder<GlassPreset>(
                     valueListenable: GlassSettings.preset,
                     builder: (context, preset, _) {
+                      final palette = AppThemeService.currentPalette.value;
                       return _buildSectionButton(
                         icon: Icons.blur_on_rounded,
-                        iconColor: const Color(0xFF7C5CFF),
+                        iconColor: palette.primaryColor,
                         title: 'Liquid Glass Setup',
                         subtitle: 'Adjust hover impact, wobble spring physics, lens refraction, and chromatic aberration',
                         badgeText: glassEnabled ? preset.label : 'Disabled',
-                        badgeColor: glassEnabled ? const Color(0xFF7C5CFF) : Colors.white38,
+                        badgeColor: glassEnabled ? palette.primaryColor : Colors.white38,
                         onTap: () async {
                           await Navigator.push(
                             context,
@@ -126,13 +127,14 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 valueListenable: DockSettings.enabledNotifier,
                 builder: (context, enabledMap, _) {
                   final activeCount = enabledMap.values.where((v) => v).length;
+                  final palette = AppThemeService.currentPalette.value;
                   return _buildSectionButton(
                     icon: Icons.dock_rounded,
-                    iconColor: const Color(0xFF7C5CFF),
+                    iconColor: palette.primaryColor,
                     title: 'Liquid Dock / Deck Navbar',
                     subtitle: 'Choose which navigation shortcuts appear in the bottom liquid glass dock across all screens',
                     badgeText: '$activeCount / ${DockItemKey.values.length} Items',
-                    badgeColor: const Color(0xFF7C5CFF),
+                    badgeColor: palette.primaryColor,
                     onTap: () async {
                       await Navigator.push(
                         context,

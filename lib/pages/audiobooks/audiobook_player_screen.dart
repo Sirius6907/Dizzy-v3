@@ -608,7 +608,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: AppThemeService.currentPalette.value.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background ambient cover blur & atmosphere

@@ -467,6 +467,7 @@ class _HomePageState extends State<HomePage> {
     final titleSize = (screenWidth * 0.08).clamp(40.0, 56.0);
     final subtitleSize = (screenWidth * 0.03).clamp(16.0, 20.0);
     final iconSize = (screenWidth * 0.12).clamp(48.0, 72.0);
+    final palette = AppThemeService.currentPalette.value;
 
     return IgnorePointer(
       ignoring: !_showIntro,
@@ -475,28 +476,77 @@ class _HomePageState extends State<HomePage> {
         duration: const Duration(milliseconds: 800),
         curve: Curves.easeInOut,
         child: Container(
-          color: const Color(0xFF080A0F),
+          color: palette.scaffoldBackgroundColor,
           child: Stack(
             children: [
+              // Metallic ambient light orb behind the logo
+              Center(
+                child: Container(
+                  width: iconSize * 3.5,
+                  height: iconSize * 3.5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        palette.primaryColor.withValues(alpha: 0.22),
+                        palette.accentColor.withValues(alpha: 0.08),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
+                  ),
+                ),
+              ),
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/icon.png',
-                      width: iconSize * 1.5,
-                      height: iconSize * 1.5,
-                      fit: BoxFit.contain,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: palette.primaryColor.withValues(alpha: 0.28),
+                            blurRadius: 36,
+                            spreadRadius: 2,
+                            offset: const Offset(-4, -4),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            blurRadius: 28,
+                            offset: const Offset(6, 12),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/icon.png',
+                        width: iconSize * 1.5,
+                        height: iconSize * 1.5,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: 32),
-                    Text(
-                      'Dizzy',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: titleSize,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -1,
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          const Color(0xFFFFFFFF),
+                          palette.silverAccent,
+                          const Color(0xFFCBD5E1),
+                          palette.primaryColor.withValues(alpha: 0.85),
+                        ],
+                        stops: const [0.0, 0.35, 0.70, 1.0],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: Text(
+                        'Dizzy',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -506,8 +556,8 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: subtitleSize,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white54,
-                        letterSpacing: 2,
+                        color: palette.accentColor.withValues(alpha: 0.7),
+                        letterSpacing: 2.5,
                       ),
                     ),
                   ],
@@ -518,13 +568,29 @@ class _HomePageState extends State<HomePage> {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Text(
-                    'by sirius',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.45),
-                      letterSpacing: 3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: palette.silverAccent.withValues(alpha: 0.12),
+                        width: 1,
+                      ),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.04),
+                          palette.primaryColor.withValues(alpha: 0.04),
+                        ],
+                      ),
+                    ),
+                    child: Text(
+                      'by sirius',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: palette.amberAccent.withValues(alpha: 0.75),
+                        letterSpacing: 3.5,
+                      ),
                     ),
                   ),
                 ),
@@ -554,6 +620,8 @@ class _GlassAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+
     return RepaintBoundary(
       child: Container(
         padding: EdgeInsets.only(
@@ -563,13 +631,20 @@ class _GlassAppBar extends StatelessWidget {
           right: 8,
         ),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xF5080A0F), Color(0xE6080A0F)],
+            colors: [
+              palette.appBarBackgroundColor.withValues(alpha: 0.95),
+              palette.appBarBackgroundColor.withValues(alpha: 0.85),
+            ],
           ),
           border: Border(
-            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            bottom: BorderSide(
+              color: palette.isMetallic
+                  ? palette.accentColor.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.06),
+            ),
           ),
         ),
         child: Row(
@@ -582,13 +657,24 @@ class _GlassAppBar extends StatelessWidget {
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 10),
-            const Text(
-              'Dizzy',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
-                color: Colors.white,
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [
+                  const Color(0xFFFFFFFF),
+                  palette.silverAccent,
+                  const Color(0xFFCBD5E1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Text(
+                'Dizzy',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  color: Colors.white,
+                ),
               ),
             ),
             const Spacer(),

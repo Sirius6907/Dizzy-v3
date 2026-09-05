@@ -23,9 +23,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
 
-  static const Color _surfaceColor = Color(0xFF12151E);
-  static const Color _backgroundColor = Color(0xFF080A0F);
-  static const Color _accentColor = Color(0xFF7C5CFF);
+  static const Color _surfaceColor = Color(0xFF13151B);
+  static const Color _backgroundColor = Color(0xFF090A0D);
+  static const Color _accentColor = Color(0xFFF59E0B);
 
   @override
   void dispose() {

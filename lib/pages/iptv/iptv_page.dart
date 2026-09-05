@@ -294,7 +294,7 @@ class _IptvPageState extends State<IptvPage> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: ValueListenableBuilder<bool>(
         valueListenable: GlassSettings.enabled,
         builder: (context, enabled, _) {
@@ -312,7 +312,7 @@ class _IptvPageState extends State<IptvPage> {
           }
 
           return Container(
-            color: const Color(0xFF080A0F),
+            color: palette.scaffoldBackgroundColor,
             child: Stack(
               children: [
                 RepaintBoundary(child: backgroundContent),
@@ -341,18 +341,20 @@ class _IptvGlassAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+
     return Container(
       padding: EdgeInsets.fromLTRB(28, topPadding + 14, 28, 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xCC080A0F),
-            Color(0x77080A0F),
+            palette.appBarBackgroundColor.withValues(alpha: 0.95),
+            palette.appBarBackgroundColor.withValues(alpha: 0.60),
             Colors.transparent,
           ],
-          stops: [0.0, 0.6, 1.0],
+          stops: const [0.0, 0.6, 1.0],
         ),
       ),
       child: Row(
@@ -364,13 +366,13 @@ class _IptvGlassAppBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7C5CFF), Color(0xFF00D2EF)],
+                  gradient: LinearGradient(
+                    colors: [palette.primaryColor, palette.accentColor],
                   ),
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7C5CFF).withValues(alpha: 0.4),
+                      color: palette.primaryColor.withValues(alpha: 0.35),
                       blurRadius: 10,
                     ),
                   ],

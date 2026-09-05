@@ -95,7 +95,7 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
     final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background ambient cover blur

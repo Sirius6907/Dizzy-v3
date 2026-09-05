@@ -585,13 +585,20 @@ class _AnimeGlassAppBar extends StatelessWidget {
           right: 8,
         ),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xF5080A0F), Color(0xE6080A0F)],
+            colors: [
+              AppThemeService.currentPalette.value.appBarBackgroundColor.withValues(alpha: 0.95),
+              AppThemeService.currentPalette.value.appBarBackgroundColor.withValues(alpha: 0.85),
+            ],
           ),
           border: Border(
-            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            bottom: BorderSide(
+              color: AppThemeService.currentPalette.value.isMetallic
+                  ? AppThemeService.currentPalette.value.silverAccent.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.06),
+            ),
           ),
         ),
         child: Row(
@@ -975,8 +982,8 @@ class _AnimeHeroSlide extends StatelessWidget {
                 end: Alignment.centerRight,
                 stops: const [0.0, 0.38, 0.85],
                 colors: [
-                  const Color(0xFF080A0F).withValues(alpha: 0.95),
-                  const Color(0xFF080A0F).withValues(alpha: 0.70),
+                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.95),
+                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.70),
                   Colors.transparent,
                 ],
               ),
@@ -992,7 +999,7 @@ class _AnimeHeroSlide extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.center,
                 colors: [
-                  const Color(0xFF080A0F).withValues(alpha: 0.75),
+                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.75),
                   Colors.transparent,
                 ],
               ),
@@ -1009,8 +1016,8 @@ class _AnimeHeroSlide extends StatelessWidget {
                 end: Alignment.topCenter,
                 stops: const [0.0, 0.30, 0.75],
                 colors: [
-                  const Color(0xFF080A0F),
-                  const Color(0xFF080A0F).withValues(alpha: 0.80),
+                  AppThemeService.currentPalette.value.scaffoldBackgroundColor,
+                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.80),
                   Colors.transparent,
                 ],
               ),
