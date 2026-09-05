@@ -511,7 +511,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
         await dir.create(recursive: true);
       }
 
-      final extension = Platform.isWindows ? '.exe' : '.AppImage';
+      // Detect actual extension from download URL
+      final parsedUri = Uri.tryParse(widget.updateInfo.downloadUrl);
+      String extension = '';
+      if (parsedUri != null && parsedUri.path.isNotEmpty) {
+        extension = path.extension(parsedUri.path);
+      }
+      if (extension.isEmpty) {
+        extension = Platform.isWindows ? '.exe' : '.AppImage';
+      }
+
       final fileName =
           'Dizzy-${widget.updateInfo.latestVersion}$extension';
       final filePath = path.join(dir.path, fileName);
@@ -613,6 +622,18 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   style: TextStyle(color: Colors.white70),
                 ),
               ),
+              if (Platform.isWindows && filePath.toLowerCase().endsWith('.exe'))
+                ElevatedButton(
+                  onPressed: () async {
+                    await Process.start(filePath, [], mode: ProcessStartMode.detached);
+                    exit(0);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Install Now'),
+                ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
