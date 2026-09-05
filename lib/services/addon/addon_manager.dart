@@ -25,11 +25,11 @@ class AddonManager {
 
   void _ensureBuiltInsExist() {
     bool changed = false;
-    if (!_addons.any((a) => a.manifest.id == 'builtin.playtorrio' || a.baseUrl == 'builtin:playtorrio')) {
+    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy')) {
       _addons.add(playTorrioBuiltin);
       changed = true;
     }
-    if (!_addons.any((a) => a.manifest.id == 'builtin.playtorriohttp' || a.baseUrl == 'builtin:playtorriohttp')) {
+    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp')) {
       _addons.add(playTorrioHttpBuiltin);
       changed = true;
     }
@@ -68,19 +68,19 @@ class AddonManager {
     return _addons.where((a) => a.isStreamsActive && !a.baseUrl.startsWith('builtin:')).toList();
   }
 
-  bool get isPlayTorrioActive {
+  bool get isDizzyActive {
     _ensureBuiltInsExist();
     final p2p = _addons.firstWhere(
-      (a) => a.manifest.id == 'builtin.playtorrio' || a.baseUrl == 'builtin:playtorrio',
+      (a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy',
       orElse: () => playTorrioBuiltin,
     );
     return p2p.isStreamsActive;
   }
 
-  bool get isPlayTorrioHttpActive {
+  bool get isDizzyHttpActive {
     _ensureBuiltInsExist();
     final http = _addons.firstWhere(
-      (a) => a.manifest.id == 'builtin.playtorriohttp' || a.baseUrl == 'builtin:playtorriohttp',
+      (a) => a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp',
       orElse: () => playTorrioHttpBuiltin,
     );
     return http.isStreamsActive;
@@ -90,8 +90,8 @@ class AddonManager {
   String? getAddonLogo(String addonName) {
     _ensureBuiltInsExist();
     final nameLower = addonName.trim().toLowerCase();
-    if (nameLower == 'playtorrio' ||
-        nameLower == 'playtorriohttp' ||
+    if (nameLower == 'dizzy' ||
+        nameLower == 'dizzyhttp' ||
         nameLower.startsWith('builtin')) {
       return 'asset:assets/icon.png';
     }
@@ -107,10 +107,10 @@ class AddonManager {
   }
 
   static final InstalledAddon playTorrioBuiltin = InstalledAddon(
-    baseUrl: 'builtin:playtorrio',
+    baseUrl: 'builtin:dizzy',
     manifest: AddonManifest(
-      id: 'builtin.playtorrio',
-      name: 'PlayTorrio',
+      id: 'builtin.dizzy',
+      name: 'Dizzy',
       version: '3.0.0',
       description: 'Built-in BitTorrent P2P streaming engine (TorrServer). Plays torrents, magnets, and infohashes directly.',
       resources: ['stream'],
@@ -126,10 +126,10 @@ class AddonManager {
   );
 
   static final InstalledAddon playTorrioHttpBuiltin = InstalledAddon(
-    baseUrl: 'builtin:playtorriohttp',
+    baseUrl: 'builtin:dizzyhttp',
     manifest: AddonManifest(
-      id: 'builtin.playtorriohttp',
-      name: 'PlayTorrioHTTP',
+      id: 'builtin.dizzyhttp',
+      name: 'DizzyHTTP',
       version: '3.0.0',
       description: 'Built-in fast HTTP stream scrapers (111477, Cinejoy, Vuflix, Movy, RiveStream, Vadapav, VidCore, VidSrc, etc.)',
       resources: ['stream'],
@@ -172,21 +172,21 @@ class AddonManager {
       }
     }
 
-    // Ensure PlayTorrio P2P engine is registered in the list
-    if (!_addons.any((a) => a.manifest.id == 'builtin.playtorrio' || a.baseUrl == 'builtin:playtorrio')) {
+    // Ensure Dizzy P2P engine is registered in the list
+    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy')) {
       _addons.add(playTorrioBuiltin);
       await _save();
     }
 
-    // Ensure PlayTorrioHTTP is registered in the list
-    if (!_addons.any((a) => a.manifest.id == 'builtin.playtorriohttp' || a.baseUrl == 'builtin:playtorriohttp')) {
+    // Ensure DizzyHTTP is registered in the list
+    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp')) {
       _addons.add(playTorrioHttpBuiltin);
       await _save();
     }
 
     // Sync P2P state
     final p2pAddon = _addons.firstWhere(
-      (a) => a.manifest.id == 'builtin.playtorrio' || a.baseUrl == 'builtin:playtorrio',
+      (a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy',
       orElse: () => playTorrioBuiltin,
     );
     P2pSettingsService.isP2pEnabled.value = p2pAddon.isStreamsActive;
@@ -273,7 +273,7 @@ class AddonManager {
   }
 
   Future<void> removeAddon(String addonId) async {
-    if (addonId == 'builtin.playtorrio' || addonId == 'builtin.playtorriohttp') {
+    if (addonId == 'builtin.dizzy' || addonId == 'builtin.dizzyhttp') {
       // For built-in providers, disable instead of deleting
       await toggleAddon(addonId, false);
       return;
@@ -290,7 +290,7 @@ class AddonManager {
         break;
       }
     }
-    if (addonId == 'builtin.playtorrio') {
+    if (addonId == 'builtin.dizzy') {
       await P2pSettingsService.setP2pEnabled(enabled);
     }
     MetadataService.clearCache();
@@ -313,7 +313,7 @@ class AddonManager {
         break;
       }
     }
-    if (addonId == 'builtin.playtorrio' && enableStreams != null) {
+    if (addonId == 'builtin.dizzy' && enableStreams != null) {
       await P2pSettingsService.setP2pEnabled(enableStreams);
     }
     MetadataService.clearCache();

@@ -298,10 +298,10 @@ class Paper2AudioService {
       Directory? targetDir;
       try {
         final appDocDir = await getApplicationDocumentsDirectory();
-        targetDir = Directory(p.join(appDocDir.path, 'PlayTorrio', 'GeneratedAudiobooks'));
+        targetDir = Directory(p.join(appDocDir.path, 'Dizzy', 'GeneratedAudiobooks'));
       } catch (_) {
         final temp = await getTemporaryDirectory();
-        targetDir = Directory(p.join(temp.path, 'PlayTorrio', 'GeneratedAudiobooks'));
+        targetDir = Directory(p.join(temp.path, 'Dizzy', 'GeneratedAudiobooks'));
       }
       if (!await targetDir.exists()) {
         await targetDir.create(recursive: true);
