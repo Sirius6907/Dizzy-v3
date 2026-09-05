@@ -69,17 +69,17 @@ void main() async {
     TorrentStreamService().start(),
     DiscordRpcService.instance.initialize(),
   ]);
-  runApp(const PlayTorrioApp());
+  runApp(const DizzyApp());
 }
 
-class PlayTorrioApp extends StatefulWidget {
-  const PlayTorrioApp({super.key});
+class DizzyApp extends StatefulWidget {
+  const DizzyApp({super.key});
 
   @override
-  State<PlayTorrioApp> createState() => _PlayTorrioAppState();
+  State<DizzyApp> createState() => _DizzyAppState();
 }
 
-class _PlayTorrioAppState extends State<PlayTorrioApp>
+class _DizzyAppState extends State<DizzyApp>
     with WidgetsBindingObserver {
   static bool _hasCheckedInitialUpdate = false;
   static bool _isShowingUpdateDialog = false;
@@ -139,7 +139,7 @@ class _PlayTorrioAppState extends State<PlayTorrioApp>
       builder: (context, palette, _) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: 'PlayTorrio',
+          title: 'Dizzy',
           debugShowCheckedModeBanner: false,
           theme: AppThemeService.createThemeData(palette),
           scrollBehavior: const MaterialScrollBehavior().copyWith(
