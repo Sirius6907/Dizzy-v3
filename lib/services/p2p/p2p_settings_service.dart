@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../stream/torrent_stream_service.dart';
 
 /// Manages settings for the built-in P2P (torrent) source (Dizzy)
 /// and the startup privacy/ISP advisory modal.
@@ -11,13 +12,13 @@ class P2pSettingsService {
 
   /// Whether the built-in P2P torrent source ('Dizzy') is enabled.
   /// When false, only direct HTTP streaming ('DizzyHTTP') and external addons are used.
-  static final ValueNotifier<bool> isP2pEnabled = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> isP2pEnabled = ValueNotifier<bool>(false);
 
   /// Initializes the service and loads preferences from disk.
   static Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      isP2pEnabled.value = prefs.getBool(_kP2pEnabledKey) ?? true;
+      isP2pEnabled.value = prefs.getBool(_kP2pEnabledKey) ?? false;
     } catch (e) {
       debugPrint('[P2pSettingsService] Error initializing: $e');
     }
@@ -26,6 +27,11 @@ class P2pSettingsService {
   /// Updates the P2P torrent source enabled state and persists it.
   static Future<void> setP2pEnabled(bool enabled) async {
     isP2pEnabled.value = enabled;
+    if (!enabled) {
+      try {
+        await TorrentStreamService().stop();
+      } catch (_) {}
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_kP2pEnabledKey, enabled);
