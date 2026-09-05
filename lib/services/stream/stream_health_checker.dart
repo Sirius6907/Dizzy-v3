@@ -14,6 +14,7 @@ class StreamHealthChecker {
   static const Duration _timeout = Duration(seconds: 5);
 
   /// Tests if a [StreamSource] is alive and delivers a valid video/audio stream.
+  /// Automatically accepts cookies from responses & redirects and attaches them back to [source.headers].
   ///
   /// Torrent streams (`infoHash != null`) are always considered alive by this checker.
   static Future<bool> isAlive(StreamSource source) async {
@@ -29,12 +30,48 @@ class StreamHealthChecker {
 
     // Resolve complete headers (including Referer, Origin, User-Agent)
     final effectiveHeaders = PlayerSettings.resolveStreamHeaders(rawUrl, source.headers);
+    final cookiesCaptured = <String>[];
 
-    return _probeUrl(rawUrl, effectiveHeaders);
+    final alive = await _probeUrl(rawUrl, effectiveHeaders, 0, cookiesCaptured);
+
+    // Accept captured cookies and persist them into the source headers
+    if (alive && cookiesCaptured.isNotEmpty) {
+      source.headers ??= {};
+      final existingCookie = source.headers!['Cookie'] ?? source.headers!['cookie'] ?? '';
+      source.headers!['Cookie'] = _mergeCookies(existingCookie, cookiesCaptured);
+    }
+
+    return alive;
   }
 
-  /// Probes the stream URL using a GET Range request.
-  static Future<bool> _probeUrl(String url, Map<String, String> headers, [int redirectCount = 0]) async {
+  /// Merges existing Cookie headers with incoming Set-Cookie header strings.
+  static String _mergeCookies(String existing, List<String> newCookies) {
+    final cookieMap = <String, String>{};
+    if (existing.isNotEmpty) {
+      for (final part in existing.split(';')) {
+        final kv = part.trim().split('=');
+        if (kv.length >= 2) {
+          cookieMap[kv[0].trim()] = kv.sublist(1).join('=').trim();
+        }
+      }
+    }
+    for (final c in newCookies) {
+      final mainPart = c.split(';').first.trim();
+      final kv = mainPart.split('=');
+      if (kv.length >= 2) {
+        cookieMap[kv[0].trim()] = kv.sublist(1).join('=').trim();
+      }
+    }
+    return cookieMap.entries.map((e) => '${e.key}=${e.value}').join('; ');
+  }
+
+  /// Probes the stream URL using a GET Range request with Accept-Cookies handling.
+  static Future<bool> _probeUrl(
+    String url,
+    Map<String, String> headers, [
+    int redirectCount = 0,
+    List<String>? cookiesCaptured,
+  ]) async {
     if (redirectCount > 5) return false;
 
     final client = http.Client();
@@ -57,14 +94,24 @@ class StreamHealthChecker {
       final resp = await client.send(req).timeout(_timeout);
       final code = resp.statusCode;
 
-      // Handle 3xx Redirects manually to preserve Origin and Referer
+      // Accept Cookies from response
+      final setCookie = resp.headers['set-cookie'];
+      if (setCookie != null && setCookie.isNotEmpty) {
+        cookiesCaptured?.add(setCookie);
+      }
+
+      // Handle 3xx Redirects manually to preserve Origin, Referer, and Cookies
       if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
         final location = resp.headers['location'];
         if (location != null && location.isNotEmpty) {
           final redirectedUri = Uri.parse(url).resolve(location).toString();
           final redirectHeaders = PlayerSettings.resolveStreamHeaders(redirectedUri, headers);
+          if (cookiesCaptured != null && cookiesCaptured.isNotEmpty) {
+            final existing = redirectHeaders['Cookie'] ?? redirectHeaders['cookie'] ?? '';
+            redirectHeaders['Cookie'] = _mergeCookies(existing, cookiesCaptured);
+          }
           client.close();
-          return await _probeUrl(redirectedUri, redirectHeaders, redirectCount + 1);
+          return await _probeUrl(redirectedUri, redirectHeaders, redirectCount + 1, cookiesCaptured);
         }
         return false;
       }

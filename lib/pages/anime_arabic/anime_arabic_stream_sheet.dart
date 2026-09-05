@@ -3,6 +3,7 @@ import '../../models/stream/stream_model.dart';
 import '../../services/anime_arabic/anime_arabic_extractor.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../services/stream/stream_health_checker.dart';
 import '../player/player_screen.dart';
 
 class AnimeArabicStreamSheet extends StatefulWidget {
@@ -72,9 +73,19 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
         episodeNumber: widget.episode.number,
       );
 
+      final aliveSources = <StreamSource>[];
+      for (final s in sources) {
+        if (await StreamHealthChecker.isAlive(s)) {
+          aliveSources.add(s);
+        }
+      }
+
       setState(() {
-        _allSources.addAll(sources);
+        _allSources.addAll(aliveSources);
         _isScraping = false;
+        if (_allSources.isEmpty && sources.isNotEmpty) {
+          _error = 'All scraped streams failed pre-stream health verification.';
+        }
       });
 
       if (widget.autoPlay && _allSources.isNotEmpty) {
