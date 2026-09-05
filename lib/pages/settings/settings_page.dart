@@ -282,8 +282,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final pkg = await PackageInfo.fromPlatform().catchError((_) => PackageInfo(
           appName: 'Dizzy',
           packageName: 'com.dizzy',
-          version: '1.1.4',
-          buildNumber: '14',
+          version: '1.1.5',
+          buildNumber: '16',
         ));
 
     if (mounted) {
