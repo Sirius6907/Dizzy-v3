@@ -228,7 +228,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       builder: (_) => AnimeStreamSheet(
         anime: _anime,
         episodeNumber: episodeNumber,
-        autoPlay: false,
+        autoPlay: true,
         aniDbEpisodes: _aniDbEpisodes,
         totalEpisodes: _computedTotalEpisodes,
       ),
