@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:playtorrio/services/scraper/sites/lmscript.dart';
-import 'package:playtorrio/services/scraper/sites/vixsrc.dart';
-import 'package:playtorrio/services/scraper/sites/vidlink.dart';
-import 'package:playtorrio/services/scraper/sites/xpass.dart';
+import 'package:dizzy/services/scraper/sites/lmscript.dart';
+import 'package:dizzy/services/scraper/sites/vixsrc.dart';
+import 'package:dizzy/services/scraper/sites/vidlink.dart';
+import 'package:dizzy/services/scraper/sites/xpass.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
