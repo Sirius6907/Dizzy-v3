@@ -310,11 +310,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final addonCount = AddonManager.instance.addons.length;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017).withValues(alpha: 0.85),
+        backgroundColor: palette.appBarBackgroundColor.withValues(alpha: 0.85),
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -338,15 +339,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF7C5CFF).withValues(alpha: 0.12),
-                      const Color(0xFF00E5FF).withValues(alpha: 0.04),
+                      palette.primaryColor.withValues(alpha: 0.14),
+                      palette.silverAccent.withValues(alpha: 0.04),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: const Color(0xFF7C5CFF).withValues(alpha: 20 / 100),
+                    color: palette.primaryColor.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Row(
@@ -355,12 +356,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7C5CFF).withValues(alpha: 0.18),
+                        color: palette.primaryColor.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: palette.primaryColor.withValues(alpha: 0.25),
+                        ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.tune_rounded,
-                        color: Color(0xFF7C5CFF),
+                        color: palette.primaryColor,
                         size: 26,
                       ),
                     ),
@@ -436,7 +440,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 builder: (context, anime4kPreset, _) {
                   return _SettingsCategoryTile(
                     icon: Icons.auto_awesome_rounded,
-                    iconColor: const Color(0xFF7C5CFF),
+                    iconColor: palette.primaryColor,
                     title: 'Video & Upscaling',
                     subtitle: 'Anime4K neural GLSL shader presets and GPU pipeline',
                     badgeText: anime4kPreset == Anime4KPreset.off
@@ -444,7 +448,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         : anime4kPreset.label.split('(').first.trim(),
                     badgeColor: anime4kPreset == Anime4KPreset.off
                         ? Colors.white38
-                        : const Color(0xFF7C5CFF),
+                        : palette.primaryColor,
                     onTap: () => _navigateTo(const VideoSettingsPage()),
                   );
                 },

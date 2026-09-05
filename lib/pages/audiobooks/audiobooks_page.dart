@@ -333,7 +333,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
     final spotlightBook = _searchResults.isNotEmpty ? _searchResults.first : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // ── Ambient Background Glows ──
@@ -738,14 +738,14 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
               ),
             // Vignette Gradient Fade
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    Color(0xF0080A0F),
-                    Color(0xB0080A0F),
-                    Color(0x80080A0F),
+                    palette.scaffoldBackgroundColor.withValues(alpha: 0.95),
+                    palette.scaffoldBackgroundColor.withValues(alpha: 0.70),
+                    palette.scaffoldBackgroundColor.withValues(alpha: 0.50),
                   ],
                 ),
               ),

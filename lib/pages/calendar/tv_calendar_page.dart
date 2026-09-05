@@ -191,7 +191,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // ── Ambient Background ──

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../services/iptv/hardcoded_channels.dart';
 import '../../widgets/iptv/iptv_channel_card.dart';
 import 'iptv_channel_sheet.dart';
@@ -63,7 +64,7 @@ class _IptvSearchPageState extends State<IptvSearchPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: AppThemeService.currentPalette.value.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

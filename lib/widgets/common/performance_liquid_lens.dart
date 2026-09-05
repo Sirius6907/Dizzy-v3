@@ -26,12 +26,16 @@ class PerformanceLiquidLens extends StatelessWidget {
   });
 
   BoxDecoration get _fallbackDecoration {
-    return const BoxDecoration(
-      borderRadius: BorderRadius.all(Radius.circular(24)),
-      gradient: LinearGradient(
+    return BoxDecoration(
+      borderRadius: const BorderRadius.all(Radius.circular(24)),
+      gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xF01A1D27), Color(0xF012151E)],
+        colors: [Color(0xF0181A22), Color(0xF00E1015)],
+      ),
+      border: Border.all(
+        color: const Color(0x1CE2E8F0),
+        width: 1,
       ),
     );
   }
