@@ -165,7 +165,7 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
       builder: (_) => AnimeArabicStreamSheet(
         details: _details!,
         episode: episode,
-        autoPlay: false,
+        autoPlay: true,
       ),
     );
   }

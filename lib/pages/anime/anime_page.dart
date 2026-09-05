@@ -200,7 +200,7 @@ class _AnimePageState extends State<AnimePage> {
           builder: (_) => AnimeArabicStreamSheet(
             details: details,
             episode: ep,
-            autoPlay: false,
+            autoPlay: true,
           ),
         );
       });
@@ -214,7 +214,7 @@ class _AnimePageState extends State<AnimePage> {
       builder: (_) => AnimeStreamSheet(
         anime: anime,
         episodeNumber: episodeNumber,
-        autoPlay: false,
+        autoPlay: true,
       ),
     );
   }
