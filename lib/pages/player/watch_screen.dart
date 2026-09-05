@@ -92,11 +92,11 @@ class _WatchScreenState extends State<WatchScreen>
       final a = allAddons[i];
       map[a.manifest.name.toLowerCase()] = i;
       map[a.manifest.id.toLowerCase()] = i;
-      if (a.manifest.id == 'builtin.playtorriohttp' || a.baseUrl == 'builtin:playtorriohttp') {
-        map['playtorriohttp'] = i;
+      if (a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp') {
+        map['dizzyhttp'] = i;
       }
-      if (a.manifest.id == 'builtin.playtorrio' || a.baseUrl == 'builtin:playtorrio') {
-        map['playtorrio'] = i;
+      if (a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy') {
+        map['dizzy'] = i;
       }
     }
     return _cachedAddonOrder = map;
@@ -247,11 +247,11 @@ class _WatchScreenState extends State<WatchScreen>
     }
 
     // Filter by active status of built-in providers
-    if (!AddonManager.instance.isPlayTorrioActive) {
+    if (!AddonManager.instance.isDizzyActive) {
       list = list.where((s) => !s.isTorrent || s.isDebrid).toList();
     }
-    if (!AddonManager.instance.isPlayTorrioHttpActive) {
-      list = list.where((s) => s.addonName.toLowerCase() != 'playtorriohttp').toList();
+    if (!AddonManager.instance.isDizzyHttpActive) {
+      list = list.where((s) => s.addonName.toLowerCase() != 'dizzyhttp').toList();
     }
 
     // Cached dynamic addon priority lookup from user's installed addons order
@@ -2970,8 +2970,8 @@ class _AddonSourceIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nameLower = addonName.trim().toLowerCase();
-    final isBuiltIn = nameLower == 'playtorrio' ||
-        nameLower == 'playtorriohttp' ||
+    final isBuiltIn = nameLower == 'dizzy' ||
+        nameLower == 'dizzyhttp' ||
         nameLower.startsWith('builtin');
 
     if (isBuiltIn) {
