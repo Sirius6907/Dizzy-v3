@@ -98,7 +98,15 @@ class _PlayerScreenState extends State<PlayerScreen>
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   Duration? _buffered;
+  bool _isBuffering = false;
   bool _wasBuffering = false;
+  DateTime _lastSeekAt = DateTime.now();
+
+  void _onUserSeek(Duration target) {
+    _lastSeekAt = DateTime.now();
+    _lastProgressPosition = target;
+    _lastProgressAt = DateTime.now();
+  }
   String _statusMessage = 'Initializing...';
   bool _showControls = true;
   bool _isHoveringUI = false;
@@ -176,6 +184,10 @@ class _PlayerScreenState extends State<PlayerScreen>
   Timer? _stallWatchdog;
   Duration _lastProgressPosition = Duration.zero;
   DateTime _lastProgressAt = DateTime.now();
+  /// Failover resume override — passed straight into Media(start:) so the
+  /// backup source opens AT the saved position (no seek-after-open race on
+  /// slow networks where mpv would drop the seek fired before media load).
+  Duration? _resumeAtOverride;
   /// 30s of stable playback on current source → record last-good + start prefetch
   Timer? _lastGoodTimer;
   bool _lastGoodRecorded = false;
@@ -250,8 +262,9 @@ class _PlayerScreenState extends State<PlayerScreen>
         _position = pos;
         _positionNotifier.value = pos;
         _onPlaybackTick(pos);
-        // ── Stall watchdog (Phase 3.2) ── position advancing = healthy.
-        if (pos > _lastProgressPosition) {
+        // ── Stall watchdog: position changing (forward or backward) = healthy.
+        final diff = (pos - _lastProgressPosition).inMilliseconds.abs();
+        if (diff >= 200) {
           _lastProgressPosition = pos;
           _lastProgressAt = DateTime.now();
         }
@@ -283,6 +296,13 @@ class _PlayerScreenState extends State<PlayerScreen>
         _bufferNotifier.value = buf;
       }),
       _player.stream.buffering.listen((isBuffering) {
+        _isBuffering = isBuffering;
+        // Slow-net guard: while mpv is actively buffering (spinner showing),
+        // the stall watchdog must NOT fire — the demuxer is still feeding
+        // data and a source switch would only lose buffered progress.
+        if (isBuffering) {
+          _lastProgressAt = DateTime.now();
+        }
         if (_wasBuffering && !isBuffering && PlayerSettings.autoResyncOnStall.value) {
           try {
             if (PlayerSettings.hardwareAudioClock.value) {
@@ -480,7 +500,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         Media(
           cleanUri.toString(),
           httpHeaders: isTorrentStream ? null : playerHeaders,
-          start: widget.initialPosition,
+          start: _resumeAtOverride ?? widget.initialPosition,
         ),
         play: true,
       );
@@ -926,7 +946,21 @@ class _PlayerScreenState extends State<PlayerScreen>
         lower.contains('failed to resolve') ||
         lower.contains('no such host');
 
-    if (hasActivelyProgressed && !isFatalOpenFailure) {
+    // Slow-net guard: transient network blips (timeout / reset / EOF) during
+    // ACTIVE playback with buffer headroom must not trigger a source switch —
+    // mpv's cache keeps playing while the demuxer retries. Only switch when
+    // the blip comes with zero buffer headroom (true death).
+    final bool isTransientNetBlip = lower.contains('timed out') ||
+        lower.contains('timeout') ||
+        lower.contains('connection reset') ||
+        lower.contains('connection closed') ||
+        lower.contains('averror_eof') ||
+        lower.contains('end of file');
+    final bufferHeadroom = (_buffered?.inMilliseconds ?? 0) -
+        _player.state.position.inMilliseconds;
+
+    if (hasActivelyProgressed && (!isFatalOpenFailure ||
+        (isTransientNetBlip && bufferHeadroom > 3000))) {
       debugPrint('[PlayerScreen WARNING] Ignored player warning during active playback: $errorMsg');
       return;
     }
@@ -1014,6 +1048,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     final clamped = target < Duration.zero
         ? Duration.zero
         : (dur > Duration.zero && target > dur ? dur : target);
+    _onUserSeek(clamped);
     _player.seek(clamped);
     _startHideControlsTimer();
   }
@@ -1177,6 +1212,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         ? Duration(milliseconds: seg.endMs!)
         : _player.state.duration;
 
+    _onUserSeek(target + const Duration(milliseconds: 300));
     _player.seek(target + const Duration(milliseconds: 300));
 
     setState(() {
@@ -1255,10 +1291,15 @@ class _PlayerScreenState extends State<PlayerScreen>
       if (!mounted || _failoverInProgress) return;
       final stalled = DateTime.now().difference(_lastProgressAt);
       // Only failover when we believe we SHOULD be playing but position
-      // hasn't advanced for 6s+ (not paused, media loaded).
+      // hasn't advanced for 10s+ (not paused, media loaded) AND mpv is not
+      // actively buffering. Slow internet just buffers longer — a spinner
+      // with data still flowing must never trigger a source switch; only a
+      // truly dead stream (no position progress AND no buffering activity)
+      // justifies losing the buffered progress to switch sources.
       final shouldPlay = _isPlaying && _duration > Duration.zero;
-      if (shouldPlay && stalled.inSeconds >= 6) {
-        debugPrint('[Failover] stall detected: ${stalled.inSeconds}s no progress');
+      final seekGrace = DateTime.now().difference(_lastSeekAt).inSeconds < 8;
+      if (shouldPlay && !seekGrace && !_isBuffering && stalled.inSeconds >= 10) {
+        debugPrint('[Failover] stall detected: ${stalled.inSeconds}s no progress, not buffering');
         _attemptSilentFailover(reason: 'stall');
       }
     });
@@ -1331,9 +1372,13 @@ class _PlayerScreenState extends State<PlayerScreen>
         await _player.stop();
         setState(() => _isLoading = true);
         _currentSource = next;
-        // Reopen via the standard init path, then resume at saved position.
+        // Reopen via the standard init path, resuming AT the saved position
+        // via Media(start:) — atomic open (no seek-after-open race).
+        _resumeAtOverride = savedPos > Duration.zero ? savedPos : null;
         await _initStream();
-        if (savedPos > Duration.zero) {
+        _resumeAtOverride = null;
+        if (savedPos > Duration.zero && _player.state.position < savedPos) {
+          // Fallback: only if the open didn't land at the position.
           await _player.seek(savedPos);
         }
         if (mounted) {
@@ -1347,6 +1392,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         debugPrint('[Failover] switch failed: $e');
         if (mounted) setState(() => _showSourcesPanel = true);
       } finally {
+        _resumeAtOverride = null;
         _failoverInProgress = false;
         if (mounted) _armPlaybackGuards();
       }
@@ -1667,7 +1713,10 @@ class _PlayerScreenState extends State<PlayerScreen>
                       host: PlayerGestureHost(
                         position: () => _player.state.position,
                         duration: () => _player.state.duration,
-                        seekTo: (t) => _player.seek(t),
+                        seekTo: (t) {
+                          _onUserSeek(t);
+                          _player.seek(t);
+                        },
                         seekBy: (d) => _seekRelative(d),
                         volume: () => _isMuted ? 0.0 : _volume,
                         setVolume: (v) => _applyVolume(v, showHud: true),
@@ -1945,7 +1994,10 @@ class _PlayerScreenState extends State<PlayerScreen>
                           onPlayPause: () {
                             _togglePlayPause();
                           },
-                          onSeek: (pos) => _player.seek(pos),
+                          onSeek: (pos) {
+                            _onUserSeek(pos);
+                            _player.seek(pos);
+                          },
                           onSeekBack10: () {
                             _seekRelative(const Duration(seconds: -10));
                           },
