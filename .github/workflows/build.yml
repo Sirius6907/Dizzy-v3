@@ -361,7 +361,10 @@ jobs:
   # ─── macOS Intel Build (x86_64) ──────────────────────────────────────────
   macos-intel:
     name: macOS (Intel x86_64)
-    runs-on: macos-13
+    # macos-13 was retired by GitHub (Dec 2025) — macos-15-intel is the
+    # official x86_64 replacement, available until Aug 2027.
+    runs-on: macos-15-intel
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
