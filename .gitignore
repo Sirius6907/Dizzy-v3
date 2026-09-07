@@ -56,3 +56,4 @@ app.*.map.json
 .gemini/
 
 release-artifacts/
+.hermes/

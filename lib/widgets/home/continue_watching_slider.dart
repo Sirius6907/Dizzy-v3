@@ -393,6 +393,9 @@ class _ContinueWatchingCardState extends State<_ContinueWatchingCard> {
                           ? CachedNetworkImage(
                               imageUrl: imageUrl,
                               fit: BoxFit.cover,
+                              memCacheWidth: 500,
+                              memCacheHeight: 280,
+                              maxWidthDiskCache: 500,
                               errorWidget: (_, __, ___) => _buildPlaceholder(),
                             )
                           : _buildPlaceholder(),

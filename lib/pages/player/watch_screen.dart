@@ -17,6 +17,8 @@ import '../../models/stream/stream_model.dart';
 import './player_screen.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/stream/stream_service.dart';
+import '../../services/stream/stream_probe_race.dart';
+import '../../services/player/player_settings.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
 import '../settings/settings_page.dart';
@@ -73,6 +75,11 @@ class _WatchScreenState extends State<WatchScreen>
   Timer? _sourceBatchTimer;
   bool _isLoadingSources = true;
 
+  // Instant autoplay (Phase 1)
+  StreamProbeRace? _autoplayRace;
+  bool _userPickedSource = false; // set when the user taps a source manually
+  bool _autoplayCountdownActive = false;
+
   // Animation
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -123,6 +130,7 @@ class _WatchScreenState extends State<WatchScreen>
   @override
   void dispose() {
     _sourceBatchTimer?.cancel();
+    _autoplayRace?.dispose();
     _animController.dispose();
     _sourcesScrollController.dispose();
     _mainScrollController.dispose();
@@ -131,6 +139,33 @@ class _WatchScreenState extends State<WatchScreen>
 
   Future<void> _loadStreams() async {
     final streamId = widget.selectedEpisode?.id ?? widget.detail.id;
+
+    // ── Instant autoplay race (Phase 1) ─────────────────────────────
+    // Every scraped source is health-probed in parallel; the FIRST one
+    // verified alive auto-opens the player (unless the user has already
+    // picked a source or autoplay is disabled in settings).
+    if (PlayerSettings.autoplayFirstVerified.value) {
+      final race = StreamProbeRace();
+      _autoplayRace = race;
+
+      // Embedded debrid streams are trusted direct links — probe in 0ms.
+      final embedded = widget.selectedEpisode?.streams ?? const <StreamSource>[];
+      if (embedded.isNotEmpty) {
+        final embeddedRace = race; // capture
+        for (final s in embedded) {
+          // Bypass health probe for embedded direct streams.
+          embeddedRace.offerEmbedded(s);
+        }
+      }
+
+      race.winner.then((src) {
+        if (!mounted || src == null) return;
+        if (_userPickedSource || !PlayerSettings.autoplayFirstVerified.value) {
+          return;
+        }
+        _openPlayerInstant(src);
+      });
+    }
 
     // 1. Immediately inject any embedded streams from the video (e.g. Torbox/Debrid direct streams)
     if (widget.selectedEpisode != null && widget.selectedEpisode!.streams.isNotEmpty) {
@@ -153,13 +188,43 @@ class _WatchScreenState extends State<WatchScreen>
           const Duration(milliseconds: 60),
           _flushPendingSources,
         );
+        // Parallel health probe for the autoplay race (never blocks UI).
+        _autoplayRace?.offer(source);
       }
     } catch (_) {}
 
     _flushPendingSources();
+    _autoplayRace?.close();
     if (mounted && _isLoadingSources) {
       setState(() => _isLoadingSources = false);
     }
+  }
+
+  /// Opens the player with a verified source the instant it's found.
+  /// Shows a short "playing now" chip so the user knows what's happening.
+  void _openPlayerInstant(StreamSource source) {
+    if (!mounted || _autoplayCountdownActive) return;
+    _autoplayCountdownActive = true;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlayerScreen(
+          source: source,
+          title: source.displayTitle,
+          detail: widget.detail,
+          episode: widget.selectedEpisode,
+          initialPosition: widget.initialPosition,
+          failoverSources: List.of(_sources),
+        ),
+      ),
+    ).then((_) {
+      // Player closed — don't auto-hijack with another source after return.
+      if (mounted) {
+        _autoplayCountdownActive = false;
+        _userPickedSource = true;
+      }
+    });
   }
 
   void _flushPendingSources() {
@@ -615,6 +680,11 @@ class _WatchScreenState extends State<WatchScreen>
                         detail: widget.detail,
                         episode: widget.selectedEpisode,
                         initialPosition: widget.initialPosition,
+                        failoverCandidates: List.of(_sources),
+                        onUserPicked: () {
+                          _userPickedSource = true;
+                          _autoplayRace?.dispose();
+                        },
                       ),
                     );
                   },
@@ -1214,6 +1284,11 @@ class _WatchScreenState extends State<WatchScreen>
           detail: widget.detail,
           episode: widget.selectedEpisode,
           initialPosition: widget.initialPosition,
+          failoverCandidates: List.of(_sources),
+          onUserPicked: () {
+            _userPickedSource = true;
+            _autoplayRace?.dispose();
+          },
         );
       },
     );
@@ -2687,6 +2762,9 @@ class _SourceCard extends StatefulWidget {
   final MovieDetail detail;
   final Video? episode;
   final Duration? initialPosition;
+  final VoidCallback? onUserPicked;
+  /// Verified backups for silent failover (from the probe race list).
+  final List<StreamSource>? failoverCandidates;
 
   const _SourceCard({
     required this.source,
@@ -2695,6 +2773,8 @@ class _SourceCard extends StatefulWidget {
     required this.detail,
     this.episode,
     this.initialPosition,
+    this.onUserPicked,
+    this.failoverCandidates,
   });
 
   @override
@@ -2782,6 +2862,7 @@ class _SourceCardState extends State<_SourceCard> {
             borderRadius: BorderRadius.circular(12),
             onTap: () {
               HapticFeedback.lightImpact();
+              widget.onUserPicked?.call(); // mark user choice — stop autoplay race
 
               if (s.externalUrl != null && s.externalUrl!.isNotEmpty) {
                 if (s.externalUrl!.startsWith('stremio://')) {
@@ -2829,6 +2910,7 @@ class _SourceCardState extends State<_SourceCard> {
                     detail: widget.detail,
                     episode: widget.episode,
                     initialPosition: widget.initialPosition,
+                    failoverSources: widget.failoverCandidates,
                   ),
                 ),
               );

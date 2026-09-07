@@ -90,6 +90,8 @@ class _AnimeHeroSpotlightState extends State<AnimeHeroSpotlight> {
                         imageUrl: anime.backdropUrl,
                         fit: BoxFit.cover,
                         alignment: const Alignment(0, -0.15),
+                        memCacheWidth: 1280,
+                        maxWidthDiskCache: 1280,
                         placeholder: (_, __) => Container(
                           color: const Color(0xFF131522),
                         ),

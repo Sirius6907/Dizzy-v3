@@ -3,7 +3,7 @@ import '../../models/stream/stream_model.dart';
 import '../../services/anime_arabic/anime_arabic_extractor.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/theme/app_theme_service.dart';
-import '../../services/stream/stream_health_checker.dart';
+import '../../services/stream/stream_probe_race.dart';
 import '../player/player_screen.dart';
 
 class AnimeArabicStreamSheet extends StatefulWidget {
@@ -73,24 +73,37 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
         episodeNumber: widget.episode.number,
       );
 
-      final aliveSources = <StreamSource>[];
-      for (final s in sources) {
-        if (await StreamHealthChecker.isAlive(s)) {
-          aliveSources.add(s);
-        }
-      }
+      // Parallel probe race: all sources health-checked concurrently;
+      // first verified source triggers autoplay instantly.
+      final race = StreamProbeRace(
+        onVerifiedBatch: (batch) {
+          if (mounted) {
+            setState(() => _allSources.addAll(batch));
+          }
+        },
+      );
 
+      race.winner.then((src) {
+        if (!mounted || src == null) return;
+        if (widget.autoPlay) {
+          _playSource(src);
+        }
+      });
+
+      for (final s in sources) {
+        race.offer(s);
+      }
+      race.close(); // all sources offered at once — settle the race
+
+      await race.winner; // wait for probes to finish for UI settle
+
+      if (!mounted) return;
       setState(() {
-        _allSources.addAll(aliveSources);
         _isScraping = false;
         if (_allSources.isEmpty && sources.isNotEmpty) {
           _error = 'All scraped streams failed pre-stream health verification.';
         }
       });
-
-      if (widget.autoPlay && _allSources.isNotEmpty) {
-        _playSource(_allSources.first);
-      }
     } catch (e) {
       if (mounted) {
         setState(() {

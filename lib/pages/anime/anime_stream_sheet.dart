@@ -8,7 +8,7 @@ import '../../services/theme/app_theme_service.dart';
 import '../player/player_screen.dart';
 
 import '../../services/anime/extractors/anidb_extractor.dart';
-import '../../services/stream/stream_health_checker.dart';
+import '../../services/stream/stream_probe_race.dart';
 
 class AnimeStreamSheet extends StatefulWidget {
   final AnimeMedia anime;
@@ -60,30 +60,34 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
       _error = null;
     });
 
+    // Parallel probe race: every source is health-checked concurrently.
+    // The FIRST source verified alive triggers autoplay instantly —
+    // a dead source can no longer block the queue (old serial await
+    // added up to 3s of delay per dead source).
+    final race = StreamProbeRace(
+      onVerifiedBatch: (batch) {
+        if (mounted) {
+          setState(() => _allSources.addAll(batch));
+        }
+      },
+    );
+
+    race.winner.then((src) {
+      if (!mounted || src == null) return;
+      if (widget.autoPlay && !_hasAutoPlayed) {
+        _hasAutoPlayed = true;
+        _playSource(src);
+      }
+    });
+
     _streamSub = _scraper
         .scrapeStreamsStream(
       anime: widget.anime,
       episodeNumber: widget.episodeNumber,
     )
         .listen(
-      (source) async {
-        // Pre-stream health probe: filters out dead/403/500 streams and accepts cookies
-        final alive = await StreamHealthChecker.isAlive(source);
-        if (!alive) {
-          debugPrint('[AnimeStreamSheet] Pre-stream probe discarded dead/unreachable source: ${source.name} (${source.url})');
-          return;
-        }
-
-        if (mounted) {
-          setState(() {
-            _allSources.add(source);
-          });
-
-          if (widget.autoPlay && !_hasAutoPlayed && _allSources.isNotEmpty) {
-            _hasAutoPlayed = true;
-            _playSource(_allSources.first);
-          }
-        }
+      (source) {
+        race.offer(source);
       },
       onError: (e) {
         if (mounted) {
@@ -94,6 +98,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
         }
       },
       onDone: () {
+        race.close();
         if (mounted) {
           setState(() {
             _isScraping = false;

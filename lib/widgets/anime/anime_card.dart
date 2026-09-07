@@ -172,6 +172,9 @@ class _AnimePosterFrame extends StatelessWidget {
                 imageUrl: posterUrl,
                 fit: BoxFit.cover,
                 filterQuality: FilterQuality.medium,
+                memCacheWidth: 500,
+                memCacheHeight: 750,
+                maxWidthDiskCache: 500,
                 placeholder: (context, url) => const PosterSkeleton(),
                 errorWidget: (context, url, error) => const MissingPoster(),
               )

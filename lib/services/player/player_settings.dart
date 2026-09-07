@@ -145,6 +145,31 @@ abstract final class PlayerSettings {
   static final ValueNotifier<bool> autoResyncOnStall = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> hardwareAudioClock = ValueNotifier<bool>(true);
 
+  // Instant-Play UX Keys
+  static const _keyAutoplayFirstVerified = 'player_autoplay_first_verified';
+  static const _keyNextEpisodeAutoPlay = 'player_next_episode_autoplay';
+  static const _keyAutoFailover = 'player_auto_failover';
+  static const _keySkipIntroHeuristics = 'player_skip_intro_heuristics';
+
+  /// Auto-play the first verified playable source the moment it's found
+  /// (movies / TV). Default: on.
+  static final ValueNotifier<bool> autoplayFirstVerified =
+      ValueNotifier<bool>(true);
+
+  /// Auto-play the next episode (binge) when the current one completes,
+  /// using the prefetched source. Default: on.
+  static final ValueNotifier<bool> nextEpisodeAutoPlay =
+      ValueNotifier<bool>(true);
+
+  /// Silently switch to the best backup source when the current one
+  /// stalls or dies mid-play. Default: on.
+  static final ValueNotifier<bool> autoFailover = ValueNotifier<bool>(true);
+
+  /// Show skip-intro/credits buttons, using IntroDB data plus smart
+  /// window heuristics when data is missing. Default: on.
+  static final ValueNotifier<bool> skipIntroHeuristics =
+      ValueNotifier<bool>(true);
+
   /// Android Direct Surface (SurfaceProducer / SurfaceView) toggle. Default: false (off).
   static final ValueNotifier<bool> enableSurfaceProducer = ValueNotifier<bool>(false);
 
@@ -238,6 +263,14 @@ abstract final class PlayerSettings {
     subAssOverride.value = prefs.getString(_keySubAssOverride) ?? 'no';
     useLibass.value = prefs.getBool(_keyUseLibass) ?? false;
     enableSurfaceProducer.value = prefs.getBool(_keyEnableSurfaceProducer) ?? false;
+
+    // Instant-Play UX
+    autoplayFirstVerified.value =
+        prefs.getBool(_keyAutoplayFirstVerified) ?? true;
+    nextEpisodeAutoPlay.value =
+        prefs.getBool(_keyNextEpisodeAutoPlay) ?? true;
+    autoFailover.value = prefs.getBool(_keyAutoFailover) ?? true;
+    skipIntroHeuristics.value = prefs.getBool(_keySkipIntroHeuristics) ?? true;
 
     // Extract bundled font for libass fallback
     await _extractLibassFontFallback();
@@ -388,11 +421,14 @@ abstract final class PlayerSettings {
 
   /// Returns a configured [PlayerConfiguration] for constructing a media_kit [Player].
   static PlayerConfiguration getMediaKitPlayerConfiguration() {
+    // Platform-aware demuxer budget: phones share RAM with the OS — keep
+    // buffers lean (64MB); desktops can afford 150MB for smoother seeks.
+    final bufferBytes = Platform.isAndroid || Platform.isIOS ? 64 << 20 : 150 << 20;
     return PlayerConfiguration(
       libass: useLibass.value,
       libassAndroidFont: 'assets/fonts/Poppins-Medium.ttf',
       libassAndroidFontName: 'Poppins',
-      bufferSize: 157286400, // 150MB — sensible default
+      bufferSize: bufferBytes,
       logLevel: MPVLogLevel.warn,
     );
   }
@@ -416,6 +452,40 @@ abstract final class PlayerSettings {
     } catch (e) {
       debugPrint('[PlayerSettings] applyStreamContinuity warning: $e');
     }
+  }
+
+  // ── Cached VRAM total (queried once; Windows: nvidia-smi) ─────────────
+  static int? _totalVramMb;
+  static bool _vramQueried = false;
+
+  /// Total dedicated GPU memory in MB, or null if unknown.
+  /// Used to block Anime4K on low-VRAM GPUs (≤ 4 GB) — shader upscaling
+  /// on a full 4GB card spilled into system RAM and crashed the app.
+  static Future<int?> _queryTotalVramMb() async {
+    if (_vramQueried) return _totalVramMb;
+    _vramQueried = true;
+    if (!Platform.isWindows) return _totalVramMb; // only Windows queries
+    try {
+      final r = await Process.run('nvidia-smi', [
+        '--query-gpu=memory.total',
+        '--format=csv,noheader,nounits',
+      ]);
+      if (r.exitCode == 0) {
+        final s = (r.stdout as String).trim();
+        final first = s.split(RegExp(r'[\n,]')).first.trim();
+        _totalVramMb = int.tryParse(first);
+      }
+    } catch (_) {}
+    return _totalVramMb;
+  }
+
+  /// Anime4K needs ~1-2GB of spare VRAM on top of decode buffers. On
+  /// GPUs with ≤ 4GB dedicated VRAM it spills into system RAM (WDDM
+  /// shared memory) — observed 10GB+ RAM spikes and context-lost
+  /// crashes. Block it there; software fallback looks fine.
+  static Future<bool> _isLowVramForAnime4k() async {
+    final total = await _queryTotalVramMb();
+    return total != null && total <= 4096;
   }
 
   /// Pre-Open Properties: Demuxer, hardware decoder, cache buffer, and FFmpeg flags
@@ -450,7 +520,11 @@ abstract final class PlayerSettings {
       await platform.setProperty('video-sync', 'audio');
 
       // 5. Anime4K GLSL Shader Upscaling Pipeline (Applied statically before playback)
-      if (anime4kPreset.value != Anime4KPreset.off && _extractedAnime4kDir != null) {
+      // LOW-VRAM GUARD: shader chains on ≤4GB GPUs spill VRAM into system
+      // RAM (WDDM) → 10GB RAM spike → EGL context-lost crash. Skip them.
+      final anime4kAllowed =
+          anime4kPreset.value != Anime4KPreset.off && !await _isLowVramForAnime4k();
+      if (anime4kAllowed && _extractedAnime4kDir != null) {
         final files = anime4kPreset.value.shaderFiles;
         if (files.isNotEmpty) {
           final separator = Platform.isWindows ? ';' : ':';
@@ -471,13 +545,18 @@ abstract final class PlayerSettings {
       // gaps while downloading pieces. MPV needs generous cache, timeouts, and
       // reconnect to handle this gracefully instead of dying on any stall.
       // ──────────────────────────────────────────────────────────────────────
+      // Platform-aware mobile flag (used by torrent + HTTP blocks below).
+      final isMobile = Platform.isAndroid || Platform.isIOS;
+      // ──────────────────────────────────────────────────────────────────────
       if (isTorrent) {
         await platform.setProperty('cache', 'yes');
-        await platform.setProperty('cache-secs', '30');
-        await platform.setProperty('demuxer-readahead-secs', '30');
-        await platform.setProperty('demuxer-max-bytes', '157286400');   // 150MB
-        await platform.setProperty('demuxer-max-back-bytes', '52428800'); // 50MB back buffer
-        await platform.setProperty('network-timeout', '60');            // 60s — torrents need patience
+        await platform.setProperty('cache-secs', isMobile ? '20' : '30');
+        await platform.setProperty('demuxer-readahead-secs', isMobile ? '20' : '30');
+        await platform.setProperty('demuxer-max-bytes',
+            isMobile ? '104857600' : '157286400'); // 100MB mobile / 150MB desktop
+        await platform.setProperty('demuxer-max-back-bytes',
+            isMobile ? '31457280' : '52428800'); // 30MB mobile / 50MB desktop
+        await platform.setProperty('network-timeout', '60'); // 60s — torrents need patience
         await platform.setProperty('stream-lavf-o',
           'reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=10',
         );
@@ -485,13 +564,16 @@ abstract final class PlayerSettings {
       }
 
       // ──────────────────────────────────────────────────────────────────────
-      // HTTP / HLS / CDN STREAMS: Standard buffering and probing
+      // HTTP / HLS / CDN STREAMS: Standard buffering and probing.
+      // Platform-aware: Android/iOS lean (phone RAM), desktop standard.
       // ──────────────────────────────────────────────────────────────────────
       await platform.setProperty('cache', 'yes');
-      await platform.setProperty('demuxer-max-bytes', '157286400');   // 150MB
-      await platform.setProperty('demuxer-max-back-bytes', '52428800'); // 50MB back buffer
-      await platform.setProperty('cache-secs', '15');
-      await platform.setProperty('demuxer-readahead-secs', '15');
+      await platform.setProperty('demuxer-max-bytes',
+          isMobile ? '67108864' : '157286400'); // 64MB mobile / 150MB desktop
+      await platform.setProperty('demuxer-max-back-bytes',
+          isMobile ? '20971520' : '52428800'); // 20MB mobile / 50MB desktop
+      await platform.setProperty('cache-secs', isMobile ? '10' : '15');
+      await platform.setProperty('demuxer-readahead-secs', isMobile ? '10' : '15');
       await platform.setProperty('network-timeout', '30');
 
       // Network Stream Continuity (Live IPTV vs VOD separation)
@@ -1104,6 +1186,34 @@ abstract final class PlayerSettings {
     anime4kPreset.value = Anime4KPreset.off;
     enableSurfaceProducer.value = false;
     await resetSubtitleDefaults();
+  }
+
+  static Future<void> setAutoplayFirstVerified(bool val) async {
+    autoplayFirstVerified.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoplayFirstVerified, val);
+    _notify();
+  }
+
+  static Future<void> setNextEpisodeAutoPlay(bool val) async {
+    nextEpisodeAutoPlay.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNextEpisodeAutoPlay, val);
+    _notify();
+  }
+
+  static Future<void> setAutoFailover(bool val) async {
+    autoFailover.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoFailover, val);
+    _notify();
+  }
+
+  static Future<void> setSkipIntroHeuristics(bool val) async {
+    skipIntroHeuristics.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keySkipIntroHeuristics, val);
+    _notify();
   }
 
   static void _notify() {

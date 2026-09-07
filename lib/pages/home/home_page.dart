@@ -1120,6 +1120,8 @@ class _HeroSlide extends StatelessWidget {
             fit: BoxFit.cover,
             alignment: const Alignment(0, -0.15),
             filterQuality: FilterQuality.medium,
+            memCacheWidth: 1280,
+            maxWidthDiskCache: 1280,
             fadeInDuration: const Duration(milliseconds: 300),
             placeholder: (_, __) => const ColoredBox(color: Color(0xFF151822)),
             errorWidget: (_, __, ___) =>
@@ -1454,6 +1456,8 @@ class _HeroTitle extends StatelessWidget {
           fit: BoxFit.contain,
           alignment: Alignment.bottomLeft,
           filterQuality: FilterQuality.medium,
+          memCacheWidth: 800,
+          maxWidthDiskCache: 800,
           fadeInDuration: const Duration(milliseconds: 250),
           placeholder: (_, __) => titleText,
           errorWidget: (_, __, ___) => titleText,

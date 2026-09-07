@@ -591,6 +591,7 @@ class ContinueWatchingService {
                 detail: movieDetail,
                 episode: video,
                 initialPosition: Duration(seconds: item.positionSeconds),
+                failoverSources: sources.length > 1 ? sources : null,
               ),
             ),
           );
@@ -744,6 +745,7 @@ class ContinueWatchingService {
               detail: detail,
               episode: video,
               initialPosition: Duration(seconds: item.positionSeconds),
+              failoverSources: animeSources.length > 1 ? animeSources : null,
             ),
           ),
         );
@@ -896,6 +898,7 @@ class ContinueWatchingService {
             detail: movieDetail,
             episode: video,
             initialPosition: Duration(seconds: item.positionSeconds),
+            failoverSources: candidateSources.length > 1 ? candidateSources : null,
           ),
         ),
       );

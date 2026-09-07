@@ -51,6 +51,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // NOTE: R8 minify intentionally OFF — Java layer is tiny (~2MB;
+            // APK is dominated by native .so + Dart AOT which R8 can't shrink)
+            // and 45+ plugins make reflection-crash risk >> 2MB savings.
+            // Size/ABI optimization is handled by split-per-abi builds.
         }
     }
 
