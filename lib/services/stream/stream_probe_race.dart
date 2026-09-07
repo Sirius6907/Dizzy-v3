@@ -23,14 +23,12 @@ class StreamProbeRace {
   /// How long to wait before flushing a verified batch to the UI.
   final Duration batchDelay;
 
-  /// Max simultaneous health probes. Unbounded parallelism (500+ sockets)
-  /// once RAM-bombed the app to 12GB and killed the GPU context — keep
-  /// this small; probes are lightweight HEAD requests.
-  static const int maxConcurrentProbes = 8;
+  /// Max simultaneous health probes. Bounded to prevent socket floods.
+  static const int maxConcurrentProbes = 12;
 
   /// Probes queued past [maxConcurrentProbes] when the queue already holds
-  /// this many are DROPPED (source count is unbounded on 45+ scrapers).
-  static const int maxQueueDepth = 60;
+  /// this many are DROPPED.
+  static const int maxQueueDepth = 120;
 
   final Completer<StreamSource?> _winnerCompleter = Completer<StreamSource?>();
   final List<StreamSource> verifiedSources = [];

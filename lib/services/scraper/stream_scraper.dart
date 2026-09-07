@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../models/stream/stream_model.dart';
 import '../p2p/p2p_settings_service.dart';
-import '../stream/stream_health_checker.dart';
 
 abstract class StreamScraper {
   String get name;
@@ -85,12 +84,11 @@ class ScraperManager {
     debugPrint('[ScraperManager] Scraping across ${activeScrapers.length} active scrapers (${activeScrapers.map((s) => s.runtimeType).join(", ")}) for "$title" (P2P enabled: $p2pAllowed)...');
 
     int pendingScrapers = activeScrapers.length;
-    int pendingHealthChecks = 0;
     final seenHashes = <String>{};
     final seenUrls = <String>{};
 
     void checkClose() {
-      if (pendingScrapers == 0 && pendingHealthChecks == 0 && !controller.isClosed) {
+      if (pendingScrapers == 0 && !controller.isClosed) {
         controller.close();
       }
     }
@@ -129,18 +127,7 @@ class ScraperManager {
           if (rawUrl != null && rawUrl.startsWith('http')) {
             if (seenUrls.contains(rawUrl)) return;
             seenUrls.add(rawUrl);
-
-            pendingHealthChecks++;
-            StreamHealthChecker.isAlive(source).then((alive) {
-              if (alive && !controller.isClosed) {
-                controller.add(source);
-              } else {
-                debugPrint('[ScraperManager] Discarded dead/unreachable stream: ${source.title} (${source.url})');
-              }
-            }).catchError((_) {}).whenComplete(() {
-              pendingHealthChecks--;
-              checkClose();
-            });
+            controller.add(source);
           } else {
             controller.add(source);
           }

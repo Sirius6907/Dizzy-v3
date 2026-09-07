@@ -60,7 +60,18 @@ class StreamHealthChecker {
     return cookieMap.entries.map((e) => '${e.key}=${e.value}').join('; ');
   }
 
-  /// Probes the stream URL using a zero-memory HEAD request with Accept-Cookies handling.
+  static bool _isKnownMediaUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('.m3u8') ||
+        lower.contains('.mp4') ||
+        lower.contains('.mkv') ||
+        lower.contains('.ts') ||
+        lower.contains('/hls/') ||
+        lower.contains('master.m3u8');
+  }
+
+  /// Probes the stream URL using a zero-memory HEAD request with Accept-Cookies handling,
+  /// with automatic fallback to GET when HEAD is not supported by the CDN/origin.
   static Future<bool> _probeUrl(
     String url,
     Map<String, String> headers, [
@@ -75,11 +86,11 @@ class StreamHealthChecker {
     HttpClient? client;
     try {
       client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 3)
+        ..connectionTimeout = const Duration(seconds: 4)
         ..badCertificateCallback = ((_, __, ___) => true);
 
       // 1. Send fast HEAD request (0 MB downloaded!)
-      final req = await client.openUrl('HEAD', uri).timeout(const Duration(seconds: 3));
+      final req = await client.openUrl('HEAD', uri).timeout(const Duration(seconds: 4));
       req.followRedirects = false;
 
       headers.forEach((k, v) {
@@ -92,7 +103,7 @@ class StreamHealthChecker {
       req.headers.set('User-Agent', headers['User-Agent'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
       req.headers.set('Accept', '*/*');
 
-      final resp = await req.close().timeout(const Duration(seconds: 3));
+      final resp = await req.close().timeout(const Duration(seconds: 4));
       final code = resp.statusCode;
 
       // Capture Set-Cookie headers
@@ -120,26 +131,39 @@ class StreamHealthChecker {
       if (code == 200 || code == 206) {
         final ct = (resp.headers.contentType?.mimeType ?? '').toLowerCase();
         final isDead = ct.contains('text/html') || ct.contains('application/json') || ct.contains('text/xml');
-        if (!isDead) return true;
+        if (!isDead || _isKnownMediaUrl(url)) return true;
         return false;
       }
 
-      // If HEAD is blocked (405 Method Not Allowed or 403), fallback to lightweight 64-byte GET
-      if (code == 405 || code == 403 || code == 400) {
-        final getReq = await client.openUrl('GET', uri).timeout(const Duration(seconds: 3));
-        getReq.followRedirects = false;
-        headers.forEach((k, v) {
-          if (v.isNotEmpty) {
-            try { getReq.headers.set(k, v); } catch (_) {}
-          }
-        });
-        getReq.headers.set('Range', 'bytes=0-64');
-        final getResp = await getReq.close().timeout(const Duration(seconds: 3));
-        final getCode = getResp.statusCode;
-        if (getCode == 200 || getCode == 206) {
-          await getResp.drain();
-          return true;
+      // 2. If HEAD returned 4xx/5xx or unhandled status, fallback to lightweight GET.
+      // Many CDNs (Cloudflare, Akamai, video proxies) reject HEAD requests or require
+      // standard GET requests with redirect following.
+      final getReq = await client.openUrl('GET', uri).timeout(const Duration(seconds: 4));
+      getReq.followRedirects = true;
+      getReq.maxRedirects = 4;
+      headers.forEach((k, v) {
+        if (v.isNotEmpty && k.toLowerCase() != 'range' && k.toLowerCase() != 'content-length') {
+          try { getReq.headers.set(k, v); } catch (_) {}
         }
+      });
+      getReq.headers.set('User-Agent', headers['User-Agent'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      getReq.headers.set('Accept', '*/*');
+      getReq.headers.set('Range', 'bytes=0-512');
+
+      final getResp = await getReq.close().timeout(const Duration(seconds: 4));
+      final getCode = getResp.statusCode;
+
+      for (final c in getResp.cookies) {
+        cookiesCaptured?.add('${c.name}=${c.value}');
+      }
+
+      // 200 (OK), 206 (Partial), 416 (Range Not Satisfiable = endpoint is active video server)
+      if (getCode == 200 || getCode == 206 || getCode == 416) {
+        final ct = (getResp.headers.contentType?.mimeType ?? '').toLowerCase();
+        final isDead = (ct.contains('text/html') || ct.contains('application/json') || ct.contains('text/xml')) &&
+            !_isKnownMediaUrl(url);
+        await getResp.drain();
+        return !isDead;
       }
 
       return false;

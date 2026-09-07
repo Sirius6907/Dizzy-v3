@@ -188,6 +188,9 @@ class _WatchScreenState extends State<WatchScreen>
         if (embeddedHindi.isNotEmpty) _flushPendingSources();
       } else {
         _pendingSources.addAll(embeddedAll);
+        for (final s in embeddedAll) {
+          _autoplayRace?.offerEmbedded(s);
+        }
         _flushPendingSources();
       }
     }
