@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/player/player_settings.dart';
+import '../../services/stream/last_good_source_store.dart';
 
 class VideoSettingsPage extends StatefulWidget {
   const VideoSettingsPage({super.key});
@@ -349,9 +350,188 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               ),
 
               const SizedBox(height: 32),
+
+              // ── Playback Intelligence (Instant-Play UX) ──────────────────
+              _buildPlaybackIntelligenceSection(palette),
+
+              const SizedBox(height: 32),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Autoplay / binge / failover / skip-intro toggles (Phase 4.3).
+  Widget _buildPlaybackIntelligenceSection(AppThemePalette palette) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.bolt_rounded, size: 20, color: palette.primaryColor),
+            const SizedBox(width: 8),
+            const Text(
+              'Playback Intelligence',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Instant-play UX engine: parallel source racing, binge autoplay, silent failover and skip helpers.',
+          style: TextStyle(
+            fontSize: 12.5,
+            color: Color(0x8CFFFFFF),
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 14),
+        ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.autoplayFirstVerified,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.play_circle_fill_rounded,
+            title: 'Instant Autoplay',
+            subtitle:
+                'Automatically play the first verified source — no manual picking. Tap any source anytime to override.',
+            value: val,
+            onChanged: PlayerSettings.setAutoplayFirstVerified,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.nextEpisodeAutoPlay,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.skip_next_rounded,
+            title: 'Next-Episode Autoplay',
+            subtitle:
+                'Prefetch the next episode while you watch; 5s countdown then auto-continue (Netflix-style binge).',
+            value: val,
+            onChanged: PlayerSettings.setNextEpisodeAutoPlay,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.autoFailover,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.swap_horiz_rounded,
+            title: 'Silent Failover',
+            subtitle:
+                'If the stream stalls or dies mid-play, automatically switch to the best backup source at the same position.',
+            value: val,
+            onChanged: PlayerSettings.setAutoFailover,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.skipIntroHeuristics,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.fast_forward_rounded,
+            title: 'Skip Intro (Smart)',
+            subtitle:
+                'Skip-intro buttons using IntroDB data, with smart window heuristics when data is missing. Credits skip jumps to next episode.',
+            value: val,
+            onChanged: PlayerSettings.setSkipIntroHeuristics,
+          ),
+        ),
+        const SizedBox(height: 14),
+        // Clear learned last-good sources
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              await LastGoodSourceStore.clear();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Learned source history cleared'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.cleaning_services_rounded, size: 18),
+            label: const Text('Clear learned source history'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white70,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIntelTile({
+    required AppThemePalette palette,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1017).withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: palette.primaryColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 20, color: palette.primaryColor),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.5),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Switch.adaptive(
+            value: value,
+            activeColor: palette.primaryColor,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

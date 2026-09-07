@@ -96,6 +96,40 @@ class SkipSegmentsService {
       debugPrint('[SkipSegmentsService] Error fetching skip timestamps: $e');
     }
 
-    return null;
+    // ── Heuristic fallback (Phase 4.1) ────────────────────────────────────
+    // IntroDB miss/network-fail → conservatively synthesize an intro window.
+    // Users can skip manually; never fabricate credits data.
+    return _heuristicIntro(mediaType, season, episode, durationMs);
+  }
+
+  /// Conservative intro-window heuristic when no API data exists.
+  /// Ep 1: 15–110s (cold open + title card). Later eps: 0–90s (recap/OP).
+  /// TV without episode info: standard 60–90s. Movies: no guess (too risky).
+  MediaSkipData? _heuristicIntro(
+      String mediaType, int? season, int? episode, int? durationMs) {
+    // Heuristic only for episodic content; skip movies entirely.
+    if (mediaType != 'tv') return null;
+
+    final int startMs;
+    final int endMs;
+    if (season != null || episode != null) {
+      final ep = episode ?? 1;
+      if (ep <= 1) {
+        startMs = 15000;
+        endMs = 110000;
+      } else {
+        startMs = 0;
+        endMs = 90000;
+      }
+    } else {
+      startMs = 60000;
+      endMs = 90000;
+    }
+
+    debugPrint('[SkipSegmentsService] Using heuristic intro window '
+        '${startMs ~/ 1000}s–${endMs ~/ 1000}s');
+    return MediaSkipData(segments: [
+      MediaSkipSegment(type: 'intro', startMs: startMs, endMs: endMs),
+    ]);
   }
 }

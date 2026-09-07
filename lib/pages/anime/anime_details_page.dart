@@ -388,6 +388,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
               imageUrl: bgUrl,
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
+              memCacheWidth: 1280,
+              maxWidthDiskCache: 1280,
               errorWidget: (_, __, ___) => ColoredBox(color: _Palette.surface),
             ),
             // Horizontal wash: darkens where the title sits
@@ -463,6 +465,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                       child: CachedNetworkImage(
                         imageUrl: posterUrl,
                         fit: BoxFit.cover,
+                        memCacheWidth: 600,
+                        maxWidthDiskCache: 600,
                         errorWidget: (_, __, ___) =>
                             ColoredBox(color: _Palette.surface),
                       ),
@@ -530,6 +534,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     imageUrl: posterUrl,
                     width: 110,
                     fit: BoxFit.cover,
+                    memCacheWidth: 220,
+                    maxWidthDiskCache: 220,
                   ),
                 ),
               ),
@@ -916,6 +922,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                 width: 100,
                                 height: 110,
                                 fit: BoxFit.cover,
+                                memCacheWidth: 200,
+                                maxWidthDiskCache: 200,
                                 errorWidget: (_, __, ___) => Container(
                                   width: 100,
                                   height: 110,
@@ -1318,6 +1326,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                   child: CachedNetworkImage(
                                     imageUrl: rel.coverUrl,
                                     fit: BoxFit.cover,
+                                    memCacheWidth: 500,
+                                    memCacheHeight: 750,
+                                    maxWidthDiskCache: 500,
                                     errorWidget: (_, __, ___) => Container(
                                       color: _Palette.surface,
                                       child: const Icon(
@@ -1468,6 +1479,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                     child: CachedNetworkImage(
                                       imageUrl: rec.coverUrl,
                                       fit: BoxFit.cover,
+                                      memCacheWidth: 500,
+                                      memCacheHeight: 750,
+                                      maxWidthDiskCache: 500,
                                       errorWidget: (_, __, ___) => Container(
                                         color: _Palette.surface,
                                         child: const Icon(

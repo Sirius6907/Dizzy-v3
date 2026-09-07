@@ -216,6 +216,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                     imageUrl: backdropUrl,
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
+                    memCacheWidth: 1280,
+                    maxWidthDiskCache: 1280,
                   ),
                 // Cinematic blur & dark gradients
                 BackdropFilter(
@@ -438,6 +440,9 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
             ? CachedNetworkImage(
                 imageUrl: coverUrl,
                 fit: BoxFit.cover,
+                memCacheWidth: 500,
+                memCacheHeight: 750,
+                maxWidthDiskCache: 500,
                 errorWidget: (_, __, ___) => Container(
                   color: _Palette.surface,
                   child: const Icon(Icons.broken_image_rounded, color: Colors.white24, size: 40),
@@ -796,6 +801,9 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                 CachedNetworkImage(
                   imageUrl: thumb,
                   fit: BoxFit.cover,
+                  memCacheWidth: 500,
+                  memCacheHeight: 750,
+                  maxWidthDiskCache: 500,
                   errorWidget: (_, __, ___) => Container(color: _Palette.surface),
                 ),
               Container(
@@ -931,6 +939,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                                       ? CachedNetworkImage(
                                           imageUrl: item.cover!,
                                           fit: BoxFit.cover,
+                                          memCacheWidth: 260,
+                                          maxWidthDiskCache: 260,
                                           errorWidget: (_, __, ___) =>
                                               const Icon(Icons.movie_rounded, color: Colors.white24),
                                         )

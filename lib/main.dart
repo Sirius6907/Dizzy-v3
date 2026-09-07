@@ -42,6 +42,10 @@ void main() async {
     await windowManager.ensureInitialized();
     await WindowService.instance.initialize();
   }
+  // Cap the in-memory image cache: 500 entries / 300 MB decoded bitmaps max.
+  // Posters are decoded at capped sizes (memCacheWidth) so RAM stays bounded.
+  PaintingBinding.instance.imageCache.maximumSize = 500;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 300 << 20;
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await EnvService.initialize();
   await PlayerSettings.initialize();

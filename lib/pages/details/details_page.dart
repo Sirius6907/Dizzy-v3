@@ -606,7 +606,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CachedNetworkImage(imageUrl: bgUrl, fit: BoxFit.cover, alignment: Alignment.topCenter),
+            CachedNetworkImage(imageUrl: bgUrl, fit: BoxFit.cover, alignment: Alignment.topCenter, memCacheWidth: 1280, maxWidthDiskCache: 1280),
             // horizontal wash — darkens where the title/synopsis sit, leaves
             // the rest of the image breathing room instead of blacking it all out
             const DecoratedBox(
@@ -684,6 +684,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                       child: CachedNetworkImage(
                         imageUrl: posterUrl,
                         fit: BoxFit.cover,
+                        memCacheWidth: 600,
+                        maxWidthDiskCache: 600,
                         errorWidget: (_, __, ___) => const ColoredBox(color: _Palette.surface),
                       ),
                     ),
@@ -737,7 +739,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(imageUrl: posterUrl, width: 110, fit: BoxFit.cover),
+                  child: CachedNetworkImage(imageUrl: posterUrl, width: 110, fit: BoxFit.cover, memCacheWidth: 220, maxWidthDiskCache: 220),
                 ),
               ),
             const SizedBox(width: _Space.md),
@@ -777,6 +779,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
           imageUrl: meta.logo!,
           alignment: Alignment.bottomLeft,
           fit: BoxFit.contain,
+          memCacheWidth: 800,
+          maxWidthDiskCache: 800,
           errorWidget: (_, __, ___) => _buildTextTitle(meta.name, isDesktop),
         ),
       );
@@ -1408,7 +1412,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                             child: AspectRatio(
                               aspectRatio: 2 / 3,
                               child: item.poster != null
-                                  ? CachedNetworkImage(imageUrl: item.poster!, fit: BoxFit.cover)
+                                  ? CachedNetworkImage(imageUrl: item.poster!, fit: BoxFit.cover, memCacheWidth: 500, memCacheHeight: 750, maxWidthDiskCache: 500)
                                   : const ColoredBox(color: _Palette.surface),
                             ),
                           ),

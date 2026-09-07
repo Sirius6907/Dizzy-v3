@@ -118,6 +118,8 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                                       ? CachedNetworkImage(
                                           imageUrl: ch.iconUrl!,
                                           fit: BoxFit.contain,
+                                          memCacheWidth: 260,
+                                          maxWidthDiskCache: 260,
                                           placeholder: (_, _) => Center(
                                             child: SizedBox(
                                               width: 24,
