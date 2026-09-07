@@ -19,6 +19,8 @@ import '../../services/addon/addon_manager.dart';
 import '../../services/stream/stream_service.dart';
 import '../../services/stream/stream_probe_race.dart';
 import '../../services/player/player_settings.dart';
+import '../../services/player/dub_mode_service.dart';
+import '../../services/stream/dub_filter.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
 import '../settings/settings_page.dart';
@@ -74,6 +76,10 @@ class _WatchScreenState extends State<WatchScreen>
   final List<StreamSource> _pendingSources = [];
   Timer? _sourceBatchTimer;
   bool _isLoadingSources = true;
+
+  // Dub mode (Hindi): non-hindi sources fallback pool — released only if
+  // zero hindi sources were found (English default play + notice).
+  final List<StreamSource> _nonHindiPool = [];
 
   // Instant autoplay (Phase 1)
   StreamProbeRace? _autoplayRace;
@@ -148,15 +154,8 @@ class _WatchScreenState extends State<WatchScreen>
       final race = StreamProbeRace();
       _autoplayRace = race;
 
-      // Embedded debrid streams are trusted direct links — probe in 0ms.
-      final embedded = widget.selectedEpisode?.streams ?? const <StreamSource>[];
-      if (embedded.isNotEmpty) {
-        final embeddedRace = race; // capture
-        for (final s in embedded) {
-          // Bypass health probe for embedded direct streams.
-          embeddedRace.offerEmbedded(s);
-        }
-      }
+      // Embedded debrid streams are offered further below (after the
+      // dub-mode gate) so Hindi mode only races hindi-tagged links.
 
       race.winner.then((src) {
         if (!mounted || src == null) return;
@@ -169,8 +168,28 @@ class _WatchScreenState extends State<WatchScreen>
 
     // 1. Immediately inject any embedded streams from the video (e.g. Torbox/Debrid direct streams)
     if (widget.selectedEpisode != null && widget.selectedEpisode!.streams.isNotEmpty) {
-      _pendingSources.addAll(widget.selectedEpisode!.streams);
-      _flushPendingSources();
+      // Dub-mode gate: Hindi mode pe embedded debrid links bhi hindi-tagged honi
+      // chahiye (strict same-language playback). Non-hindi embedded links
+      // fallback pool mein jayengi — zero hindi mila to release ho jayengi.
+      final embeddedAll = widget.selectedEpisode!.streams;
+      if (DubModeService.isHindi) {
+        final embeddedHindi = filterByDubMode(embeddedAll,
+            hindi: true, mediaTitle: widget.detail.name);
+        final embeddedOther = embeddedAll
+            .where((s) => !embeddedHindi.contains(s))
+            .toList();
+        _pendingSources.addAll(embeddedHindi);
+        if (embeddedHindi.isNotEmpty) {
+          for (final s in embeddedHindi) {
+            _autoplayRace?.offerEmbedded(s);
+          }
+        }
+        _nonHindiPool.addAll(embeddedOther);
+        if (embeddedHindi.isNotEmpty) _flushPendingSources();
+      } else {
+        _pendingSources.addAll(embeddedAll);
+        _flushPendingSources();
+      }
     }
 
     try {
@@ -183,6 +202,18 @@ class _WatchScreenState extends State<WatchScreen>
         episode: widget.selectedEpisode?.episode,
       )) {
         if (!mounted) return;
+        // ── Dub-mode gate ────────────────────────────────────────────
+        // Hindi mode ON: sirf hindi-tagged sources UI list aur autoplay
+        // race dono ko jaate hain (health probe bhi sirf unhi pe).
+        // Baaki sources fallback pool mein rakhe jaate hain — agar scrape
+        // complete hone tak ek bhi hindi source nahi mila, to English
+        // default play ke liye release kar diye jaate hain.
+        if (DubModeService.isHindi &&
+            !source.hasAudioLanguage('hindi',
+                mediaTitle: widget.detail.name)) {
+          _nonHindiPool.add(source);
+          continue;
+        }
         _pendingSources.add(source);
         _sourceBatchTimer ??= Timer(
           const Duration(milliseconds: 60),
@@ -194,6 +225,34 @@ class _WatchScreenState extends State<WatchScreen>
     } catch (_) {}
 
     _flushPendingSources();
+
+    // ── Dub-mode English fallback ─────────────────────────────────
+    // Hindi mode ON thi lekin ek bhi hindi source nahi mila — English
+    // default play karo + user ko ek baar notice kar do.
+    if (DubModeService.isHindi && _nonHindiPool.isNotEmpty) {
+      final hindiCount = _sources
+          .where((s) => s.hasAudioLanguage('hindi',
+              mediaTitle: widget.detail.name))
+          .length;
+      if (hindiCount == 0) {
+        for (final s in _nonHindiPool) {
+          _pendingSources.add(s);
+          _autoplayRace?.offer(s);
+        }
+        _flushPendingSources();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Is content ka Hindi dub nahi mila — English (default) play kar raha hoon'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+      _nonHindiPool.clear();
+    }
+
     _autoplayRace?.close();
     if (mounted && _isLoadingSources) {
       setState(() => _isLoadingSources = false);

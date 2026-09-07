@@ -6,6 +6,7 @@ import '../../models/movie/movie_detail.dart';
 import '../../models/movie/video.dart';
 import '../../models/stream/stream_model.dart';
 import '../../services/stream/stream_service.dart';
+import '../../services/player/dub_mode_service.dart';
 import '../../services/anime/anime_scraper_service.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/anime_arabic/anime_arabic_extractor.dart';
@@ -47,6 +48,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
   StreamSubscription<StreamSource>? _streamSub;
   int? _hoveredIndex;
 
+  // Dub mode (Hindi): non-hindi sources held back for English fallback.
+  final List<StreamSource> _nonHindiPool = [];
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +66,7 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
   void _startScraping() {
     setState(() {
       _sources.clear();
+      _nonHindiPool.clear();
       _isLoading = true;
     });
 
@@ -199,6 +204,14 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
     ).listen(
       (source) {
         if (!mounted) return;
+        // Dub-mode gate: Hindi mode ON pe sirf hindi-tagged sources hi
+        // list mein aate hain. Non-hindi sources fallback pool mein —
+        // zero hindi mila to onDone pe English release + banner.
+        if (DubModeService.isHindi &&
+            !source.hasAudioLanguage('hindi', mediaTitle: title)) {
+          _nonHindiPool.add(source);
+          return;
+        }
         setState(() {
           // Deduplicate by URL / infoHash / title
           final exists = _sources.any((s) =>
@@ -214,6 +227,26 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
         if (mounted) setState(() => _isLoading = false);
       },
       onDone: () {
+        if (!mounted) return;
+        // English fallback: zero hindi sources — release + notice.
+        if (DubModeService.isHindi &&
+            _sources.isEmpty &&
+            _nonHindiPool.isNotEmpty) {
+          _sources.addAll(_nonHindiPool);
+          _nonHindiPool.clear();
+          widget.onSourcesLoaded(List.from(_sources));
+          if (mounted) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Is episode ka Hindi dub nahi mila — English sources dikha raha hoon'),
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        }
         if (mounted) {
           setState(() => _isLoading = false);
           widget.onSourcesLoaded(List.from(_sources));
