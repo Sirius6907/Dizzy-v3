@@ -16,6 +16,7 @@ import './services/continue_watching/continue_watching_service.dart';
 import './services/theme/custom_background_service.dart';
 import './services/theme/dock_settings.dart';
 import './services/theme/glass_settings.dart';
+import './services/player/dub_mode_service.dart';
 import './services/audiobook/audiobook_settings.dart';
 import './services/home/home_page_settings.dart';
 import './services/iptv/iptv_controller.dart';
@@ -60,6 +61,7 @@ void main() async {
     DockSettings.initialize(),
     GlassSettings.initialize(),
     HomePageSettings.initialize(),
+    DubModeService.initialize(),
     IptvController.instance.init(),
     IptvSettings.initialize(),
     MangaSettings.initialize(),

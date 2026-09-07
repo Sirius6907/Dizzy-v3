@@ -31,6 +31,7 @@ import '../../services/updater/app_updater_service.dart';
 import '../../widgets/updater/update_dialog.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
+import '../../services/player/dub_mode_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -718,6 +719,65 @@ class _GlassAppBar extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const TvCalendarPage()),
                     );
                   },
+                );
+              },
+            ),
+            // Audio Dub Mode toggle (English / Hindi Dub)
+            ValueListenableBuilder<AudioDubMode>(
+              valueListenable: DubModeService.mode,
+              builder: (context, dubMode, _) {
+                final isHindi = dubMode == AudioDubMode.hindi;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: GestureDetector(
+                    onTap: () => DubModeService.setMode(
+                      isHindi ? AudioDubMode.english : AudioDubMode.hindi,
+                    ),
+                    child: Tooltip(
+                      message: isHindi
+                          ? 'Hindi Dub mode ON — English pe switch karo'
+                          : 'Hindi Dub mode enable karo (Movies & Series)',
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isHindi
+                              ? const Color(0xFFFF9933).withValues(alpha: 0.18)
+                              : Colors.white.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isHindi
+                                ? const Color(0xFFFF9933).withValues(alpha: 0.65)
+                                : Colors.white.withValues(alpha: 0.14),
+                            width: 1.1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              isHindi ? '🇮🇳' : '🌐',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isHindi ? 'HINDI DUB' : 'ENGLISH',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                                color: isHindi
+                                    ? const Color(0xFFFFB366)
+                                    : Colors.white.withValues(alpha: 0.72),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
             ),

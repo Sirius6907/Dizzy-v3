@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../models/stream/stream_model.dart';
 import '../../models/movie/video.dart';
+import '../player/dub_mode_service.dart';
+import 'dub_filter.dart';
 import 'stream_probe_race.dart';
 import 'stream_service.dart';
 
@@ -29,6 +31,10 @@ class NextEpisodeEngine {
   StreamSource? _prefetchedSource;
   Video? _prefetchedEpisode;
   bool _running = false;
+
+  // Dub mode (Hindi): embedded english debrid links held back while the
+  // scrape looks for hindi sources — released only as English fallback.
+  final List<StreamSource> _embeddedFallbackPool = [];
 
   /// The verified playable source for the next episode (null until ready).
   StreamSource? get prefetchedSource => _prefetchedSource;
@@ -125,20 +131,39 @@ class NextEpisodeEngine {
 
     // 1. Trusted embedded streams (debrid direct links) probe in 0ms.
     if (nextEp.streams.isNotEmpty) {
-      final race = StreamProbeRace(
-        probeFn: (_) async => true, // embedded debrid streams are direct
-        onVerifiedBatch: null,
-      );
-      _race = race;
-      for (final s in nextEp.streams) {
-        race.offer(s);
+      // Dub-mode gate: Hindi mode pe next episode ka embedded stream bhi
+      // hindi-tagged hona chahiye. Non-hindi embedded fallback pool mein.
+      final isHindiMode = DubModeService.isHindi;
+      final embeddedHindi = isHindiMode
+          ? filterByDubMode(nextEp.streams, hindi: true, mediaTitle: title)
+          : nextEp.streams;
+      final embeddedOther = isHindiMode
+          ? nextEp.streams.where((s) => !embeddedHindi.contains(s)).toList()
+          : const <StreamSource>[];
+
+      if (embeddedHindi.isNotEmpty) {
+        final race = StreamProbeRace(
+          probeFn: (_) async => true, // embedded debrid streams are direct
+          onVerifiedBatch: null,
+        );
+        _race = race;
+        for (final s in embeddedHindi) {
+          race.offer(s);
+        }
+        race.close();
+        _prefetchedSource = await race.winner;
+        if (_prefetchedSource != null) {
+          debugPrint('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
+          _running = false;
+          return;
+        }
       }
-      race.close();
-      _prefetchedSource = await race.winner;
-      if (_prefetchedSource != null) {
-        debugPrint('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
-        _running = false;
-        return;
+
+      // Hindi mode + zero hindi embedded → remember as fallback pool; the
+      // scrape below may still find hindi sources. Embedded English links
+      // are only raced after scrape confirms zero hindi overall.
+      if (embeddedOther.isNotEmpty) {
+        _embeddedFallbackPool.addAll(embeddedOther);
       }
     }
 
@@ -147,6 +172,9 @@ class NextEpisodeEngine {
     _race = race;
 
     final winnerFuture = race.winner;
+    final nonHindiPool = <StreamSource>[];
+    final embeddedFallback = List<StreamSource>.from(_embeddedFallbackPool);
+    _embeddedFallbackPool.clear();
 
     _scrapeSub = StreamService.fetchStreams(
       type: type,
@@ -156,11 +184,35 @@ class NextEpisodeEngine {
       season: nextEp.season,
       episode: nextEp.episode,
     ).listen(
-      (source) => race.offer(source),
+      (source) {
+        // Dub-mode gate: next-episode autoplay must stay in the selected
+        // language. Non-hindi sources wait in the fallback pool.
+        if (DubModeService.isHindi &&
+            !source.hasAudioLanguage('hindi', mediaTitle: title)) {
+          nonHindiPool.add(source);
+          return;
+        }
+        race.offer(source);
+      },
       onError: (Object e) {
         debugPrint('[NextEpisodeEngine] Scrape error: $e');
       },
-      onDone: () => race.close(),
+      onDone: () {
+        // English fallback: zero hindi found → release non-hindi sources
+        // (incl. embedded english debrid links) so the winner is still a
+        // healthy (english) source.
+        if (DubModeService.isHindi &&
+            race.verifiedSources.isEmpty &&
+            (nonHindiPool.isNotEmpty || embeddedFallback.isNotEmpty)) {
+          for (final s in nonHindiPool) {
+            race.offer(s);
+          }
+          for (final s in embeddedFallback) {
+            race.offerEmbedded(s);
+          }
+        }
+        race.close();
+      },
     );
 
     _prefetchedSource = await winnerFuture;
@@ -184,5 +236,6 @@ class NextEpisodeEngine {
     _race = null;
     _prefetchedSource = null;
     _prefetchedEpisode = null;
+    _embeddedFallbackPool.clear();
   }
 }
