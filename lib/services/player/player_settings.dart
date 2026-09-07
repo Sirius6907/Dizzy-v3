@@ -581,14 +581,16 @@ abstract final class PlayerSettings {
       // Data Saver (v1.1.8): hard-cap the network buffers on mobile-data
       // constrained users — 24MB forward + 8MB readahead ≈ 60-70% less
       // buffered download vs the lean mobile profile.
+      // Slow-net resilience: forward cache raised so fluctuating connections
+      // survive 15-20s throughput gaps without the spinner freezing playback.
       const mb = 1024 * 1024;
       final dsMax = '${demuxerMaxBytesMB * mb}';
       final dsBack = '${(demuxerMaxBytesMB * mb) ~/ 3}';
       await platform.setProperty('demuxer-max-bytes', isMobile ? dsMax : '157286400'); // DS-aware mobile / 150MB desktop
       await platform.setProperty('demuxer-max-back-bytes', isMobile ? dsBack : '52428800'); // DS-aware mobile / 50MB desktop
-      await platform.setProperty('cache-secs', isMobile ? (dataSaver.value ? '6' : '10') : '15');
-      await platform.setProperty('demuxer-readahead-secs', isMobile ? (dataSaver.value ? '4' : '10') : '15');
-      await platform.setProperty('network-timeout', '30');
+      await platform.setProperty('cache-secs', isMobile ? (dataSaver.value ? '8' : '20') : '20');
+      await platform.setProperty('demuxer-readahead-secs', isMobile ? (dataSaver.value ? '6' : '20') : '20');
+      await platform.setProperty('network-timeout', '45'); // slow/fluctuating nets need patience, not 30s drops
 
       // Network Stream Continuity (Live IPTV vs VOD separation)
       await applyStreamContinuity(player, isLive: isLive);
