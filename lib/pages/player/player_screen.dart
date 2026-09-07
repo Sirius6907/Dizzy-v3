@@ -34,6 +34,8 @@ import '../../models/player/skip_segment_model.dart';
 import '../../services/player/skip_segments_service.dart';
 import '../../widgets/player/player_aspect_menu.dart';
 import '../../widgets/player/player_audio_menu.dart';
+import '../../widgets/player/player_gesture_layer.dart';
+import '../../widgets/player/player_lock_button.dart';
 import '../../widgets/player/player_subtitle_menu.dart';
 import '../../widgets/player/player_sub_style_modal.dart';
 import '../../widgets/player/player_skip_button.dart';
@@ -119,6 +121,9 @@ class _PlayerScreenState extends State<PlayerScreen>
   double _playbackRate = 1.0;
   BoxFit _videoFit = BoxFit.contain;
   List<PlayerAudioTrack> _audioTracks = [];
+
+  // Lock mode (v1.1.8) — swallows all player-area input when locked.
+  bool _isLocked = false;
   int _selectedAudioTrackIndex = 0;
   double _audioDelaySec = 0.0;
   bool _showAudioHud = false;
@@ -252,7 +257,11 @@ class _PlayerScreenState extends State<PlayerScreen>
         }
         // ── Prefetch gate (Phase 5) ── start next-episode prefetch only
         // after 25% watched OR 3 min elapsed (quick-bouncers save bandwidth).
-        if (!_prefetchStarted && PlayerSettings.nextEpisodeAutoPlay.value) {
+        // Data Saver (v1.1.8) disables prefetch entirely — mobile-data
+        // users pay only for what they actually watch.
+        if (!_prefetchStarted &&
+            PlayerSettings.nextEpisodeAutoPlay.value &&
+            !PlayerSettings.dataSaver.value) {
           final dur = _player.state.duration;
           final watched25 = dur.inSeconds >= 4 &&
               pos.inSeconds >= (dur.inSeconds * 0.25).ceil();
@@ -1527,6 +1536,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   DateTime? _lastScreenTapTime;
 
   void _handleScreenTap() {
+    if (_isLocked) return; // lock mode: single taps ignored
     final now = DateTime.now();
     if (_lastScreenTapTime != null &&
         now.difference(_lastScreenTapTime!) < const Duration(milliseconds: 280)) {
@@ -1536,6 +1546,26 @@ class _PlayerScreenState extends State<PlayerScreen>
       _lastScreenTapTime = now;
       _toggleControls();
     }
+  }
+
+  void _toggleLock() {
+    setState(() {
+      _isLocked = !_isLocked;
+      if (_isLocked) {
+        // Locking hides controls immediately for clean fullscreen.
+        _showControls = false;
+        _hideTimer?.cancel();
+      } else {
+        _startHideControlsTimer();
+      }
+    });
+  }
+
+  /// Sets playback rate and keeps `_playbackRate` in sync (used by the
+  /// speed menu, keyboard, and the gesture layer's long-press 2x hold).
+  void _setPlaybackRate(double rate) {
+    setState(() => _playbackRate = rate);
+    _player.setRate(rate);
   }
 
   @override
@@ -1589,6 +1619,9 @@ class _PlayerScreenState extends State<PlayerScreen>
               } else if (event.logicalKey == LogicalKeyboardKey.keyF) {
                 WindowService.instance.toggleFullscreen();
                 return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.keyL) {
+                _toggleLock();
+                return KeyEventResult.handled;
               }
             }
             return KeyEventResult.ignored;
@@ -1606,11 +1639,46 @@ class _PlayerScreenState extends State<PlayerScreen>
                   ? SystemMouseCursors.basic
                   : SystemMouseCursors.none,
               onHover: (_) => _handlePointerActivity(),
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _handleScreenTap,
-                child: _buildPlayerBody(),
-              ),
+              child: _isLocked
+                  ? Stack(
+                      children: [
+                        // Locked: swallow every gesture/tap on video area.
+                        AbsorbPointer(
+                          absorbing: true,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {},
+                            child: _buildPlayerBody(),
+                          ),
+                        ),
+                        // Persistent unlock button (only responsive element).
+                        Positioned(
+                          top: MediaQuery.paddingOf(context).top + 16,
+                          right: 20,
+                          child: PlayerLockButton(
+                            isLocked: _isLocked,
+                            onToggle: _toggleLock,
+                          ),
+                        ),
+                      ],
+                    )
+                  : PlayerGestureLayer(
+                      enabled: true,
+                      host: PlayerGestureHost(
+                        position: () => _player.state.position,
+                        duration: () => _player.state.duration,
+                        seekTo: (t) => _player.seek(t),
+                        seekBy: (d) => _seekRelative(d),
+                        volume: () => _isMuted ? 0.0 : _volume,
+                        setVolume: (v) => _applyVolume(v, showHud: true),
+                        speed: () => _playbackRate,
+                        setSpeed: _setPlaybackRate,
+                        toggleControls: _handleScreenTap,
+                        toggleFullscreen: () =>
+                            WindowService.instance.toggleFullscreen(),
+                      ),
+                      child: _buildPlayerBody(),
+                    ),
             ),
           ),
         ),
@@ -1818,6 +1886,8 @@ class _PlayerScreenState extends State<PlayerScreen>
                           ? _toggleEpisodesPanel
                           : null,
                       isEpisodesActive: _showEpisodesPanel || _showSourcesPanel,
+                      onLock: _toggleLock,
+                      isLocked: _isLocked,
                       onBack: () {
                         WindowService.instance.exitFullscreen();
                         Navigator.pop(context);
@@ -2038,10 +2108,7 @@ class _PlayerScreenState extends State<PlayerScreen>
               right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
               child: PlayerSpeedMenu(
                 currentRate: _playbackRate,
-                onRateSelected: (rate) {
-                  setState(() => _playbackRate = rate);
-                  _player.setRate(rate);
-                },
+                onRateSelected: _setPlaybackRate,
                 onClose: () => setState(() => _activeMenu = null),
               ),
             ),

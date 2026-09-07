@@ -14,6 +14,8 @@ class PlayerTopBar extends StatelessWidget {
   final VoidCallback? onCast;
   final VoidCallback? onDownload;
   final bool isDownloading;
+  final VoidCallback? onLock;
+  final bool isLocked;
 
   const PlayerTopBar({
     super.key,
@@ -28,6 +30,8 @@ class PlayerTopBar extends StatelessWidget {
     this.onCast,
     this.onDownload,
     this.isDownloading = false,
+    this.onLock,
+    this.isLocked = false,
   });
 
   @override
@@ -144,6 +148,23 @@ class PlayerTopBar extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (onLock != null) ...[
+                PlayerIconButton(
+                  size: 40,
+                  iconSize: 20,
+                  icon: Icon(
+                    isLocked
+                        ? Icons.lock_rounded
+                        : Icons.lock_outline_rounded,
+                  ),
+                  tooltip: isLocked ? 'Unlock player' : 'Lock player',
+                  backgroundColor: isLocked
+                      ? const Color(0x33EF4444)
+                      : const Color(0x22080C12),
+                  onPressed: onLock,
+                ),
+                const SizedBox(width: 8),
+              ],
               if (onToggleEpisodes != null) ...[
                 Material(
                   color: Colors.transparent,
