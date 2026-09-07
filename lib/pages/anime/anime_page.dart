@@ -36,7 +36,7 @@ class _AnimePageState extends State<AnimePage> {
   final AnimeArabicService _arabicService = AnimeArabicService.instance;
   final ScrollController _scrollController = ScrollController();
 
-  bool _isArabicMode = false;
+  final bool _isArabicMode = false; // mode switcher removed — General only
   bool _loading = true;
   String? _error;
 
@@ -162,14 +162,6 @@ class _AnimePageState extends State<AnimePage> {
         });
       }
     }
-  }
-
-  void _onModeChanged(bool arabic) {
-    if (_isArabicMode == arabic) return;
-    setState(() {
-      _isArabicMode = arabic;
-    });
-    _loadAnimeData();
   }
 
   void _playEpisode(AnimeMedia anime, int episodeNumber) {
@@ -488,11 +480,9 @@ class _AnimePageState extends State<AnimePage> {
             left: 0,
             right: 0,
             child: _AnimeGlassAppBar(
-              topPadding: topPadding,
-              isArabicMode: _isArabicMode,
-              onModeChanged: _onModeChanged,
-              onSearchTap: _navigateToSearch,
-              onSettingsTap: _navigateToSettings,
+            topPadding: topPadding,
+            onSearchTap: _navigateToSearch,
+            onSettingsTap: _navigateToSettings,
             ),
           ),
 
@@ -558,22 +548,17 @@ class _AnimePageState extends State<AnimePage> {
 
 class _AnimeGlassAppBar extends StatelessWidget {
   final double topPadding;
-  final bool isArabicMode;
-  final ValueChanged<bool> onModeChanged;
   final void Function(Offset?) onSearchTap;
   final void Function(Offset?) onSettingsTap;
 
   const _AnimeGlassAppBar({
     required this.topPadding,
-    required this.isArabicMode,
-    required this.onModeChanged,
     required this.onSearchTap,
     required this.onSettingsTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.sizeOf(context).width > 700;
     final isMobile = MediaQuery.sizeOf(context).width < 430;
 
     return RepaintBoundary(
@@ -634,7 +619,7 @@ class _AnimeGlassAppBar extends StatelessWidget {
                   ),
                   children: [
                     TextSpan(
-                      text: isArabicMode ? 'Anime • Arabic' : 'Anime',
+                      text: 'Anime',
                       style: TextStyle(
                         color: AppThemeService.currentPalette.value.primaryColor,
                         fontWeight: FontWeight.w900,
@@ -645,34 +630,6 @@ class _AnimeGlassAppBar extends StatelessWidget {
               ),
             ],
             const Spacer(),
-
-            // Mode Switcher (General Anime vs Arabic Anime)
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildModeButton(
-                    label: isDesktop ? '🇯🇵 General' : '🇯🇵',
-                    isActive: !isArabicMode,
-                    onTap: () => onModeChanged(false),
-                  ),
-                  _buildModeButton(
-                    label: isDesktop ? '🇸🇦 Arabic Anime' : '🇸🇦',
-                    isActive: isArabicMode,
-                    onTap: () => onModeChanged(true),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
 
             // Search Button
             Builder(
@@ -710,42 +667,6 @@ class _AnimeGlassAppBar extends StatelessWidget {
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModeButton({
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? AppThemeService.currentPalette.value.primaryColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.65),
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-          ),
         ),
       ),
     );

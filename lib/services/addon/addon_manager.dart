@@ -533,8 +533,17 @@ class AddonManager {
 
   /// Generate a human-readable name for a catalog.
   String _catalogDisplayName(AddonCatalog catalog) {
-    if (catalog.name != null && catalog.name!.isNotEmpty) {
-      return catalog.name!;
+    // Generic catalog names (e.g. Cinemeta's "Popular"/"New"/"Featured")
+    // are shared verbatim across movie AND series catalogs — using them
+    // raw renders duplicate section titles ("Popular" ×2) on the home
+    // page. Qualify generic names with the content-type label instead.
+    const genericNames = {
+      'popular', 'new', 'featured', 'top', 'trending', 'latest', 'recent',
+    };
+    final rawName = (catalog.name ?? '').trim();
+    if (rawName.isNotEmpty &&
+        !genericNames.contains(rawName.toLowerCase())) {
+      return rawName;
     }
 
     final typeLabel = catalog.type == 'series'

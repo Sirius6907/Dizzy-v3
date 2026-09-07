@@ -418,6 +418,19 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
         ),
         const SizedBox(height: 10),
         ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.dataSaver,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.data_saver_on_rounded,
+            title: 'Data Saver',
+            subtitle:
+                'Caps network buffering and disables next-episode prefetch — cuts mobile data usage by ~60-70%. Playback stays smooth; instant-binge is delayed slightly.',
+            value: val,
+            onChanged: PlayerSettings.setDataSaver,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ValueListenableBuilder<bool>(
           valueListenable: PlayerSettings.autoFailover,
           builder: (context, val, _) => _buildIntelTile(
             palette: palette,

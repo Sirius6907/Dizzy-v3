@@ -584,58 +584,8 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                           ),
                         ),
 
-                        // Language Switcher Pill (General vs Arabic Anime)
+                        // 18+ Adult Toggle Pill (always general mode now)
                         Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isArabicMode = !_isArabicMode;
-                                _allResults.clear();
-                              });
-                              if (_searchController.text.trim().isNotEmpty) {
-                                _performSearch(_searchController.text.trim());
-                              } else {
-                                _loadInitialSliders();
-                              }
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: _isArabicMode
-                                    ? palette.primaryColor.withValues(alpha: 0.25)
-                                    : Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: _isArabicMode
-                                      ? palette.primaryColor
-                                      : Colors.white.withValues(alpha: 0.12),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _isArabicMode ? '🇸🇦 Arabic' : '🇯🇵 Anime',
-                                    style: TextStyle(
-                                      color: _isArabicMode
-                                          ? palette.primaryColor
-                                          : Colors.white70,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // 18+ Adult Toggle Pill (only in general mode)
-                        if (!_isArabicMode)
-                          Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: GestureDetector(
                               onTap: () => _toggleAdult(!_allowAdult),

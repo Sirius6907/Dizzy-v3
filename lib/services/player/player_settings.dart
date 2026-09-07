@@ -173,6 +173,15 @@ abstract final class PlayerSettings {
   /// Android Direct Surface (SurfaceProducer / SurfaceView) toggle. Default: false (off).
   static final ValueNotifier<bool> enableSurfaceProducer = ValueNotifier<bool>(false);
 
+  // Data Saver (v1.1.8) — caps network buffering & disables prefetch to cut
+  // mobile data usage; also silences non-essential background fetches.
+  static const _keyDataSaver = 'player_data_saver';
+  static final ValueNotifier<bool> dataSaver = ValueNotifier<bool>(false);
+
+  /// mpv cache sizing (MB) — data-saver caps these hard.
+  static int get demuxerMaxBytesMB =>
+      dataSaver.value ? 24 : (Platform.isAndroid || Platform.isIOS ? 64 : 150);
+
   // Anime4K Video Upscaling ValueNotifier
   static final ValueNotifier<Anime4KPreset> anime4kPreset =
       ValueNotifier<Anime4KPreset>(Anime4KPreset.off);
@@ -270,6 +279,7 @@ abstract final class PlayerSettings {
     nextEpisodeAutoPlay.value =
         prefs.getBool(_keyNextEpisodeAutoPlay) ?? true;
     autoFailover.value = prefs.getBool(_keyAutoFailover) ?? true;
+    dataSaver.value = prefs.getBool(_keyDataSaver) ?? false;
     skipIntroHeuristics.value = prefs.getBool(_keySkipIntroHeuristics) ?? true;
 
     // Extract bundled font for libass fallback
@@ -568,19 +578,25 @@ abstract final class PlayerSettings {
       // Platform-aware: Android/iOS lean (phone RAM), desktop standard.
       // ──────────────────────────────────────────────────────────────────────
       await platform.setProperty('cache', 'yes');
-      await platform.setProperty('demuxer-max-bytes',
-          isMobile ? '67108864' : '157286400'); // 64MB mobile / 150MB desktop
-      await platform.setProperty('demuxer-max-back-bytes',
-          isMobile ? '20971520' : '52428800'); // 20MB mobile / 50MB desktop
-      await platform.setProperty('cache-secs', isMobile ? '10' : '15');
-      await platform.setProperty('demuxer-readahead-secs', isMobile ? '10' : '15');
+      // Data Saver (v1.1.8): hard-cap the network buffers on mobile-data
+      // constrained users — 24MB forward + 8MB readahead ≈ 60-70% less
+      // buffered download vs the lean mobile profile.
+      const mb = 1024 * 1024;
+      final dsMax = '${demuxerMaxBytesMB * mb}';
+      final dsBack = '${(demuxerMaxBytesMB * mb) ~/ 3}';
+      await platform.setProperty('demuxer-max-bytes', isMobile ? dsMax : '157286400'); // DS-aware mobile / 150MB desktop
+      await platform.setProperty('demuxer-max-back-bytes', isMobile ? dsBack : '52428800'); // DS-aware mobile / 50MB desktop
+      await platform.setProperty('cache-secs', isMobile ? (dataSaver.value ? '6' : '10') : '15');
+      await platform.setProperty('demuxer-readahead-secs', isMobile ? (dataSaver.value ? '4' : '10') : '15');
       await platform.setProperty('network-timeout', '30');
 
       // Network Stream Continuity (Live IPTV vs VOD separation)
       await applyStreamContinuity(player, isLive: isLive);
 
       // Native HLS & image-disguised (.jpg/.png) stream probing
-      await platform.setProperty('hls-bitrate', 'max');
+      // Data Saver: cap HLS bitrate instead of pulling the max variant.
+      await platform.setProperty(
+          'hls-bitrate', dataSaver.value ? '1000000' : 'max'); // ~1 Mbps cap when saving data
       await platform.setProperty('demuxer-lavf-probesize', '32768000');
       await platform.setProperty('demuxer-lavf-analyzeduration', '20');
       await platform.setProperty('demuxer-lavf-o', 'strict=experimental');
@@ -1206,6 +1222,13 @@ abstract final class PlayerSettings {
     autoFailover.value = val;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyAutoFailover, val);
+    _notify();
+  }
+
+  static Future<void> setDataSaver(bool val) async {
+    dataSaver.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyDataSaver, val);
     _notify();
   }
 
