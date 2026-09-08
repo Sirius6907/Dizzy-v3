@@ -53,6 +53,30 @@ create policy "owner rw genre_prefs" on genre_prefs
   for all to anon, authenticated
   using (auth.uid() = owner_user_id) with check (auth.uid() = owner_user_id);
 
+-- ── cloud_sessions: cross-device Continue Watching (sanitized: no stream URLs,
+-- magnets, tokens, headers or source names) ──
+create table if not exists cloud_sessions (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  media_id text not null,
+  title text not null,
+  media_type text not null default 'movie',
+  poster_url text,
+  backdrop_url text,
+  year text,
+  season integer,
+  episode integer,
+  episode_title text,
+  position_seconds integer not null default 0,
+  total_duration_seconds integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, media_id)
+);
+alter table cloud_sessions enable row level security;
+drop policy if exists "user rw own cloud sessions" on cloud_sessions;
+create policy "user rw own cloud sessions" on cloud_sessions
+  for all to anon, authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ── profiles: cloud-synced user profiles (local PIN enforced offline too) ──
 create table if not exists profiles (
   user_id uuid not null references auth.users(id) on delete cascade,
