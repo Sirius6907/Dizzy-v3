@@ -90,12 +90,20 @@ class CloudAuthService {
   }
 
   /// Google login (requires provider enabled in Supabase dashboard).
+  /// Uses custom-scheme deep link so the browser returns to the app.
+  /// IMPORTANT: this exact URL must be whitelisted in Supabase dashboard
+  /// (Auth → URL Configuration → Redirect URLs).
+  static const String googleRedirectTo =
+      'com.sirius6907.dizzyv3://login-callback/';
+
   static Future<bool> signInWithGoogle() async {
     if (!CloudClient.isReady) return false;
     try {
       final ok = await CloudClient.db.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'com.dizzy://login-callback',
+        redirectTo: googleRedirectTo,
+        authScreenLaunchMode:
+            LaunchMode.externalApplication,
       );
       return ok;
     } catch (e) {
