@@ -74,8 +74,11 @@ class CloudAuthService {
       if (Platform.isAndroid) platform = 'android';
       if (Platform.isWindows) platform = 'windows';
       if (Platform.isLinux) platform = 'linux';
+      final uid = CloudClient.db.auth.currentUser?.id;
+      if (uid == null) return;
       await CloudClient.db.from('installs').upsert({
-        'anon_id': _anonId,
+        'owner_user_id': uid,
+        'anon_id': _anonId!,
         'platform': platform,
         'app_version': '1.1.9',
         'region_code': 'IN',
@@ -136,10 +139,12 @@ class CloudAuthService {
 
   /// Push consent row to cloud (soft-fail). Only when cloud ready.
   static Future<void> _pushConsents() async {
-    if (!CloudClient.isReady || ownerKey == null) return;
+    if (!CloudClient.isReady) return;
     try {
+      final uid = CloudClient.db.auth.currentUser?.id;
+      if (uid == null) return;
       await CloudClient.db.from('consents').upsert({
-        'owner_key': ownerKey,
+        'owner_user_id': uid,
         'telemetry': consentTelemetry.value,
         'genre_prefs': consentGenrePrefs.value,
         'crash': consentCrash.value,
@@ -152,17 +157,23 @@ class CloudAuthService {
 
   /// GDPR-style: delete all cloud rows for this owner. Local data untouched.
   static Future<bool> deleteCloudData() async {
-    if (!CloudClient.isReady || ownerKey == null) return false;
+    if (!CloudClient.isReady) return false;
     try {
-      final key = ownerKey!;
+      final uid = CloudClient.db.auth.currentUser?.id;
+      if (uid == null) return false;
       await CloudClient.db
           .from('genre_prefs')
           .delete()
-          .eq('owner_key', key);
-      await CloudClient.db.from('consents').delete().eq('owner_key', key);
-      await CloudClient.db.from('installs').delete().eq('anon_id', _anonId!);
-      final uid = CloudClient.db.auth.currentUser?.id;
-      if (uid != null) {
+          .eq('owner_user_id', uid);
+      await CloudClient.db
+          .from('consents')
+          .delete()
+          .eq('owner_user_id', uid);
+      await CloudClient.db
+          .from('installs')
+          .delete()
+          .eq('owner_user_id', uid);
+      if (uid.isNotEmpty) {
         await CloudClient.db
             .from('cloud_backups')
             .delete()
