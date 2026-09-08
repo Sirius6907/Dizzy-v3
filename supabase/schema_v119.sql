@@ -4,6 +4,8 @@
 -- ── installs: one row per app install ──
 create table if not exists installs (
   id uuid primary key default gen_random_uuid(),
+  -- Supabase anonymous-auth user UUID; no email/name/PII.
+  owner_user_id uuid unique not null references auth.users(id) on delete cascade,
   anon_id text unique not null,
   platform text not null default 'unknown',
   app_version text not null default '1.1.9',
@@ -14,16 +16,18 @@ create table if not exists installs (
 alter table installs enable row level security;
 drop policy if exists "anon insert own install" on installs;
 create policy "anon insert own install" on installs
-  for insert to anon, authenticated with check (true);
+  for insert to anon, authenticated with check (auth.uid() = owner_user_id);
 drop policy if exists "owner update own install" on installs;
 create policy "owner update own install" on installs
   for update to anon, authenticated
-  using (anon_id = current_setting('request.jwt.claims', true)::json->>'anon_id')
-  with check (anon_id = current_setting('request.jwt.claims', true)::json->>'anon_id');
+  using (auth.uid() = owner_user_id) with check (auth.uid() = owner_user_id);
+drop policy if exists "owner delete own install" on installs;
+create policy "owner delete own install" on installs
+  for delete to anon, authenticated using (auth.uid() = owner_user_id);
 
 -- ── consents: privacy toggles per install/user ──
 create table if not exists consents (
-  owner_key text primary key,
+  owner_user_id uuid primary key references auth.users(id) on delete cascade,
   telemetry boolean not null default false,
   genre_prefs boolean not null default false,
   crash boolean not null default false,
@@ -33,31 +37,21 @@ alter table consents enable row level security;
 drop policy if exists "owner rw consents" on consents;
 create policy "owner rw consents" on consents
   for all to anon, authenticated
-  using (owner_key = coalesce(
-    current_setting('request.jwt.claims', true)::json->>'sub',
-    current_setting('request.jwt.claims', true)::json->>'anon_id'))
-  with check (owner_key = coalesce(
-    current_setting('request.jwt.claims', true)::json->>'sub',
-    current_setting('request.jwt.claims', true)::json->>'anon_id'));
+  using (auth.uid() = owner_user_id) with check (auth.uid() = owner_user_id);
 
 -- ── genre_prefs: taste scores (no titles) ──
 create table if not exists genre_prefs (
-  owner_key text not null,
+  owner_user_id uuid not null references auth.users(id) on delete cascade,
   genre text not null,
   score double precision not null default 0 check (score >= 0 and score <= 1),
   updated_at timestamptz not null default now(),
-  primary key (owner_key, genre)
+  primary key (owner_user_id, genre)
 );
 alter table genre_prefs enable row level security;
 drop policy if exists "owner rw genre_prefs" on genre_prefs;
 create policy "owner rw genre_prefs" on genre_prefs
   for all to anon, authenticated
-  using (owner_key = coalesce(
-    current_setting('request.jwt.claims', true)::json->>'sub',
-    current_setting('request.jwt.claims', true)::json->>'anon_id'))
-  with check (owner_key = coalesce(
-    current_setting('request.jwt.claims', true)::json->>'sub',
-    current_setting('request.jwt.claims', true)::json->>'anon_id'));
+  using (auth.uid() = owner_user_id) with check (auth.uid() = owner_user_id);
 
 -- ── profiles: cloud-synced user profiles (local PIN enforced offline too) ──
 create table if not exists profiles (
