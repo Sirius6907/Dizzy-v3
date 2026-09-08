@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/trakt/trakt_service.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
+import '../../services/metadata/watched_history_import_service.dart';
 
 class TraktSettingsPage extends StatefulWidget {
   const TraktSettingsPage({super.key});
@@ -399,10 +400,11 @@ class _TraktSettingsPageState extends State<TraktSettingsPage> {
                     await Future.wait([
                       MyListService.syncAll(),
                       ContinueWatchingService.syncCloudSessions(),
+                      WatchedHistoryImportService.importTraktWatched(),
                     ]);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Trakt sync complete!')),
+                        const SnackBar(content: Text('Trakt sync & watched import complete!')),
                       );
                     }
                   },
