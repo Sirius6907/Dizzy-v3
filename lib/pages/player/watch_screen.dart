@@ -256,7 +256,7 @@ class _WatchScreenState extends State<WatchScreen>
       _nonHindiPool.clear();
     }
 
-    _autoplayRace?.close();
+    _autoplayRace?.closeDrain();
     if (mounted && _isLoadingSources) {
       setState(() => _isLoadingSources = false);
     }

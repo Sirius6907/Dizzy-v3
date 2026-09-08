@@ -116,4 +116,54 @@ void main() {
     expect(race.verifiedSources, isEmpty);
     expect(await race.winner, isNull);
   });
+
+  test('closeDrain waits for in-flight verified probes (no close-drop)',
+      () async {
+    final race = StreamProbeRace(
+      probeFn: (_) async {
+        await Future.delayed(const Duration(milliseconds: 60));
+        return true;
+      },
+    );
+    final winnerFuture = race.winner;
+    race.offer(_src('slow-but-alive'));
+    await Future.delayed(const Duration(milliseconds: 10));
+    race.closeDrain(); // scrape-done path: must NOT drop the probe
+    final winner =
+        await winnerFuture.timeout(const Duration(seconds: 5));
+    expect(winner, isNotNull);
+    expect(winner!.name, 'slow-but-alive');
+  });
+
+  test('closeDrain settles null when probes are dead', () async {
+    final race = StreamProbeRace(probeFn: (_) async => false);
+    final winnerFuture = race.winner;
+    race.offer(_src('dead1'));
+    race.offer(_src('dead2'));
+    race.closeDrain();
+    final winner =
+        await winnerFuture.timeout(const Duration(seconds: 5));
+    expect(winner, isNull);
+  });
+
+  test('closeDrain rejects late offers but keeps draining', () async {
+    final race = StreamProbeRace(
+      probeFn: (_) async {
+        await Future.delayed(const Duration(milliseconds: 40));
+        return true;
+      },
+    );
+    final winnerFuture = race.winner;
+    race.offer(_src('first'));
+    race.closeDrain();
+    race.offer(_src('late')); // must be ignored
+    final winner =
+        await winnerFuture.timeout(const Duration(seconds: 5));
+    expect(winner, isNotNull);
+    expect(winner!.name, 'first');
+    expect(
+      race.verifiedSources.where((s) => s.name == 'late'),
+      isEmpty,
+    );
+  });
 }

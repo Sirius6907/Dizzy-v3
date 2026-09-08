@@ -178,6 +178,17 @@ abstract final class PlayerSettings {
   static const _keyDataSaver = 'player_data_saver';
   static final ValueNotifier<bool> dataSaver = ValueNotifier<bool>(false);
 
+  /// Allow self-signed / invalid TLS certs during stream health probes.
+  /// Default OFF (v1.1.9): blind accept was an MITM hole. Only enable for
+  /// local/dev servers. Normal CDNs are unaffected.
+  static const _keyAllowInsecureProbes = 'player_allow_insecure_probes';
+  static final ValueNotifier<bool> allowInsecureProbes =
+      ValueNotifier<bool>(false);
+
+  /// Last used player volume (0.0-1.0), restored on next open. Default 1.0.
+  static const _keyLastVolume = 'player_last_volume';
+  static final ValueNotifier<double> lastVolume = ValueNotifier<double>(1.0);
+
   /// mpv cache sizing (MB) — data-saver caps these hard.
   static int get demuxerMaxBytesMB =>
       dataSaver.value ? 24 : (Platform.isAndroid || Platform.isIOS ? 64 : 150);
@@ -280,6 +291,9 @@ abstract final class PlayerSettings {
         prefs.getBool(_keyNextEpisodeAutoPlay) ?? true;
     autoFailover.value = prefs.getBool(_keyAutoFailover) ?? true;
     dataSaver.value = prefs.getBool(_keyDataSaver) ?? false;
+    allowInsecureProbes.value = prefs.getBool(_keyAllowInsecureProbes) ?? false;
+    lastVolume.value =
+        (prefs.getDouble(_keyLastVolume) ?? 1.0).clamp(0.0, 1.0);
     skipIntroHeuristics.value = prefs.getBool(_keySkipIntroHeuristics) ?? true;
 
     // Extract bundled font for libass fallback
@@ -1232,6 +1246,20 @@ abstract final class PlayerSettings {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyDataSaver, val);
     _notify();
+  }
+
+  static Future<void> setAllowInsecureProbes(bool val) async {
+    allowInsecureProbes.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAllowInsecureProbes, val);
+    _notify();
+  }
+
+  static Future<void> setLastVolume(double val) async {
+    final clamped = val.clamp(0.0, 1.0);
+    lastVolume.value = clamped;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_keyLastVolume, clamped);
   }
 
   static Future<void> setSkipIntroHeuristics(bool val) async {

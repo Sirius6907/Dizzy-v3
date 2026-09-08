@@ -142,21 +142,13 @@ class NextEpisodeEngine {
           : const <StreamSource>[];
 
       if (embeddedHindi.isNotEmpty) {
-        final race = StreamProbeRace(
-          probeFn: (_) async => true, // embedded debrid streams are direct
-          onVerifiedBatch: null,
-        );
-        _race = race;
-        for (final s in embeddedHindi) {
-          race.offer(s);
-        }
-        race.close();
-        _prefetchedSource = await race.winner;
-        if (_prefetchedSource != null) {
-          debugPrint('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
-          _running = false;
-          return;
-        }
+        // Trusted embedded debrid links need no probe — pick directly.
+        // (Old code offered them to a race then close()d it synchronously,
+        // which settled the winner to null before probes ran.)
+        _prefetchedSource = embeddedHindi.first;
+        debugPrint('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
+        _running = false;
+        return;
       }
 
       // Hindi mode + zero hindi embedded → remember as fallback pool; the
@@ -211,7 +203,9 @@ class NextEpisodeEngine {
             race.offerEmbedded(s);
           }
         }
-        race.close();
+        // Drain (not hard-close): fallback offers above still need their
+        // probes to land, else the Hindi-English fallback silently drops.
+        race.closeDrain();
       },
     );
 

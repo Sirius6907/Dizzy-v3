@@ -24,7 +24,9 @@ class StreamProbeRace {
   final Duration batchDelay;
 
   /// Max simultaneous health probes. Bounded to prevent socket floods.
-  static const int maxConcurrentProbes = 12;
+  /// Budget: 8 concurrent (see project resource budgets — uncapped fan-out
+  /// is a RAM bomb on low-end phones).
+  static const int maxConcurrentProbes = 8;
 
   /// Probes queued past [maxConcurrentProbes] when the queue already holds
   /// this many are DROPPED.
@@ -34,6 +36,13 @@ class StreamProbeRace {
   final List<StreamSource> verifiedSources = [];
 
   bool _closed = false;
+
+  /// True after [closeDrain]: no new offers accepted, but in-flight probes
+  /// keep running until they finish (bounded by [_drainDeadline]).
+  bool _draining = false;
+
+  /// Safety net so a hung probe can never block the winner future forever.
+  static const Duration _drainDeadline = Duration(seconds: 4);
   Timer? _batchTimer;
   final List<StreamSource> _pendingUiBatch = [];
   int _inFlight = 0;
@@ -56,7 +65,7 @@ class StreamProbeRace {
   /// Probing CONTINUES after the winner so the manual sources list keeps
   /// filling for the user (bounded — 8 concurrent HEADs cost nothing).
   void offer(StreamSource source) {
-    if (_closed) return;
+    if (_closed || _draining) return;
     if (_inFlight >= maxConcurrentProbes) {
       if (_probeQueue.length >= maxQueueDepth) return; // shed load
       _probeQueue.add(source);
@@ -74,6 +83,13 @@ class StreamProbeRace {
     _inFlight--;
     if (_closed) {
       _probeQueue.clear();
+      return;
+    }
+    if (_draining) {
+      // Scrape finished: queued sources are stale — drop them, and settle
+      // the winner as soon as the last in-flight probe lands.
+      _probeQueue.clear();
+      if (_inFlight <= 0) close();
       return;
     }
     while (_inFlight < maxConcurrentProbes && _probeQueue.isNotEmpty) {
@@ -105,24 +121,22 @@ class StreamProbeRace {
     } catch (_) {
       alive = false;
     }
-    _onProbeDone();
-    if (_closed) return;
-
-    if (!alive) {
+    // Record the result BEFORE the drain countdown — _onProbeDone may
+    // settle the winner via close() when the last probe lands, and a
+    // verified source must never be dropped by that settle.
+    if (alive) {
+      verifiedSources.add(source);
+      if (!_winnerCompleter.isCompleted) {
+        _winnerCompleter.complete(source);
+      }
+      // Batch UI updates so rapid-fire verified sources don't spam setState.
+      _pendingUiBatch.add(source);
+      _batchTimer ??= Timer(batchDelay, _flushUiBatch);
+    } else {
       debugPrint('[StreamProbeRace] dead source dropped: '
           '${source.name ?? "?"} (${source.addonName})');
-      return;
     }
-
-    verifiedSources.add(source);
-
-    if (!_winnerCompleter.isCompleted) {
-      _winnerCompleter.complete(source);
-    }
-
-    // Batch UI updates so rapid-fire verified sources don't spam setState.
-    _pendingUiBatch.add(source);
-    _batchTimer ??= Timer(batchDelay, _flushUiBatch);
+    _onProbeDone();
   }
 
   void _flushUiBatch() {
@@ -139,10 +153,29 @@ class StreamProbeRace {
   void close() {
     if (_closed) return;
     _closed = true;
+    _draining = false;
     _flushUiBatch();
     if (!_winnerCompleter.isCompleted) {
       _winnerCompleter.complete(null); // no alive source found
     }
+  }
+
+  /// Scrape-done path (use this on `onDone`, NOT [close]).
+  ///
+  /// Stops accepting NEW offers but lets already-running probes finish, so
+  /// a source verified a millisecond after the last scrape event still wins
+  /// instead of being dropped (the old close-drop bug). Settles via [close]
+  /// once in-flight probes land, or after [_drainDeadline] — whichever first.
+  void closeDrain() {
+    if (_closed || _draining) return;
+    _draining = true;
+    if (_inFlight <= 0) {
+      close();
+      return;
+    }
+    Timer(_drainDeadline, () {
+      if (!_closed) close(); // hung probe safety net
+    });
   }
 
   /// Stop everything immediately (route disposed). Pending probes are
