@@ -21,6 +21,7 @@ import 'about_settings_page.dart';
 import '../stats/stats_page.dart';
 import 'privacy_settings_page.dart';
 import 'profiles_settings_page.dart';
+import 'watch_party_page.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
@@ -494,6 +495,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 badgeText: 'NEW',
                 badgeColor: palette.primaryColor,
                 onTap: () => _navigateTo(const ProfilesSettingsPage()),
+              ),
+
+              const SizedBox(height: 12),
+
+              // S3C (v1.1.9): optional logged-in Watch Party rooms.
+              _SettingsCategoryTile(
+                icon: Icons.groups_rounded,
+                iconColor: palette.primaryColor,
+                title: 'Watch Party',
+                subtitle: 'Create or join public/private rooms with Room ID',
+                badgeText: 'NEW',
+                badgeColor: palette.primaryColor,
+                onTap: () => _navigateTo(const WatchPartyPage()),
               ),
 
               const SizedBox(height: 12),
