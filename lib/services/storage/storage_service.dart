@@ -12,49 +12,55 @@ class StorageService {
 
   static final ValueNotifier<int> movieFinishedRevision = ValueNotifier<int>(0);
 
+  // v1.1.9 (Task 17): single cached instance — cold start + every token
+  // read skips the platform-channel round trip. Signatures unchanged.
+  static SharedPreferences? _cachedPrefs;
+  static Future<SharedPreferences> _prefs() async =>
+      _cachedPrefs ??= await SharedPreferences.getInstance();
+
   // ── Trakt ─────────────────────────────────────────────────────────────────
   static Future<String?> getTraktAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.getString(_kTraktAccessToken);
   }
 
   static Future<void> setTraktAccessToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_kTraktAccessToken, token);
   }
 
   static Future<String?> getTraktRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.getString(_kTraktRefreshToken);
   }
 
   static Future<void> setTraktRefreshToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_kTraktRefreshToken, token);
   }
 
   static Future<int?> getTraktTokenExpiry() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.getInt(_kTraktTokenExpiry);
   }
 
   static Future<void> setTraktTokenExpiry(int expiryMs) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setInt(_kTraktTokenExpiry, expiryMs);
   }
 
   static Future<String?> getTraktUsername() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.getString(_kTraktUsername);
   }
 
   static Future<void> setTraktUsername(String username) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_kTraktUsername, username);
   }
 
   static Future<bool> clearTraktAuth() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.remove(_kTraktAccessToken);
     await prefs.remove(_kTraktRefreshToken);
     await prefs.remove(_kTraktTokenExpiry);
@@ -64,27 +70,27 @@ class StorageService {
 
   // ── Simkl ─────────────────────────────────────────────────────────────────
   static Future<String?> getSimklAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.getString(_kSimklAccessToken);
   }
 
   static Future<void> setSimklAccessToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_kSimklAccessToken, token);
   }
 
   static Future<String?> getSimklUsername() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.getString(_kSimklUsername);
   }
 
   static Future<void> setSimklUsername(String username) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_kSimklUsername, username);
   }
 
   static Future<void> clearSimklAuth() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.remove(_kSimklAccessToken);
     await prefs.remove(_kSimklUsername);
   }

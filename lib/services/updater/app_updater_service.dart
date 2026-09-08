@@ -46,10 +46,11 @@ class AppUpdaterService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
+      // v1.1.9 (Task 17): 8s cap — no update-check hang on dead networks.
       final response = await http.get(
         Uri.parse(githubApiUrl),
         headers: {'Accept': 'application/vnd.github.v3+json'},
-      );
+      ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
