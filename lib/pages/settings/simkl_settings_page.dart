@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/simkl/simkl_service.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
+import '../../services/metadata/watched_history_import_service.dart';
 
 class SimklSettingsPage extends StatefulWidget {
   const SimklSettingsPage({super.key});
@@ -398,10 +399,11 @@ class _SimklSettingsPageState extends State<SimklSettingsPage> {
                     await Future.wait([
                       MyListService.syncAll(),
                       ContinueWatchingService.syncCloudSessions(),
+                      WatchedHistoryImportService.importSimklWatched(),
                     ]);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Simkl sync complete!')),
+                        const SnackBar(content: Text('Simkl sync & watched import complete!')),
                       );
                     }
                   },
