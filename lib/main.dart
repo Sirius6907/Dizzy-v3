@@ -19,6 +19,7 @@ import './services/theme/glass_settings.dart';
 import './services/player/dub_mode_service.dart';
 import './services/cloud/cloud_client.dart';
 import './services/cloud/cloud_auth_service.dart';
+import './services/profiles/dizzy_profile_service.dart';
 import './services/audiobook/audiobook_settings.dart';
 import './services/home/home_page_settings.dart';
 import './services/iptv/iptv_controller.dart';
@@ -77,6 +78,7 @@ void main() async {
     P2pSettingsService.initialize(),
     DownloadService.instance.initialize(),
     DiscordRpcService.instance.initialize(),
+    DizzyProfileService.initialize(),
   ]);
   runApp(const DizzyApp());
 }
