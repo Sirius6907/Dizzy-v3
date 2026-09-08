@@ -32,7 +32,10 @@ class PlayerTopBar extends StatelessWidget {
     this.isDownloading = false,
     this.onLock,
     this.isLocked = false,
+    this.onPip,
   });
+
+  final VoidCallback? onPip;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +151,17 @@ class PlayerTopBar extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (onPip != null) ...[
+                PlayerIconButton(
+                  size: 40,
+                  iconSize: 20,
+                  icon: const Icon(Icons.picture_in_picture_alt_rounded),
+                  tooltip: 'Picture-in-Picture',
+                  backgroundColor: const Color(0x22080C12),
+                  onPressed: onPip,
+                ),
+                const SizedBox(width: 8),
+              ],
               if (onLock != null) ...[
                 PlayerIconButton(
                   size: 40,
