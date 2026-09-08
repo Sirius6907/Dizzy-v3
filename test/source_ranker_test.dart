@@ -83,6 +83,49 @@ void main() {
         SourceRanker.fingerprint(s.copyWith(name: 'renamed')),
       );
     });
+
+    test('hindi mode: hindi-tagged source beats english same-addon source',
+        () {
+      final hindi = _src(
+          url: 'https://x/h.mkv', name: 'Movie Hindi Dub 1080p');
+      final english = _src(
+          url: 'https://x/e.mkv', name: 'Movie 1080p BluRay');
+      const ctx = RankerContext(preferredLang: 'hindi');
+      final ordered = SourceRanker.order([english, hindi], ctx);
+      expect(ordered.first, hindi);
+    });
+
+    test('hindi mode: hindi beats english even with addon history', () {
+      // Real-world bug: history (+40) buried fresh hindi sources, so Hindi
+      // mode kept autoplaying English. Language match must beat history.
+      final hindi = _src(
+          addon: 'NewAddon',
+          url: 'https://new/x/h.mkv',
+          name: 'Movie Hindi Dub 1080p');
+      final english = _src(
+          addon: 'KnownGood',
+          url: 'https://known/x/e.mkv',
+          name: 'Movie 1080p BluRay');
+      const ctx = RankerContext(
+        lastGoodByAddon: {'KnownGood': 'x'},
+        preferredLang: 'hindi',
+      );
+      final ordered = SourceRanker.order([english, hindi], ctx);
+      expect(ordered.first, hindi);
+    });
+
+    test('english mode: no language boost changes baseline order', () {
+      final a = _src(url: 'https://x/a.mkv', name: '1080p');
+      final b = _src(url: 'https://x/b.mkv', name: '720p');
+      final plain = SourceRanker.order(
+          [b, a], const RankerContext(preferredLang: 'eng'));
+      final noLang =
+          SourceRanker.order([b, a], const RankerContext());
+      expect(
+        plain.map(SourceRanker.fingerprint).toList(),
+        noLang.map(SourceRanker.fingerprint).toList(),
+      );
+    });
   });
 
   group('LastGoodSourceStore', () {
