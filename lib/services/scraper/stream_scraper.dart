@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../models/stream/stream_model.dart';
 import '../p2p/p2p_settings_service.dart';
+import 'scraper_quarantine_service.dart';
 
 abstract class StreamScraper {
   String get name;
@@ -73,6 +74,10 @@ class ScraperManager {
     final p2pAllowed = P2pSettingsService.isP2pEnabled.value;
     final activeScrapers = _scrapers.where((s) {
       if (!p2pAllowed && s.name == 'Dizzy') {
+        return false;
+      }
+      // F0 (v1.1.9): dead scraper quarantine — skip dead endpoints, retry after 7d
+      if (ScraperQuarantineService.isQuarantined(s.name)) {
         return false;
       }
       return true;
