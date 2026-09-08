@@ -17,6 +17,8 @@ import './services/theme/custom_background_service.dart';
 import './services/theme/dock_settings.dart';
 import './services/theme/glass_settings.dart';
 import './services/player/dub_mode_service.dart';
+import './services/cloud/cloud_client.dart';
+import './services/cloud/cloud_auth_service.dart';
 import './services/audiobook/audiobook_settings.dart';
 import './services/home/home_page_settings.dart';
 import './services/iptv/iptv_controller.dart';
@@ -50,6 +52,9 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await EnvService.initialize();
   await PlayerSettings.initialize();
+  // S2 (v1.1.9): cloud LAST + non-blocking — never delays startup.
+  // ignore: unawaited_futures
+  CloudClient.init().then((_) => CloudAuthService.init());
   await Future.wait([
     AddonManager.instance.initialize(),
     AppThemeService.initialize(),
