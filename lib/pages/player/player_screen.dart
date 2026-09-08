@@ -263,6 +263,11 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (mounted) {
           setState(() => _isPlaying = playing);
           _updateDiscordRpc(isPaused: !playing);
+          if (!playing) {
+            // v1.1.9 (Task 16): pause = flush dirty progress immediately.
+            _savePlaybackProgress();
+            unawaited(ContinueWatchingService.flushProgress());
+          }
         }
       }),
       _player.stream.position.listen((pos) {
@@ -1567,6 +1572,8 @@ class _PlayerScreenState extends State<PlayerScreen>
     _volumeHudTimer?.cancel();
     _audioHudTimer?.cancel();
     _savePlaybackProgress();
+    // v1.1.9 (Task 16): flush dirty progress now — nothing lost on exit.
+    unawaited(ContinueWatchingService.flushProgress());
     WakelockPlus.disable();
     _hideTimer?.cancel();
     SystemChrome.setPreferredOrientations([

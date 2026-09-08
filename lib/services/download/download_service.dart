@@ -104,13 +104,38 @@ class DownloadService {
     }
   }
 
+  // v1.1.9 (Task 15): trailing-edge debounced persist (750ms). Per-tick
+  // full-file rewrites caused disk jank; terminal states flush immediately
+  // (crash-safety preserved).
+  Timer? _persistDebounce;
+  static const _persistDebounceWindow = Duration(milliseconds: 750);
+
+  void _schedulePersist({bool immediate = false}) {
+    if (immediate) {
+      _persistDebounce?.cancel();
+      _persistDebounce = null;
+      unawaited(_persistTasks());
+      return;
+    }
+    _persistDebounce ??= Timer(_persistDebounceWindow, () {
+      _persistDebounce = null;
+      unawaited(_persistTasks());
+    });
+  }
+
   void _updateTask(DownloadTask updated) {
     final current = List<DownloadTask>.from(tasksNotifier.value);
     final idx = current.indexWhere((t) => t.id == updated.id);
     if (idx != -1) {
       current[idx] = updated;
       tasksNotifier.value = current;
-      _persistTasks();
+      // Terminal states flush immediately (crash-safety); progress ticks
+      // ride the trailing-edge debounce.
+      final terminal = updated.status == DownloadStatus.completed ||
+          updated.status == DownloadStatus.failed ||
+          updated.status == DownloadStatus.canceled ||
+          updated.status == DownloadStatus.paused;
+      _schedulePersist(immediate: terminal);
     }
     _updateWakelockState();
   }
