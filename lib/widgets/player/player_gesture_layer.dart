@@ -72,6 +72,9 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
   double _dragStartValue = 0;
   double _liveValue = 0;
   bool _brightnessSupported = true;
+  // v1.1.9 (Task 13): exact value captured at open — dispose restores THIS,
+  // so the player never leaves the system dimmed/brightened.
+  double? _originalBrightness;
 
   // ─── Speed hold state ─────────────────────────────────────────
   bool _speedHolding = false;
@@ -89,12 +92,12 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
   }
 
   Future<void> _captureOriginalBrightness() async {
-    // Warm the plugin + verify platform support; restore is handled by
-    // resetApplicationScreenBrightness() in dispose.
+    // Store the EXACT value so dispose can restore it (v1.1.9 Task 13).
     try {
-      await ScreenBrightness.instance.application;
+      _originalBrightness = await ScreenBrightness.instance.application;
       _brightnessSupported = true;
     } catch (_) {
+      _originalBrightness = null;
       _brightnessSupported = false;
     }
   }
@@ -102,10 +105,15 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
   @override
   void dispose() {
     _rippleTimer?.cancel();
-    // Restore the user's original app brightness when the player closes.
+    // Restore the user's original brightness when the player closes.
     if (_brightnessSupported) {
       try {
-        ScreenBrightness.instance.resetApplicationScreenBrightness();
+        final orig = _originalBrightness;
+        if (orig != null) {
+          ScreenBrightness.instance.setApplicationScreenBrightness(orig);
+        } else {
+          ScreenBrightness.instance.resetApplicationScreenBrightness();
+        }
       } catch (_) {}
     }
     super.dispose();
@@ -153,7 +161,8 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
       }
       final dx = d.localPosition.dx - _dragStartDx;
       final ratio = (dx / (size.width * 0.85)).clamp(-1.0, 1.0);
-      final deltaMs = (ratio * totalMs * 0.5).round();
+      // v1.1.9 (Task 14): 0.75 scale — long movies need fewer drags.
+      final deltaMs = (ratio * totalMs * 0.75).round();
       _seekTarget = Duration(
         milliseconds: (_seekFrom.inMilliseconds + deltaMs).clamp(0, totalMs),
       );

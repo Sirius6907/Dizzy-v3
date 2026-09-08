@@ -28,6 +28,37 @@ class ContinueWatchingService {
   static final ValueNotifier<List<ContinueWatchingItem>> activeItems =
       ValueNotifier<List<ContinueWatchingItem>>([]);
 
+  // v1.1.9 (Task 16): dirty-flag + trailing 15s flush. The 5s UI timer keeps
+  // firing (cards stay live) but disk writes collapse ~3x; pause/dispose
+  // flush immediately so no progress is ever lost.
+  static List<ContinueWatchingItem>? _dirtyItems;
+  static Timer? _flushTimer;
+  static const _flushWindow = Duration(seconds: 15);
+
+  /// Force-write any pending progress now (pause/dispose paths).
+  static Future<void> flushProgress() async {
+    final pending = _dirtyItems;
+    if (pending == null) return;
+    _dirtyItems = null;
+    _flushTimer?.cancel();
+    _flushTimer = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = pending.map((e) => e.toJson()).toList();
+      await prefs.setString(_storageKey, jsonEncode(jsonList));
+    } catch (e) {
+      debugPrint('[ContinueWatchingService] Failed to flush session: $e');
+    }
+  }
+
+  static void _markDirty(List<ContinueWatchingItem> items) {
+    _dirtyItems = items;
+    _flushTimer ??= Timer(_flushWindow, () {
+      _flushTimer = null;
+      unawaited(flushProgress());
+    });
+  }
+
   static Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -287,14 +318,9 @@ class ContinueWatchingService {
       activeItems.value = trimmed;
     });
 
-    // Persist to SharedPreferences
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = trimmed.map((e) => e.toJson()).toList();
-      await prefs.setString(_storageKey, jsonEncode(jsonList));
-    } catch (e) {
-      debugPrint('[ContinueWatchingService] Failed to persist session: $e');
-    }
+    // Persist via dirty-flag (Task 16): UI updates now, disk writes flush
+    // on a 15s trailing window or immediately on pause/dispose.
+    _markDirty(trimmed);
 
     // Push cloud scrobble / history to Trakt and Simkl
     _syncCloudPlayback(
@@ -397,13 +423,9 @@ class ContinueWatchingService {
       activeItems.value = current;
     });
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = current.map((e) => e.toJson()).toList();
-      await prefs.setString(_storageKey, jsonEncode(jsonList));
-    } catch (e) {
-      debugPrint('[ContinueWatchingService] Failed to remove session: $e');
-    }
+    // Removal is user-initiated: mark dirty AND flush now (no waiting).
+    _markDirty(current);
+    unawaited(flushProgress());
 
     // Cloud Removal (Trakt & Simkl)
     _removeCloudSession(item);
