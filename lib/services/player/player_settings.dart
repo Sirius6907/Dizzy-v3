@@ -170,6 +170,16 @@ abstract final class PlayerSettings {
   static final ValueNotifier<bool> skipIntroHeuristics =
       ValueNotifier<bool>(true);
 
+  /// F2 (v1.1.9): auto-skip intro/recap segments when they start.
+  /// Default OFF — user opts in from Video settings. Manual skip button
+  /// still works regardless. Credits/preview never auto-skip.
+  static const _keyAutoSkipIntro = 'player_auto_skip_intro';
+  static final ValueNotifier<bool> autoSkipIntro =
+      ValueNotifier<bool>(false);
+  static const _keyAutoSkipRecap = 'player_auto_skip_recap';
+  static final ValueNotifier<bool> autoSkipRecap =
+      ValueNotifier<bool>(false);
+
   /// Android Direct Surface (SurfaceProducer / SurfaceView) toggle. Default: false (off).
   static final ValueNotifier<bool> enableSurfaceProducer = ValueNotifier<bool>(false);
 
@@ -295,6 +305,8 @@ abstract final class PlayerSettings {
     lastVolume.value =
         (prefs.getDouble(_keyLastVolume) ?? 1.0).clamp(0.0, 1.0);
     skipIntroHeuristics.value = prefs.getBool(_keySkipIntroHeuristics) ?? true;
+    autoSkipIntro.value = prefs.getBool(_keyAutoSkipIntro) ?? false;
+    autoSkipRecap.value = prefs.getBool(_keyAutoSkipRecap) ?? false;
 
     // Extract bundled font for libass fallback
     await _extractLibassFontFallback();
@@ -1252,6 +1264,21 @@ abstract final class PlayerSettings {
     allowInsecureProbes.value = val;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyAllowInsecureProbes, val);
+    _notify();
+  }
+
+  /// F2 (v1.1.9) setters.
+  static Future<void> setAutoSkipIntro(bool val) async {
+    autoSkipIntro.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoSkipIntro, val);
+    _notify();
+  }
+
+  static Future<void> setAutoSkipRecap(bool val) async {
+    autoSkipRecap.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAutoSkipRecap, val);
     _notify();
   }
 
