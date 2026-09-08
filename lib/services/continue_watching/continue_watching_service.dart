@@ -237,6 +237,20 @@ class ContinueWatchingService {
   /// Saves or updates the playback progress for a session.
   /// Automatically purges finished media (>= 90% watched).
   /// Enforces only 1 single card per show, tracking the latest episode.
+  /// S3A (v1.1.9): applies a previously merged, sanitized cloud-session list.
+  /// Cloud rows never contain source URLs; any newer local item already won the
+  /// merge and retains its device-only source data. Persist immediately.
+  static Future<void> replaceSessionsFromCloud(
+      List<ContinueWatchingItem> sessions) async {
+    final trimmed = sessions
+        .where((item) => item.positionSeconds > 10 && !item.isCompleted)
+        .take(50)
+        .toList();
+    activeItems.value = trimmed;
+    _dirtyItems = trimmed;
+    await flushProgress();
+  }
+
   static Future<void> saveProgress({
     required MovieDetail detail,
     Video? episode,
