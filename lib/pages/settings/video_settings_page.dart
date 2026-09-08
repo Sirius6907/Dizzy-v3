@@ -468,6 +468,33 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
             onChanged: PlayerSettings.setSkipIntroHeuristics,
           ),
         ),
+        const SizedBox(height: 10),
+        // F2 (v1.1.9): auto-skip toggles — default OFF, opt-in.
+        ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.autoSkipIntro,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.skip_next_rounded,
+            title: 'Auto-Skip Intro',
+            subtitle:
+                'Automatically jump past the intro when it starts. Turn off to watch intros.',
+            value: val,
+            onChanged: PlayerSettings.setAutoSkipIntro,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.autoSkipRecap,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.replay_circle_filled_rounded,
+            title: 'Auto-Skip Recap',
+            subtitle:
+                'Automatically jump past "previously on…" recaps when they start.',
+            value: val,
+            onChanged: PlayerSettings.setAutoSkipRecap,
+          ),
+        ),
         const SizedBox(height: 14),
         // Clear learned last-good sources
         SizedBox(

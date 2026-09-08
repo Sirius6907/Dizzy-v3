@@ -1192,6 +1192,24 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     if (matched != null) {
       if (!_dismissedSegmentKeys.contains(matched.uniqueKey)) {
+        // F2 (v1.1.9): auto-skip intro/recap when the user opted in.
+        // Credits/preview never auto-skip (credits go to next-ep handoff).
+        final t = matched.type.toLowerCase();
+        final autoOn = (t == 'intro' && PlayerSettings.autoSkipIntro.value) ||
+            (t == 'recap' && PlayerSettings.autoSkipRecap.value);
+        if (autoOn) {
+          _handleSkipSegment(matched);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Skipped ${t[0].toUpperCase()}${t.substring(1)} ⏭️'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
         if (_activeSkipSegment?.uniqueKey != matched.uniqueKey) {
           setState(() {
             _activeSkipSegment = matched;
