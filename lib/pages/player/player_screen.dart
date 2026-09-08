@@ -177,6 +177,9 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Sources verified by the probe race that opened this player, ranked
   /// best→worst. Used to silently switch when the current source stalls.
   List<StreamSource> _failoverChain = [];
+  /// Completes when the ranked chain is ready (v1.1.9: stall watchdog waits
+  /// for this so an early stall never fires with zero backups).
+  Future<void>? _failoverReady;
   final Set<String> _failedFingerprints = {}; // this-session only
   int _failoverSwitches = 0;
   static const int _maxFailoverSwitches = 3;
@@ -204,7 +207,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     // Build the ranked failover chain (Phase 3.2): backups exclude the
     // primary source, ordered by SourceRanker with persisted history.
     if (widget.failoverSources != null && widget.failoverSources!.isNotEmpty) {
-      unawaited(() async {
+      _failoverReady = () async {
         final detail = widget.detail;
         Map<String, String> history = const {};
         if (detail != null) {
@@ -229,7 +232,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           ),
         );
         debugPrint('[Failover] chain ready: ${_failoverChain.length} backups ranked');
-      }());
+      }();
     }
 
     WakelockPlus.enable();
@@ -1289,6 +1292,11 @@ class _PlayerScreenState extends State<PlayerScreen>
     _stallWatchdog?.cancel();
     _stallWatchdog = Timer.periodic(const Duration(seconds: 2), (_) {
       if (!mounted || _failoverInProgress) return;
+      // v1.1.9: chain still ranking → wait (max ~3s), don't fire blind.
+      if (_failoverReady != null && _failoverChain.isEmpty) {
+        unawaited(_failoverReady!.timeout(const Duration(seconds: 3), onTimeout: () {}));
+        return;
+      }
       final stalled = DateTime.now().difference(_lastProgressAt);
       // Only failover when we believe we SHOULD be playing but position
       // hasn't advanced for 10s+ (not paused, media loaded) AND mpv is not

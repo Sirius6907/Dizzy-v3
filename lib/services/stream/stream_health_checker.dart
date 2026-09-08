@@ -85,9 +85,12 @@ class StreamHealthChecker {
 
     HttpClient? client;
     try {
+      // v1.1.9: only accept bad certs when the user explicitly opted in
+      // (local/dev servers). Default OFF — blind accept was an MITM hole.
+      final allowInsecure = PlayerSettings.allowInsecureProbes.value;
       client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 4)
-        ..badCertificateCallback = ((_, __, ___) => true);
+        ..badCertificateCallback = ((_, __, ___) => allowInsecure);
 
       // 1. Send fast HEAD request (0 MB downloaded!)
       final req = await client.openUrl('HEAD', uri).timeout(const Duration(seconds: 4));
@@ -135,9 +138,11 @@ class StreamHealthChecker {
         return false;
       }
 
-      // 2. If HEAD returned 4xx/5xx or unhandled status, fallback to lightweight GET.
-      // Many CDNs (Cloudflare, Akamai, video proxies) reject HEAD requests or require
-      // standard GET requests with redirect following.
+      // 2. If HEAD is not allowed (405/501), fallback to lightweight GET.
+      // Many CDNs (Cloudflare, Akamai, video proxies) reject HEAD requests.
+      // Any other 4xx/5xx fails fast — no second request (v1.1.9 halves
+      // slow-network probe cost per dead source).
+      if (code != 405 && code != 501) return false;
       final getReq = await client.openUrl('GET', uri).timeout(const Duration(seconds: 4));
       getReq.followRedirects = true;
       getReq.maxRedirects = 4;
