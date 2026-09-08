@@ -68,6 +68,8 @@ class ScraperManager {
   }) {
     final controller = StreamController<StreamSource>();
 
+    // v1.1.9 (Task 19): snapshot per scrape — mid-scrape P2P toggles apply
+    // on the NEXT scrape by design (consistent source set per run).
     final p2pAllowed = P2pSettingsService.isP2pEnabled.value;
     final activeScrapers = _scrapers.where((s) {
       if (!p2pAllowed && s.name == 'Dizzy') {

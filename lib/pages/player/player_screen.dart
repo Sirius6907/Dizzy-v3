@@ -284,6 +284,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         // after 25% watched OR 3 min elapsed (quick-bouncers save bandwidth).
         // Data Saver (v1.1.8) disables prefetch entirely — mobile-data
         // users pay only for what they actually watch.
+        // v1.1.9 (Task 19): verified correct — comment only, no change.
         if (!_prefetchStarted &&
             PlayerSettings.nextEpisodeAutoPlay.value &&
             !PlayerSettings.dataSaver.value) {

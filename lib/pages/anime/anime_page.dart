@@ -7,6 +7,7 @@ import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
 import '../../services/anime/anime_library_service.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
+import '../../services/config/feature_flags.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../services/theme/glass_settings.dart';
@@ -79,7 +80,9 @@ class _AnimePageState extends State<AnimePage> {
       _error = null;
     });
 
-    if (_isArabicMode) {
+    // v1.1.9 (Task 18): arabic section gated behind kEnableArabic (default
+    // OFF — dead network surface). _isArabicMode is already false-only.
+    if (_isArabicMode && kEnableArabic) {
       try {
         final feed = await _arabicService.getHome();
         _arabicCards.clear();
@@ -165,7 +168,8 @@ class _AnimePageState extends State<AnimePage> {
   }
 
   void _playEpisode(AnimeMedia anime, int episodeNumber) {
-    if (_isArabicMode || _arabicCards.containsKey(anime.id)) {
+    if ((_isArabicMode || _arabicCards.containsKey(anime.id)) &&
+        kEnableArabic) {
       final card = _arabicCards[anime.id] ??
           ArabicAnimeCard(
             slug: anime.titleEnglish.toLowerCase().replaceAll(' ', '-'),
@@ -212,7 +216,8 @@ class _AnimePageState extends State<AnimePage> {
   }
 
   void _openDetails(AnimeMedia anime, [int? preferredEpisode]) {
-    if (_isArabicMode || _arabicCards.containsKey(anime.id)) {
+    if ((_isArabicMode || _arabicCards.containsKey(anime.id)) &&
+        kEnableArabic) {
       final card = _arabicCards[anime.id] ??
           ArabicAnimeCard(
             slug: anime.titleEnglish.toLowerCase().replaceAll(' ', '-'),
