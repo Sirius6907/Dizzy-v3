@@ -1,8 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../config/env_service.dart';
 
 class TmdbHelper {
-  static const _apiKey = 'b3556f3b206e16f82df4d1f6fd4545e6';
+  /// TMDB API key resolution order:
+  ///   1. Compile-time `--dart-define=TMDB_API_KEY=...`
+  ///      (CI: injected via --dart-define-from-file=.env from secrets.ENV_FILE)
+  ///   2. Runtime `.env` via [EnvService] (desktop .env file / bundled asset)
+  /// Empty key = official TMDB calls skipped, Speedrace proxy path used.
+  /// NEVER hardcode the key here (was leaked in git history pre-v1.1.9).
+  static const _compileKey = String.fromEnvironment('TMDB_API_KEY', defaultValue: '');
+  static String get _apiKey =>
+      _compileKey.isNotEmpty ? _compileKey : EnvService.get('TMDB_API_KEY');
+  static bool get hasKey => _apiKey.isNotEmpty;
   static const _tmdbDirect = 'https://api.themoviedb.org/3';
   static const _tmdbProxy = 'https://db.speedracelight.com/3';
 
@@ -44,8 +54,8 @@ class TmdbHelper {
         return id;
       }
 
-      // 2. Query TMDB Find API for tt IMDB IDs
-      if (cleanId.startsWith('tt')) {
+      // 2. Query TMDB Find API for tt IMDB IDs (skipped without API key)
+      if (cleanId.startsWith('tt') && hasKey) {
         try {
           final uri = Uri.parse('$_tmdbDirect/find/$cleanId?api_key=$_apiKey&external_source=imdb_id');
           final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 7));
@@ -85,7 +95,8 @@ class TmdbHelper {
     if (title.isNotEmpty) {
       final targetCleanTitle = _cleanString(title);
 
-      // Search via official TMDB API with user's key
+      // Search via official TMDB API with user's key (skipped without API key)
+      if (hasKey) {
       try {
         final uri = Uri.parse('$_tmdbDirect/search/$endpoint?api_key=$_apiKey&query=${Uri.encodeComponent(title)}');
         final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 7));
@@ -134,6 +145,7 @@ class TmdbHelper {
           }
         }
       } catch (_) {}
+      } // end if (hasKey) — without key, fall through to proxy search below
 
       // Backup search via Speedrace Proxy
       try {
