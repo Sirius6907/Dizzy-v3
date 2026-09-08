@@ -145,38 +145,43 @@ class StreamSource {
     caseSensitive: false,
   );
 
+  // v1.1.9: bare shorts (ger/spa/esp/fre/vf) and city names removed —
+  // they false-positive on titles like Tiger, Danger, Esparto, Miami Vice.
+  // Explicit language words still match.
   static final RegExp _germanRegex = RegExp(
-    r'\b(german|deutsch|munich|berlin|ger)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(german|deutsch)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
   static final RegExp _frenchRegex = RegExp(
-    r'\b(french|francais|français|paris|truefrench|vff|vfi|fre)\b(?![- ]?(?:sub|subbed|subs|subtitles))|\bvf\b',
+    // Scene convention: VF/VFF/VFI/TrueFrench = French release. Bare VF is
+    // kept BUT not when followed by a version number ("VF 2.0" = codec tag).
+    r'\b(french|francais|français|truefrench|vff|vfi)\b(?![- ]?(?:sub|subbed|subs|subtitles))|\bvf\b(?!\s*\d)',
     caseSensitive: false,
   );
 
   static final RegExp _spanishRegex = RegExp(
-    r'\b(spanish|espanol|español|cancun|latino|castellano|spa|esp)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(spanish|espanol|español|latino|castellano)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
   static final RegExp _russianRegex = RegExp(
-    r'\b(russian|rus|ukr|ukrainian)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(russian|ukrainian)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
   static final RegExp _japaneseRegex = RegExp(
-    r'\b(japanese|jpn)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(japanese)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
   static final RegExp _italianRegex = RegExp(
-    r'\b(italian|ita)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(italian)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
   static final RegExp _englishRegex = RegExp(
-    r'\b(eng|english|original audio|miami|seattle|denver|chicago|dallas|atlanta|houston|boston)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(eng|english|original audio)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 

@@ -32,6 +32,10 @@ class SourceRanker {
   static const int _wSeeders = 15;
   static const int _wResolution = 10;
   static const int _wPreferredLang = 5;
+
+  /// Hindi-mode language boost (v1.1.9): beats addon history (+40) so Hindi
+  /// mode actually plays Hindi. English mode keeps the small baseline boost.
+  static const int _wPreferredLangHindi = 45;
   static const int _penaltyRecentFailure = 30;
 
   /// Stable identity for a source across retries/scrapes.
@@ -76,9 +80,10 @@ class SourceRanker {
     // 5. Resolution hint in name/description.
     score += _resolutionScore(s);
 
-    // 6. Audio language match.
+    // 6. Audio language match (mode-aware: hindi boost beats history).
     if (ctx.preferredLang != null && _langMatches(s, ctx.preferredLang!)) {
-      score += _wPreferredLang;
+      final isHindiCtx = ctx.preferredLang!.toLowerCase() == 'hindi';
+      score += isHindiCtx ? _wPreferredLangHindi : _wPreferredLang;
     }
 
     // 7. Failed this session — sink hard.

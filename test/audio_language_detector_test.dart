@@ -299,5 +299,52 @@ void main() {
       expect(s.getAudioLanguages(), contains('english'));
       expect(s.getAudioBadge(), '🇮🇳 HINDI');
     });
+
+    test('Tiger movie is NOT german (ger substring guard)', () {
+      final s = StreamSource(
+        addonName: 'X',
+        title: 'Tiger 3 1080p BluRay',
+        description: 'Action • 2.5GB',
+      );
+      expect(s.getAudioLanguages().contains('german'), isFalse);
+    });
+
+    test('Danger Force show is NOT german', () {
+      final s = StreamSource(
+        addonName: 'X',
+        title: 'Danger Force S2E5 720p',
+        description: 'Comedy • HDTV',
+      );
+      expect(s.getAudioLanguages().contains('german'), isFalse);
+    });
+
+    test('Miami Vice title alone is NOT english-by-city', () {
+      final s = StreamSource(
+        addonName: 'X',
+        title: 'Miami Vice S1E1 1080p',
+        description: 'Crime • WEB-DL',
+      );
+      // Default-english fallback still applies (no regional tag), but the
+      // city word itself must not be what triggers detection.
+      expect(s.getAudioLanguages(), contains('english'));
+    });
+
+    test('Esparto town title is NOT spanish (esp guard)', () {
+      final s = StreamSource(
+        addonName: 'X',
+        title: 'Esparto Harvest 2024 1080p',
+        description: 'Documentary • WEB-DL',
+      );
+      expect(s.getAudioLanguages().contains('spanish'), isFalse);
+    });
+
+    test('VF codec tag is NOT french', () {
+      final s = StreamSource(
+        addonName: 'X',
+        title: 'Movie 2024 1080p VF 2.0 x264',
+        description: 'BluRay • 8GB',
+      );
+      expect(s.getAudioLanguages().contains('french'), isFalse);
+    });
   });
 }
