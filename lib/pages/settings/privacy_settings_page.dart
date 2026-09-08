@@ -4,7 +4,7 @@ import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/cloud/cloud_client.dart';
 import '../../services/theme/app_theme_service.dart';
 
-/// S2 (v1.1.9): Settings → Privacy. Toggles + Google login + delete button.
+/// S2 (v1.1.9): Settings → Privacy. Device identity + consent toggles + delete button.
 class PrivacySettingsPage extends StatefulWidget {
   const PrivacySettingsPage({super.key});
 
@@ -36,31 +36,22 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             children: [
-              _sectionTitle('Account (optional)'),
+              _sectionTitle('Device identity'),
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.signedIn,
                 builder: (context, signedIn, _) => ListTile(
-                  leading: Icon(Icons.account_circle_rounded,
+                  leading: Icon(Icons.devices_rounded,
                       color: palette.primaryColor),
                   title: Text(
-                      signedIn ? 'Signed in' : 'Continue as guest',
+                      signedIn ? 'Cloud connected' : 'Offline mode',
                       style: const TextStyle(color: Colors.white)),
                   subtitle: Text(
                     signedIn
-                        ? 'Sync, backup & watch parties unlocked.'
-                        : 'Dizzy works fully without login. Sign in for sync, backup & watch parties.',
+                        ? 'Sync, backup & watch parties active. Device ID: ${CloudAuthService.anonId?.substring(0, 8) ?? '—'}…'
+                        : 'All features work offline. Sync disabled.',
                     style:
                         const TextStyle(color: Colors.white60, fontSize: 12),
                   ),
-                  trailing: signedIn
-                      ? TextButton(
-                          onPressed: () => CloudAuthService.signOut(),
-                          child: const Text('Sign out'))
-                      : FilledButton.tonal(
-                          onPressed: () =>
-                              CloudAuthService.signInWithGoogle(),
-                          child: const Text('Sign in with Google'),
-                        ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -71,7 +62,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                   title: Text('Cloud not configured in this build',
                       style: TextStyle(color: Colors.white)),
                   subtitle: Text(
-                      'Account & sync need a cloud-enabled build.',
+                      'Sync & watch parties need a cloud-enabled build.',
                       style: TextStyle(color: Colors.white60, fontSize: 12)),
                 ),
               _sectionTitle('What Dizzy may collect'),

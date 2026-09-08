@@ -99,15 +99,15 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.lock_outline_rounded, color: Colors.white70),
+            Icon(Icons.cloud_off_rounded, color: Colors.white70),
             SizedBox(height: 8),
-            Text('Sign in required',
+            Text('Cloud not available',
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700)),
             SizedBox(height: 4),
-            Text('Watch Party is an optional signed-in feature. Go to Settings → Privacy & Account → Sign in with Google. Guest mode still has all normal playback features.',
+            Text('Watch Party needs a cloud-enabled build. Sync and other features work offline.',
                 style: TextStyle(color: Colors.white60, fontSize: 13)),
           ],
         ),
