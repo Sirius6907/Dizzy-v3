@@ -20,6 +20,7 @@ import 'updates_settings_page.dart';
 import 'about_settings_page.dart';
 import '../stats/stats_page.dart';
 import 'privacy_settings_page.dart';
+import 'profiles_settings_page.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
@@ -480,6 +481,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 badgeText: 'NEW',
                 badgeColor: palette.primaryColor,
                 onTap: () => _navigateTo(const PrivacySettingsPage()),
+              ),
+
+              const SizedBox(height: 12),
+
+              // S3B (v1.1.9): local-first profiles, cloud sync on login.
+              _SettingsCategoryTile(
+                icon: Icons.people_alt_rounded,
+                iconColor: palette.primaryColor,
+                title: 'Profiles',
+                subtitle: 'Private profiles, optional PIN and kids mode',
+                badgeText: 'NEW',
+                badgeColor: palette.primaryColor,
+                onTap: () => _navigateTo(const ProfilesSettingsPage()),
               ),
 
               const SizedBox(height: 12),
