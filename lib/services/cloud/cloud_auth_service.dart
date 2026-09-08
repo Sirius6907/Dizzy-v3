@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'cloud_client.dart';
@@ -86,29 +85,6 @@ class CloudAuthService {
       }, onConflict: 'anon_id');
     } catch (e) {
       debugPrint('[CloudAuth] install upsert failed (soft): $e');
-    }
-  }
-
-  /// Google login (requires provider enabled in Supabase dashboard).
-  /// Uses custom-scheme deep link so the browser returns to the app.
-  /// IMPORTANT: this exact URL must be whitelisted in Supabase dashboard
-  /// (Auth → URL Configuration → Redirect URLs).
-  static const String googleRedirectTo =
-      'com.sirius6907.dizzyv3://login-callback/';
-
-  static Future<bool> signInWithGoogle() async {
-    if (!CloudClient.isReady) return false;
-    try {
-      final ok = await CloudClient.db.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: googleRedirectTo,
-        authScreenLaunchMode:
-            LaunchMode.externalApplication,
-      );
-      return ok;
-    } catch (e) {
-      debugPrint('[CloudAuth] google sign-in failed: $e');
-      return false;
     }
   }
 

@@ -10,15 +10,14 @@ import 'cloud_client.dart';
 
 /// S3C (v1.1.9): Watch Party room + Realtime Broadcast control plane.
 /// No media bytes/URLs are sent to Supabase — only media IDs and playback
-/// control events. Logged-in (non-anonymous) accounts only.
+/// control events. Works with anonymous sessions (device-local identity).
 class WatchPartyService {
   static RealtimeChannel? _channel;
   static StreamController<WatchPartyEvent>? _events;
 
   static bool get isAvailable {
     if (!CloudClient.isReady) return false;
-    final u = CloudClient.db.auth.currentUser;
-    return u != null && !u.isAnonymous;
+    return CloudClient.db.auth.currentUser != null;
   }
 
   static Stream<WatchPartyEvent> get events =>
