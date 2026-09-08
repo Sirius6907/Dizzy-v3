@@ -31,6 +31,8 @@ import '../../services/updater/app_updater_service.dart';
 import '../../widgets/updater/update_dialog.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
+import '../../widgets/cloud/consent_onboarding_sheet.dart';
+import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/player/dub_mode_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -89,6 +91,15 @@ class _HomePageState extends State<HomePage> {
 
     // 2. Check & show P2P warning dialog after update dialog
     await _checkP2pWarning();
+    if (!mounted || CloudAuthService.onboarded.value) return;
+
+    // S2 (v1.1.9): consent is explicit and shown once, after other startup UI.
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF10131A),
+      builder: (_) => const ConsentOnboardingSheet(),
+    );
   }
 
   Future<void> _checkAutoUpdate() async {
