@@ -431,6 +431,19 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
         ),
         const SizedBox(height: 10),
         ValueListenableBuilder<bool>(
+          valueListenable: PlayerSettings.allowInsecureProbes,
+          builder: (context, val, _) => _buildIntelTile(
+            palette: palette,
+            icon: Icons.shield_outlined,
+            title: 'Allow Insecure Probes',
+            subtitle:
+                'OFF = strict TLS (recommended). Turn ON only for local/dev servers with self-signed certificates.',
+            value: val,
+            onChanged: PlayerSettings.setAllowInsecureProbes,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ValueListenableBuilder<bool>(
           valueListenable: PlayerSettings.autoFailover,
           builder: (context, val, _) => _buildIntelTile(
             palette: palette,

@@ -203,6 +203,10 @@ class _PlayerScreenState extends State<PlayerScreen>
     _currentSource = widget.source;
     _currentEpisode = widget.episode;
     _currentTitle = widget.title;
+    // v1.1.9: restore last-used volume (persisted via PlayerSettings).
+    _volume = PlayerSettings.lastVolume.value.clamp(
+        0.0, PlayerVolumeControl.maxVolume);
+    if (_volume == 0) _volume = 1.0;
 
     // Build the ranked failover chain (Phase 3.2): backups exclude the
     // primary source, ordered by SourceRanker with persisted history.
@@ -366,7 +370,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         await _player.open(Media(rawUrl), play: true);
         await PlayerSettings.applyPostOpenProperties(_player);
         _setSubtitleScale(_subtitleScale);
-        _applyVolume(_isMuted ? 0.0 : _volume);
+        _applyVolume(_isMuted ? 0.0 : _volume, persist: false);
         if (mounted) setState(() => _isLoading = false);
         return;
       }
@@ -511,7 +515,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       await PlayerSettings.applyPostOpenProperties(_player);
 
       _setSubtitleScale(_subtitleScale);
-      _applyVolume(_isMuted ? 0.0 : _volume);
+      _applyVolume(_isMuted ? 0.0 : _volume, persist: false);
 
       print('[PlayerScreen SUCCESS] Player opened media successfully for $streamUrl');
 
@@ -995,7 +999,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     });
   }
 
-  void _applyVolume(double vol, {bool showHud = false}) {
+  void _applyVolume(double vol, {bool showHud = false, bool persist = true}) {
     final clamped = ((vol * 100).round() / 100.0).clamp(0.0, PlayerVolumeControl.maxVolume);
     setState(() {
       _volume = clamped;
@@ -1011,6 +1015,10 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
 
     _player.setVolume(clamped * 100.0);
+    // v1.1.9: remember last non-zero volume for next open (fire-and-forget).
+    if (persist && clamped > 0) {
+      unawaited(PlayerSettings.setLastVolume(clamped));
+    }
   }
 
   void _toggleMute({bool showHud = false}) {
@@ -1717,7 +1725,9 @@ class _PlayerScreenState extends State<PlayerScreen>
                       ],
                     )
                   : PlayerGestureLayer(
-                      enabled: true,
+                      // v1.1.9: lock mode disables ALL gestures (seek, volume,
+                      // brightness, double-tap, 2x hold) — lock button only.
+                      enabled: !_isLocked,
                       host: PlayerGestureHost(
                         position: () => _player.state.position,
                         duration: () => _player.state.duration,
