@@ -18,6 +18,7 @@ import 'trakt_settings_page.dart';
 import 'simkl_settings_page.dart';
 import 'updates_settings_page.dart';
 import 'about_settings_page.dart';
+import '../stats/stats_page.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
@@ -452,6 +453,19 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => _navigateTo(const VideoSettingsPage()),
                   );
                 },
+              ),
+
+              const SizedBox(height: 12),
+
+              // F5 (v1.1.9): My Dizzy Wrap — watch stats.
+              _SettingsCategoryTile(
+                icon: Icons.emoji_events_rounded,
+                iconColor: palette.primaryColor,
+                title: 'My Dizzy Wrap',
+                subtitle: 'Watch time, streaks, top genres — your year in Dizzy',
+                badgeText: 'NEW',
+                badgeColor: palette.primaryColor,
+                onTap: () => _navigateTo(const StatsPage()),
               ),
 
               const SizedBox(height: 12),
