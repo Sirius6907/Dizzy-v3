@@ -32,6 +32,7 @@ import '../../widgets/player/player_speed_menu.dart';
 import '../../services/window/window_service.dart';
 import '../../models/player/skip_segment_model.dart';
 import '../../services/player/skip_segments_service.dart';
+import '../../services/player/pip_service.dart';
 import '../../widgets/player/player_aspect_menu.dart';
 import '../../widgets/player/player_audio_menu.dart';
 import '../../widgets/player/player_gesture_layer.dart';
@@ -1981,6 +1982,9 @@ class _PlayerScreenState extends State<PlayerScreen>
                       isEpisodesActive: _showEpisodesPanel || _showSourcesPanel,
                       onLock: _toggleLock,
                       isLocked: _isLocked,
+                      onPip: PipService.isSupported
+                          ? () => PipService.enterPip()
+                          : null,
                       onBack: () {
                         WindowService.instance.exitFullscreen();
                         Navigator.pop(context);
