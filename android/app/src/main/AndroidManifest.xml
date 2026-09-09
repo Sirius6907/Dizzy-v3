@@ -13,6 +13,10 @@
     <!-- OTA Update Permissions -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- WP-P3 Watch Party voice (LiveKit) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Browser & URL Launch Queries (Android 11+ / API 30+) -->
     <queries>
         <intent>

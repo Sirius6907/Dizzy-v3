@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'cloud_client.dart';
+import '../device/device_id_service.dart';
 
 /// S2 (v1.1.9): identity + consent. Anonymous-first, Google optional.
 /// Everything fails soft — offline means local-only, never an error screen.
@@ -12,6 +13,7 @@ class CloudAuthService {
   static const _keyTelemetry = 'consent_telemetry_v1';
   static const _keyGenrePrefs = 'consent_genre_prefs_v1';
   static const _keyCrash = 'consent_crash_v1';
+  static const _keyWatchParty = 'consent_watch_party_v1';
   static const _keyOnboarded = 'cloud_consent_onboarded_v1';
 
   static final ValueNotifier<bool> signedIn = ValueNotifier<bool>(false);
@@ -21,6 +23,8 @@ class CloudAuthService {
   static final ValueNotifier<bool> consentGenrePrefs =
       ValueNotifier<bool>(false);
   static final ValueNotifier<bool> consentCrash = ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> consentWatchParty =
+      ValueNotifier<bool>(false);
 
   static String? _anonId;
   static String? get anonId => _anonId;
@@ -39,6 +43,7 @@ class CloudAuthService {
     consentTelemetry.value = prefs.getBool(_keyTelemetry) ?? false;
     consentGenrePrefs.value = prefs.getBool(_keyGenrePrefs) ?? false;
     consentCrash.value = prefs.getBool(_keyCrash) ?? false;
+    consentWatchParty.value = prefs.getBool(_keyWatchParty) ?? false;
 
     _anonId = prefs.getString(_keyAnonId);
     if (_anonId == null) {
@@ -78,11 +83,11 @@ class CloudAuthService {
       await CloudClient.db.from('installs').upsert({
         'owner_user_id': uid,
         'anon_id': _anonId!,
+        'device_code': DeviceIdService.deviceCode.value,
         'platform': platform,
         'app_version': '1.1.9',
-        'region_code': 'IN',
         'last_seen_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'anon_id');
+      }, onConflict: 'owner_user_id');
     } catch (e) {
       debugPrint('[CloudAuth] install upsert failed (soft): $e');
     }
@@ -103,7 +108,10 @@ class CloudAuthService {
   }
 
   static Future<void> setConsent(
-      {bool? telemetry, bool? genrePrefs, bool? crash}) async {
+      {bool? telemetry,
+      bool? genrePrefs,
+      bool? crash,
+      bool? watchParty}) async {
     final prefs = await SharedPreferences.getInstance();
     if (telemetry != null) {
       consentTelemetry.value = telemetry;
@@ -116,6 +124,10 @@ class CloudAuthService {
     if (crash != null) {
       consentCrash.value = crash;
       await prefs.setBool(_keyCrash, crash);
+    }
+    if (watchParty != null) {
+      consentWatchParty.value = watchParty;
+      await prefs.setBool(_keyWatchParty, watchParty);
     }
     await _pushConsents();
     if (consentTelemetry.value) await _upsertInstall();
@@ -132,6 +144,7 @@ class CloudAuthService {
         'telemetry': consentTelemetry.value,
         'genre_prefs': consentGenrePrefs.value,
         'crash': consentCrash.value,
+        'watch_party': consentWatchParty.value,
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
@@ -163,6 +176,23 @@ class CloudAuthService {
             .delete()
             .eq('user_id', uid);
         await CloudClient.db.from('profiles').delete().eq('user_id', uid);
+        // WP-P5: full wipe — party traces too (chat cascade-follows rooms).
+        await CloudClient.db
+            .from('room_messages')
+            .delete()
+            .eq('sender_id', uid);
+        await CloudClient.db
+            .from('room_members')
+            .delete()
+            .eq('user_id', uid);
+        await CloudClient.db
+            .from('rooms')
+            .delete()
+            .eq('host_user_id', uid);
+        await CloudClient.db
+            .from('cloud_sessions')
+            .delete()
+            .eq('user_id', uid);
       }
       return true;
     } catch (e) {

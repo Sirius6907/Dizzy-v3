@@ -104,6 +104,19 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                       CloudAuthService.setConsent(crash: nv),
                 ),
               ),
+              ValueListenableBuilder<bool>(
+                valueListenable: CloudAuthService.consentWatchParty,
+                builder: (context, v, _) => SwitchListTile(
+                  title: const Text('Watch Party voice & rooms',
+                      style: TextStyle(color: Colors.white)),
+                  subtitle: const Text(
+                      'Mic via LiveKit + room membership. Needed for party voice.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  value: v,
+                  onChanged: (nv) =>
+                      CloudAuthService.setConsent(watchParty: nv),
+                ),
+              ),
               const SizedBox(height: 8),
               _sectionTitle('Danger zone'),
               ListTile(
@@ -112,7 +125,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 title: const Text('Delete my cloud data',
                     style: TextStyle(color: Colors.white)),
                 subtitle: const Text(
-                    'Removes installs, consents, scores, backups, profiles. Local app untouched.',
+                    'Removes installs, consents, scores, backups, profiles, rooms & chat. Local app untouched.',
                     style:
                         TextStyle(color: Colors.white60, fontSize: 12)),
                 trailing: _deleting
