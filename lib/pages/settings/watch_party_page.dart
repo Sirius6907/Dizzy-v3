@@ -20,6 +20,25 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   bool _busy = false;
   WatchPartyRoom? _activeRoom;
   bool _activeIsHost = false;
+  // Perf: memoized lobby query — parent rebuilds must NOT refire Supabase.
+  Future<List<WatchPartyRoom>>? _lobbyFuture;
+  bool _lobbyAdult = false;
+
+  /// Returns the cached lobby future, refetching only when the 18+ filter
+  /// flips or [invalidateLobby] was called (refresh button / room changes).
+  Future<List<WatchPartyRoom>> _lobbyQuery() {
+    final adult = WatchPartyService.adultUnlocked.value;
+    if (_lobbyFuture == null || adult != _lobbyAdult) {
+      _lobbyAdult = adult;
+      _lobbyFuture = WatchPartyService.listPublicRooms(showAdult: adult);
+    }
+    return _lobbyFuture!;
+  }
+
+  void _invalidateLobby() {
+    _lobbyFuture = null;
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
@@ -105,10 +124,13 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   PartyRoomPanel(
                     room: _activeRoom!,
                     isHost: _activeIsHost,
-                    onExit: () => setState(() {
-                      _activeRoom = null;
-                      _activeIsHost = false;
-                    }),
+                    onExit: () {
+                      _lobbyFuture = null;
+                      setState(() {
+                        _activeRoom = null;
+                        _activeIsHost = false;
+                      });
+                    },
                   ),
                 ],
               ],
@@ -161,7 +183,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               const Spacer(),
               IconButton(
                 tooltip: 'Refresh',
-                onPressed: () => setState(() {}),
+                onPressed: () {
+                  // ignore: unawaited_futures
+                  WatchPartyService.sweepStale();
+                  _invalidateLobby();
+                },
                 icon: const Icon(Icons.refresh_rounded,
                     color: Colors.white54, size: 22),
               ),
@@ -171,9 +197,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           if (!WatchPartyService.isKidsProfile) _adultGate(),
           if (!WatchPartyService.isKidsProfile) const SizedBox(height: 8),
           FutureBuilder<List<WatchPartyRoom>>(
-            future: WatchPartyService.listPublicRooms(
-              showAdult: WatchPartyService.adultUnlocked.value,
-            ),
+            future: _lobbyQuery(),
             builder: (c, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const Padding(
@@ -198,11 +222,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                     style: TextStyle(color: Colors.white54, fontSize: 13)),
                 );
               }
-              return Column(
-                children: [
-                  for (final r in rooms)
-                    _pubTile(palette, r),
-                ],
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: rooms.length,
+                itemBuilder: (c, i) => _pubTile(palette, rooms[i]),
               );
             },
           ),
@@ -402,6 +426,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
     _showRoomReady(room);
     if (mounted) {
+      _lobbyFuture = null; // joined rooms change member counts
       setState(() {
         _activeRoom = room;
         _activeIsHost = false;
@@ -562,6 +587,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
     _showRoomReady(room, asHost: true);
     if (mounted) {
+      _lobbyFuture = null; // new room must appear in lobby
       setState(() {
         _activeRoom = room;
         _activeIsHost = true;
@@ -599,6 +625,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
     _showRoomReady(room);
     if (mounted) {
+      _lobbyFuture = null; // membership changed
       setState(() {
         _activeRoom = room;
         _activeIsHost = false;
@@ -611,7 +638,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     _snack(ok
         ? 'Reported. 3+ reports hides this room for everyone.'
         : 'Could not report. Try again.');
-    if (ok && mounted) setState(() {});
+    if (ok && mounted) {
+      _lobbyFuture = null; // enough reports hide the room
+      setState(() {});
+    }
   }
 
   void _showRoomReady(WatchPartyRoom room, {bool asHost = false}) {

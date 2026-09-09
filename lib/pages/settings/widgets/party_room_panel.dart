@@ -29,6 +29,10 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   bool _sending = false;
   bool _locked = false;
   int _memberTick = 0;
+  // Perf: memoized members query — rebuilds (e.g. voice bar updates in the
+  // parent) must NOT refire Supabase. Refresh button resets it.
+  Future<List<PartyMember>>? _membersFuture;
+  int _membersKey = -1;
 
   String get _roomId => widget.room.roomId;
   String? get _myUid => CloudClient.isReady
@@ -74,11 +78,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                 ),
               IconButton(
                 tooltip: 'Refresh members',
-                onPressed: () {
-                  // ignore: unawaited_futures
-                  WatchPartyService.touchMembership(_roomId);
-                  setState(() => _memberTick++);
-                },
+                onPressed: _refreshMembers,
                 icon: const Icon(Icons.refresh_rounded,
                     color: Colors.white54, size: 20),
               ),
@@ -95,9 +95,24 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
     );
   }
 
+  Future<List<PartyMember>> _membersQuery() {
+    if (_membersFuture == null || _membersKey != _memberTick) {
+      _membersKey = _memberTick;
+      _membersFuture = PartyChatService.listMembers(_roomId);
+    }
+    return _membersFuture!;
+  }
+
+  void _refreshMembers() {
+    _membersFuture = null;
+    // ignore: unawaited_futures
+    WatchPartyService.touchMembership(_roomId);
+    setState(() => _memberTick++);
+  }
+
   Widget _members() => FutureBuilder<List<PartyMember>>(
         // ignore: discarded_futures
-        future: PartyChatService.listMembers(_roomId),
+        future: _membersQuery(),
         builder: (c, snap) {
           final members = snap.data ?? const [];
           if (members.isEmpty) {
