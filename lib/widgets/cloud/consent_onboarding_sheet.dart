@@ -12,9 +12,11 @@ class ConsentOnboardingSheet extends StatefulWidget {
 }
 
 class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
+  // WP-P5: all OFF by default, as the header promises. No "recommended" pre-on.
   bool _telemetry = false;
-  bool _genrePrefs = true; // recommended: powers Because-You-Watched sync
-  bool _crash = true; // recommended: crash counts only, no stack PII
+  bool _genrePrefs = false;
+  bool _crash = false;
+  bool _watchParty = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,16 +58,22 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
               (v) => setState(() => _telemetry = v),
             ),
             _toggle(
-              'Taste preferences (recommended)',
+              'Taste preferences',
               'Genre scores like action:0.8 — never raw watch history. Powers smart rows.',
               _genrePrefs,
               (v) => setState(() => _genrePrefs = v),
             ),
             _toggle(
-              'Crash counts (recommended)',
+              'Crash counts',
               'How often the app crashes. No personal data, no stack traces.',
               _crash,
               (v) => setState(() => _crash = v),
+            ),
+            _toggle(
+              'Watch Party voice & rooms',
+              'Mic audio via LiveKit + room membership. Off = parties stay solo.',
+              _watchParty,
+              (v) => setState(() => _watchParty = v),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -76,6 +84,7 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
                     telemetry: _telemetry,
                     genrePrefs: _genrePrefs,
                     crash: _crash,
+                    watchParty: _watchParty,
                   );
                   await CloudAuthService.setOnboarded();
                   if (context.mounted) Navigator.pop(context);
@@ -91,6 +100,7 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
                     telemetry: false,
                     genrePrefs: false,
                     crash: false,
+                    watchParty: false,
                   );
                   await CloudAuthService.setOnboarded();
                   if (context.mounted) Navigator.pop(context);

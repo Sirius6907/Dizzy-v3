@@ -11,6 +11,8 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PlayTorrio streams video and audio from local network services and torrent streaming engines.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Dizzy Watch Party voice chat lets you talk with friends while watching together.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

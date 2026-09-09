@@ -19,6 +19,7 @@ import './services/theme/glass_settings.dart';
 import './services/player/dub_mode_service.dart';
 import './services/cloud/cloud_client.dart';
 import './services/cloud/cloud_auth_service.dart';
+import './services/device/device_id_service.dart';
 import './services/profiles/dizzy_profile_service.dart';
 import './services/scraper/scraper_quarantine_service.dart';
 import './services/audiobook/audiobook_settings.dart';
@@ -54,6 +55,8 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await EnvService.initialize();
   await PlayerSettings.initialize();
+  // WP-P0: device code first — cloud install upsert needs it.
+  await DeviceIdService.initialize();
   // S2 (v1.1.9): cloud LAST + non-blocking — never delays startup.
   // ignore: unawaited_futures
   CloudClient.init().then((_) => CloudAuthService.init());
