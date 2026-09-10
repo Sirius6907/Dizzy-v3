@@ -16,6 +16,7 @@ import '../../models/movie/movie_detail.dart';
 import '../../models/stream/stream_model.dart';
 import './player_screen.dart';
 import '../../services/addon/addon_manager.dart';
+import '../../services/scraper/stream_scraper.dart';
 import '../../services/stream/stream_service.dart';
 import '../../services/stream/stream_probe_race.dart';
 import '../../services/player/player_settings.dart';
@@ -378,7 +379,14 @@ class _WatchScreenState extends State<WatchScreen>
       list = list.where((s) => !s.isTorrent || s.isDebrid).toList();
     }
     if (!AddonManager.instance.isDizzyHttpActive) {
-      list = list.where((s) => s.addonName.toLowerCase() != 'dizzyhttp').toList();
+      // v1.2.0-P1: built-in HTTP sources now carry unique site keys
+      // ('flystream', 'vidsrc', ...). Legacy 'dizzyhttp' labels from
+      // pre-v1.2.0 Continue Watching rows are filtered too.
+      list = list
+          .where((s) =>
+              !ScraperManager.instance.isBuiltinHttpSource(s.addonName) &&
+              s.addonName.toLowerCase() != 'dizzyhttp')
+          .toList();
     }
 
     // Cached dynamic addon priority lookup from user's installed addons order

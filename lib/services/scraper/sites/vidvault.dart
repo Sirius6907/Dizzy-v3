@@ -6,13 +6,13 @@ import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 
-/// Pure-Dart VidVault Stream Scraper for DizzyHTTP.
+/// Pure-Dart VidVault Stream Scraper.
 ///
 /// Ported 1-to-1 from Vyla VidVault provider.
 /// Resolves direct high-speed MP4 & MKV files from vidvault.ru.
 class VidVaultScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'vidvault';
 
   static const _baseUrl = 'https://vidvault.ru';
   static const _ua =
@@ -122,8 +122,8 @@ class VidVaultScraper extends StreamScraper {
               ];
 
               yield StreamSource(
-                name: 'DizzyHTTP',
-                addonName: 'DizzyHTTP',
+                name: 'VidVault',
+                addonName: 'vidvault',
                 title: titleParts.join(' · '),
                 description: descParts.join(' · '),
                 url: dUrl,
@@ -150,8 +150,8 @@ class VidVaultScraper extends StreamScraper {
             final label = size.isNotEmpty ? 'MKV · $size' : 'MKV';
 
             yield StreamSource(
-              name: 'DizzyHTTP',
-              addonName: 'DizzyHTTP',
+              name: 'VidVault',
+              addonName: 'vidvault',
               title: 'VidVault · $label',
               description: 'VidVault Direct File',
               url: fUrl,
@@ -187,8 +187,8 @@ class VidVaultScraper extends StreamScraper {
               ];
 
               yield StreamSource(
-                name: 'DizzyHTTP',
-                addonName: 'DizzyHTTP',
+                name: 'VidVault',
+                addonName: 'vidvault',
                 title: parts.join(' · '),
                 description: 'VidVault Direct MKV · $eLang $eCountry $eSize'.trim(),
                 url: eUrl,

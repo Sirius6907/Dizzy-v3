@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 
-/// HindMoviez Stream Scraper for DizzyHTTP.
+/// HindMoviez Stream Scraper.
 ///
 /// Ported from PlayTorrioV3 upstream — Bollywood, Hindi Dubbed/Dual-Audio source.
 ///
@@ -13,7 +13,7 @@ import '../../../models/stream/stream_model.dart';
 /// from hindmovie.icu via mvlink.blog and hshare.ink solver pipelines.
 class HindMoviezScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'hindmoviez';
 
   static const String _baseUrl = 'https://hindmovie.icu';
   static const String _defaultUa =
@@ -857,7 +857,7 @@ class HindMoviezScraper extends StreamScraper {
       title: fullTitle,
       description: rawFileName ?? fullTitle,
       url: url,
-      addonName: 'DizzyHTTP',
+      addonName: 'hindmoviez',
       headers: {..._defaultHeaders},
       behaviorHints: const {'notWebReady': true},
     );

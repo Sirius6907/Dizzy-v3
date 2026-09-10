@@ -478,7 +478,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.privacy_tip_rounded,
                 iconColor: palette.primaryColor,
                 title: 'Privacy & Account',
-                subtitle: 'Optional login, data consent, delete cloud data',
+                subtitle: 'Sync, data consent, delete cloud data',
                 badgeText: 'NEW',
                 badgeColor: palette.primaryColor,
                 onTap: () => _navigateTo(const PrivacySettingsPage()),
@@ -486,7 +486,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-              // S3B (v1.1.9): local-first profiles, cloud sync on login.
+              // S3B (v1.1.9) + v1.2.0-P1: local-first profiles, auto cloud sync.
               _SettingsCategoryTile(
                 icon: Icons.people_alt_rounded,
                 iconColor: palette.primaryColor,
@@ -550,7 +550,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: 'Built-in P2P Torrent Source',
                     subtitle: isP2p
                         ? 'Dizzy torrent swarms (Knaben, TorrentGalaxy) active'
-                        : 'P2P disabled. Using only direct HTTP streaming (DizzyHTTP)',
+                        : 'P2P disabled. Using direct HTTP streaming only',
                     badgeText: isP2p ? 'P2P Active' : 'HTTP Only',
                     badgeColor: isP2p ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                     value: isP2p,

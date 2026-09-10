@@ -6,13 +6,13 @@ import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 
-/// Pure-Dart VixSrc Stream Scraper for DizzyHTTP.
+/// Pure-Dart VixSrc Stream Scraper.
 ///
 /// Ported 1-to-1 from Vyla VixSrc provider.
 /// Resolves tokenized HLS playlists from vixsrc.to.
 class VixSrcScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'vixsrc';
 
   static const _baseUrl = 'https://vixsrc.to';
   static const _ua =
@@ -123,8 +123,8 @@ class VixSrcScraper extends StreamScraper {
         };
 
         yield StreamSource(
-          name: 'DizzyHTTP',
-          addonName: 'DizzyHTTP',
+          name: 'VixSrc',
+          addonName: 'vixsrc',
           title: title,
           description: desc,
           url: rawMasterUrl,

@@ -3,7 +3,7 @@ import 'dart:io';
 import '../../models/stream/stream_model.dart';
 import '../player/player_settings.dart';
 
-/// Production-grade HTTP/HLS/MP4 Stream Health & Liveness Checker for DizzyHTTP.
+/// Production-grade HTTP/HLS/MP4 Stream Health & Liveness Checker for built-in sources.
 ///
 /// Uses lightweight zero-memory HEAD and range probes with Accept-Cookies handling,
 /// respecting exact headers, referrers, and origins without downloading full video streams.

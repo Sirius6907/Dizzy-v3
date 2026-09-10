@@ -5,14 +5,14 @@ import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 
-/// DownloadEverything Stream Scraper & Inside Extractor for DizzyHTTP.
+/// DownloadEverything Stream Scraper & Inside Extractor.
 ///
 /// Connects to slave.downloadeverythingfromeverywhere.com and resolves
 /// streamable direct links from high-speed CDNs (Cloudflare R2, Pixeldrain,
 /// Moviebox/HakunaMatata, ClicknUpload, and HubCloud).
 class DownloadEverythingScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'downdaily';
 
   static const _slaveUrl = 'https://slave.downloadeverythingfromeverywhere.com/';
   static const _ua =
@@ -225,8 +225,8 @@ class DownloadEverythingScraper extends StreamScraper {
     final tagsStr = tags.isNotEmpty ? tags.join(' · ') : qualityMatch;
 
     return StreamSource(
-      name: 'DizzyHTTP',
-      addonName: 'DizzyHTTP',
+      name: 'DownloadEverything',
+      addonName: 'downdaily',
       title: '[$provider] $rawTitle ($qualityMatch)',
       description: '$qualityMatch · $tagsStr · $provider',
       url: directStreamUrl,

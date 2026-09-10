@@ -67,7 +67,7 @@ void main() {
   group('StreamService Targeted Scraping', () {
     test('fetchStreamsForTargetAddon returns a Stream', () {
       final stream = StreamService.fetchStreamsForTargetAddon(
-        targetAddonName: 'PlayTorrioHTTP',
+        targetAddonName: 'DizzyHTTP',
         type: 'tv',
         id: 'tt123456:1:1',
         title: 'Test Show',

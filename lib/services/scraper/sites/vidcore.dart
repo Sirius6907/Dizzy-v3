@@ -9,7 +9,7 @@ import 'tmdb_helper.dart';
 /// Fetches multi-server m3u8 streams via www.vidcore.org / vidcore.org API.
 class VidCoreScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'vidcore';
 
   static const List<String> _apiBases = [
     'https://www.vidcore.org',
@@ -128,8 +128,8 @@ class VidCoreScraper extends StreamScraper {
         final isDash = url.contains('.mpd');
 
         sources.add(StreamSource(
-          name: 'DizzyHTTP',
-          addonName: 'DizzyHTTP',
+          name: 'VidCore',
+          addonName: 'vidcore',
           title: 'VidCore $label · $quality',
           description: isHls ? 'VidCore Direct HLS Stream' : (isDash ? 'VidCore Direct DASH Stream' : 'VidCore Direct VOD Stream'),
           url: url,

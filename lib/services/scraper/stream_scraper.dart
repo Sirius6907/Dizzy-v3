@@ -9,6 +9,11 @@ import 'scraper_reporter.dart';
 abstract class StreamScraper {
   String get name;
 
+  /// True for torrent/P2P scrapers (Knaben, TorrentGalaxy). Used instead of
+  /// string-matching `name == 'Dizzy'` — every HTTP scraper now has a unique
+  /// name, so identity comparison on names is unreliable for type checks.
+  bool get isTorrentScraper => false;
+
   /// Yields sources progressively one-by-one as they are resolved.
   Stream<StreamSource> scrapeStream({
     required String type,
@@ -58,7 +63,24 @@ class ScraperManager {
   }
 
   void unregisterTorrentScrapers() {
-    _scrapers.removeWhere((s) => s.name == 'Dizzy');
+    _scrapers.removeWhere((s) => s.isTorrentScraper);
+  }
+
+  /// True when a scraper with this (case-insensitive) unique name is registered.
+  bool hasScraper(String name) {
+    final key = name.trim().toLowerCase();
+    if (key.isEmpty) return false;
+    return _scrapers.any((s) => s.name.toLowerCase() == key);
+  }
+
+  /// True when [addonName] belongs to a registered built-in HTTP scraper
+  /// (i.e. NOT a torrent scraper and NOT an external Stremio addon).
+  /// Used by UI filters (e.g. "DizzyHTTP addon disabled" toggle).
+  bool isBuiltinHttpSource(String addonName) {
+    final key = addonName.trim().toLowerCase();
+    if (key.isEmpty) return false;
+    return _scrapers
+        .any((s) => !s.isTorrentScraper && s.name.toLowerCase() == key);
   }
 
   Stream<StreamSource> scrapeAll({
@@ -75,7 +97,7 @@ class ScraperManager {
     // on the NEXT scrape by design (consistent source set per run).
     final p2pAllowed = P2pSettingsService.isP2pEnabled.value;
     final activeScrapers = _scrapers.where((s) {
-      if (!p2pAllowed && s.name == 'Dizzy') {
+      if (!p2pAllowed && s.isTorrentScraper) {
         return false;
       }
       // F0 (v1.1.9): dead scraper quarantine — skip dead endpoints, retry after 7d
@@ -155,6 +177,11 @@ class ScraperManager {
           // v1.2.0-ADMIN: error vote (throttled 24h server+client).
           // ignore: unawaited_futures
           ScraperReporter.reportError(scraper.name);
+          // v1.2.0-P1 (T1.3): a throw = persistent failure signal → reset the
+          // 7-day retry clock. Note: zero-yield (empty) does NOT quarantine —
+          // a healthy scraper may simply have no sources for a niche title.
+          // Empty results only send a throttled crowd vote via reportEmpty.
+          ScraperQuarantineService.markFailed(scraper.name);
         },
         onDone: () {
           pendingScrapers--;

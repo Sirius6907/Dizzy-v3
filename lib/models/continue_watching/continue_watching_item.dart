@@ -21,7 +21,7 @@ class ContinueWatchingItem {
   final DateTime lastWatchedAt;
 
   // Source fingerprint & resume specs
-  final String? addonName; // 'DizzyHTTP', 'Dizzy', or external addon name
+  final String? addonName; // site key (e.g. 'flystream', 'vidsrc'), 'Dizzy' legacy, or external addon name
   final bool isTorrent;
   final String? magnetUrl;
   final String? infoHash;

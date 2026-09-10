@@ -8,6 +8,7 @@ import '../../models/movie/movie_section.dart';
 import '../../utils/search/relevance_scorer.dart';
 import '../metadata/metadata_service.dart';
 import '../p2p/p2p_settings_service.dart';
+import '../scraper/scraper_quarantine_service.dart';
 
 /// Manages installed Stremio metadata addons.
 ///
@@ -87,12 +88,15 @@ class AddonManager {
   }
 
   /// Returns the logo URL or asset path for a given addon name or id.
+  /// Built-in scraper site keys (v1.2.0-P1 unique names like 'flystream')
+  /// also map to the Dizzy icon.
   String? getAddonLogo(String addonName) {
     _ensureBuiltInsExist();
     final nameLower = addonName.trim().toLowerCase();
     if (nameLower == 'dizzy' ||
         nameLower == 'dizzyhttp' ||
-        nameLower.startsWith('builtin')) {
+        nameLower.startsWith('builtin') ||
+        ScraperQuarantineService.displayNames.containsKey(nameLower)) {
       return 'asset:assets/icon.png';
     }
     for (final addon in _addons) {

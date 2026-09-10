@@ -18,14 +18,14 @@ class _UnwrappedUrl {
   const _UnwrappedUrl({required this.url, required this.headers});
 }
 
-/// Dynamic Vuflix Stream Scraper for DizzyHTTP.
+/// Dynamic Vuflix Stream Scraper.
 ///
 /// Automatically discovers active provider backends via `/api/player/providers`,
 /// queries stream sources concurrently, and unpacks `v-relay` / `a-relay` tokens
 /// into direct stream endpoints with required provider-specific headers.
 class VuflixScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'vuflix';
 
   static const _apiBase = 'https://vuflix.co';
   static const _referer = 'https://vuflix.co/';
@@ -409,7 +409,7 @@ class VuflixScraper extends StreamScraper {
       title: title,
       description: description,
       url: url,
-      addonName: 'DizzyHTTP',
+      addonName: 'vuflix',
       headers: headers,
       behaviorHints: {
         'notWebReady': false,
