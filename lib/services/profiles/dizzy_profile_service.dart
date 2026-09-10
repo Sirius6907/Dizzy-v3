@@ -7,8 +7,9 @@ import 'package:uuid/uuid.dart';
 import '../../models/profiles/dizzy_profile.dart';
 import '../cloud/cloud_client.dart';
 
-/// S3B (v1.1.9): local-first profiles. Cloud sync runs only for a non-anonymous
-/// signed-in account. PIN is SHA-256 hashed — raw PIN is never stored/synced.
+/// S3B (v1.1.9) + v1.2.0-P1 (T1.4): local-first profiles. Cloud sync runs for
+/// any signed-in session including anonymous (anonymous-first, OAuth removed).
+/// PIN is SHA-256 hashed — raw PIN is never stored/synced.
 class DizzyProfileService {
   static const _profilesKey = 'dizzy_profiles_v1';
   static const _activeKey = 'dizzy_active_profile_v1';
@@ -28,8 +29,10 @@ class DizzyProfileService {
 
   static bool get isCloudUser {
     if (!CloudClient.isReady) return false;
+    // v1.2.0-P1 (T1.4): anonymous-first — anonymous sessions sync too.
+    // RLS (`auth.uid() = user_id`) already scopes anon rows per device.
     final user = CloudClient.db.auth.currentUser;
-    return user != null && !user.isAnonymous;
+    return user != null;
   }
 
   static Future<void> initialize() async {

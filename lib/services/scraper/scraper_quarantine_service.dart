@@ -12,7 +12,8 @@ class ScraperQuarantineService {
   static const _cooldown = Duration(days: 7);
 
   /// Baseline known-dead scrapers triaged in docs/scraper-status-v1.1.9.md.
-  /// Matched against `scraper.name.toLowerCase()`.
+  /// Matched against `scraper.name.toLowerCase()` — these MUST equal the
+  /// unique per-site keys (v1.2.0-P1: no more shared 'DizzyHTTP' label).
   static const Set<String> _baselineDead = {
     'flaxmovies',
     'peestream',
@@ -21,6 +22,68 @@ class ScraperQuarantineService {
     'vidup',
     'bcine',
   };
+
+  /// User-visible brand per scraper key, for the Sources health dashboard
+  /// (Settings → Sources). Keys not listed here fall back to Title Case.
+  static const Map<String, String> displayNames = {
+    'a111477': '111477',
+    'bcine': 'BCine',
+    'cinejoy': 'CineJoy',
+    'cinesrc': 'CineSrc',
+    'cinesu': 'CineSu',
+    'downdaily': 'DownloadEverything',
+    'dulo': 'Dulo',
+    'flaxmovies': 'FlaxMovies',
+    'flystream': 'FlyStream',
+    'fourkhdhub': '4KHDHub',
+    'frame': 'Frame',
+    'fshare': 'FShareTV',
+    'fsonic': 'FSonic',
+    'fsonline': 'FSOnline',
+    'hexa': 'Hexa',
+    'hindmoviez': 'HindMoviez',
+    'kisskh': 'KissKH',
+    'knaben': 'Knaben',
+    'lmscript': 'LMScript',
+    'lookmovie': 'LookMovie',
+    'mapple': 'Mapple',
+    'megasource': 'MegaSource',
+    'meowtv': 'MeowTV',
+    'movienight': 'MovieNight',
+    'movy': 'Movy',
+    'multiembed': 'MultiEmbed',
+    'nova': 'Nova',
+    'peestream': 'PeeStream',
+    'purstream': 'PurStream',
+    'rivestream': 'RiveStream',
+    'torrentgalaxy': 'TorrentGalaxy',
+    'vadapav': 'Vadapav',
+    'vidapi': 'VidAPI',
+    'vidcore': 'VidCore',
+    'videasy': 'Videasy',
+    'vidfast': 'VidFast',
+    'vidgod': 'VidGod',
+    'vidlink': 'VidLink',
+    'vidrock': 'VidRock',
+    'vidsrc': 'VidSrc',
+    'vidup': 'VidUp',
+    'vidvault': 'VidVault',
+    'vidzee': 'VidZee',
+    'vixsrc': 'VixSrc',
+    'vuflix': 'VuFlix',
+    'xdownloader': 'XDownloader',
+    'xpass': 'XPass',
+    'zxcstream': 'ZxcStream',
+  };
+
+  /// Pretty label for a scraper key ('flystream' → 'FlyStream').
+  static String displayNameFor(String scraperName) {
+    final key = scraperName.trim().toLowerCase();
+    final mapped = displayNames[key];
+    if (mapped != null) return mapped;
+    if (key.isEmpty) return 'Unknown';
+    return key[0].toUpperCase() + key.substring(1);
+  }
 
   static Map<String, DateTime> _quarantineMap = {};
   static bool _loaded = false;

@@ -89,10 +89,30 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
                   await CloudAuthService.setOnboarded();
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('Continue'),
+                child: const Text('Save my choices'),
               ),
             ),
             const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  // v1.2.0-P1 (T1.6): explicit Decline All — all flags OFF,
+                  // marked onboarded, sheet closes, never nags again.
+                  await CloudAuthService.setConsent(
+                    telemetry: false,
+                    genrePrefs: false,
+                    crash: false,
+                    watchParty: false,
+                  );
+                  await CloudAuthService.setOnboarded();
+                  if (context.mounted) Navigator.pop(context);
+                },
+                icon: const Icon(Icons.block_rounded, size: 18),
+                label: const Text('Decline all'),
+              ),
+            ),
+            const SizedBox(height: 4),
             Center(
               child: TextButton(
                 onPressed: () async {

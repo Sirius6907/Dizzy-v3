@@ -38,8 +38,8 @@ class ProfilesSettingsPage extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 DizzyProfileService.isCloudUser
-                    ? 'Profiles sync privately with your signed-in account.'
-                    : 'Local profiles work without login. Sign in to sync them.',
+                    ? 'Profiles sync privately across your devices.'
+                    : 'Local profiles work offline. Cloud sync turns on automatically.',
                 style: const TextStyle(color: Colors.white60, fontSize: 13),
               ),
               const SizedBox(height: 18),

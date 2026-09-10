@@ -9,7 +9,7 @@ import '../../../models/stream/stream_model.dart';
 /// + src/source/hd-hub-helper.ts (resolveRedirectUrl)
 class FourKHDHubScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'fourkhdhub';
 
   final String _baseUrl = 'https://4khdhub.one';
 
@@ -227,8 +227,8 @@ class FourKHDHubScraper extends StreamScraper {
           if (isValid) {
             print('[4KHDHub SUCCESS] Added valid stream source: $safeUrl');
             sources.add(StreamSource(
-              name: 'DizzyHTTP',
-              addonName: 'DizzyHTTP',
+              name: '4KHDHub',
+              addonName: 'fourkhdhub',
               title: displayParts.join('\n'),
               url: safeUrl,
             ));

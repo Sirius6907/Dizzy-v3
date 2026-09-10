@@ -11,7 +11,7 @@ class P2pSettingsService {
   static const String _kNeverShowWarningKey = 'dizzy_p2p_warning_never_show';
 
   /// Whether the built-in P2P torrent source ('Dizzy') is enabled.
-  /// When false, only direct HTTP streaming ('DizzyHTTP') and external addons are used.
+  /// When false, only direct HTTP streaming and external addons are used.
   static final ValueNotifier<bool> isP2pEnabled = ValueNotifier<bool>(false);
 
   /// Initializes the service and loads preferences from disk.

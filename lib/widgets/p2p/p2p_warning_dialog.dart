@@ -345,7 +345,7 @@ class P2pWarningDialog extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('P2P torrent source turned off. DizzyHTTP will be used.'),
+                  content: Text('P2P torrent source turned off. Direct streaming will be used.'),
                   backgroundColor: Color(0xFF10B981),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -383,7 +383,7 @@ class P2pWarningDialog extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('P2P torrent source turned off. DizzyHTTP will be used.'),
+                  content: Text('P2P torrent source turned off. Direct streaming will be used.'),
                   backgroundColor: Color(0xFF10B981),
                   behavior: SnackBarBehavior.floating,
                 ),

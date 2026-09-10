@@ -5,13 +5,13 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 
-/// Pure-Dart LookMovie Stream Scraper for DizzyHTTP.
+/// Pure-Dart LookMovie Stream Scraper.
 ///
 /// Ported 1-to-1 from Vyla LookMovie provider.
 /// Resolves multi-quality HLS streams from lookmovie2.to / lookmovie.foundation.
 class LookMovieScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'lookmovie';
 
   static const _domains = [
     'https://www.lookmovie2.to',
@@ -206,8 +206,8 @@ class LookMovieScraper extends StreamScraper {
             };
 
             yield StreamSource(
-              name: 'DizzyHTTP',
-              addonName: 'DizzyHTTP',
+              name: 'LookMovie',
+              addonName: 'lookmovie',
               title: 'LookMovie · $qualityLabel',
               description: 'LookMovie HLS Stream · $qualityLabel',
               url: url,

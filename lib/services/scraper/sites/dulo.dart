@@ -5,11 +5,11 @@ import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 import 'dulo_client.dart';
 
-/// Pure-Dart Dulo Stream Scraper for DizzyHTTP.
+/// Pure-Dart Dulo Stream Scraper.
 /// Extracts direct HLS (m3u8) streams for Movies and TV shows.
 class DuloScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'dulo';
 
   @override
   Stream<StreamSource> scrapeStream({
@@ -45,8 +45,8 @@ class DuloScraper extends StreamScraper {
         final titleLabel = s.title.isNotEmpty ? s.title : 'Stream';
 
         yield StreamSource(
-          name: 'DizzyHTTP',
-          addonName: 'DizzyHTTP',
+          name: 'Dulo',
+          addonName: 'dulo',
           title: 'Dulo · $titleLabel · $qualityLabel',
           description: 'Dulo Multi-CDN HLS Stream · $qualityLabel',
           url: s.url,

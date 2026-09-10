@@ -11,7 +11,7 @@ import 'tmdb_helper.dart';
 /// from flystream.net API.
 class FlyStreamScraper extends StreamScraper {
   @override
-  String get name => 'DizzyHTTP';
+  String get name => 'flystream';
 
   static const _apiBase = 'https://flystream.net';
   static const _ua =
@@ -80,8 +80,8 @@ class FlyStreamScraper extends StreamScraper {
             ].join(' · ');
 
             sources.add(StreamSource(
-              name: 'DizzyHTTP',
-              addonName: 'DizzyHTTP',
+              name: 'FlyStream',
+              addonName: 'flystream',
               title: 'FlyStream $name',
               description: descDetails.isNotEmpty ? 'FlyStream $descDetails' : 'FlyStream Direct HLS Stream',
               url: url,

@@ -4,10 +4,11 @@ import '../../models/continue_watching/continue_watching_item.dart';
 import '../continue_watching/continue_watching_service.dart';
 import 'cloud_client.dart';
 
-/// S3A (v1.1.9): cross-device Continue Watching sync.
+/// S3A (v1.1.9) + v1.2.0-P1 (T1.4): cross-device Continue Watching sync.
 ///
-/// Strictly signed-in accounts only — anonymous installs never upload watch
-/// history. Payload is sanitized: no stream URLs, magnets, headers, tokens,
+/// v1.2.0: anonymous-first — ANY signed-in session (including anonymous
+/// installs) uploads sanitized watch progress. No email/login needed.
+/// Payload is sanitized: no stream URLs, magnets, headers, tokens,
 /// addon/source labels or IP-like values. Newer `lastWatchedAt` wins.
 class CloudSyncService {
   static bool _syncing = false;
@@ -16,8 +17,10 @@ class CloudSyncService {
 
   static bool get isLoggedIn {
     if (!CloudClient.isReady) return false;
+    // v1.2.0-P1: anonymous-first — OAuth removed, anonymous sessions ARE
+    // the identity. RLS (`auth.uid() = user_id`) already scopes anon rows.
     final user = CloudClient.db.auth.currentUser;
-    return user != null && !user.isAnonymous;
+    return user != null;
   }
 
   static Future<void> syncNow({bool force = false}) async {

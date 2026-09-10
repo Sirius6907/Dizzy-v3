@@ -143,7 +143,7 @@ class StreamService {
 
     int pending = addons.length + (isHttpActive ? 1 : 0);
 
-    // Local DizzyHTTP scrapers (if active)
+    // Built-in scrapers (if active)
     if (isHttpActive) {
       final isImdb = id.startsWith('tt');
       final cleanImdbId = isImdb ? id.split(':')[0] : null;
@@ -183,8 +183,9 @@ class StreamService {
 
   /// Fetches streams specifically for a targeted provider/addon that was previously used by the user.
   ///
-  /// - If [targetAddonName] == 'DizzyHTTP': Only scrapes built-in alive HTTP scrapers.
-  /// - If [targetAddonName] == 'Dizzy': Only scrapes built-in torrent scrapers.
+  /// - If [targetAddonName] == 'DizzyHTTP' (legacy, pre-v1.2.0): scrapes all built-in alive HTTP scrapers.
+  /// - If [targetAddonName] == 'Dizzy' (legacy): only built-in torrent scrapers.
+  /// - If [targetAddonName] is a v1.2.0 site key (e.g. 'flystream'): prefers that scraper, falls back to full pool.
   /// - If [targetAddonName] matches a Stremio addon (e.g. 'Torrentio', 'CyberFlix'): Only calls that specific addon.
   static Stream<StreamSource> fetchStreamsForTargetAddon({
     required String targetAddonName,
@@ -271,15 +272,28 @@ class StreamService {
     }
 
     // Check if targeting built-in DizzyHTTP / Dizzy
-    final isLocalDizzy = normalizedTarget == 'dizzyhttp' ||
-        normalizedTarget == 'dizzy' ||
-        normalizedTarget.contains('dizzy');
+    // v1.2.0-P1: Continue Watching stores unique site keys (e.g. 'flystream',
+    // 'vidsrc') but ALSO legacy 'DizzyHTTP' (pre-v1.2.0). DizzyHTTP = run the
+    // full HTTP pool; a unique key = filter that scraper's sources after the
+    // run. Legacy 'Dizzy' = torrent-only filter. Zero-match targets fall back
+    // to the general fetch (never an empty screen).
+    final isLocalDizzyTorrent = normalizedTarget == 'dizzy';
+    final isLegacyHttpPool = normalizedTarget == 'dizzyhttp' ||
+        (normalizedTarget.contains('dizzy') && !isLocalDizzyTorrent);
 
-    if (isLocalDizzy) {
+    // A unique v1.2.0 site key (e.g. 'flystream') = prefer that scraper's
+    // sources, fall back to the full pool when it yields nothing.
+    final isUniqueSiteKey = !isLegacyHttpPool &&
+        !isLocalDizzyTorrent &&
+        ScraperManager.instance.hasScraper(normalizedTarget);
+
+    if (isLegacyHttpPool || isLocalDizzyTorrent || isUniqueSiteKey) {
       _registerBuiltInScrapers();
 
       final isImdb = id.startsWith('tt');
       final cleanImdbId = isImdb ? id.split(':')[0] : null;
+      final siteKeyFallback = <StreamSource>[];
+      var siteKeyDirectHits = 0;
 
       ScraperManager.instance.scrapeAll(
         type: type,
@@ -291,21 +305,35 @@ class StreamService {
       ).listen(
         (source) {
           if (!controller.isClosed) {
-            // If target was specifically DizzyHTTP, only yield HTTP streams
-            if (normalizedTarget == 'dizzyhttp' &&
+            // Legacy DizzyHTTP pool = HTTP-only; legacy Dizzy = torrents-only.
+            if (isLegacyHttpPool &&
                 (source.infoHash != null && source.infoHash!.isNotEmpty)) {
               return;
             }
-            // If target was specifically Dizzy (torrent), only yield torrent streams
-            if (normalizedTarget == 'dizzy' &&
+            if (isLocalDizzyTorrent &&
                 (source.infoHash == null || source.infoHash!.isEmpty)) {
               return;
             }
+            // Unique site key: stash non-matching sources for fallback.
+            if (isUniqueSiteKey &&
+                source.addonName.trim().toLowerCase() != normalizedTarget) {
+              siteKeyFallback.add(source);
+              return;
+            }
+            if (isUniqueSiteKey) siteKeyDirectHits++;
             controller.add(source);
           }
         },
         onError: (_) {},
         onDone: () {
+          // Unique key with zero direct hits → release the fallback pool.
+          if (isUniqueSiteKey &&
+              siteKeyDirectHits == 0 &&
+              !controller.isClosed) {
+            for (final s in siteKeyFallback) {
+              controller.add(s);
+            }
+          }
           if (!controller.isClosed) controller.close();
         },
       );
