@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dizzy Control — Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+:root{
+  --bg:#080a0f; --card:#11141b; --card2:#0d1017; --line:rgba(255,255,255,.08);
+  --txt:#fff; --mut:#9aa0ae; --acc:#8b5cf6; --cyan:#00e5ff; --grn:#34d399;
+  --red:#f87171; --amb:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+a{color:var(--cyan)}
+/* ── login ── */
+#login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:36px;width:100%;max-width:400px;text-align:center}
+.login-card h1{font-size:26px;font-weight:900;margin-bottom:6px}
+.login-card h1 span{color:var(--acc)}
+.login-card p{color:var(--mut);font-size:13px;margin-bottom:24px}
+.login-card input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;color:#fff;padding:13px 15px;font-size:15px;margin-bottom:12px;outline:none}
+.login-card input:focus{border-color:var(--acc)}
+.btn{background:linear-gradient(135deg,var(--acc),#6d28d9);border:none;color:#fff;font-weight:800;font-size:15px;padding:13px 22px;border-radius:12px;cursor:pointer;width:100%}
+.btn:hover{filter:brightness(1.15)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn-sm{width:auto;padding:8px 16px;font-size:13px}
+.btn-ghost{background:#ffffff14;border:1px solid var(--line)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+.btn-warn{background:linear-gradient(135deg,#f59e0b,#b45309)}
+.btn-ok{background:linear-gradient(135deg,#10b981,#047857)}
+#loginErr{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+/* ── shell ── */
+#app{display:none}
+header{position:sticky;top:0;z-index:10;background:#0d1017ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header .logo{font-weight:900;font-size:18px}
+header .logo span{color:var(--acc)}
+header .ver{font-size:11px;color:var(--mut);background:#ffffff10;padding:3px 10px;border-radius:20px}
+header .sp{flex:1}
+header .me{font-size:13px;color:var(--mut)}
+nav{display:flex;gap:6px;background:var(--card2);padding:10px 22px;border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:61px;z-index:9}
+nav button{background:none;border:none;color:var(--mut);font-weight:700;font-size:14px;padding:10px 16px;border-radius:10px;cursor:pointer;white-space:nowrap}
+nav button.on{background:#8b5cf622;color:#fff}
+nav button:hover{color:#fff}
+main{padding:22px;max-width:1200px;margin:0 auto}
+section{display:none}
+section.on{display:block;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+/* ── cards/grid ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.stat .n{font-size:28px;font-weight:900}
+.stat .l{font-size:12px;color:var(--mut);margin-top:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+.card h3{font-size:15px;font-weight:800;margin-bottom:12px}
+.card h3 .sub{color:var(--mut);font-weight:400;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mut);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid #ffffff08;vertical-align:top}
+tr:hover td{background:#ffffff04}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px}
+.p-live{background:#10b98122;color:var(--grn)}
+.p-lobby{background:#00e5ff22;color:var(--cyan)}
+.p-closed{background:#ffffff14;color:var(--mut)}
+.p-pub{background:#8b5cf622;color:#c4b5fd}
+.p-priv{background:#f59e0b22;color:var(--amb)}
+.p-adult{background:#ef444422;color:var(--red)}
+.p-lock{background:#f59e0b22;color:var(--amb)}
+.rowbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rowbtns button{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:#ffffff0d;color:#fff;cursor:pointer;font-weight:700}
+.rowbtns button:hover{background:#ffffff1c}
+.rowbtns button.danger{border-color:#ef444466;color:var(--red)}
+.rowbtns button.ok{border-color:#10b98166;color:var(--grn)}
+textarea,input[type=text],input[type=number],select{background:var(--card2);border:1px solid var(--line);border-radius:10px;color:#fff;padding:10px 12px;font-size:13px;width:100%;outline:none;font-family:inherit}
+textarea:focus,input:focus{border-color:var(--acc)}
+label.fl{display:block;font-size:12px;color:var(--mut);margin:10px 0 5px;font-weight:700}
+canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
+.mono{font-family:Consolas,monospace;font-size:12px;color:var(--cyan)}
+.mut{color:var(--mut);font-size:12px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1f2b;border:1px solid var(--acc);padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;display:none;z-index:99;max-width:90vw}
+/* modal */
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;z-index:50;overflow-y:auto}
+#modal.open{display:flex}
+.sheet{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;width:100%;max-width:720px}
+.sheet h2{font-size:18px;margin-bottom:14px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px;margin-bottom:14px}
+.kv b{color:var(--mut);font-weight:600}
+.chatbox{background:var(--card2);border-radius:12px;padding:12px;max-height:220px;overflow-y:auto;font-size:13px;margin-bottom:14px}
+.chatbox div{padding:5px 0;border-bottom:1px solid #ffffff06}
+.chatbox .who{color:var(--cyan);font-weight:700;font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <h1>🍿 Dizzy <span>Control</span></h1>
+    <p>Admin dashboard · email + password</p>
+    <input id="email" type="text" placeholder="Admin email" autocomplete="username">
+    <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="loginBtn" onclick="doLogin()">Sign in</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo">🍿 Dizzy <span>Control</span></div>
+    <div class="ver" id="cloudDot">● checking…</div>
+    <div class="sp"></div>
+    <div class="me" id="meEmail"></div>
+    <button class="btn btn-sm btn-ghost" onclick="doLogout()">Logout</button>
+  </header>
+  <nav>
+    <button data-s="overview" class="on" onclick="show('overview')">📊 Overview</button>
+    <button data-s="rooms" onclick="show('rooms')">🏠 Rooms</button>
+    <button data-s="moderation" onclick="show('moderation')">🚩 Moderation</button>
+    <button data-s="scrapers" onclick="show('scrapers')">🎬 Scrapers</button>
+    <button data-s="users" onclick="show('users')">📱 Installs</button>
+    <button data-s="push" onclick="show('push')">📣 Announcements</button>
+    <button data-s="config" onclick="show('config')">⚙️ Config</button>
+    <button data-s="audit" onclick="show('audit')">🧾 Audit</button>
+  </nav>
+  <main>
+    <section id="s-overview" class="on">
+      <div class="stats" id="statCards"></div>
+      <div class="grid2">
+        <div class="card"><h3>📈 New installs · last 30 days</h3><canvas class="chart" id="chInstalls" width="600" height="220"></canvas></div>
+        <div class="card"><h3>📊 Breakdown</h3><div id="breakdown">loading…</div></div>
+      </div>
+      <div class="card"><h3>💓 Health <span class="sub">live right now</span></h3><div id="health">loading…</div></div>
+    </section>
+
+    <section id="s-rooms">
+      <div class="card"><h3>🏠 Rooms <span class="sub">newest first · click row for detail</span>
+        <button class="btn btn-sm btn-ghost" style="float:right" onclick="loadRooms()">↻ Refresh</button></h3>
+        <div style="overflow-x:auto"><table id="roomsTbl"><thead><tr><th>Room</th><th>Title</th><th>Status</th><th>👥</th><th>🚩</th><th>Created</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="s-moderation">
+      <div class="card"><h3>🚩 Reported rooms <span class="sub">3+ reports auto-hide from app lobby</span>
+        <button class="btn btn-sm btn-ghost" style="float:right" onclick="loadRooms()">↻ Refresh</button></h3>
+        <div id="repList">loading…</div>
+      </div>
+    </section>
+
+    <section id="s-scrapers">
+      <div class="stats" id="scraperStats"></div>
+      <div class="grid2">
+        <div class="card"><h3>🗳️ Crowd votes · last 7 days <span class="sub">5+ reporters = likely dead</span></h3><div id="votes">loading…</div></div>
+        <div class="card"><h3>⛔ Kill map <span class="sub">remote_config.scraper_kill — app skips these</span></h3>
+          <label class="fl">JSON: {"scraper": "reason"}</label>
+          <textarea id="killJson" rows="8" class="mono"></textarea>
+          <div class="rowbtns"><button class="ok" onclick="saveKill()">💾 Save kill map</button></div>
+          <label class="fl">Retry cooldown (days)</label>
+          <input type="text" id="cooldownDays" style="max-width:120px">
+          <div class="rowbtns"><button class="ok" onclick="saveCooldown()">💾 Save cooldown</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s-users">
+      <div class="card"><h3>📱 Installs <span class="sub">no PII — anon ids only</span></h3>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="text" id="uSearch" placeholder="Search platform / version / region…" onkeydown="if(event.key==='Enter')loadUsers()">
+          <button class="btn btn-sm" style="width:auto" onclick="loadUsers()">Search</button>
+        </div>
+        <div style="overflow-x:auto"><table id="usersTbl"><thead><tr><th>Anon ID</th><th>Platform</th><th>Ver</th><th>Region</th><th>First seen</th><th>Last seen</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="s-push">
+      <div class="card"><h3>📣 Announcements <span class="sub">in-app banners (app polls this table)</span></h3>
+        <div id="annList">loading…</div>
+      </div>
+      <div class="card"><h3 id="annFormTitle">➕ New announcement</h3>
+        <input type="hidden" id="annId">
+        <label class="fl">Title</label><input type="text" id="annTitle">
+        <label class="fl">Body</label><textarea id="annBody" rows="3"></textarea>
+        <div class="grid2">
+          <div><label class="fl">Link URL (optional)</label><input type="text" id="annUrl"></div>
+          <div><label class="fl">Active</label><select id="annActive"><option value="true">✅ active</option><option value="false">⏸ paused</option></select></div>
+        </div>
+        <div class="grid2">
+          <div><label class="fl">Min app version (blank = all)</label><input type="text" id="annMin" placeholder="1.2.0"></div>
+          <div><label class="fl">Max app version (blank = all)</label><input type="text" id="annMax"></div>
+        </div>
+        <div class="rowbtns" style="margin-top:12px"><button class="ok" onclick="saveAnn()">💾 Save</button><button onclick="resetAnn()">Clear</button></div>
+      </div>
+    </section>
+
+    <section id="s-config">
+      <div class="card"><h3>⚙️ Remote config <span class="sub">app reads on startup — changes go live in ~1h (client cache)</span></h3>
+        <label class="fl">min_app_version — below this the app shows force-update banner</label>
+        <div style="display:flex;gap:8px"><input type="text" id="cfgMinVer" style="max-width:160px"><button class="btn btn-sm" style="width:auto" onclick="saveCfg('min_app_version',document.getElementById('cfgMinVer').value)">Save</button></div>
+        <label class="fl">features (JSON) — e.g. {"watch_party": true, "voice": true}</label>
+        <textarea id="cfgFeatures" rows="4" class="mono"></textarea>
+        <div class="rowbtns"><button class="ok" onclick="saveCfg('features',document.getElementById('cfgFeatures').value)">💾 Save features</button></div>
+        <label class="fl">notice (JSON) — e.g. {"text": "…", "until": "2026-10-01"}</label>
+        <textarea id="cfgNotice" rows="3" class="mono"></textarea>
+        <div class="rowbtns"><button class="ok" onclick="saveCfg('notice',document.getElementById('cfgNotice').value)">💾 Save notice</button></div>
+      </div>
+    </section>
+
+    <section id="s-audit">
+      <div class="card"><h3>🧾 Audit log <span class="sub">every admin write</span>
+        <button class="btn btn-sm btn-ghost" style="float:right" onclick="loadAudit()">↻ Refresh</button></h3>
+        <div style="overflow-x:auto"><table id="auditTbl"><thead><tr><th>When</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modal"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+<script src="./app.js"></script>
+</body>
+</html>

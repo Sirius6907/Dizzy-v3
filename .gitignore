@@ -59,3 +59,9 @@ release-artifacts/
 .hermes/
 .env
 supabase/.temp/
+
+# Dizzy admin dashboard (anon key lives in config.js — deployed, never committed)
+admin-dashboard/config.js
+
+# Local Netlify folder
+.netlify
