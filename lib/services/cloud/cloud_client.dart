@@ -1,11 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/env_service.dart';
+
 /// S2 (v1.1.9): lazy Supabase client. Keys come from --dart-define
 /// (never hardcoded). All cloud calls fail soft — app never blocks.
+///
+/// v1.2.0-A1: falls back to runtime `.env` via [EnvService] so
+/// `flutter run` dev builds also get cloud (CI release builds inject
+/// compile-time defines; local dev reads the `.env` file).
 class CloudClient {
-  static const _url = String.fromEnvironment('SUPABASE_URL');
-  static const _anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static String get _url {
+    const c = String.fromEnvironment('SUPABASE_URL');
+    if (c.isNotEmpty) return c;
+    return EnvService.get('SUPABASE_URL');
+  }
+
+  static String get _anonKey {
+    const c = String.fromEnvironment('SUPABASE_ANON_KEY');
+    if (c.isNotEmpty) return c;
+    return EnvService.get('SUPABASE_ANON_KEY');
+  }
 
   static bool _ready = false;
   static bool get isConfigured => _url.isNotEmpty && _anonKey.isNotEmpty;

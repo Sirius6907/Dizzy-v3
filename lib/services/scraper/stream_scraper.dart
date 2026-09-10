@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../models/stream/stream_model.dart';
+import '../cloud/remote_config_service.dart';
 import '../p2p/p2p_settings_service.dart';
 import 'scraper_quarantine_service.dart';
+import 'scraper_reporter.dart';
 
 abstract class StreamScraper {
   String get name;
@@ -80,6 +82,11 @@ class ScraperManager {
       if (ScraperQuarantineService.isQuarantined(s.name)) {
         return false;
       }
+      // v1.2.0-ADMIN: remote kill map from dashboard — admin-killed scrapers
+      // are skipped app-wide within ~1h (remote config cache TTL).
+      if (RemoteConfigService.isKilled(s.name)) {
+        return false;
+      }
       return true;
     }).toList();
 
@@ -101,6 +108,7 @@ class ScraperManager {
     }
 
     for (final scraper in activeScrapers) {
+      var yielded = 0;
       scraper
           .scrapeStream(
         type: type,
@@ -113,6 +121,10 @@ class ScraperManager {
           .listen(
         (source) {
           if (controller.isClosed) return;
+          yielded++;
+
+          // v1.2.0-ADMIN: first success auto-heals local quarantine.
+          if (yielded == 1) ScraperQuarantineService.markSuccess(scraper.name);
 
           // If P2P is disabled, strictly discard any torrent source
           if (!p2pAllowed &&
@@ -139,9 +151,18 @@ class ScraperManager {
             controller.add(source);
           }
         },
-        onError: (_) {},
+        onError: (_) {
+          // v1.2.0-ADMIN: error vote (throttled 24h server+client).
+          // ignore: unawaited_futures
+          ScraperReporter.reportError(scraper.name);
+        },
         onDone: () {
           pendingScrapers--;
+          if (yielded == 0) {
+            // v1.2.0-ADMIN: empty vote (throttled 24h server+client).
+            // ignore: unawaited_futures
+            ScraperReporter.reportEmpty(scraper.name);
+          }
           checkClose();
         },
       );

@@ -17,8 +17,10 @@ import './services/theme/custom_background_service.dart';
 import './services/theme/dock_settings.dart';
 import './services/theme/glass_settings.dart';
 import './services/player/dub_mode_service.dart';
+import './services/cloud/announcement_service.dart';
 import './services/cloud/cloud_client.dart';
 import './services/cloud/cloud_auth_service.dart';
+import './services/cloud/remote_config_service.dart';
 import './services/device/device_id_service.dart';
 import './services/profiles/dizzy_profile_service.dart';
 import './services/scraper/scraper_quarantine_service.dart';
@@ -58,8 +60,12 @@ void main() async {
   // WP-P0: device code first — cloud install upsert needs it.
   await DeviceIdService.initialize();
   // S2 (v1.1.9): cloud LAST + non-blocking — never delays startup.
+  // v1.2.0-ADMIN: after auth, pull remote config + announcements (cached, soft).
   // ignore: unawaited_futures
-  CloudClient.init().then((_) => CloudAuthService.init());
+  CloudClient.init().then((_) => CloudAuthService.init()).then((_) {
+    RemoteConfigService.initialize();
+    AnnouncementService.initialize(appVersion: '1.2.0');
+  });
   await Future.wait([
     AddonManager.instance.initialize(),
     AppThemeService.initialize(),
