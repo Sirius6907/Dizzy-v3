@@ -7,9 +7,11 @@ import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../../models/movie/movie.dart';
 
 import '../../models/movie/movie_detail.dart';
+import '../../models/addon/addon.dart';
 import '../../models/movie/movie_section.dart';
 import '../details/details_page.dart';
 import '../../services/addon/addon_manager.dart';
+import '../../services/catalog/catalog_service.dart';
 import '../../services/metadata/metadata_service.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../services/home/home_page_settings.dart';
@@ -34,6 +36,41 @@ import '../../widgets/p2p/p2p_warning_dialog.dart';
 import '../../widgets/cloud/consent_onboarding_sheet.dart';
 import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/player/dub_mode_service.dart';
+
+/// Trending row (P22 warm catalog edge feed → snapshot → hidden).
+/// Fail-soft by design: offline/empty = no row, never an error.
+/// Cards open DetailsPage via the built-in title fallback (tmdb: ids
+/// auto-resolve through Cinemeta by title+year on tap).
+/// Pure: catalog cards → top-of-home "Trending Now" section (null when
+/// empty). Unit-tested.
+MovieSection? buildTrendingSection(List<CatalogCard> cards) {
+  if (cards.isEmpty) return null;
+  return MovieSection(
+    title: 'Trending Now',
+    subtitle: 'What everyone is watching',
+    contentType: 'mixed',
+    addonBaseUrl: '',
+    catalog: AddonCatalog(
+      type: 'mixed',
+      id: 'trending',
+      genres: const [],
+      supportsSearch: false,
+      supportsSkip: false,
+    ),
+    movies: [
+      for (final c in cards)
+        Movie(
+          id: 'tmdb:${c.id}',
+          name: c.title,
+          poster: c.poster,
+          year: c.year.isEmpty ? null : c.year,
+          type: c.mediaType == 'tv' ? 'series' : 'movie',
+          addonBaseUrl: '',
+          imdbRating: c.rating > 0 ? c.rating.toStringAsFixed(1) : null,
+        ),
+    ],
+  );
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -162,13 +199,15 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     setState(() {
       // Remove any existing recommendation sections by title or catalog ID so they NEVER duplicate
-      _sections.removeWhere((s) =>
-          s.title.toLowerCase().startsWith('because you') ||
-          s.catalog.id == 'bestsimilar' ||
-          s.catalog.id == 'bestsimilar_list' ||
-          s.catalog.id == 'bestsimilar_watching' ||
-          s.catalog.id == 'trakt_recommendations' ||
-          s.catalog.id == 'simkl_recommendations');
+      _sections.removeWhere(
+        (s) =>
+            s.title.toLowerCase().startsWith('because you') ||
+            s.catalog.id == 'bestsimilar' ||
+            s.catalog.id == 'bestsimilar_list' ||
+            s.catalog.id == 'bestsimilar_watching' ||
+            s.catalog.id == 'trakt_recommendations' ||
+            s.catalog.id == 'simkl_recommendations',
+      );
 
       final toInsert = <MovieSection>[];
       if (watchingSection != null) toInsert.add(watchingSection);
@@ -199,12 +238,25 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _refreshSimilarSections() async {
     if (!mounted) return;
-    final listFuture = HomePageSettings.fetchBestSimilarSection(forceRefresh: true);
-    final watchingFuture = HomePageSettings.fetchContinueWatchingSimilarSection(forceRefresh: true);
-    final traktFuture = HomePageSettings.fetchTraktRecommendationsSection(forceRefresh: true);
-    final simklFuture = HomePageSettings.fetchSimklRecommendationsSection(forceRefresh: true);
+    final listFuture = HomePageSettings.fetchBestSimilarSection(
+      forceRefresh: true,
+    );
+    final watchingFuture = HomePageSettings.fetchContinueWatchingSimilarSection(
+      forceRefresh: true,
+    );
+    final traktFuture = HomePageSettings.fetchTraktRecommendationsSection(
+      forceRefresh: true,
+    );
+    final simklFuture = HomePageSettings.fetchSimklRecommendationsSection(
+      forceRefresh: true,
+    );
 
-    final results = await Future.wait([listFuture, watchingFuture, traktFuture, simklFuture]);
+    final results = await Future.wait([
+      listFuture,
+      watchingFuture,
+      traktFuture,
+      simklFuture,
+    ]);
     if (!mounted) return;
     _injectSimilarSections(
       listSection: results[0],
@@ -231,6 +283,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<MovieSection?> _fetchTrendingSection() async {
+    try {
+      final cards = await CatalogService.fetchFeed(
+        feed: 'trending',
+        type: 'all',
+      );
+      if (cards == null || cards.isEmpty) return null;
+      return buildTrendingSection(cards);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _loadHome() async {
     if (!mounted) return;
     setState(() {
@@ -242,9 +307,11 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final listFuture = HomePageSettings.fetchBestSimilarSection();
-      final watchingFuture = HomePageSettings.fetchContinueWatchingSimilarSection();
+      final watchingFuture =
+          HomePageSettings.fetchContinueWatchingSimilarSection();
       final traktFuture = HomePageSettings.fetchTraktRecommendationsSection();
       final simklFuture = HomePageSettings.fetchSimklRecommendationsSection();
+      final trendingFuture = _fetchTrendingSection();
 
       await for (final section in _manager.streamHomeSections()) {
         if (!mounted) return;
@@ -263,8 +330,19 @@ class _HomePageState extends State<HomePage> {
       }
 
       // Inject recommendation sections (List, Continue Watching, Trakt, Simkl)
-      final results = await Future.wait([listFuture, watchingFuture, traktFuture, simklFuture]);
+      final results = await Future.wait([
+        listFuture,
+        watchingFuture,
+        traktFuture,
+        simklFuture,
+        trendingFuture,
+      ]);
       if (mounted) {
+        // Trending (warm catalog edge feed) goes FIRST — above everything.
+        final trending = results[4];
+        if (trending != null) {
+          setState(() => _sections.insert(0, trending));
+        }
         _injectSimilarSections(
           listSection: results[0],
           watchingSection: results[1],
@@ -372,7 +450,9 @@ class _HomePageState extends State<HomePage> {
                     return const ContinueWatchingSlider(typeFilter: 'main');
                   }
                   if (index == _sections.length + 2) {
-                    return SizedBox(height: 110.0 + MediaQuery.paddingOf(context).bottom);
+                    return SizedBox(
+                      height: 110.0 + MediaQuery.paddingOf(context).bottom,
+                    );
                   }
                   final sectionIdx = index - 2;
                   final isLastTwo = sectionIdx >= (_sections.length - 2);
@@ -581,7 +661,10 @@ class _HomePageState extends State<HomePage> {
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
@@ -706,7 +789,9 @@ class _GlassAppBar extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const WeWatchQuizPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const WeWatchQuizPage(),
+                      ),
                     );
                   },
                 );
@@ -752,7 +837,9 @@ class _GlassAppBar extends StatelessWidget {
                         duration: const Duration(milliseconds: 220),
                         curve: Curves.easeOutCubic,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: isHindi
                               ? const Color(0xFFFF9933).withValues(alpha: 0.18)
@@ -760,7 +847,9 @@ class _GlassAppBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isHindi
-                                ? const Color(0xFFFF9933).withValues(alpha: 0.65)
+                                ? const Color(
+                                    0xFFFF9933,
+                                  ).withValues(alpha: 0.65)
                                 : Colors.white.withValues(alpha: 0.14),
                             width: 1.1,
                           ),
@@ -803,7 +892,9 @@ class _GlassAppBar extends StatelessWidget {
                   ),
                   onPressed: () {
                     final box = context.findRenderObject() as RenderBox?;
-                    final offset = box?.localToGlobal(box.size.center(Offset.zero));
+                    final offset = box?.localToGlobal(
+                      box.size.center(Offset.zero),
+                    );
                     onSearchTap(offset);
                   },
                 );
@@ -820,7 +911,9 @@ class _GlassAppBar extends StatelessWidget {
                   ),
                   onPressed: () {
                     final box = context.findRenderObject() as RenderBox?;
-                    final offset = box?.localToGlobal(box.size.center(Offset.zero));
+                    final offset = box?.localToGlobal(
+                      box.size.center(Offset.zero),
+                    );
                     onSettingsTap(offset);
                   },
                 );
@@ -900,7 +993,9 @@ class _HeroCarouselState extends State<_HeroCarousel> {
     _timer?.cancel();
     if (!HomePageSettings.heroAutoRotate.value) return;
     if (widget.movies.length < 2) return;
-    final interval = Duration(seconds: HomePageSettings.heroRotateSeconds.value);
+    final interval = Duration(
+      seconds: HomePageSettings.heroRotateSeconds.value,
+    );
     _timer = Timer.periodic(interval, (_) {
       if (!mounted || !_pageController.hasClients) return;
       final next = (_index + 1) % widget.movies.length;
@@ -1280,10 +1375,14 @@ class _HeroSlide extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700).withValues(alpha: 0.14),
+                            color: const Color(
+                              0xFFFFD700,
+                            ).withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(9),
                             border: Border.all(
-                              color: const Color(0xFFFFD700).withValues(alpha: 0.28),
+                              color: const Color(
+                                0xFFFFD700,
+                              ).withValues(alpha: 0.28),
                             ),
                           ),
                           child: Row(
@@ -1358,7 +1457,9 @@ class _HeroSlide extends StatelessWidget {
                       ),
                       child: Text(
                         description,
-                        maxLines: heroStyle == HeroStyle.compact ? 1 : (isCompact ? 2 : 3),
+                        maxLines: heroStyle == HeroStyle.compact
+                            ? 1
+                            : (isCompact ? 2 : 3),
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: isCompact ? 14.0 : 15.0,
@@ -1370,7 +1471,8 @@ class _HeroSlide extends StatelessWidget {
                   ],
 
                   // Genre chips (Immersive only)
-                  if (heroStyle == HeroStyle.immersive && genres.isNotEmpty) ...[
+                  if (heroStyle == HeroStyle.immersive &&
+                      genres.isNotEmpty) ...[
                     const SizedBox(height: 14),
                     Wrap(
                       spacing: 8,
@@ -1402,14 +1504,21 @@ class _HeroSlide extends StatelessWidget {
                   ],
 
                   // Action buttons
-                  SizedBox(height: heroStyle == HeroStyle.minimalist ? 12 : (isCompact ? 18 : 24)),
+                  SizedBox(
+                    height: heroStyle == HeroStyle.minimalist
+                        ? 12
+                        : (isCompact ? 18 : 24),
+                  ),
                   Row(
                     children: [
                       Builder(
                         builder: (context) {
                           return ElevatedButton.icon(
                             onPressed: () => _openDetails(context),
-                            icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                            icon: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 22,
+                            ),
                             label: const Text(
                               'Watch Now',
                               style: TextStyle(
@@ -1663,11 +1772,18 @@ class _CustomScrollTrackState extends State<_CustomScrollTrack> {
                           child: Container(
                             height: _thumbHeight,
                             decoration: BoxDecoration(
-                              color: AppThemeService.currentPalette.value.primaryColor,
+                              color: AppThemeService
+                                  .currentPalette
+                                  .value
+                                  .primaryColor,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppThemeService.currentPalette.value.primaryColor.withOpacity(0.6),
+                                  color: AppThemeService
+                                      .currentPalette
+                                      .value
+                                      .primaryColor
+                                      .withOpacity(0.6),
                                   blurRadius: 12,
                                   spreadRadius: 2,
                                 ),
