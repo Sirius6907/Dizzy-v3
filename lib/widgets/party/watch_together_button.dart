@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../design/dizzy_tokens.dart';
 import '../../services/cloud/watch_party_service.dart';
 import '../../services/watchparty/party_session.dart';
 
@@ -79,28 +80,30 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(DizzySpace.md + 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('👥', style: TextStyle(fontSize: 40)),
-            const SizedBox(height: 8),
+            const SizedBox(height: DizzySpace.xs),
             const Text(
               'Room ready! Friend ko code bhejo.',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
+                fontSize: DizzyType.subtitle,
+                fontWeight: DizzyType.wBold,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: DizzySpace.md - 2),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DizzySpace.lg - 4,
+                vertical: DizzySpace.md - 2,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: DizzyRadius.mdAll,
                 border: Border.all(
                     color: Colors.white.withValues(alpha: 0.12)),
               ),
@@ -108,13 +111,13 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                 code,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
+                  fontSize: DizzyType.display - 2,
+                  fontWeight: DizzyType.wBold,
                   letterSpacing: 6,
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DizzySpace.md),
             Row(
               children: [
                 Expanded(
