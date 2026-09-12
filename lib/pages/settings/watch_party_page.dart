@@ -460,7 +460,15 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                       valueListenable: PartyVoiceService.micOn,
                       builder: (c, on, _) => IconButton(
                         tooltip: on ? 'Mute mic' : 'Unmute mic',
-                        onPressed: PartyVoiceService.toggleMic,
+                        // v1.2.0-WTFIX2: toast on failure — dead button never.
+                        onPressed: () async {
+                          final ok =
+                              await PartyVoiceService.toggleMic();
+                          if (!ok && c.mounted) {
+                            _snack(
+                                'Mic is off. Allow mic permission, join voice, then try again.');
+                          }
+                        },
                         icon: Icon(
                           on ? Icons.mic_rounded : Icons.mic_off_rounded,
                           color: on ? Colors.greenAccent : Colors.white54,
