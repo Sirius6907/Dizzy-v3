@@ -65,3 +65,10 @@ admin-dashboard/config.js
 
 # Local Netlify folder
 .netlify
+
+# LOCAL-ONLY product docs (real secrets inside — NEVER commit, NEVER push).
+# These 4 files live on this device only for fast, precise local development.
+/PRD.md
+/TRD.md
+/UIUX.md
+/Backend.md

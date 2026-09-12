@@ -56,6 +56,9 @@ class ScraperManager {
   final List<StreamScraper> _scrapers = [];
   bool get hasScrapers => _scrapers.isNotEmpty;
 
+  /// v1.2.0-P2 (T2.1): read-only snapshot for the Sources health dashboard.
+  List<StreamScraper> get scrapers => List.unmodifiable(_scrapers);
+
   void registerScraper(StreamScraper scraper) {
     if (!_scrapers.any((s) => s.runtimeType == scraper.runtimeType)) {
       _scrapers.add(scraper);

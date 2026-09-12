@@ -58,6 +58,9 @@ class WatchSyncEngine {
 class WatchSyncMessage {
   final int version;
   final String mediaRef;
+  final String? mediaTitle;
+  final int? season;
+  final int? episode;
   final int positionMs;
   final bool playing;
   final double speed;
@@ -66,8 +69,11 @@ class WatchSyncMessage {
   final int hostSentAtMs;
 
   const WatchSyncMessage({
-    this.version = 1,
+    this.version = 2,
     required this.mediaRef,
+    this.mediaTitle,
+    this.season,
+    this.episode,
     required this.positionMs,
     required this.playing,
     this.speed = 1.0,
@@ -80,6 +86,9 @@ class WatchSyncMessage {
         'v': version,
         'type': 'host_state',
         'media_ref': mediaRef,
+        'media_title': mediaTitle,
+        'season': season,
+        'episode': episode,
         'position_ms': positionMs,
         'playing': playing,
         'speed': speed,
@@ -92,6 +101,9 @@ class WatchSyncMessage {
       WatchSyncMessage(
         version: int.tryParse(json['v']?.toString() ?? '') ?? 1,
         mediaRef: json['media_ref']?.toString() ?? '',
+        mediaTitle: json['media_title']?.toString(),
+        season: int.tryParse(json['season']?.toString() ?? ''),
+        episode: int.tryParse(json['episode']?.toString() ?? ''),
         positionMs:
             int.tryParse(json['position_ms']?.toString() ?? '') ?? 0,
         playing: json['playing'] == true,
@@ -102,7 +114,7 @@ class WatchSyncMessage {
             int.tryParse(json['host_sent_at']?.toString() ?? '') ?? 0,
       );
 
-  bool get isUsable => version == 1 && mediaRef.isNotEmpty;
+  bool get isUsable => version >= 1 && version <= 2 && mediaRef.isNotEmpty;
 }
 
 /// Guest-side control lock: while in a party, playback controls follow

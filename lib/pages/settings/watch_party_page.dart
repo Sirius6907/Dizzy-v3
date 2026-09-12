@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/cloud/watch_party_service.dart';
 import '../../services/device/device_id_service.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../services/watchparty/party_session.dart';
 import '../../services/watchparty/party_voice_service.dart';
+import '../../services/watchparty/guest_auto_open.dart';
+import '../../services/watchparty/watch_sync_engine.dart';
+import '../../widgets/guide/guide_card.dart';
+import '../../widgets/party/voice_consent_sheet.dart';
 import 'widgets/party_room_panel.dart';
 
 /// S3C (v1.1.9): Watch Party lobby. Playback screen wiring follows after
@@ -45,6 +50,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     super.initState();
     // ignore: unawaited_futures
     WatchPartyService.loadPrefs();
+    // v1.2.0-T2.6: first-time Watch Together guide (skipable, never nags).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GuideCard.maybeShow(context, 'watch_party', AppGuides.watchParty);
+    });
   }
 
   @override
@@ -126,6 +135,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                     isHost: _activeIsHost,
                     onExit: () {
                       _lobbyFuture = null;
+                      // v1.2.0-P3: leaving ends the session (stops follow + sync).
+                      PartySession.instance.end();
                       setState(() {
                         _activeRoom = null;
                         _activeIsHost = false;
@@ -322,6 +333,68 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         ),
       );
 
+  /// v1.2.0-P4: host per-user mute sheet (Easy English, no tech words).
+  void _showVoiceMembers(BuildContext context) {
+    final ids = PartyVoiceService.remoteIds;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF141A26),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (c) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'People in voice',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Tap mute to silence one person. They can unmute and speak again.',
+                style: TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              if (ids.isEmpty)
+                const Text('Nobody else here yet.',
+                    style: TextStyle(color: Colors.white60, fontSize: 13)),
+              for (final id in ids)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF1E2A3D),
+                    child: Icon(Icons.person_rounded,
+                        color: Colors.white70, size: 20),
+                  ),
+                  title: Text(
+                    'Friend ${id.length > 6 ? id.substring(id.length - 6) : id}',
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Mute this person',
+                    icon: const Icon(Icons.mic_off_rounded,
+                        color: Colors.orangeAccent),
+                    onPressed: () async {
+                      final ok = await PartyVoiceService.muteUser(id);
+                      if (c.mounted) Navigator.pop(c);
+                      _snack(ok ? 'Muted.' : 'Could not mute. Try again.');
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _voiceBar() => ValueListenableBuilder<bool>(
         valueListenable: PartyVoiceService.connected,
         builder: (c, connected, _) {
@@ -362,7 +435,27 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                         ),
                       ),
                     ),
-                    if (PartyVoiceService.amHost)
+                    // v1.2.0-P4: deafen — hear nobody, mic locked off.
+                    ValueListenableBuilder<bool>(
+                      valueListenable: PartyVoiceService.deafened,
+                      builder: (c, deaf, _) => IconButton(
+                        tooltip: deaf ? 'Undeafen' : 'Deafen (mute all sound)',
+                        onPressed: PartyVoiceService.toggleDeafen,
+                        icon: Icon(
+                          deaf
+                              ? Icons.hearing_disabled_rounded
+                              : Icons.hearing_rounded,
+                          color: deaf ? Colors.orangeAccent : Colors.white54,
+                        ),
+                      ),
+                    ),
+                    if (PartyVoiceService.amHost) ...[
+                      IconButton(
+                        tooltip: 'Mute one person',
+                        onPressed: () => _showVoiceMembers(c),
+                        icon: const Icon(Icons.manage_accounts_rounded,
+                            color: Colors.white54),
+                      ),
                       IconButton(
                         tooltip: 'Mute everyone',
                         onPressed: () async {
@@ -375,6 +468,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                         icon: const Icon(Icons.volume_off_rounded,
                             color: Colors.white54),
                       ),
+                    ],
                     IconButton(
                       tooltip: 'Leave voice',
                       onPressed: () => PartyVoiceService.leave(),
@@ -403,16 +497,14 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       );
 
   Future<void> _autoVoice(WatchPartyRoom room, bool asHost) async {
-    // WP-P5: voice needs the explicit watch-party consent (mic = PII-adjacent).
-    if (!CloudAuthService.consentWatchParty.value) {
-      _snack('Enable Watch Party voice in Settings → Privacy first.');
-      return;
-    }
-    final ok = await PartyVoiceService.join(
-        roomCode: room.roomId, asHost: asHost);
-    _snack(ok
-        ? 'Voice joined (muted). Tap the mic to speak.'
-        : 'Voice unavailable — check LiveKit setup. Party still works.');
+    // v1.2.0-T2.8: one-tap voice sheet (consent + join together, join-muted).
+    // No Settings maze. Denied/failed → party still works (soft).
+    if (!mounted) return;
+    await VoiceConsentSheet.maybeAsk(
+      context: context,
+      roomCode: room.roomId,
+      asHost: asHost,
+    );
     if (mounted) setState(() {});
   }
 
@@ -501,7 +593,6 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
 
   Future<void> _createRoom() async {
     final title = TextEditingController(text: 'Dizzy Watch Party');
-    final media = TextEditingController();
     final pass = TextEditingController();
     var private = false;
     var adult = false;
@@ -514,13 +605,12 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(controller: title, decoration: const InputDecoration(labelText: 'Room title')),
-              TextField(
-                controller: media,
-                textCapitalization: TextCapitalization.none,
-                decoration: const InputDecoration(
-                  labelText: 'Media ref (TMDB/IMDB id) *',
-                  hintText: 'e.g. tmdb:movie:550',
-                ),
+              const SizedBox(height: 4),
+              // v1.2.0-P1: no media needed — play anything after creating,
+              // everyone in the room follows you automatically.
+              const Text(
+                'No movie needed now. Play anything after — friends follow you.',
+                style: TextStyle(fontSize: 12),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -552,7 +642,6 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
             FilledButton(
               onPressed: () => Navigator.pop(c, {
                 'title': title.text,
-                'media': media.text,
                 'private': '$private',
                 'pass': pass.text,
                 'adult': '$adult',
@@ -564,10 +653,6 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       ),
     );
     if (values == null) return;
-    if ((values['media'] ?? '').trim().isEmpty) {
-      _snack('Attach what you are playing first — media ref is required to host.');
-      return;
-    }
     if (values['private'] == 'true' && !WatchPartyService.validPass(values['pass']!)) {
       _snack('Private rooms need exactly 6 digits.');
       return;
@@ -575,7 +660,6 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     setState(() => _busy = true);
     final room = await WatchPartyService.createRoom(
       title: values['title']!,
-      mediaRef: values['media']!.trim(),
       isPrivate: values['private'] == 'true',
       pass: values['pass'],
       isAdult: values['adult'] == 'true',
@@ -586,6 +670,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       return;
     }
     _showRoomReady(room, asHost: true);
+    // v1.2.0-P1: lobby-created host also owns the session (media comes later).
+    PartySession.instance.startAsHost(room: room);
     if (mounted) {
       _lobbyFuture = null; // new room must appear in lobby
       setState(() {
@@ -605,13 +691,43 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: id, maxLength: 6, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Room ID')),
+            TextField(
+              controller: id,
+              maxLength: 6,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: 'Room code',
+                hintText: 'ABC123',
+                suffixIcon: IconButton(
+                  tooltip: 'Paste',
+                  icon: const Icon(Icons.paste_rounded),
+                  onPressed: () async {
+                    final data =
+                        await Clipboard.getData(Clipboard.kTextPlain);
+                    final text = data?.text ?? '';
+                    if (text.trim().isNotEmpty) {
+                      id.text = PartySession.normalizeCode(text);
+                    }
+                  },
+                ),
+              ),
+              onChanged: (v) {
+                final norm = PartySession.normalizeCode(v);
+                if (norm != v) {
+                  id.value = id.value.copyWith(
+                    text: norm,
+                    selection:
+                        TextSelection.collapsed(offset: norm.length),
+                  );
+                }
+              },
+            ),
             TextField(controller: pass, maxLength: 6, keyboardType: TextInputType.number, obscureText: true, decoration: const InputDecoration(labelText: 'Private pass (only if needed)')),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, {'id': id.text, 'pass': pass.text}), child: const Text('Join')),
+          FilledButton(onPressed: () => Navigator.pop(c, {'id': PartySession.normalizeCode(id.text), 'pass': pass.text}), child: const Text('Join')),
         ],
       ),
     );
@@ -620,8 +736,32 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     final room = await WatchPartyService.joinRoom(roomId: values['id']!, pass: values['pass']);
     if (mounted) setState(() => _busy = false);
     if (room == null) {
-      _snack('Room not found, closed, or the pass is wrong.');
+      // v1.2.0-P5: full rooms get their own easy message (20 max).
+      final n = await WatchPartyService.roomMemberCount(values['id']!);
+      _snack((n != null && n >= 20)
+          ? 'Room is full (20 max). Ask host for a new room.'
+          : "Couldn't find this room. Check the code, ask host to resend.");
       return;
+    }
+    PartySession.instance.startAsGuest(room: room);
+    // v1.2.0-P1: guest picks up "now watching" from the row (auto-open lands in P3).
+    final nowRef = room.nowWatchingRef;
+    if (nowRef != null && nowRef.isNotEmpty) {
+      // v1.2.0-P3: mid-title join → same auto-open path as live switches.
+      // handle() FIRST (its same-title early-return must see pre-join state),
+      // display state right after (handle sets it again on success).
+      // ignore: unawaited_futures
+      GuestAutoOpen.handle(WatchSyncMessage(
+        mediaRef: nowRef,
+        mediaTitle: room.currentTitle,
+        positionMs: 0,
+        playing: true,
+        hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+      ));
+      PartySession.instance.setGuestMedia(
+        mediaRef: nowRef,
+        mediaTitle: room.currentTitle,
+      );
     }
     _showRoomReady(room);
     if (mounted) {
@@ -645,23 +785,93 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   void _showRoomReady(WatchPartyRoom room, {bool asHost = false}) {
+    // v1.2.0-T2.8: big code card + Copy/Invite (dead-easy sharing).
     showDialog<void>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Room ready 🎉'),
-        content: Text('Room ID: ${room.roomId}\n\nShare this ID. ${room.isPrivate ? 'Also share the private 6-digit pass separately.' : 'This is a public room — no pass needed.'}${room.isAdult ? '\n\n⚠️ 18+ room — viewer discretion advised.' : ''}\n\nPlayback sync controls will activate when a title is launched into this room.'),
+        backgroundColor: const Color(0xFF141A26),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text('Room ready 🎉',
+            style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12)),
+              ),
+              child: Text(
+                room.roomId,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 6,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              room.isPrivate
+                  ? 'Private room — share the 6-digit pass too.'
+                  : 'Public room — code is enough, no pass.',
+              style: const TextStyle(
+                  color: Colors.white60, fontSize: 12.5),
+              textAlign: TextAlign.center,
+            ),
+            if (room.isAdult)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text('⚠️ 18+ room — viewer discretion advised.',
+                    style: TextStyle(
+                        color: Colors.orangeAccent, fontSize: 12)),
+              ),
+            const SizedBox(height: 4),
+            const Text(
+              'Play a title and all screens follow together.',
+              style: TextStyle(color: Colors.white60, fontSize: 12.5),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: room.roomId));
+              ScaffoldMessenger.of(c).showSnackBar(
+                const SnackBar(content: Text('Code copied.')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(
+                text:
+                    'Join my Watch Together: ${room.roomId} — ${room.title}',
+              ));
+              ScaffoldMessenger.of(c).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('Invite copied. Paste it on WhatsApp.'),
+                ),
+              );
+            },
+            child: const Text('Invite'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(c);
               // ignore: unawaited_futures
               _autoVoice(room, asHost);
             },
-            child: const Text('Done — join voice (muted)'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Skip voice'),
+            child: const Text('Done'),
           ),
         ],
       ),

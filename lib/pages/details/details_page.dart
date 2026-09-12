@@ -9,6 +9,9 @@ import '../../models/my_list/my_list_item.dart';
 import '../../services/metadata/bestsimilar_scraper.dart';
 import '../../services/metadata/metadata_service.dart';
 import '../../services/my_list/my_list_service.dart';
+import '../../services/home/genre_preference_service.dart';
+import '../../services/watchparty/party_session.dart';
+import '../../widgets/party/watch_together_button.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../discover/discover_page.dart';
 import '../player/watch_screen.dart';
@@ -695,6 +698,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
               _buildPlayButton(fullWidth: true),
               const SizedBox(height: _Space.sm),
               _buildLibraryButton(fullWidth: true),
+              const SizedBox(height: _Space.sm),
+              _buildWatchTogetherButton(),
             ],
           ),
         ),
@@ -756,6 +761,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
             _buildLibraryButton(fullWidth: false),
           ],
         ),
+        const SizedBox(height: _Space.sm),
+        _buildWatchTogetherButton(),
         if (meta.description != null && meta.description!.isNotEmpty) ...[
           const SizedBox(height: _Space.lg),
           _buildSynopsis(meta.description!),
@@ -989,6 +996,33 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
     );
   }
 
+  /// v1.2.0-T2.8: one-tap Watch Together entry (flagship, dead-easy).
+  Widget _buildWatchTogetherButton() {
+    if (_detail == null) return const SizedBox.shrink();
+    final d = _detail!;
+    final String ref;
+    if (d.id.startsWith('tt')) {
+      ref = PartySession.imdbRef(d.id);
+    } else if (d.tmdbId != null) {
+      ref = _isSeries
+          ? PartySession.tvRef(d.tmdbId!, _selectedSeason ?? 1, 1)
+          : PartySession.movieRef(d.tmdbId!);
+    } else {
+      ref = PartySession.movieRef(d.id);
+    }
+    return WatchTogetherButton(
+      mediaRef: ref,
+      mediaTitle: d.name,
+      season: _isSeries ? (_selectedSeason ?? 1) : null,
+      episode: _isSeries ? 1 : null,
+      onPlayerOpen: () => _handlePlayAction(
+        _currentSeasonEpisodes.isNotEmpty
+            ? _currentSeasonEpisodes.first
+            : (d.videos.isNotEmpty ? d.videos.first : null),
+      ),
+    );
+  }
+
   void _toggleMyList() {
     if (_detail == null) return;
 
@@ -1002,7 +1036,12 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
       tmdbId: _detail!.tmdbId != null ? int.tryParse(_detail!.tmdbId!) : null,
     );
 
+    // v1.2.0-T2.5: learn taste only when ADDING (not removing).
+    final adding = !MyListService.isInList(item);
     MyListService.toggle(item);
+    if (adding && _detail!.genres.isNotEmpty) {
+      GenrePreferenceService.recordGenres(_detail!.genres);
+    }
   }
 
   Widget _buildSynopsis(String text) {

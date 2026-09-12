@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -11,7 +12,9 @@ import '../../models/stream/stream_model.dart';
 import '../../utils/download/download_path_helper.dart';
 import '../../utils/platform/storage_space_helper.dart';
 import '../debrid/debrid_service.dart';
+import '../errors/app_error_log.dart';
 import '../stream/torrent_stream_service.dart';
+import 'download_error_text.dart';
 import 'hls_download_engine.dart';
 
 /// Comprehensive Background & In-App Download Manager.
@@ -40,11 +43,105 @@ class DownloadService {
   // Flag for coordinated pause/cancellation
   final Set<String> _canceledOrPausedTaskIds = {};
 
+  // ── v1.2.0-T2.2: connectivity watcher (auto-pause / auto-resume) ──────
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  /// True while device is offline. UI shows "No internet. Waiting…" banner.
+  final ValueNotifier<bool> offlineNotifier = ValueNotifier<bool>(false);
+
   // ── Initialization ────────────────────────────────────────────────────────
   Future<void> initialize() async {
     if (_isInitialized) return;
     await _loadPersistedTasks();
     _isInitialized = true;
+    _startConnectivityWatcher();
+  }
+
+  /// Starts (once) the connectivity listener. Safe to call multiple times.
+  /// Offline → auto-pause downloading tasks (netPaused=true, .part intact).
+  /// Back online → auto-resume ONLY net-paused tasks (never user-paused).
+  void _startConnectivityWatcher() {
+    if (_connectivitySub != null) return;
+    try {
+      _connectivitySub =
+          Connectivity().onConnectivityChanged.listen(_onConnectivityChanged);
+      // One initial check: resume net-paused tasks if we launch online.
+      Connectivity().checkConnectivity().then(_onConnectivityChanged).catchError((_) {});
+    } catch (_) {
+      // Watcher is best-effort — downloads still work without it.
+    }
+  }
+
+  Future<void> _onConnectivityChanged(List<ConnectivityResult> results) async {
+    final offline = results.isEmpty ||
+        (results.length == 1 && results.first == ConnectivityResult.none);
+    offlineNotifier.value = offline;
+    if (offline) {
+      await pauseForNetworkLoss();
+    } else {
+      await resumeAfterNetworkReturn();
+    }
+  }
+
+  /// Pure decision helper (unit-tested): which downloading tasks to net-pause.
+  @visibleForTesting
+  static List<DownloadTask> tasksToNetPause(List<DownloadTask> tasks) {
+    return tasks.where((t) => t.status == DownloadStatus.downloading).toList();
+  }
+
+  /// Pure decision helper (unit-tested): which paused tasks to auto-resume.
+  @visibleForTesting
+  static List<DownloadTask> tasksToAutoResume(List<DownloadTask> tasks) {
+    return tasks
+        .where((t) =>
+            t.status == DownloadStatus.paused && t.netPaused == true)
+        .toList();
+  }
+
+  /// Pause all downloading tasks due to network loss (marks netPaused).
+  Future<void> pauseForNetworkLoss() async {
+    final toPause = tasksToNetPause(tasksNotifier.value);
+    for (final task in toPause) {
+      _canceledOrPausedTaskIds.add(task.id);
+      _cleanupHttpTask(task.id);
+      _updateTask(task.copyWith(
+        status: DownloadStatus.paused,
+        netPaused: true,
+        speedBytesPerSec: 0.0,
+        etaSeconds: null,
+      ));
+    }
+  }
+
+  /// Resume tasks that were auto-paused by network loss.
+  Future<void> resumeAfterNetworkReturn() async {
+    final toResume = tasksToAutoResume(tasksNotifier.value);
+    for (final task in toResume) {
+      _canceledOrPausedTaskIds.remove(task.id);
+      _updateTask(task.copyWith(netPaused: false));
+      unawaited(_executeDownload(
+          tasksNotifier.value.firstWhere((t) => t.id == task.id)));
+    }
+  }
+
+  /// Central failure path: stores Easy-English text (never raw) + opt-in log.
+  /// Looks up the latest task snapshot so progress bytes aren't regressed.
+  /// No-ops for paused/canceled tasks (pause always wins over failure).
+  void _failTask(DownloadTask task, Object e, {String screen = 'downloads'}) {
+    if (_canceledOrPausedTaskIds.contains(task.id)) return;
+    final raw = e.toString();
+    final code = DownloadErrorText.classify(raw);
+    final latest =
+        tasksNotifier.value.where((t) => t.id == task.id).firstOrNull ?? task;
+    _updateTask(latest.copyWith(
+      status: DownloadStatus.failed,
+      error: DownloadErrorText.easyText(code),
+    ));
+    unawaited(AppErrorLog.log(
+      code: code,
+      screen: screen,
+      detail: task.sourceType.name,
+    ));
   }
 
   // ── Task Persistence ───────────────────────────────────────────────────────
@@ -327,12 +424,7 @@ class DownloadService {
       _updateTask(p2pTask);
       await _executeHttpDownload(p2pTask);
     } catch (e) {
-      if (!_canceledOrPausedTaskIds.contains(task.id)) {
-        _updateTask(task.copyWith(
-          status: DownloadStatus.failed,
-          error: e.toString(),
-        ));
-      }
+      _failTask(task, e);
     }
   }
 
@@ -363,10 +455,7 @@ class DownloadService {
         await _executeHttpDownload(debridTask);
       }
     } catch (e) {
-      _updateTask(task.copyWith(
-        status: DownloadStatus.failed,
-        error: e.toString(),
-      ));
+      _failTask(task, e);
     }
   }
 
@@ -380,12 +469,7 @@ class DownloadService {
         isPausedOrCanceled: () => _canceledOrPausedTaskIds.contains(task.id),
       );
     } catch (e) {
-      if (!_canceledOrPausedTaskIds.contains(task.id)) {
-        _updateTask(task.copyWith(
-          status: DownloadStatus.failed,
-          error: e.toString(),
-        ));
-      }
+      _failTask(task, e);
     }
   }
 
@@ -523,12 +607,7 @@ class DownloadService {
           _httpSubscriptions.remove(task.id);
           _httpRequests.remove(task.id);
 
-          if (!_canceledOrPausedTaskIds.contains(task.id)) {
-            _updateTask(task.copyWith(
-              status: DownloadStatus.failed,
-              error: err.toString(),
-            ));
-          }
+          _failTask(task, err);
         },
         cancelOnError: true,
       );
@@ -536,12 +615,7 @@ class DownloadService {
       _httpSubscriptions[task.id] = subscription;
     } catch (e) {
       _cleanupHttpTask(task.id);
-      if (!_canceledOrPausedTaskIds.contains(task.id)) {
-        _updateTask(task.copyWith(
-          status: DownloadStatus.failed,
-          error: e.toString(),
-        ));
-      }
+      _failTask(task, e);
     }
   }
 
@@ -559,6 +633,8 @@ class DownloadService {
   // ── Public API: Pause, Resume, Cancel, Delete ──────────────────────────────
 
   /// Pauses an active download.
+  /// Manual pause always wins: clears netPaused so a later network
+  /// flap never auto-resumes a task the user chose to pause.
   Future<void> pauseDownload(String taskId) async {
     _canceledOrPausedTaskIds.add(taskId);
     final task = tasksNotifier.value.where((t) => t.id == taskId).firstOrNull;
@@ -568,17 +644,22 @@ class DownloadService {
 
     _updateTask(task.copyWith(
       status: DownloadStatus.paused,
+      netPaused: false,
       speedBytesPerSec: 0.0,
       etaSeconds: null,
     ));
   }
 
   /// Resumes a paused download.
+  /// Clears netPaused — from here the user owns the task again.
   Future<void> resumeDownload(String taskId) async {
     final task = tasksNotifier.value.where((t) => t.id == taskId).firstOrNull;
     if (task == null) return;
 
-    _executeDownload(task);
+    _canceledOrPausedTaskIds.remove(task.id);
+    _updateTask(task.copyWith(netPaused: false));
+    _executeDownload(
+        tasksNotifier.value.where((t) => t.id == taskId).firstOrNull ?? task);
   }
 
   /// Cancels an active download and cleans up temporary .part files.

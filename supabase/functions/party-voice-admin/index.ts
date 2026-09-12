@@ -1,6 +1,6 @@
 // WP-P3: host-only voice moderation (mute-all / kick).
 // Env: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET (supabase secrets).
-// Body: { room_code, action: "mute_all" | "kick", target_identity? }.
+// Body: { room_code, action: "mute_all" | "mute_user" | "kick", target_identity? }.
 // Caller must be the room host (checked against rooms.host_user_id).
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -50,6 +50,11 @@ serve(async (req) => {
         await svc.mutePublishedTrack(code, p.identity, TrackSource.MICROPHONE, true);
       }
       return json({ ok: true, muted: parts.length });
+    }
+    if (action === "mute_user" && target_identity) {
+      if (target_identity === user.id) return json({ error: "no self-mute" }, 400);
+      await svc.mutePublishedTrack(code, String(target_identity), TrackSource.MICROPHONE, true);
+      return json({ ok: true });
     }
     if (action === "kick" && target_identity) {
       if (target_identity === user.id) return json({ error: "no self-kick" }, 400);

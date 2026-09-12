@@ -28,6 +28,32 @@ class TmdbHelper {
     return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
+  /// v1.2.0-P3: tmdb id → imdb id (guest auto-open needs it for Cinemeta).
+  /// Proxy first (keyless), official API as backup. Null = unknown, fail-soft.
+  static Future<String?> fetchImdbId({
+    required String endpoint, // 'movie' or 'tv'
+    required int tmdbId,
+  }) async {
+    final paths = <String>[
+      '$_tmdbProxy/$endpoint/$tmdbId/external_ids',
+    ];
+    if (hasKey) {
+      paths.add('$_tmdbDirect/$endpoint/$tmdbId/external_ids?api_key=$_apiKey');
+    }
+    for (final url in paths) {
+      try {
+        final res = await http
+            .get(Uri.parse(url), headers: _headers)
+            .timeout(const Duration(seconds: 6));
+        if (res.statusCode != 200) continue;
+        final data = jsonDecode(res.body) as Map<String, dynamic>?;
+        final imdb = data?['imdb_id']?.toString();
+        if (imdb != null && imdb.startsWith('tt')) return imdb;
+      } catch (_) {}
+    }
+    return null;
+  }
+
   static Future<int?> resolveTmdbId({
     String? imdbId,
     required String title,

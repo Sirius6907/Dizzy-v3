@@ -49,6 +49,10 @@ class DownloadTask {
   final int peers;
   final String? error;
 
+  /// v1.2.0-T2.2: true when auto-paused by the connectivity watcher.
+  /// User-paused tasks stay false — only net-paused tasks auto-resume.
+  final bool netPaused;
+
   // Timestamps
   final DateTime createdAt;
   final DateTime? completedAt;
@@ -80,6 +84,7 @@ class DownloadTask {
     this.etaSeconds,
     this.peers = 0,
     this.error,
+    this.netPaused = false,
     required this.createdAt,
     this.completedAt,
   });
@@ -146,6 +151,7 @@ class DownloadTask {
     int? etaSeconds,
     int? peers,
     String? error,
+    bool? netPaused,
     DateTime? completedAt,
     String? targetFilePath,
     String? rawUrl,
@@ -179,6 +185,7 @@ class DownloadTask {
       etaSeconds: etaSeconds ?? this.etaSeconds,
       peers: peers ?? this.peers,
       error: error ?? this.error,
+      netPaused: netPaused ?? this.netPaused,
       createdAt: createdAt,
       completedAt: completedAt ?? this.completedAt,
     );
@@ -211,6 +218,7 @@ class DownloadTask {
       'createdAt': createdAt.millisecondsSinceEpoch,
       'completedAt': completedAt?.millisecondsSinceEpoch,
       'error': error,
+      'netPaused': netPaused,
     };
   }
 
@@ -253,6 +261,8 @@ class DownloadTask {
           ? DateTime.fromMillisecondsSinceEpoch(json['completedAt'] as int)
           : null,
       error: json['error'] as String?,
+      // Old files lack the key → default false (user-paused semantics).
+      netPaused: json['netPaused'] as bool? ?? false,
     );
   }
 }

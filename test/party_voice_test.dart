@@ -34,4 +34,30 @@ void main() {
       expect(PartyVoiceService.currentRoomCode, isNull);
     });
   });
+
+  group('P4: deafen + per-user mute (pure)', () {
+    test('mute-user request shape', () {
+      final req = PartyVoiceService.muteUserRequest('k7q2m9', 'DEV123');
+      expect(req['room_code'], 'K7Q2M9');
+      expect(req['action'], 'mute_user');
+      expect(req['target_identity'], 'DEV123');
+    });
+
+    test('deafen with no room only flips the flag (fail-soft)', () async {
+      PartyVoiceService.deafened.value = false;
+      await PartyVoiceService.setDeafened(true);
+      expect(PartyVoiceService.deafened.value, isTrue);
+      await PartyVoiceService.setDeafened(false);
+      expect(PartyVoiceService.deafened.value, isFalse);
+    });
+
+    test('muteUser with no room/host returns false, never throws', () async {
+      expect(await PartyVoiceService.muteUser('DEV123'), isFalse);
+      expect(await PartyVoiceService.muteUser(''), isFalse);
+    });
+
+    test('remoteIds empty when disconnected', () {
+      expect(PartyVoiceService.remoteIds, isEmpty);
+    });
+  });
 }

@@ -35,13 +35,16 @@ import './services/music/qobuz_music_service.dart';
 import './services/my_list/my_list_service.dart';
 import './services/player/player_settings.dart';
 import './services/download/download_service.dart';
+import './services/errors/app_error_log.dart';
 import './services/config/env_service.dart';
 import './services/window/window_service.dart';
 import './services/p2p/p2p_settings_service.dart';
 import './services/discord/discord_rpc_service.dart';
 import './widgets/updater/update_dialog.dart';
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+import './core/error_boundary.dart';
+import './core/nav_key.dart';
+import './services/watchparty/party_session.dart';
+import './services/watchparty/guest_auto_open.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +68,9 @@ void main() async {
   CloudClient.init().then((_) => CloudAuthService.init()).then((_) {
     RemoteConfigService.initialize();
     AnnouncementService.initialize(appVersion: '1.2.0');
+    // v1.2.0-T2.2: opted-in error queue flush (no-op when consent OFF).
+    AppErrorLog.schedulePeriodicFlush();
+    AppErrorLog.flushOnStart();
   });
   await Future.wait([
     AddonManager.instance.initialize(),
@@ -91,6 +97,14 @@ void main() async {
     DizzyProfileService.initialize(),
     ScraperQuarantineService.initialize(),
   ]);
+  // v1.2.0-P3: guest follow lifecycle (auto-open host titles anywhere).
+  PartySession.onGuestStart = GuestFollowService.arm;
+  PartySession.onSessionEnd = () {
+    // ignore: unawaited_futures
+    GuestFollowService.disarm();
+  };
+  // v1.2.0-T3.2: global error boundary — branded screen, never white-screen.
+  installGlobalErrorHandlers(restartApp: () => runApp(const DizzyApp()));
   runApp(const DizzyApp());
 }
 

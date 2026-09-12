@@ -2,6 +2,27 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.2.0] — 2026-09-12 — "Zero-Tech User"
+
+### Watch Together 10x (flagship)
+- One-tap rooms from any movie/TV page, big code card + Copy/Invite.
+- Host heartbeat (2 Hz) + guest silent follow (1.5 s auto-fix, "Catching up" past 5 s).
+- Guest transport lock with easy note; host LIVE pill in player.
+- Join dialog with Paste + auto-uppercase; chat timestamps + host badges.
+- One-tap voice sheet (join-muted); reconnect backoff 1 s/2 s/4 s.
+
+### Guides (skipable, Easy English)
+- First-time cards: Watch Together, Downloads, Cloud, Sources, Subtitles.
+- Skip = never nags; Settings → "Show guides again" replays all.
+
+### Everyday upgrades
+- Sources health dashboard (green = good, red = resting, Retry).
+- Search history (last 10 chips, 50 stored, Clear All).
+- Words-on-screen subtitle styles with live preview.
+- Genre taste learning (list-add + full watch) powers Because rows.
+- Persistent downloads with resume; net-switch auto-pause/resume.
+- Global error boundary: branded screen + Report + Restart, never white-screen.
+
 ## [3.0.0-early] — 2026-08-11
 
 ### Added
