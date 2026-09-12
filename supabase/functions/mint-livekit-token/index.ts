@@ -1,7 +1,9 @@
 // WP-P3: mints short-lived LiveKit tokens for party voice.
 // Env (supabase secrets set): LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET.
 // Body: { room_code: "K7Q2M9" }. Identity = auth uid, name = device code.
-// Grants: host publish+subscribe, member subscribe-only (mic granted on unmute).
+// Grants: every joined member can publish+subscribe (Discord-style:
+// all can speak; host controls via party-voice-admin mute_user/mute_all).
+// Subscribe-only members would see a dead mic button with zero feedback.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AccessToken } from "npm:livekit-server-sdk@2";
@@ -56,7 +58,7 @@ serve(async (req) => {
     at.addGrant({
       room: code,
       roomJoin: true,
-      canPublish: isHost,
+      canPublish: true,
       canSubscribe: true,
       canPublishData: true,
     });

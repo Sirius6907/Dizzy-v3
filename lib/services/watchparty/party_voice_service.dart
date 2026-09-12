@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../cloud/cloud_client.dart';
 import '../device/device_id_service.dart';
@@ -127,19 +128,30 @@ class PartyVoiceService {
     };
   }
 
-  static Future<void> toggleMic() async =>
+  /// Returns true when the mic actually switched. False = still off
+  /// (no channel, deafened, permission denied, or publish rejected) —
+  /// callers MUST toast on false so the button never looks dead.
+  static Future<bool> toggleMic() async =>
       setMicEnabled(!micOn.value);
 
-  static Future<void> setMicEnabled(bool enabled) async {
+  static Future<bool> setMicEnabled(bool enabled) async {
     final room = _room;
-    if (room == null || !connected.value) return;
+    if (room == null || !connected.value) return false;
     // Deafened = mic stays off (Discord rule). Undeafen first to speak.
-    if (enabled && deafened.value) return;
+    if (enabled && deafened.value) return false;
     try {
+      // v1.2.0-WTFIX2: Android needs a runtime mic grant; without it the
+      // track throws and the mic button silently stays off.
+      if (enabled) {
+        final st = await Permission.microphone.request();
+        if (!st.isGranted) return false;
+      }
       await room.localParticipant?.setMicrophoneEnabled(enabled);
       micOn.value = enabled;
+      return true;
     } catch (e) {
       AppLog.d('[Voice] mic toggle failed (soft): $e');
+      return false;
     }
   }
 
