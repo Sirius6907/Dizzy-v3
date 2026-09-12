@@ -2,9 +2,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dizzy/services/iptv/hardcoded_channels.dart';
 import 'package:dizzy/services/iptv/iptv_network.dart';
+import 'helpers/live_gate.dart';
 
 void main() {
-  test('Live Extractor and Channel Matching Engine Evaluation', () async {
+  test('Live Extractor and Channel Matching Engine Evaluation', skip: liveSkip, () async {
     print('\n======================================================');
     print('   EVALUATING PRODUCTION EXTRACTOR & MATCHING ENGINE  ');
     print('======================================================\n');

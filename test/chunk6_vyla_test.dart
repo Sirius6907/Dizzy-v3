@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dizzy/services/scraper/sites/cinesrc.dart';
 import 'package:dizzy/services/scraper/sites/cinesu.dart';
 import 'package:dizzy/services/scraper/sites/frame.dart';
+import 'helpers/live_gate.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
@@ -10,7 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _AllowAllHttpOverrides();
 
-  group('Chunk 6 Vyla Scrapers Tests', () {
+  group('Chunk 6 Vyla Scrapers Tests', skip: liveSkip, () {
     test('CineSrc scraper generates master HLS for Fight Club', () async {
       final scraper = CineSrcScraper();
       final stream = scraper.scrapeStream(

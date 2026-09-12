@@ -4,6 +4,7 @@ import 'package:dizzy/services/scraper/sites/lookmovie.dart';
 import 'package:dizzy/services/scraper/sites/hexa.dart';
 import 'package:dizzy/services/scraper/sites/bcine.dart';
 import 'package:dizzy/services/scraper/sites/nova.dart';
+import 'helpers/live_gate.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
@@ -11,7 +12,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _AllowAllHttpOverrides();
 
-  group('Chunk 3 Vyla Scrapers Tests', () {
+  group('Chunk 3 Vyla Scrapers Tests', skip: liveSkip, () {
     test('Bcine scraper generates master HLS for Fight Club', () async {
       final scraper = BcineScraper();
       final stream = scraper.scrapeStream(
