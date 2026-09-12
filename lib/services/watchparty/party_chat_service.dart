@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 
 import '../cloud/cloud_client.dart';
 import 'party_voice_service.dart';
+import '../errors/app_log.dart';
 
 /// WP-P4: room chat + moderation over Supabase.
 ///
@@ -54,7 +54,7 @@ class PartyChatService {
           await CloudClient.db.rpc('send_room_message', params: params);
       return ok == true;
     } catch (e) {
-      debugPrint('[Chat] send failed (soft): $e');
+      AppLog.d('[Chat] send failed (soft): $e');
       return false;
     }
   }
@@ -69,7 +69,7 @@ class PartyChatService {
       });
       return ok == true;
     } catch (e) {
-      debugPrint('[Chat] react failed (soft): $e');
+      AppLog.d('[Chat] react failed (soft): $e');
       return false;
     }
   }
@@ -84,7 +84,7 @@ class PartyChatService {
       });
       return ok == true;
     } catch (e) {
-      debugPrint('[Chat] pin failed (soft): $e');
+      AppLog.d('[Chat] pin failed (soft): $e');
       return false;
     }
   }
@@ -154,7 +154,7 @@ class PartyChatService {
         );
       }).toList();
     } catch (e) {
-      debugPrint('[Chat] members failed (soft): $e');
+      AppLog.d('[Chat] members failed (soft): $e');
       return const [];
     }
   }
@@ -167,7 +167,7 @@ class PartyChatService {
           'room_id', roomId.trim().toUpperCase());
       return true;
     } catch (e) {
-      debugPrint('[Chat] lock failed (soft): $e');
+      AppLog.d('[Chat] lock failed (soft): $e');
       return false;
     }
   }
@@ -183,14 +183,14 @@ class PartyChatService {
         'target_identity': userId,
       });
     } catch (e) {
-      debugPrint('[Chat] voice kick failed (soft): $e');
+      AppLog.d('[Chat] voice kick failed (soft): $e');
     }
     try {
       await CloudClient.db.from('room_members').delete().match(
           {'room_id': code, 'user_id': userId});
       return true;
     } catch (e) {
-      debugPrint('[Chat] kick failed (soft): $e');
+      AppLog.d('[Chat] kick failed (soft): $e');
       return false;
     }
   }

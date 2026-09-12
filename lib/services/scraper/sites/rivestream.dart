@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// RiveStream Stream Scraper.
 ///
@@ -65,12 +65,12 @@ class RiveStreamScraper extends StreamScraper {
         );
 
         if (tmdbId == null || tmdbId <= 0) {
-          debugPrint('[RiveStreamScraper] Could not resolve TMDb ID for "$title"');
+          AppLog.d('[RiveStreamScraper] Could not resolve TMDb ID for "$title"');
           controller.close();
           return;
         }
 
-        debugPrint(
+        AppLog.d(
             '[RiveStreamScraper] Starting concurrent scrape for "$title" (tmdb: $tmdbId, S:${season}E:$episode)');
 
         // Discover active providers dynamically, fallback if timeout
@@ -170,7 +170,7 @@ class RiveStreamScraper extends StreamScraper {
 
         await Future.wait(providerTasks);
       } catch (e) {
-        debugPrint('[RiveStreamScraper] Error scraping "$title": $e');
+        AppLog.d('[RiveStreamScraper] Error scraping "$title": $e');
       } finally {
         if (!controller.isClosed) {
           controller.close();

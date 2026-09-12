@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart LMScript Stream Scraper.
 ///
@@ -93,7 +94,7 @@ class LMScriptScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[LMScriptScraper] error: $e');
+      if (kDebugMode) AppLog.d('[LMScriptScraper] error: $e');
     }
   }
 }

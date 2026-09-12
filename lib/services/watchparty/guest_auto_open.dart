@@ -9,6 +9,7 @@ import '../../models/movie/video.dart';
 import '../../pages/player/watch_screen.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../cloud/watch_party_service.dart';
+import '../errors/app_error_log.dart';
 import '../metadata/metadata_service.dart';
 import '../scraper/sites/tmdb_helper.dart';
 import 'party_playback_session.dart';
@@ -86,8 +87,12 @@ class GuestAutoOpen {
       await _open(msg).timeout(_resolveTimeout);
     } on TimeoutException {
       _toast("Couldn't open this one — ask host to pick a popular title.");
+      // P15: user got the easy message; log the code for diagnostics.
+      unawaited(
+          AppErrorLog.log(code: 'guest_open', screen: 'party', detail: 'timeout_20s'));
     } catch (_) {
       _toast("Couldn't open this one — check net, you'll rejoin on next play.");
+      unawaited(AppErrorLog.log(code: 'guest_open', screen: 'party'));
     } finally {
       _handlingRef = null;
     }
@@ -151,7 +156,11 @@ class GuestAutoOpen {
       if (target == null) return;
       final detail = await _resolveDetail(target).timeout(_resolveTimeout);
       if (detail != null) cacheDetail(msg.mediaRef, detail);
-    } catch (_) {}
+    } catch (_) {
+      // P15: silent-but-logged — the real switch resolves normally.
+      unawaited(
+          AppErrorLog.log(code: 'guest_prewarm', screen: 'party'));
+    }
   }
 
   /// tmdb/imdb ref → full MovieDetail via Cinemeta (keyless).

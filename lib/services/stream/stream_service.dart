@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/addon/addon.dart';
@@ -59,6 +58,7 @@ import '../anime/anime_scraper_service.dart';
 import '../anime_arabic/anime_arabic_service.dart';
 import '../anime_arabic/anime_arabic_extractor.dart';
 import '../p2p/p2p_settings_service.dart';
+import '../errors/app_log.dart';
 
 /// Service that fetches playback streams from all installed Stremio addons
 /// and built-in scrapers.
@@ -417,7 +417,7 @@ class StreamService {
           .where((s) => s.url != null || s.infoHash != null || s.externalUrl != null)
           .toList();
     } catch (e) {
-      debugPrint('Addon ${addon.manifest.name} stream fetch failed: $e');
+      AppLog.d('Addon ${addon.manifest.name} stream fetch failed: $e');
       return [];
     }
   }

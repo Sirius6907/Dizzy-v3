@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart VidVault Stream Scraper.
 ///
@@ -62,7 +63,7 @@ class VidVaultScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[VidVaultScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[VidVaultScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -207,7 +208,7 @@ class VidVaultScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[VidVaultScraper] error: $e');
+      if (kDebugMode) AppLog.d('[VidVaultScraper] error: $e');
     }
   }
 }

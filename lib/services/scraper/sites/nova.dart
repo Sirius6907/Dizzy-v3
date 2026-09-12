@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart Nova Stream Scraper.
 ///
@@ -116,7 +117,7 @@ class NovaScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[NovaScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[NovaScraper] scrapeStream error: $e');
     }
   }
 }

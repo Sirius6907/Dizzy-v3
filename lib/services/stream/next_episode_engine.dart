@@ -1,13 +1,14 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/stream/stream_model.dart';
 import '../../models/movie/video.dart';
 import '../player/dub_mode_service.dart';
 import '../player/hls_rendition_parser.dart';
+import '../errors/app_error_log.dart';
 import 'dub_filter.dart';
 import 'stream_probe_race.dart';
 import 'stream_service.dart';
+import '../errors/app_log.dart';
 
 /// Result of computing the "next episode" in a binge chain.
 class NextEpisode {
@@ -121,7 +122,7 @@ class NextEpisodeEngine {
     );
 
     if (next == null || next.isSeriesFinale) {
-      debugPrint('[NextEpisodeEngine] No next episode (finale or unknown list).');
+      AppLog.d('[NextEpisodeEngine] No next episode (finale or unknown list).');
       return;
     }
 
@@ -129,7 +130,7 @@ class NextEpisodeEngine {
     _prefetchedEpisode = nextEp;
     _running = true;
 
-    debugPrint('[NextEpisodeEngine] Prefetching S${nextEp.season}E${nextEp.episode}...');
+    AppLog.d('[NextEpisodeEngine] Prefetching S${nextEp.season}E${nextEp.episode}...');
 
     // 1. Trusted embedded streams (debrid direct links) probe in 0ms.
     if (nextEp.streams.isNotEmpty) {
@@ -148,7 +149,7 @@ class NextEpisodeEngine {
         // (Old code offered them to a race then close()d it synchronously,
         // which settled the winner to null before probes ran.)
         _prefetchedSource = await withRenditions(embeddedHindi.first);
-        debugPrint('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
+        AppLog.d('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
         _running = false;
         return;
       }
@@ -189,7 +190,7 @@ class NextEpisodeEngine {
         race.offer(source);
       },
       onError: (Object e) {
-        debugPrint('[NextEpisodeEngine] Scrape error: $e');
+        AppLog.d('[NextEpisodeEngine] Scrape error: $e');
       },
       onDone: () {
         // English fallback: zero hindi found → release non-hindi sources
@@ -221,11 +222,11 @@ class NextEpisodeEngine {
     }
 
     if (_prefetchedSource != null) {
-      debugPrint('[NextEpisodeEngine] Prefetch ready: '
+      AppLog.d('[NextEpisodeEngine] Prefetch ready: '
           '${_prefetchedSource!.name ?? "?"} (${_prefetchedSource!.addonName}) '
           'for S${nextEp.season}E${nextEp.episode}.');
     } else {
-      debugPrint('[NextEpisodeEngine] No playable source found for next episode.');
+      AppLog.d('[NextEpisodeEngine] No playable source found for next episode.');
     }
   }
 
@@ -251,6 +252,9 @@ class NextEpisodeEngine {
       if (parsed.isEmpty) return source;
       return source.copyWith(renditions: parsed);
     } catch (_) {
+      // P15: silent-but-logged — prefetch never blocks the handoff.
+      unawaited(AppErrorLog.log(
+          code: 'prefetch_renditions', screen: 'next_episode'));
       return source;
     }
   }

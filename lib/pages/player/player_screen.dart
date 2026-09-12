@@ -28,6 +28,7 @@ import '../../services/player/playback_brain.dart';
 import '../../services/player/quality_service.dart';
 import '../../services/player/bandwidth_meter.dart';
 import '../../services/player/hls_rendition_parser.dart';
+import '../../services/errors/app_error_log.dart';
 import '../../services/discord/discord_rpc_service.dart';
 
 import '../../widgets/player/player_glass.dart';
@@ -61,6 +62,7 @@ import '../../services/watchparty/party_session.dart';
 import '../../services/watchparty/party_playback_session.dart';
 import '../../services/system/resource_governor.dart';
 import '../../widgets/player/next_episode_countdown.dart';
+import '../../services/errors/app_log.dart';
 
 class PlayerScreen extends StatefulWidget {
   final StreamSource source;
@@ -268,7 +270,7 @@ class _PlayerScreenState extends State<PlayerScreen>
             failedThisSession: _failedFingerprints,
           ),
         );
-        debugPrint('[Failover] chain ready: ${_failoverChain.length} backups ranked');
+        AppLog.d('[Failover] chain ready: ${_failoverChain.length} backups ranked');
       }();
     }
 
@@ -531,19 +533,19 @@ class _PlayerScreenState extends State<PlayerScreen>
   Future<void> _initStream() async {
     String? streamUrl;
 
-    print('[PlayerScreen] Initializing playback:');
-    print('[PlayerScreen]   Title: $_currentTitle');
-    print('[PlayerScreen]   Source Name: ${_currentSource.name}');
-    print('[PlayerScreen]   Addon Name: ${_currentSource.addonName}');
-    print('[PlayerScreen]   Source Title: ${_currentSource.title}');
-    print('[PlayerScreen]   Raw URL: ${_currentSource.url}');
+    AppLog.d('[PlayerScreen] Initializing playback:');
+    AppLog.d('[PlayerScreen]   Title: $_currentTitle');
+    AppLog.d('[PlayerScreen]   Source Name: ${_currentSource.name}');
+    AppLog.d('[PlayerScreen]   Addon Name: ${_currentSource.addonName}');
+    AppLog.d('[PlayerScreen]   Source Title: ${_currentSource.title}');
+    AppLog.d('[PlayerScreen]   Raw URL: ${_currentSource.url}');
 
     try {
       final rawUrl = _currentSource.url;
 
       // Handle offline downloaded file playback directly
       if (rawUrl != null && (File(rawUrl).existsSync() || _currentSource.name == 'Downloaded')) {
-        print('[PlayerScreen] Initializing offline local file playback: $rawUrl');
+        AppLog.d('[PlayerScreen] Initializing offline local file playback: $rawUrl');
         await PlayerSettings.applyPreOpenProperties(_player);
         await _player.open(Media(rawUrl), play: true);
         await PlayerSettings.applyPostOpenProperties(_player);
@@ -597,7 +599,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           }
 
           streamUrl = debridFiles.first.downloadUrl;
-          print('[PlayerScreen] Debrid resolved stream URL: $streamUrl');
+          AppLog.d('[PlayerScreen] Debrid resolved stream URL: $streamUrl');
         } else {
           if (!mounted) return;
           setState(() => _statusMessage = 'Gathering metadata & peers...');
@@ -635,7 +637,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       }
 
       final cleanUri = Uri.parse(sanitizedUrlStr);
-      print('[PlayerScreen] Opening direct network stream URL: $cleanUri (headers: ${playerHeaders.keys})');
+      AppLog.d('[PlayerScreen] Opening direct network stream URL: $cleanUri (headers: ${playerHeaders.keys})');
 
       if (!mounted) return;
       final epLabel = _currentEpisode != null
@@ -677,7 +679,7 @@ class _PlayerScreenState extends State<PlayerScreen>
             }
           }
         } catch (e) {
-          print('[PlayerScreen] Warning setting native header properties: $e');
+          AppLog.d('[PlayerScreen] Warning setting native header properties: $e');
         }
       }
 
@@ -695,7 +697,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       _setSubtitleScale(_subtitleScale);
       _applyVolume(_isMuted ? 0.0 : _volume, persist: false);
 
-      print('[PlayerScreen SUCCESS] Player opened media successfully for $streamUrl');
+      AppLog.d('[PlayerScreen SUCCESS] Player opened media successfully for $streamUrl');
 
       _updateMediaTracks(_player.state.tracks);
 
@@ -745,9 +747,9 @@ class _PlayerScreenState extends State<PlayerScreen>
         _savePlaybackProgress();
       });
     } catch (e, stackTrace) {
-      print('[PlayerScreen ERROR] Failed to initialize stream URL: "$streamUrl"');
-      print('[PlayerScreen ERROR] Exception: $e');
-      print('[PlayerScreen ERROR] StackTrace:\n$stackTrace');
+      AppLog.d('[PlayerScreen ERROR] Failed to initialize stream URL: "$streamUrl"');
+      AppLog.d('[PlayerScreen ERROR] Exception: $e');
+      AppLog.d('[PlayerScreen ERROR] StackTrace:\n$stackTrace');
 
       if (!mounted) return;
 
@@ -845,7 +847,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (yMatch != null) searchYear = int.tryParse(yMatch.group(1)!);
       }
       final showName = cleanMediaTitle(rawName);
-      print('[PlayerScreen] Scraping initial subtitles for "$showName" (year: $searchYear, imdb: ${widget.detail?.id})...');
+      AppLog.d('[PlayerScreen] Scraping initial subtitles for "$showName" (year: $searchYear, imdb: ${widget.detail?.id})...');
 
       final groups = await SubtitleService().fetchAllSubtitles(
         showName,
@@ -854,7 +856,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         episode: _currentEpisode?.episode,
         year: searchYear,
       );
-      print('[PlayerScreen] Scraped ${groups.length} subtitle language groups with ${groups.fold(0, (s, g) => s + g.variants.length)} total variants');
+      AppLog.d('[PlayerScreen] Scraped ${groups.length} subtitle language groups with ${groups.fold(0, (s, g) => s + g.variants.length)} total variants');
       if (mounted && groups.isNotEmpty) {
         setState(() => _subtitleGroups = groups);
 
@@ -874,7 +876,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         }
       }
     } catch (e) {
-      debugPrint('[PlayerScreen] Error loading subtitles: $e');
+      AppLog.d('[PlayerScreen] Error loading subtitles: $e');
     }
   }
 
@@ -999,7 +1001,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         _currentSubFormat = parseResult.format;
       }
     } catch (e) {
-      print('[PlayerScreen] Subtitle cues parse error: $e');
+      AppLog.d('[PlayerScreen] Subtitle cues parse error: $e');
     }
 
     _currentSubtitlePath = path;
@@ -1053,7 +1055,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     try {
       np.setProperty('sub-delay', delaySec.toString());
     } catch (e) {
-      print('[PlayerScreen] applyLiveDelay error: $e');
+      AppLog.d('[PlayerScreen] applyLiveDelay error: $e');
     }
   }
 
@@ -1096,7 +1098,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         lower.contains('.srt') ||
         lower.contains('.vtt') ||
         lower.contains('.ass')) {
-      debugPrint('[PlayerScreen] Ignored non-fatal subtitle warning: $errorMsg');
+      AppLog.d('[PlayerScreen] Ignored non-fatal subtitle warning: $errorMsg');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1110,7 +1112,7 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     // 2. Ignore non-fatal MPV/FFmpeg network and demuxer warnings (e.g. "tcp: ffurl_read returned 0xffffff99")
     if (PlayerSettings.isNonFatalError(err)) {
-      debugPrint('[PlayerScreen] Ignored non-fatal player warning: $errorMsg');
+      AppLog.d('[PlayerScreen] Ignored non-fatal player warning: $errorMsg');
       return;
     }
 
@@ -1146,13 +1148,13 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     if (hasActivelyProgressed && (!isFatalOpenFailure ||
         (isTransientNetBlip && bufferHeadroom > 3000))) {
-      debugPrint('[PlayerScreen WARNING] Ignored player warning during active playback: $errorMsg');
+      AppLog.d('[PlayerScreen WARNING] Ignored player warning during active playback: $errorMsg');
       return;
     }
 
     // 4. Critical error on dead stream — try silent failover FIRST if a
     // ranked backup chain exists; fall back to source picker when exhausted.
-    print('[PlayerScreen ERROR] Critical player error on dead stream: $errorMsg');
+    AppLog.d('[PlayerScreen ERROR] Critical player error on dead stream: $errorMsg');
 
     _failedFingerprints.add(SourceRanker.fingerprint(_currentSource));
     if (_failoverChain.where((s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s))).isNotEmpty &&
@@ -1369,7 +1371,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         });
       }
     } catch (e) {
-      debugPrint('[PlayerScreen] Error loading skip segments: $e');
+      AppLog.d('[PlayerScreen] Error loading skip segments: $e');
     }
   }
 
@@ -1430,7 +1432,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     // The countdown overlay (with prefetched source) takes over from here.
     if (seg.type.toLowerCase() == 'credits' &&
         _nextEpisodeEngine.hasNextEpisode) {
-      debugPrint('[SkipSegment] credits skipped → triggering next episode');
+      AppLog.d('[SkipSegment] credits skipped → triggering next episode');
       setState(() {
         _showSkipButton = false;
         _activeSkipSegment = null;
@@ -1505,7 +1507,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           PaintingBinding.instance.imageCache.clear();
       }
     } catch (e) {
-      debugPrint('[PlayerScreen] resource level apply warning: $e');
+      AppLog.d('[PlayerScreen] resource level apply warning: $e');
     }
   }
 
@@ -1536,7 +1538,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       final shouldPlay = _isPlaying && _duration > Duration.zero;
       final seekGrace = DateTime.now().difference(_lastSeekAt).inSeconds < 8;
       if (shouldPlay && !seekGrace && !_isBuffering && stalled.inSeconds >= 10) {
-        debugPrint('[Failover] stall detected: ${stalled.inSeconds}s no progress, not buffering');
+        AppLog.d('[Failover] stall detected: ${stalled.inSeconds}s no progress, not buffering');
         _attemptSilentFailover(reason: 'stall');
       }
     });
@@ -1574,7 +1576,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   void _attemptSilentFailover({String reason = 'error'}) {
     if (!mounted || _failoverInProgress) return;
     if (_failoverSwitches >= _maxFailoverSwitches) {
-      debugPrint('[Failover] switch cap reached — showing picker');
+      AppLog.d('[Failover] switch cap reached — showing picker');
       _failoverChain = [];
       _showSourcesPanel = true; // let the user decide now
       setState(() {});
@@ -1591,7 +1593,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         .where((s) => SourceRanker.fingerprint(s) != currentFp)
         .toList();
     if (candidates.isEmpty) {
-      debugPrint('[Failover] no backup sources — showing picker');
+      AppLog.d('[Failover] no backup sources — showing picker');
       setState(() => _showSourcesPanel = true);
       return;
     }
@@ -1601,7 +1603,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     final next = candidates.first;
     _failoverSwitches++;
 
-    debugPrint('[Failover] $reason → switching to ${next.name ?? next.addonName} '
+    AppLog.d('[Failover] $reason → switching to ${next.name ?? next.addonName} '
         '(switch $_failoverSwitches/$_maxFailoverSwitches)');
 
     unawaited(() async {
@@ -1628,7 +1630,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           ));
         }
       } catch (e) {
-        debugPrint('[Failover] switch failed: $e');
+        AppLog.d('[Failover] switch failed: $e');
         if (mounted) setState(() => _showSourcesPanel = true);
       } finally {
         _resumeAtOverride = null;
@@ -1710,7 +1712,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         _resumeAtOverride = null;
         if (mounted) _showAudioHudToast(toast);
       } catch (e) {
-        debugPrint('[Quality] switch failed: $e');
+        AppLog.d('[Quality] switch failed: $e');
         if (mounted) {
           _showAudioHudToast('Could not switch quality. Keep watching.');
         }
@@ -1744,10 +1746,12 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (SourceRanker.fingerprint(_currentSource) != fp) return;
         setState(
             () => _currentSource = _currentSource.copyWith(renditions: parsed));
-        debugPrint(
+        AppLog.d(
             '[Renditions] attached ${parsed.length} to ${_currentSource.addonName}');
       } catch (_) {
-        // Offline / auth-walled / weird playlist — play on without ladder.
+        // P15: silent-but-logged (background network) — playback untouched.
+        unawaited(AppErrorLog.log(
+            code: 'renditions_fetch', screen: 'player'));
       } finally {
         _renditionsFetching = false;
       }

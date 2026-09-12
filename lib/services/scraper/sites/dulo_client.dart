@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../errors/app_log.dart';
 
 /// Represents a single video stream extracted from Dulo.
 class DuloStream {
@@ -84,7 +85,7 @@ class DuloClient {
         }
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[DuloClient] Session fetch error ($domain): $e');
+      if (kDebugMode) AppLog.d('[DuloClient] Session fetch error ($domain): $e');
     }
 
     return null;
@@ -160,7 +161,7 @@ class DuloClient {
           _sessionExpiry = null;
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('[DuloClient] SSE extraction error ($domain): $e');
+        if (kDebugMode) AppLog.d('[DuloClient] SSE extraction error ($domain): $e');
       } finally {
         client.close();
       }

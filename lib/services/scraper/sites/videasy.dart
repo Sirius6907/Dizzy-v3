@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Videasy VOD Extractor ported 1:1 from Flyx (videasy.ts).
 class VideasyScraper extends StreamScraper {
@@ -183,7 +184,7 @@ class VideasyScraper extends StreamScraper {
     final sources = <StreamSource>[];
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
     final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    print('[VideasyScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    AppLog.d('[VideasyScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
     if (tmdbId == null) return sources;
 
     try {
@@ -255,10 +256,10 @@ class VideasyScraper extends StreamScraper {
         } catch (_) {}
       }
     } catch (e) {
-      print('VideasyScraper error: $e');
+      AppLog.d('VideasyScraper error: $e');
     }
 
-    print('[VideasyScraper] Found ${sources.length} active stream(s)');
+    AppLog.d('[VideasyScraper] Found ${sources.length} active stream(s)');
     return sources;
   }
 }

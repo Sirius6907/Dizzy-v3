@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Vadapav Stream Scraper.
 ///
@@ -57,7 +57,7 @@ class VadapavScraper extends StreamScraper {
         }
 
         if (targetIds.isEmpty) {
-          debugPrint('[Vadapav] No valid IMDB or TMDb ID for "$title"');
+          AppLog.d('[Vadapav] No valid IMDB or TMDb ID for "$title"');
           controller.close();
           return;
         }
@@ -75,7 +75,7 @@ class VadapavScraper extends StreamScraper {
           }
 
           try {
-            debugPrint('[Vadapav] Fetching streams from $endpoint');
+            AppLog.d('[Vadapav] Fetching streams from $endpoint');
             final res = await http
                 .get(Uri.parse(endpoint), headers: _defaultHeaders)
                 .timeout(const Duration(seconds: 12));
@@ -84,7 +84,7 @@ class VadapavScraper extends StreamScraper {
               final data = jsonDecode(res.body);
               if (data is Map && data['streams'] is List) {
                 final streams = data['streams'] as List;
-                debugPrint('[Vadapav] Received ${streams.length} streams for $id');
+                AppLog.d('[Vadapav] Received ${streams.length} streams for $id');
 
                 for (final item in streams) {
                   if (item is! Map) continue;
@@ -125,11 +125,11 @@ class VadapavScraper extends StreamScraper {
               }
             }
           } catch (e) {
-            debugPrint('[Vadapav] Error fetching from $endpoint: $e');
+            AppLog.d('[Vadapav] Error fetching from $endpoint: $e');
           }
         }
       } catch (e) {
-        debugPrint('[Vadapav] Global scrape error: $e');
+        AppLog.d('[Vadapav] Global scrape error: $e');
       } finally {
         if (!controller.isClosed) {
           controller.close();

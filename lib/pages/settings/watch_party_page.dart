@@ -8,6 +8,7 @@ import '../../services/watchparty/party_session.dart';
 import '../../services/watchparty/party_voice_service.dart';
 import '../../services/watchparty/guest_auto_open.dart';
 import '../../services/watchparty/watch_sync_engine.dart';
+import '../../services/guide/guide_service.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../../widgets/party/voice_consent_sheet.dart';
 import 'widgets/party_room_panel.dart';
@@ -50,9 +51,12 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     super.initState();
     // ignore: unawaited_futures
     WatchPartyService.loadPrefs();
-    // v1.2.0-T2.6: first-time Watch Together guide (skipable, never nags).
+    // P13: old 'watch_party' seen-flag migrates to 'party_v2' (no re-nag),
+    // then the new 3-card flow shows for fresh users (skipable, never nags).
+    // ignore: unawaited_futures
+    GuideService.migrateLegacyPartyKey();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      GuideCard.maybeShow(context, 'watch_party', AppGuides.watchParty);
+      GuideCard.maybeShow(context, 'party_v2', AppGuides.partyV2);
     });
   }
 
@@ -71,7 +75,22 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 700),
-          child: ListView(
+          // P12: pull-to-refresh the lobby (sweep dead rooms + reload).
+          child: RefreshIndicator(
+            color: const Color(0xFF8B5CF6),
+            backgroundColor: const Color(0xFF11141B),
+            onRefresh: () async {
+              try {
+                await WatchPartyService.sweepStale();
+              } catch (_) {}
+              _invalidateLobby();
+              if (!mounted) return;
+              setState(() {});
+              try {
+                await _lobbyQuery().timeout(const Duration(seconds: 10));
+              } catch (_) {}
+            },
+            child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
               Container(
@@ -146,6 +165,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                 ],
               ],
             ],
+            ),
           ),
         ),
       ),
@@ -284,8 +304,15 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: ListTile(
-          leading: Icon(Icons.live_tv_rounded,
-              color: palette.primaryColor, size: 28),
+          // P12: red pulse while something plays, dim TV while picking.
+          leading: Icon(
+              r.isLiveNow
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.live_tv_rounded,
+              color: r.isLiveNow
+                  ? Colors.redAccent
+                  : palette.primaryColor.withValues(alpha: 0.55),
+              size: 28),
           title: Text(r.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -293,10 +320,15 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   color: Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.w700)),
+          // P12: LIVE watching title + headcount, or the picking state.
           subtitle: Text(
               WatchPartyService.isFull(r.memberCount)
                   ? '${r.roomId} • FULL (${r.memberCount}/${WatchPartyService.maxMembers})'
-                  : '${r.roomId} • ${r.memberCount} watching • ${r.status}',
+                  : r.isLiveNow
+                      ? '🔴 ${r.watchingLabel} • 👥 ${r.memberCount} watching'
+                      : '💭 Choosing… • 👥 ${r.memberCount} in room',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style:
                   const TextStyle(color: Colors.white54, fontSize: 12)),
           trailing: Row(

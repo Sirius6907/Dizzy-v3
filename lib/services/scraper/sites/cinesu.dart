@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart CineSu Stream Scraper.
 ///
@@ -102,7 +103,7 @@ class CineSuScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[CineSuScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[CineSuScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -129,7 +130,7 @@ class CineSuScraper extends StreamScraper {
         },
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('[CineSuScraper] error: $e');
+      if (kDebugMode) AppLog.d('[CineSuScraper] error: $e');
     }
   }
 }

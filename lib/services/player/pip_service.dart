@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:floating/floating.dart';
 import 'package:flutter/foundation.dart';
+import '../errors/app_log.dart';
 
 /// F1 (v1.1.9): Android-only Picture-in-Picture helper.
 ///
@@ -36,7 +37,7 @@ class PipService {
       );
       return status == PiPStatus.enabled;
     } catch (e) {
-      debugPrint('[PipService] enterPip failed: $e');
+      AppLog.d('[PipService] enterPip failed: $e');
       return false;
     }
   }

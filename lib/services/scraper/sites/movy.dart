@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Movy.bz Stream Scraper & Decryptor.
 ///
@@ -67,7 +68,7 @@ class MovyScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      debugPrint('[MovyScraper] Failed to fetch seed for TMDB $tmdbId: $e');
+      AppLog.d('[MovyScraper] Failed to fetch seed for TMDB $tmdbId: $e');
     }
     return null;
   }
@@ -95,19 +96,19 @@ class MovyScraper extends StreamScraper {
         );
 
         if (tmdbId == null || tmdbId <= 0) {
-          debugPrint('[MovyScraper] Could not resolve TMDb ID for "$title"');
+          AppLog.d('[MovyScraper] Could not resolve TMDb ID for "$title"');
           controller.close();
           return;
         }
 
         final seed = await _getSeed(tmdbId);
         if (seed == null || seed.isEmpty) {
-          debugPrint('[MovyScraper] Could not acquire seed for TMDb $tmdbId');
+          AppLog.d('[MovyScraper] Could not acquire seed for TMDb $tmdbId');
           controller.close();
           return;
         }
 
-        debugPrint('[MovyScraper] Starting scrape for "$title" (tmdb: $tmdbId, year: $year, S:${season}E:$episode)');
+        AppLog.d('[MovyScraper] Starting scrape for "$title" (tmdb: $tmdbId, year: $year, S:${season}E:$episode)');
 
         final encTitle = Uri.encodeComponent(title);
         final qBuilder = StringBuffer();
@@ -202,7 +203,7 @@ class MovyScraper extends StreamScraper {
 
         await Future.wait(futures);
       } catch (e) {
-        debugPrint('[MovyScraper] General error: $e');
+        AppLog.d('[MovyScraper] General error: $e');
       } finally {
         if (!controller.isClosed) {
           controller.close();

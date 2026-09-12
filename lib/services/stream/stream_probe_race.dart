@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../../models/stream/stream_model.dart';
 import 'stream_health_checker.dart';
+import '../errors/app_log.dart';
 
 /// Races health probes of many sources **in parallel** (never serialized).
 ///
@@ -133,7 +133,7 @@ class StreamProbeRace {
       _pendingUiBatch.add(source);
       _batchTimer ??= Timer(batchDelay, _flushUiBatch);
     } else {
-      debugPrint('[StreamProbeRace] dead source dropped: '
+      AppLog.d('[StreamProbeRace] dead source dropped: '
           '${source.name ?? "?"} (${source.addonName})');
     }
     _onProbeDone();

@@ -7,6 +7,7 @@ import 'package:pointycastle/export.dart';
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart Cinejoy Stream Scraper.
 ///
@@ -190,7 +191,7 @@ class CinejoyScraper extends StreamScraper {
       client.close();
 
       if (postRes.statusCode != 200 || postRes.bodyBytes.length <= 28) {
-        debugPrint('[CinejoyScraper] POST /g status: ${postRes.statusCode}, bodyLen: ${postRes.bodyBytes.length}');
+        AppLog.d('[CinejoyScraper] POST /g status: ${postRes.statusCode}, bodyLen: ${postRes.bodyBytes.length}');
         return null;
       }
 
@@ -208,7 +209,7 @@ class CinejoyScraper extends StreamScraper {
         return Map<String, dynamic>.from(decoded);
       }
     } catch (e, stack) {
-      debugPrint('[CinejoyScraper] _executeEncryptedQuery error: $e\n$stack');
+      AppLog.d('[CinejoyScraper] _executeEncryptedQuery error: $e\n$stack');
     }
     return null;
   }
@@ -236,12 +237,12 @@ class CinejoyScraper extends StreamScraper {
         );
 
         if (tmdbId == null || tmdbId <= 0) {
-          debugPrint('[CinejoyScraper] Could not resolve TMDb ID for "$title"');
+          AppLog.d('[CinejoyScraper] Could not resolve TMDb ID for "$title"');
           controller.close();
           return;
         }
 
-        debugPrint(
+        AppLog.d(
             '[CinejoyScraper] Starting scrape for "$title" (tmdb: $tmdbId, S:${season}E:$episode)');
 
         // 1. Fetch available servers dynamically
@@ -282,7 +283,7 @@ class CinejoyScraper extends StreamScraper {
               targetPath = '/$srvName/movie';
             }
 
-            debugPrint('[CinejoyScraper] Querying $targetPath with payload $payload');
+            AppLog.d('[CinejoyScraper] Querying $targetPath with payload $payload');
             final result = await _executeEncryptedQuery(
               path: targetPath,
               payload: payload,
@@ -293,7 +294,7 @@ class CinejoyScraper extends StreamScraper {
                 : null;
             final streams = (streamData is List) ? streamData : const [];
 
-            debugPrint('[CinejoyScraper] [$srvName] Result: Got ${streams.length} stream(s)');
+            AppLog.d('[CinejoyScraper] [$srvName] Result: Got ${streams.length} stream(s)');
 
             if (streams.isEmpty) return;
 
@@ -314,7 +315,7 @@ class CinejoyScraper extends StreamScraper {
                 final streamTitle = '[Cinejoy - $srvName] $quality';
                 final desc = '$srvName • $quality • HLS';
 
-                debugPrint('[CinejoyScraper SUCCESS] Added stream source from $srvName: $playlistUrl');
+                AppLog.d('[CinejoyScraper SUCCESS] Added stream source from $srvName: $playlistUrl');
 
                 if (!controller.isClosed) {
                   controller.add(
@@ -347,7 +348,7 @@ class CinejoyScraper extends StreamScraper {
                   final format = (qVal['type'] ?? 'mp4').toString().toUpperCase();
                   final desc = '$label • $quality • $format';
 
-                  debugPrint('[CinejoyScraper SUCCESS] Added MP4 source from $label: $fileUrl');
+                  AppLog.d('[CinejoyScraper SUCCESS] Added MP4 source from $label: $fileUrl');
 
                   if (!controller.isClosed) {
                     controller.add(
@@ -363,13 +364,13 @@ class CinejoyScraper extends StreamScraper {
               }
             }
           } catch (e, stack) {
-            debugPrint('[CinejoyScraper] Error querying server $srvName: $e\n$stack');
+            AppLog.d('[CinejoyScraper] Error querying server $srvName: $e\n$stack');
           }
         });
 
         await Future.wait(serverTasks);
       } catch (e, stack) {
-        debugPrint('[CinejoyScraper] Top-level error: $e\n$stack');
+        AppLog.d('[CinejoyScraper] Top-level error: $e\n$stack');
       } finally {
         if (!controller.isClosed) {
           controller.close();

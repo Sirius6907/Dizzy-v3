@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart FSOnline Stream Scraper.
 ///
@@ -138,7 +139,7 @@ class FSOnlineScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[FSOnlineScraper] error: $e');
+      if (kDebugMode) AppLog.d('[FSOnlineScraper] error: $e');
     }
   }
 }

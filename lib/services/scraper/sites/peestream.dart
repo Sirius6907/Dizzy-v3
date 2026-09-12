@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart PeeStream Stream Scraper.
 ///
@@ -39,7 +40,7 @@ class PeeStreamScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[PeeStreamScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[PeeStreamScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -190,7 +191,7 @@ class PeeStreamScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[PeeStreamScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[PeeStreamScraper] scrapeStream error: $e');
     }
   }
 }

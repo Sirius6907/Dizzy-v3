@@ -11,6 +11,7 @@ import '../../services/anime/anime_scraper_service.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/anime_arabic/anime_arabic_extractor.dart';
 import 'player_glass.dart';
+import '../../services/errors/app_log.dart';
 
 /// Glassmorphic Sources Side Panel for selecting episode stream sources,
 /// with targeted scraping, episode caching, and error recovery banners.
@@ -133,7 +134,7 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
             return;
           }
         } catch (e) {
-          debugPrint('[PlayerSourcesPanel] Arabic anime scrape error: $e');
+          AppLog.d('[PlayerSourcesPanel] Arabic anime scrape error: $e');
         }
 
         if (mounted) {

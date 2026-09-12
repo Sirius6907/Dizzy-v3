@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../../models/stream/stream_model.dart';
 import '../cloud/remote_config_service.dart';
 import '../p2p/p2p_settings_service.dart';
 import 'scraper_quarantine_service.dart';
 import 'scraper_reporter.dart';
+import '../errors/app_log.dart';
 
 abstract class StreamScraper {
   String get name;
@@ -120,7 +120,7 @@ class ScraperManager {
       return controller.stream;
     }
 
-    debugPrint('[ScraperManager] Scraping across ${activeScrapers.length} active scrapers (${activeScrapers.map((s) => s.runtimeType).join(", ")}) for "$title" (P2P enabled: $p2pAllowed)...');
+    AppLog.d('[ScraperManager] Scraping across ${activeScrapers.length} active scrapers (${activeScrapers.map((s) => s.runtimeType).join(", ")}) for "$title" (P2P enabled: $p2pAllowed)...');
 
     int pendingScrapers = activeScrapers.length;
     final seenHashes = <String>{};

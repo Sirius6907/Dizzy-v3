@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/player/skip_segment_model.dart';
 import '../scraper/sites/tmdb_helper.dart';
+import '../errors/app_log.dart';
 
 /// Service to fetch movie and TV intro/recap/credits/preview skip timestamps from IntroDB.
 class SkipSegmentsService {
@@ -37,7 +37,7 @@ class SkipSegmentsService {
           year: year,
         );
       } catch (e) {
-        debugPrint('[SkipSegmentsService] Failed to resolve TMDB ID: $e');
+        AppLog.d('[SkipSegmentsService] Failed to resolve TMDB ID: $e');
       }
     }
 
@@ -53,7 +53,7 @@ class SkipSegmentsService {
     } else if (imdbId != null && imdbId.isNotEmpty) {
       params['imdb_id'] = imdbId;
     } else {
-      debugPrint('[SkipSegmentsService] No TMDB ID or IMDb ID available to query IntroDB');
+      AppLog.d('[SkipSegmentsService] No TMDB ID or IMDb ID available to query IntroDB');
       return null;
     }
 
@@ -67,7 +67,7 @@ class SkipSegmentsService {
     }
 
     final uri = Uri.parse(_baseUrl).replace(queryParameters: params);
-    debugPrint('[SkipSegmentsService] Querying IntroDB: $uri');
+    AppLog.d('[SkipSegmentsService] Querying IntroDB: $uri');
 
     try {
       final res = await http.get(
@@ -83,17 +83,17 @@ class SkipSegmentsService {
         if (data is Map<String, dynamic>) {
           final skipData = MediaSkipData.fromJson(data);
           _cache[cacheKey] = skipData;
-          debugPrint(
+          AppLog.d(
               '[SkipSegmentsService] Successfully loaded ${skipData.segments.length} skip segments (${skipData.segments.map((s) => s.type).join(", ")})');
           return skipData;
         }
       } else if (res.statusCode == 404) {
-        debugPrint('[SkipSegmentsService] No skip segments available for $uri (404)');
+        AppLog.d('[SkipSegmentsService] No skip segments available for $uri (404)');
       } else {
-        debugPrint('[SkipSegmentsService] IntroDB returned status ${res.statusCode}: ${res.body}');
+        AppLog.d('[SkipSegmentsService] IntroDB returned status ${res.statusCode}: ${res.body}');
       }
     } catch (e) {
-      debugPrint('[SkipSegmentsService] Error fetching skip timestamps: $e');
+      AppLog.d('[SkipSegmentsService] Error fetching skip timestamps: $e');
     }
 
     // ── Heuristic fallback (Phase 4.1) ────────────────────────────────────
@@ -126,7 +126,7 @@ class SkipSegmentsService {
       endMs = 90000;
     }
 
-    debugPrint('[SkipSegmentsService] Using heuristic intro window '
+    AppLog.d('[SkipSegmentsService] Using heuristic intro window '
         '${startMs ~/ 1000}s–${endMs ~/ 1000}s');
     return MediaSkipData(segments: [
       MediaSkipSegment(type: 'intro', startMs: startMs, endMs: endMs),

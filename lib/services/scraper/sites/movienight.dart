@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// MovieNight (movienig.ht) Scraper
 ///
@@ -55,12 +55,12 @@ class MovieNightScraper extends StreamScraper {
     );
 
     if (tmdbId == null && (imdbId == null || imdbId.isEmpty)) {
-      debugPrint('[MovieNightScraper] Could not resolve TMDb or IMDb ID for "$title"');
+      AppLog.d('[MovieNightScraper] Could not resolve TMDb or IMDb ID for "$title"');
       return sources;
     }
 
     final idToUse = tmdbId ?? imdbId;
-    debugPrint('[MovieNightScraper] Scraping MovieNight for "$title" (id: $idToUse, type: $mediaType)');
+    AppLog.d('[MovieNightScraper] Scraping MovieNight for "$title" (id: $idToUse, type: $mediaType)');
 
     final encTitle = Uri.encodeComponent(title);
     final yearQuery = year != null ? '&year=$year' : '';
@@ -130,7 +130,7 @@ class MovieNightScraper extends StreamScraper {
                   }
                 }
               } catch (e) {
-                debugPrint('[MovieNightScraper] JSON parse error for $serverId: $e');
+                AppLog.d('[MovieNightScraper] JSON parse error for $serverId: $e');
               }
             }
           }
@@ -143,7 +143,7 @@ class MovieNightScraper extends StreamScraper {
 
     await Future.wait(serverTasks);
 
-    debugPrint('[MovieNightScraper] Total sources found: ${sources.length}');
+    AppLog.d('[MovieNightScraper] Total sources found: ${sources.length}');
     return sources;
   }
 }

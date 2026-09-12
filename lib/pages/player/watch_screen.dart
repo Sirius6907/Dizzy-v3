@@ -15,13 +15,10 @@ import '../../models/movie/movie_detail.dart';
 
 import '../../models/stream/stream_model.dart';
 import './player_screen.dart';
+import './watch_resolve_controller.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/scraper/stream_scraper.dart';
-import '../../services/stream/stream_service.dart';
-import '../../services/stream/stream_probe_race.dart';
 import '../../services/player/player_settings.dart';
-import '../../services/player/dub_mode_service.dart';
-import '../../services/stream/dub_filter.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
 import '../settings/settings_page.dart';
@@ -74,16 +71,13 @@ class _WatchScreenState extends State<WatchScreen>
     with SingleTickerProviderStateMixin {
   // Stream sources
   final List<StreamSource> _sources = [];
-  final List<StreamSource> _pendingSources = [];
-  Timer? _sourceBatchTimer;
   bool _isLoadingSources = true;
 
-  // Dub mode (Hindi): non-hindi sources fallback pool — released only if
-  // zero hindi sources were found (English default play + notice).
-  final List<StreamSource> _nonHindiPool = [];
+  // P17: resolve pipeline (scrape + dub gate + batching + autoplay race)
+  // lives in WatchResolveController; the screen owns the visible list.
+  late final WatchResolveController _resolve;
 
   // Instant autoplay (Phase 1)
-  StreamProbeRace? _autoplayRace;
   bool _userPickedSource = false; // set when the user taps a source manually
   bool _autoplayCountdownActive = false;
 
@@ -131,136 +125,59 @@ class _WatchScreenState extends State<WatchScreen>
         );
 
     _animController.forward();
-    _loadStreams();
+    // P17: resolve pipeline moved to WatchResolveController (pure move —
+    // callbacks below are the old inline setState/snackbar/Navigator code).
+    _resolve = WatchResolveController(
+      type: widget.type,
+      streamId: widget.selectedEpisode?.id ?? widget.detail.id,
+      title: widget.detail.name,
+      year: int.tryParse(widget.detail.year ?? ''),
+      season: widget.selectedEpisode?.season,
+      episode: widget.selectedEpisode?.episode,
+      mediaTitle: widget.detail.name,
+      embeddedStreams: widget.selectedEpisode?.streams ?? const [],
+      isMounted: () => mounted,
+      shouldAutoOpen: () =>
+          !_userPickedSource &&
+          PlayerSettings.autoplayFirstVerified.value,
+      hindiCountReader: () => _sources
+          .where((s) => s.hasAudioLanguage('hindi',
+              mediaTitle: widget.detail.name))
+          .length,
+      onBatch: (batch) {
+        if (!mounted) return;
+        setState(() {
+          _sources.addAll(batch);
+          _isLoadingSources = false;
+        });
+      },
+      onLoadingDone: () {
+        if (mounted && _isLoadingSources) {
+          setState(() => _isLoadingSources = false);
+        }
+      },
+      onInstantOpen: _openPlayerInstant,
+      onEnglishFallback: () {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Is content ka Hindi dub nahi mila — English (default) play kar raha hoon'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      },
+    );
+    _resolve.start();
   }
 
   @override
   void dispose() {
-    _sourceBatchTimer?.cancel();
-    _autoplayRace?.dispose();
+    _resolve.dispose();
     _animController.dispose();
     _sourcesScrollController.dispose();
     _mainScrollController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadStreams() async {
-    final streamId = widget.selectedEpisode?.id ?? widget.detail.id;
-
-    // ── Instant autoplay race (Phase 1) ─────────────────────────────
-    // Every scraped source is health-probed in parallel; the FIRST one
-    // verified alive auto-opens the player (unless the user has already
-    // picked a source or autoplay is disabled in settings).
-    if (PlayerSettings.autoplayFirstVerified.value) {
-      final race = StreamProbeRace();
-      _autoplayRace = race;
-
-      // Embedded debrid streams are offered further below (after the
-      // dub-mode gate) so Hindi mode only races hindi-tagged links.
-
-      race.winner.then((src) {
-        if (!mounted || src == null) return;
-        if (_userPickedSource || !PlayerSettings.autoplayFirstVerified.value) {
-          return;
-        }
-        _openPlayerInstant(src);
-      });
-    }
-
-    // 1. Immediately inject any embedded streams from the video (e.g. Torbox/Debrid direct streams)
-    if (widget.selectedEpisode != null && widget.selectedEpisode!.streams.isNotEmpty) {
-      // Dub-mode gate: Hindi mode pe embedded debrid links bhi hindi-tagged honi
-      // chahiye (strict same-language playback). Non-hindi embedded links
-      // fallback pool mein jayengi — zero hindi mila to release ho jayengi.
-      final embeddedAll = widget.selectedEpisode!.streams;
-      if (DubModeService.isHindi) {
-        final embeddedHindi = filterByDubMode(embeddedAll,
-            hindi: true, mediaTitle: widget.detail.name);
-        final embeddedOther = embeddedAll
-            .where((s) => !embeddedHindi.contains(s))
-            .toList();
-        _pendingSources.addAll(embeddedHindi);
-        if (embeddedHindi.isNotEmpty) {
-          for (final s in embeddedHindi) {
-            _autoplayRace?.offerEmbedded(s);
-          }
-        }
-        _nonHindiPool.addAll(embeddedOther);
-        if (embeddedHindi.isNotEmpty) _flushPendingSources();
-      } else {
-        _pendingSources.addAll(embeddedAll);
-        for (final s in embeddedAll) {
-          _autoplayRace?.offerEmbedded(s);
-        }
-        _flushPendingSources();
-      }
-    }
-
-    try {
-      await for (final source in StreamService.fetchStreams(
-        type: widget.type,
-        id: streamId,
-        title: widget.detail.name,
-        year: int.tryParse(widget.detail.year ?? ''),
-        season: widget.selectedEpisode?.season,
-        episode: widget.selectedEpisode?.episode,
-      )) {
-        if (!mounted) return;
-        // ── Dub-mode gate ────────────────────────────────────────────
-        // Hindi mode ON: sirf hindi-tagged sources UI list aur autoplay
-        // race dono ko jaate hain (health probe bhi sirf unhi pe).
-        // Baaki sources fallback pool mein rakhe jaate hain — agar scrape
-        // complete hone tak ek bhi hindi source nahi mila, to English
-        // default play ke liye release kar diye jaate hain.
-        if (DubModeService.isHindi &&
-            !source.hasAudioLanguage('hindi',
-                mediaTitle: widget.detail.name)) {
-          _nonHindiPool.add(source);
-          continue;
-        }
-        _pendingSources.add(source);
-        _sourceBatchTimer ??= Timer(
-          const Duration(milliseconds: 60),
-          _flushPendingSources,
-        );
-        // Parallel health probe for the autoplay race (never blocks UI).
-        _autoplayRace?.offer(source);
-      }
-    } catch (_) {}
-
-    _flushPendingSources();
-
-    // ── Dub-mode English fallback ─────────────────────────────────
-    // Hindi mode ON thi lekin ek bhi hindi source nahi mila — English
-    // default play karo + user ko ek baar notice kar do.
-    if (DubModeService.isHindi && _nonHindiPool.isNotEmpty) {
-      final hindiCount = _sources
-          .where((s) => s.hasAudioLanguage('hindi',
-              mediaTitle: widget.detail.name))
-          .length;
-      if (hindiCount == 0) {
-        for (final s in _nonHindiPool) {
-          _pendingSources.add(s);
-          _autoplayRace?.offer(s);
-        }
-        _flushPendingSources();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Is content ka Hindi dub nahi mila — English (default) play kar raha hoon'),
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-      }
-      _nonHindiPool.clear();
-    }
-
-    _autoplayRace?.closeDrain();
-    if (mounted && _isLoadingSources) {
-      setState(() => _isLoadingSources = false);
-    }
   }
 
   /// Opens the player with a verified source the instant it's found.
@@ -287,19 +204,6 @@ class _WatchScreenState extends State<WatchScreen>
         _autoplayCountdownActive = false;
         _userPickedSource = true;
       }
-    });
-  }
-
-  void _flushPendingSources() {
-    _sourceBatchTimer?.cancel();
-    _sourceBatchTimer = null;
-    if (!mounted || _pendingSources.isEmpty) return;
-
-    final batch = List<StreamSource>.of(_pendingSources);
-    _pendingSources.clear();
-    setState(() {
-      _sources.addAll(batch);
-      _isLoadingSources = false;
     });
   }
 
@@ -753,7 +657,7 @@ class _WatchScreenState extends State<WatchScreen>
                         failoverCandidates: List.of(_sources),
                         onUserPicked: () {
                           _userPickedSource = true;
-                          _autoplayRace?.dispose();
+                          _resolve.cancelAutoplay();
                         },
                       ),
                     );
@@ -1357,7 +1261,7 @@ class _WatchScreenState extends State<WatchScreen>
           failoverCandidates: List.of(_sources),
           onUserPicked: () {
             _userPickedSource = true;
-            _autoplayRace?.dispose();
+            _resolve.cancelAutoplay();
           },
         );
       },
