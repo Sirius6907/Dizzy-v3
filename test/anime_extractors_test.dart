@@ -1,10 +1,11 @@
 // ignore_for_file: avoid_print
 import 'package:flutter_test/flutter_test.dart';
+import 'helpers/live_gate.dart';
 import 'package:dizzy/models/anime/anime_media.dart';
 import 'package:dizzy/services/anime/anime_scraper_service.dart';
 
 void main() {
-  test('AnimeScraperService scrapes streams for Solo Leveling S2 Ep 1', () async {
+  test('AnimeScraperService scrapes streams for Solo Leveling S2 Ep 1', skip: liveSkip, () async {
     final scraper = AnimeScraperService.instance;
     const anime = AnimeMedia(
       id: 176189,
@@ -28,7 +29,7 @@ void main() {
     expect(sources.isNotEmpty, isTrue);
   }, timeout: const Timeout(Duration(seconds: 40)));
 
-  test('AnimeScraperService scrapes streams for Demon Slayer Ep 1', () async {
+  test('AnimeScraperService scrapes streams for Demon Slayer Ep 1', skip: liveSkip, () async {
     final scraper = AnimeScraperService.instance;
     const anime = AnimeMedia(
       id: 101922,
@@ -52,7 +53,7 @@ void main() {
     expect(sources.isNotEmpty, isTrue);
   }, timeout: const Timeout(Duration(seconds: 40)));
 
-  test('AnimeScraperService scrapes streams for Jujutsu Kaisen Ep 1', () async {
+  test('AnimeScraperService scrapes streams for Jujutsu Kaisen Ep 1', skip: liveSkip, () async {
     final scraper = AnimeScraperService.instance;
     const anime = AnimeMedia(
       id: 113415,

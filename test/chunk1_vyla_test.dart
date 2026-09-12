@@ -5,6 +5,7 @@ import 'package:dizzy/services/scraper/sites/flaxmovies.dart';
 import 'package:dizzy/services/scraper/sites/vidgod.dart';
 import 'package:dizzy/services/scraper/sites/vidfast.dart';
 import 'package:dizzy/services/scraper/sites/peestream.dart';
+import 'helpers/live_gate.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
@@ -12,7 +13,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _AllowAllHttpOverrides();
 
-  group('Chunk 1 Vyla Scrapers Tests', () {
+  group('Chunk 1 Vyla Scrapers Tests', skip: liveSkip, () {
     test('VidUp scraper fetches streams for Fight Club', () async {
       final scraper = VidUpScraper();
       final stream = scraper.scrapeStream(
