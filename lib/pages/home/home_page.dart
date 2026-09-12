@@ -23,6 +23,7 @@ import '../../widgets/common/animated_ambient_background.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/poster_skeleton.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../utils/perf/image_caps.dart';
 import '../../widgets/home/continue_watching_slider.dart';
 import '../../widgets/movie/movie_slider_section.dart';
 import '../search/search_page.dart';
@@ -1327,8 +1328,9 @@ class _HeroSlide extends StatelessWidget {
             fit: BoxFit.cover,
             alignment: const Alignment(0, -0.15),
             filterQuality: FilterQuality.medium,
-            memCacheWidth: 1280,
-            maxWidthDiskCache: 1280,
+            // Polish P14: backdrop cap 960 (P23 contract, 3GB safe).
+            memCacheWidth: ImageCaps.kBackdrop,
+            maxWidthDiskCache: ImageCaps.kBackdrop,
             fadeInDuration: const Duration(milliseconds: 300),
             placeholder: (_, __) => const ColoredBox(color: Color(0xFF151822)),
             errorWidget: (_, __, ___) =>
