@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/player/quality_service.dart';
-import 'player_glass.dart';
+import 'player_menu_shell.dart';
 
 /// P7 — Manual quality menu (gear → Quality).
 /// Shows Auto + only the qualities this video actually has.
@@ -20,41 +20,14 @@ class PlayerQualityMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final cardWidth = (300.0).clamp(240.0, size.width - 28);
-
-    return PlayerGlassCard(
-      width: cardWidth,
-      padding: const EdgeInsets.all(12),
+    return PlayerMenuShell(
+      title: 'QUALITY',
+      onClose: onClose,
+      width: 300,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  'QUALITY',
-                  style: TextStyle(
-                    color: PlayerTheme.inkSubtle,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              PlayerIconButton(
-                size: 28,
-                iconSize: 14,
-                icon: const Icon(Icons.close_rounded),
-                tooltip: 'Close',
-                onPressed: onClose,
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
           for (final opt in options)
             Builder(builder: (context) {
               final isSelected = opt == current;

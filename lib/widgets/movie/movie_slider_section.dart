@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/movie/movie_section.dart';
+import '../../design/dizzy_tokens.dart';
 import '../../pages/calendar/tv_calendar_page.dart';
 import '../../pages/catalog/catalog_page.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -95,7 +96,7 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
     final isDesktop = _isDesktop();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 26),
+      padding: const EdgeInsets.only(bottom: DizzySpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
