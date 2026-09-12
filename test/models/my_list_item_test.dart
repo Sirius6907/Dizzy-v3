@@ -4,7 +4,7 @@ import 'package:dizzy/models/my_list/my_list_item.dart';
 void main() {
   group('MyListItem', () {
     group('uniqueKey', () {
-      test('uses traktId when available', () {
+      test('prefers imdbId over all other IDs (strict dedup)', () {
         final item = MyListItem(
           traktId: 123,
           imdbId: 'tt456',
@@ -13,7 +13,7 @@ void main() {
           type: 'movie',
           addedAt: DateTime(2026),
         );
-        expect(item.uniqueKey, 'trakt:123');
+        expect(item.uniqueKey, 'imdb:tt456');
       });
 
       test('falls back to imdbId when no traktId', () {
@@ -34,7 +34,7 @@ void main() {
           type: 'movie',
           addedAt: DateTime(2026),
         );
-        expect(item.uniqueKey, 'tmdb:789');
+        expect(item.uniqueKey, 'tmdb:movie:789');
       });
 
       test('falls back to title+year when no IDs', () {
@@ -44,7 +44,7 @@ void main() {
           type: 'movie',
           addedAt: DateTime(2026),
         );
-        expect(item.uniqueKey, 'title:test movie:2024');
+        expect(item.uniqueKey, 'title:movie:test movie:2024');
       });
 
       test('title is lowercased and trimmed in fallback key', () {
@@ -54,7 +54,7 @@ void main() {
           type: 'movie',
           addedAt: DateTime(2026),
         );
-        expect(item.uniqueKey, 'title:the matrix:1999');
+        expect(item.uniqueKey, 'title:movie:the matrix:1999');
       });
 
       test('year defaults to 0 when null in fallback key', () {
@@ -63,7 +63,7 @@ void main() {
           type: 'movie',
           addedAt: DateTime(2026),
         );
-        expect(item.uniqueKey, 'title:unknown:0');
+        expect(item.uniqueKey, 'title:movie:unknown:0');
       });
     });
 
