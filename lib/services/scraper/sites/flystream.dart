@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// FlyStream VOD Extractor ported to pure Dart.
 ///
@@ -36,7 +37,7 @@ class FlyStreamScraper extends StreamScraper {
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
 
     final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    print('[FlyStreamScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    AppLog.d('[FlyStreamScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
 
     try {
       final isTv = (mediaType == 'tv');
@@ -94,10 +95,10 @@ class FlyStreamScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      print('FlyStreamScraper error: $e');
+      AppLog.d('FlyStreamScraper error: $e');
     }
 
-    print('[FlyStreamScraper] Found ${sources.length} active stream(s)');
+    AppLog.d('[FlyStreamScraper] Found ${sources.length} active stream(s)');
     return sources;
   }
 }

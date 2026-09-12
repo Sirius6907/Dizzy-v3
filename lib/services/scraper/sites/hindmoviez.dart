@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
+import '../../errors/app_log.dart';
 
 /// HindMoviez Stream Scraper.
 ///
@@ -43,7 +43,7 @@ class HindMoviezScraper extends StreamScraper {
     () async {
       try {
         final cleanTitle = _getCleanTitle(title);
-        debugPrint('[HindMoviez] Starting scrape for title="$cleanTitle", type=$type, year=$year, S${season}E$episode, imdb=$imdbId');
+        AppLog.d('[HindMoviez] Starting scrape for title="$cleanTitle", type=$type, year=$year, S${season}E$episode, imdb=$imdbId');
 
         // 1. Search WP-JSON
         List<Map<String, dynamic>> posts = [];
@@ -55,7 +55,7 @@ class HindMoviezScraper extends StreamScraper {
         }
 
         if (posts.isEmpty) {
-          debugPrint('[HindMoviez] No posts found for "$title"');
+          AppLog.d('[HindMoviez] No posts found for "$title"');
           controller.close();
           return;
         }
@@ -66,7 +66,7 @@ class HindMoviezScraper extends StreamScraper {
           for (final post in posts) {
             final content = post['content']?['rendered']?.toString() ?? '';
             if (content.contains(imdbId)) {
-              debugPrint('[HindMoviez] Matched post via IMDB ID: ${post['title']?['rendered']}');
+              AppLog.d('[HindMoviez] Matched post via IMDB ID: ${post['title']?['rendered']}');
               matchedPost = post;
               break;
             }
@@ -78,7 +78,7 @@ class HindMoviezScraper extends StreamScraper {
             final postTitle = post['title']?['rendered']?.toString() ?? '';
             final postYear = _extractYear(postTitle);
             if (_isStrictMatch(title, year, postTitle, postYear)) {
-              debugPrint('[HindMoviez] Matched post via strict title match: $postTitle');
+              AppLog.d('[HindMoviez] Matched post via strict title match: $postTitle');
               matchedPost = post;
               break;
             }
@@ -92,7 +92,7 @@ class HindMoviezScraper extends StreamScraper {
             final postTitle = post['title']?['rendered']?.toString() ?? '';
             final pClean = _getCleanTitle(postTitle);
             if (pClean.contains(targetClean) || targetClean.contains(pClean)) {
-              debugPrint('[HindMoviez] Matched post via relaxed title match: $postTitle');
+              AppLog.d('[HindMoviez] Matched post via relaxed title match: $postTitle');
               matchedPost = post;
               break;
             }
@@ -100,7 +100,7 @@ class HindMoviezScraper extends StreamScraper {
         }
 
         if (matchedPost == null) {
-          debugPrint('[HindMoviez] No matching post found for "$title"');
+          AppLog.d('[HindMoviez] No matching post found for "$title"');
           controller.close();
           return;
         }
@@ -121,7 +121,7 @@ class HindMoviezScraper extends StreamScraper {
         final mvMatches = mvlinkRegex.allMatches(contentHtml).toList();
 
         if (mvMatches.isEmpty) {
-          debugPrint('[HindMoviez] No mvlink.blog links found in matched post');
+          AppLog.d('[HindMoviez] No mvlink.blog links found in matched post');
           controller.close();
           return;
         }
@@ -138,7 +138,7 @@ class HindMoviezScraper extends StreamScraper {
           mvLinks.add({'url': url, 'quality': quality});
         }
 
-        debugPrint('[HindMoviez] Found ${mvLinks.length} valid MvLink items');
+        AppLog.d('[HindMoviez] Found ${mvLinks.length} valid MvLink items');
 
         final seenStreamUrls = <String>{};
 
@@ -163,7 +163,7 @@ class HindMoviezScraper extends StreamScraper {
           )),
         );
       } catch (e, stack) {
-        debugPrint('[HindMoviez] Global scrape error: $e\n$stack');
+        AppLog.d('[HindMoviez] Global scrape error: $e\n$stack');
       } finally {
         if (!controller.isClosed) {
           controller.close();
@@ -186,7 +186,7 @@ class HindMoviezScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      debugPrint('[HindMoviez] searchWPJson error: $e');
+      AppLog.d('[HindMoviez] searchWPJson error: $e');
     }
     return [];
   }
@@ -287,14 +287,14 @@ class HindMoviezScraper extends StreamScraper {
   }) async {
     final sources = <StreamSource>[];
     try {
-      debugPrint('[HindMoviez] Fetching MvLink: $mvlinkUrl');
+      AppLog.d('[HindMoviez] Fetching MvLink: $mvlinkUrl');
       final res = await http.get(
         Uri.parse(mvlinkUrl),
         headers: {'User-Agent': _defaultUa, 'Referer': referer},
       ).timeout(const Duration(seconds: 10));
 
       if (res.statusCode != 200) {
-        debugPrint('[HindMoviez] MvLink status ${res.statusCode} for $mvlinkUrl');
+        AppLog.d('[HindMoviez] MvLink status ${res.statusCode} for $mvlinkUrl');
         return sources;
       }
       final mvHtml = res.body;
@@ -310,14 +310,14 @@ class HindMoviezScraper extends StreamScraper {
         }
       }
 
-      debugPrint('[HindMoviez] Found ${hshareIds.length} HShare IDs in $mvlinkUrl');
+      AppLog.d('[HindMoviez] Found ${hshareIds.length} HShare IDs in $mvlinkUrl');
       if (hshareIds.isEmpty) return sources;
 
       if (isTv && episode != null) {
         // Fast path for TV shows
         final epIdx = episode - 1;
         if (epIdx >= 0 && epIdx < hshareIds.length) {
-          debugPrint('[HindMoviez] Fast-path episode $episode at index $epIdx');
+          AppLog.d('[HindMoviez] Fast-path episode $episode at index $epIdx');
           final stream = await _resolveHShare(
             hshareId: hshareIds[epIdx],
             mvlinkUrl: mvlinkUrl,
@@ -337,7 +337,7 @@ class HindMoviezScraper extends StreamScraper {
 
       // Process IDs
       for (final id in hshareIds) {
-        debugPrint('[HindMoviez] Resolving HShare ID: $id');
+        AppLog.d('[HindMoviez] Resolving HShare ID: $id');
         final stream = await _resolveHShare(
           hshareId: id,
           mvlinkUrl: mvlinkUrl,
@@ -354,7 +354,7 @@ class HindMoviezScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      debugPrint('[HindMoviez] processMvlink error: $e');
+      AppLog.d('[HindMoviez] processMvlink error: $e');
     }
     return sources;
   }
@@ -374,12 +374,12 @@ class HindMoviezScraper extends StreamScraper {
     try {
       // 1. Bypass via admin-ajax.php
       final rUrl = await _bypassHShareAPI(hshareId, mvlinkUrl);
-      debugPrint('[HindMoviez] Bypassed HShare API -> rUrl: $rUrl');
+      AppLog.d('[HindMoviez] Bypassed HShare API -> rUrl: $rUrl');
       if (rUrl == null || rUrl.isEmpty) return sources;
 
       // 2. Fetch r.php and solve challenge if needed
       final downloadHtml = await _fetchRPageWithBypass(rUrl, mvlinkUrl);
-      debugPrint('[HindMoviez] Download HTML length: ${downloadHtml?.length}');
+      AppLog.d('[HindMoviez] Download HTML length: ${downloadHtml?.length}');
       if (downloadHtml == null || downloadHtml.isEmpty) return sources;
 
       // 3. Extract direct file name
@@ -389,14 +389,14 @@ class HindMoviezScraper extends StreamScraper {
       // 4. Extract hcloud.ink links
       final hcloudRegex = RegExp(r'href="([^"]+hcloud\.ink[^"]+)"', caseSensitive: false);
       final hcloudMatches = hcloudRegex.allMatches(downloadHtml).toList();
-      debugPrint('[HindMoviez] Found ${hcloudMatches.length} hcloud links');
+      AppLog.d('[HindMoviez] Found ${hcloudMatches.length} hcloud links');
 
       int serverNum = 1;
       for (final hm in hcloudMatches) {
         final hcloudUrl = hm.group(1)!;
-        debugPrint('[HindMoviez] Resolving hcloud URL: $hcloudUrl');
+        AppLog.d('[HindMoviez] Resolving hcloud URL: $hcloudUrl');
         final directUrl = await _resolveHCloudUrl(hcloudUrl, rUrl);
-        debugPrint('[HindMoviez] Resolved direct stream: $directUrl');
+        AppLog.d('[HindMoviez] Resolved direct stream: $directUrl');
         if (directUrl != null && directUrl.isNotEmpty) {
           final serverLabel = 'Server $serverNum';
           final source = _buildStreamSource(
@@ -415,7 +415,7 @@ class HindMoviezScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      debugPrint('[HindMoviez] resolveHShare error: $e');
+      AppLog.d('[HindMoviez] resolveHShare error: $e');
     }
     return sources;
   }
@@ -442,7 +442,7 @@ class HindMoviezScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      debugPrint('[HindMoviez] bypassHShareAPI error: $e');
+      AppLog.d('[HindMoviez] bypassHShareAPI error: $e');
     }
     return null;
   }
@@ -466,7 +466,7 @@ class HindMoviezScraper extends StreamScraper {
       }
 
       // 2. Initial request (follow redirects false, without cookie)
-      debugPrint('[HindMoviez] Fetching rUrl: $rUrl');
+      AppLog.d('[HindMoviez] Fetching rUrl: $rUrl');
       final initialRes = await _getWithCookieAndRedirects(
         url: rUrl,
         referer: referer,
@@ -477,11 +477,11 @@ class HindMoviezScraper extends StreamScraper {
           return initialRes.body;
         }
         // Needs challenge solution!
-        debugPrint('[HindMoviez] Solving Wallarm splash challenge...');
+        AppLog.d('[HindMoviez] Solving Wallarm splash challenge...');
         return await _solveHShareChallenge(rUrl, initialRes.body, referer);
       }
     } catch (e) {
-      debugPrint('[HindMoviez] fetchRPage error: $e');
+      AppLog.d('[HindMoviez] fetchRPage error: $e');
     }
     return null;
   }
@@ -658,7 +658,7 @@ class HindMoviezScraper extends StreamScraper {
 
       // 11. Send Challenge GET Request
       final challengeUrl = 'https://hshare.ink$actionPath?wsidchk=$wsidchk&pdata=$pdata&id=$idVal&ts=$ts&cttl=0';
-      debugPrint('[HindMoviez] Submitting challenge GET: $challengeUrl');
+      AppLog.d('[HindMoviez] Submitting challenge GET: $challengeUrl');
 
       final client = http.Client();
       try {
@@ -674,7 +674,7 @@ class HindMoviezScraper extends StreamScraper {
 
         final cookieHeader = chalRes.headers['set-cookie'];
         final locationHeader = chalRes.headers['location'];
-        debugPrint('[HindMoviez] Challenge response: status=${chalRes.statusCode}, location=$locationHeader, set-cookie=$cookieHeader');
+        AppLog.d('[HindMoviez] Challenge response: status=${chalRes.statusCode}, location=$locationHeader, set-cookie=$cookieHeader');
 
         String? cookie;
         if (cookieHeader != null) {
@@ -687,7 +687,7 @@ class HindMoviezScraper extends StreamScraper {
             ? (locationHeader.startsWith('http') ? locationHeader : 'https://hshare.ink$locationHeader')
             : rUrl;
 
-        debugPrint('[HindMoviez] Fetching unlocked target with redirects: $finalTarget (cookie: $cookie)');
+        AppLog.d('[HindMoviez] Fetching unlocked target with redirects: $finalTarget (cookie: $cookie)');
         final finalRes = await _getWithCookieAndRedirects(
           url: finalTarget,
           referer: rUrl,
@@ -695,14 +695,14 @@ class HindMoviezScraper extends StreamScraper {
         );
 
         if (finalRes != null && finalRes.statusCode == 200) {
-          debugPrint('[HindMoviez] Unlocked page response: status=${finalRes.statusCode}, length=${finalRes.body.length}, has hcloud=${finalRes.body.contains('hcloud')}');
+          AppLog.d('[HindMoviez] Unlocked page response: status=${finalRes.statusCode}, length=${finalRes.body.length}, has hcloud=${finalRes.body.contains('hcloud')}');
           return finalRes.body;
         }
       } finally {
         client.close();
       }
     } catch (e, stack) {
-      debugPrint('[HindMoviez] solveHShareChallenge error: $e\n$stack');
+      AppLog.d('[HindMoviez] solveHShareChallenge error: $e\n$stack');
       return null;
     }
     return null;
@@ -735,7 +735,7 @@ class HindMoviezScraper extends StreamScraper {
         return res;
       }
     } catch (e) {
-      debugPrint('[HindMoviez] _getWithCookieAndRedirects error: $e');
+      AppLog.d('[HindMoviez] _getWithCookieAndRedirects error: $e');
     } finally {
       client.close();
     }
@@ -781,7 +781,7 @@ class HindMoviezScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      debugPrint('[HindMoviez] resolveHCloudUrl error: $e');
+      AppLog.d('[HindMoviez] resolveHCloudUrl error: $e');
     }
     return null;
   }

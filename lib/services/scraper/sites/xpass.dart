@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart XPass Stream Scraper.
 ///
@@ -47,7 +48,7 @@ class XPassScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[XPassScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[XPassScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -152,7 +153,7 @@ class XPassScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[XPassScraper] error: $e');
+      if (kDebugMode) AppLog.d('[XPassScraper] error: $e');
     }
   }
 }

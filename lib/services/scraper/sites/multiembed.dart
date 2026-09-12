@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// MultiEmbed / 2embed VOD Extractor ported 1:1 from Flyx (multiembed.ts).
 class MultiEmbedScraper extends StreamScraper {
@@ -31,7 +32,7 @@ class MultiEmbedScraper extends StreamScraper {
     final sources = <StreamSource>[];
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
     final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    print('[MultiEmbedScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    AppLog.d('[MultiEmbedScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
     if (tmdbId == null) return sources;
 
     try {
@@ -151,10 +152,10 @@ class MultiEmbedScraper extends StreamScraper {
         }
       }
     } catch (e) {
-      print('MultiEmbedScraper error: $e');
+      AppLog.d('MultiEmbedScraper error: $e');
     }
 
-    print('[MultiEmbedScraper] Found ${sources.length} active stream(s)');
+    AppLog.d('[MultiEmbedScraper] Found ${sources.length} active stream(s)');
     return sources;
   }
 }

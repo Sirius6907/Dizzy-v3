@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart LookMovie Stream Scraper.
 ///
@@ -225,7 +226,7 @@ class LookMovieScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[LookMovieScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[LookMovieScraper] scrapeStream error: $e');
     }
   }
 }

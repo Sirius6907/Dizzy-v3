@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/stream/stream_model.dart';
 import 'source_ranker.dart';
+import '../errors/app_log.dart';
 
 /// Persists the last source that played successfully (30s+ of playback)
 /// for a title and, for series, per episode slot.
@@ -40,7 +40,7 @@ class LastGoodSourceStore {
         );
       });
     } catch (e) {
-      debugPrint('[LastGoodSourceStore] load failed: $e');
+      AppLog.d('[LastGoodSourceStore] load failed: $e');
       return {};
     }
   }
@@ -69,7 +69,7 @@ class LastGoodSourceStore {
 
       await prefs.setString(_prefsKey, jsonEncode(map));
     } catch (e) {
-      debugPrint('[LastGoodSourceStore] record failed: $e');
+      AppLog.d('[LastGoodSourceStore] record failed: $e');
     }
   }
 

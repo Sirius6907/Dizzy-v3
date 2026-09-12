@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloud_client.dart';
+import '../errors/app_log.dart';
 
 /// v1.2.0-ADMIN: in-app announcements from Supabase `announcements` table.
 ///
@@ -43,7 +44,7 @@ class AnnouncementService {
       }
       active.value = list;
     } catch (e) {
-      debugPrint('[Announcements] refresh failed (soft): $e');
+      AppLog.d('[Announcements] refresh failed (soft): $e');
     }
   }
 

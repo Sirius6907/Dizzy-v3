@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart VidUp Stream Scraper.
 ///
@@ -46,7 +47,7 @@ class VidUpScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[VidUpScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[VidUpScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -62,7 +63,7 @@ class VidUpScraper extends StreamScraper {
         ).timeout(const Duration(seconds: 10));
 
         if (pageRes.statusCode != 200) {
-          if (kDebugMode) debugPrint('[VidUpScraper] Embed page returned ${pageRes.statusCode}');
+          if (kDebugMode) AppLog.d('[VidUpScraper] Embed page returned ${pageRes.statusCode}');
           return;
         }
 
@@ -71,7 +72,7 @@ class VidUpScraper extends StreamScraper {
             RegExp(r'"(?:en|token)":"(.*?)"').firstMatch(html);
 
         if (tokenMatch == null || tokenMatch.group(1) == null) {
-          if (kDebugMode) debugPrint('[VidUpScraper] No token match found in embed HTML');
+          if (kDebugMode) AppLog.d('[VidUpScraper] No token match found in embed HTML');
           return;
         }
 
@@ -196,7 +197,7 @@ class VidUpScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[VidUpScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[VidUpScraper] scrapeStream error: $e');
     }
   }
 }

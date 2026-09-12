@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:torrserver_flutter/torrserver_flutter.dart';
 
 import '../../models/download/download_task_model.dart';
 import '../download/download_service.dart';
 import '../debrid/utils/debrid_media_matcher.dart';
+import '../errors/app_log.dart';
 
 /// Rich torrent statistics object.
 class TorrentStats {
@@ -433,7 +433,7 @@ class TorrentStreamService {
   }
 
   void _log(String message) {
-    debugPrint('[TorrentStream] $message');
+    AppLog.d('[TorrentStream] $message');
     onLogLine?.call(message);
   }
 }

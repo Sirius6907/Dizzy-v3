@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// DownloadEverything Stream Scraper & Inside Extractor.
 ///
@@ -47,7 +48,7 @@ class DownloadEverythingScraper extends StreamScraper {
           year: year,
         );
 
-        print('[DownloadEverything] Starting scrape for "$title" (tmdb: $tmdbId, imdb: $imdbId, year: $year, S:${season}E:$episode)');
+        AppLog.d('[DownloadEverything] Starting scrape for "$title" (tmdb: $tmdbId, imdb: $imdbId, year: $year, S:${season}E:$episode)');
 
         final payload = <String, dynamic>{
           'mode': isTv ? 'series' : 'movie',
@@ -81,14 +82,14 @@ class DownloadEverythingScraper extends StreamScraper {
               final site = parsed['site']?.toString() ?? 'DownloadEverything';
               final links = parsed['links'] as List;
               totalHitsFound += links.length;
-              print('[DownloadEverything] Hit from site "$site": ${links.length} candidate(s)');
+              AppLog.d('[DownloadEverything] Hit from site "$site": ${links.length} candidate(s)');
 
               for (final l in links) {
                 if (l is Map<String, dynamic>) {
                   final item = {'site': site, ...l};
                   final fut = _resolveItem(item, title, isTv, season, episode).then((source) {
                     if (source != null && !controller.isClosed) {
-                      print('[DownloadEverything] [+] Playable stream extracted: ${source.title}');
+                      AppLog.d('[DownloadEverything] [+] Playable stream extracted: ${source.title}');
                       controller.add(source);
                     }
                   }).catchError((_) {});
@@ -103,9 +104,9 @@ class DownloadEverythingScraper extends StreamScraper {
           await Future.wait(activeResolutions);
         }
 
-        print('[DownloadEverything] Completed stream for "$title" (total candidates inspected: $totalHitsFound)');
+        AppLog.d('[DownloadEverything] Completed stream for "$title" (total candidates inspected: $totalHitsFound)');
       } catch (e) {
-        print('[DownloadEverything] Error: $e');
+        AppLog.d('[DownloadEverything] Error: $e');
       } finally {
         if (!controller.isClosed) {
           controller.close();

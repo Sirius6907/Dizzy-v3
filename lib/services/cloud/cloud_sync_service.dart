@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 
 import '../../models/continue_watching/continue_watching_item.dart';
 import '../continue_watching/continue_watching_service.dart';
 import 'cloud_client.dart';
+import '../errors/app_log.dart';
 
 /// S3A (v1.1.9) + v1.2.0-P1 (T1.4): cross-device Continue Watching sync.
 ///
@@ -69,7 +69,7 @@ class CloudSyncService {
       await ContinueWatchingService.replaceSessionsFromCloud(merged);
       _lastSyncAt = now;
     } catch (e) {
-      debugPrint('[CloudSync] sync failed (soft): $e');
+      AppLog.d('[CloudSync] sync failed (soft): $e');
     } finally {
       _syncing = false;
     }

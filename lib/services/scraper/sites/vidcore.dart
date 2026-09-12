@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// VidCore VOD Extractor ported 1:1 from Flyx (vidcore.ts).
 ///
@@ -33,7 +34,7 @@ class VidCoreScraper extends StreamScraper {
     try {
       final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
       final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-      print('[VidCoreScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+      AppLog.d('[VidCoreScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
       if (tmdbId == null) return sources;
 
       final seenUrls = <String>{};
@@ -71,10 +72,10 @@ class VidCoreScraper extends StreamScraper {
         if (sources.isNotEmpty) break;
       }
     } catch (e) {
-      print('VidCoreScraper error: $e');
+      AppLog.d('VidCoreScraper error: $e');
     }
 
-    print('[VidCoreScraper] Found ${sources.length} active stream(s)');
+    AppLog.d('[VidCoreScraper] Found ${sources.length} active stream(s)');
     return sources;
   }
 

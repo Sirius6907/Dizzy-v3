@@ -3,6 +3,7 @@ import 'package:livekit_client/livekit_client.dart';
 
 import '../cloud/cloud_client.dart';
 import '../device/device_id_service.dart';
+import '../errors/app_log.dart';
 
 /// WP-P3: Discord-style voice for watch parties over LiveKit Cloud.
 ///
@@ -46,7 +47,7 @@ class PartyVoiceService {
     try {
       final code = roomCode.trim().toUpperCase();
       final device = DeviceIdService.deviceCode.value ?? 'unknown';
-      debugPrint('[Voice] token req: ${buildTokenRequest(code, device, asHost)}');
+      AppLog.d('[Voice] token req: ${buildTokenRequest(code, device, asHost)}');
       final res = await CloudClient.db.functions.invoke(
         'mint-livekit-token',
         body: {'room_code': code},
@@ -93,7 +94,7 @@ class PartyVoiceService {
       _refreshCount(room);
       return true;
     } catch (e) {
-      debugPrint('[Voice] join failed (soft): $e');
+      AppLog.d('[Voice] join failed (soft): $e');
       await leave();
       return false;
     }
@@ -138,7 +139,7 @@ class PartyVoiceService {
       await room.localParticipant?.setMicrophoneEnabled(enabled);
       micOn.value = enabled;
     } catch (e) {
-      debugPrint('[Voice] mic toggle failed (soft): $e');
+      AppLog.d('[Voice] mic toggle failed (soft): $e');
     }
   }
 
@@ -172,7 +173,7 @@ class PartyVoiceService {
       }
       deafened.value = deafen;
     } catch (e) {
-      debugPrint('[Voice] deafen failed (soft): $e');
+      AppLog.d('[Voice] deafen failed (soft): $e');
     }
   }
 
@@ -192,7 +193,7 @@ class PartyVoiceService {
       );
       return (res.data as Map?)?['ok'] == true;
     } catch (e) {
-      debugPrint('[Voice] mute-user failed (soft): $e');
+      AppLog.d('[Voice] mute-user failed (soft): $e');
       return false;
     }
   }
@@ -208,7 +209,7 @@ class PartyVoiceService {
       );
       return (res.data as Map?)?['ok'] == true;
     } catch (e) {
-      debugPrint('[Voice] mute-all failed (soft): $e');
+      AppLog.d('[Voice] mute-all failed (soft): $e');
       return false;
     }
   }

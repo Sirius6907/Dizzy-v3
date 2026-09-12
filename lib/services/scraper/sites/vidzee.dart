@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart VidZee Stream Scraper.
 ///
@@ -48,7 +49,7 @@ class VidZeeScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[VidZeeScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[VidZeeScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -127,7 +128,7 @@ class VidZeeScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[VidZeeScraper] error: $e');
+      if (kDebugMode) AppLog.d('[VidZeeScraper] error: $e');
     }
   }
 }

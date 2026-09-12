@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import 'cloud_client.dart';
 import '../device/device_id_service.dart';
+import '../errors/app_log.dart';
 
 /// S2 (v1.1.9): identity + consent. Anonymous-first, Google optional.
 /// Everything fails soft — offline means local-only, never an error screen.
@@ -67,7 +68,7 @@ class CloudAuthService {
       // and local-first; no installs row until user explicitly opts in.
       if (consentTelemetry.value) await _upsertInstall();
     } catch (e) {
-      debugPrint('[CloudAuth] anon sign-in failed (soft): $e');
+      AppLog.d('[CloudAuth] anon sign-in failed (soft): $e');
     }
   }
 
@@ -89,7 +90,7 @@ class CloudAuthService {
         'last_seen_at': DateTime.now().toIso8601String(),
       }, onConflict: 'owner_user_id');
     } catch (e) {
-      debugPrint('[CloudAuth] install upsert failed (soft): $e');
+      AppLog.d('[CloudAuth] install upsert failed (soft): $e');
     }
   }
 
@@ -148,7 +149,7 @@ class CloudAuthService {
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('[CloudAuth] consent push failed (soft): $e');
+      AppLog.d('[CloudAuth] consent push failed (soft): $e');
     }
   }
 
@@ -196,7 +197,7 @@ class CloudAuthService {
       }
       return true;
     } catch (e) {
-      debugPrint('[CloudAuth] delete failed: $e');
+      AppLog.d('[CloudAuth] delete failed: $e');
       return false;
     }
   }

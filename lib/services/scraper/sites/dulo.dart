@@ -4,6 +4,7 @@ import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 import 'dulo_client.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart Dulo Stream Scraper.
 /// Extracts direct HLS (m3u8) streams for Movies and TV shows.
@@ -31,7 +32,7 @@ class DuloScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[DuloScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[DuloScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -60,7 +61,7 @@ class DuloScraper extends StreamScraper {
         );
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[DuloScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[DuloScraper] scrapeStream error: $e');
     }
   }
 }

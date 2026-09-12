@@ -158,6 +158,25 @@ class _GuideCardState extends State<GuideCard> {
 
 /// v1.2.0-T2.6: preset guide contents (Easy English, max ~10 words/line).
 class AppGuides {
+  /// P13: the new 3-card party flow (create → join → host plays, all follow).
+  static const partyV2 = [
+    GuideStep(
+      icon: '🏠',
+      title: 'Create a room',
+      line: 'Name it, share the code. No links needed.',
+    ),
+    GuideStep(
+      icon: '🔢',
+      title: 'Friends join',
+      line: 'They tap Join, type your code. Done.',
+    ),
+    GuideStep(
+      icon: '▶️',
+      title: 'You play, all follow',
+      line: 'Press Play — every screen follows you.',
+    ),
+  ];
+
   static const watchParty = [
     GuideStep(
       icon: '👥',

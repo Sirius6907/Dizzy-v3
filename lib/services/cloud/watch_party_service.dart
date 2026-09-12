@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../profiles/dizzy_profile_service.dart';
 import 'cloud_client.dart';
+import '../errors/app_log.dart';
 
 /// S3C (v1.1.9): Watch Party room + Realtime Broadcast control plane.
 /// No media bytes/URLs are sent to Supabase — only media IDs and playback
@@ -123,7 +124,7 @@ class WatchPartyService {
       sweepStale();
       return room;
     } catch (e) {
-      debugPrint('[WatchParty] create failed (soft): $e');
+      AppLog.d('[WatchParty] create failed (soft): $e');
       return null;
     }
   }
@@ -144,7 +145,7 @@ class WatchPartyService {
         'media_ref': ref,
       }).eq('room_id', roomId.trim().toUpperCase());
     } catch (e) {
-      debugPrint('[WatchParty] current media update failed (soft): $e');
+      AppLog.d('[WatchParty] current media update failed (soft): $e');
     }
   }
 
@@ -169,7 +170,7 @@ class WatchPartyService {
       sweepStale();
       return room;
     } catch (e) {
-      debugPrint('[WatchParty] join failed (soft): $e');
+      AppLog.d('[WatchParty] join failed (soft): $e');
       return null;
     }
   }
@@ -194,7 +195,7 @@ class WatchPartyService {
           .where((r) => r.roomId.isNotEmpty)
           .toList();
     } catch (e) {
-      debugPrint('[WatchParty] lobby list failed (soft): $e');
+      AppLog.d('[WatchParty] lobby list failed (soft): $e');
       return const [];
     }
   }
@@ -209,7 +210,7 @@ class WatchPartyService {
       });
       return true;
     } catch (e) {
-      debugPrint('[WatchParty] report failed (soft): $e');
+      AppLog.d('[WatchParty] report failed (soft): $e');
       return false;
     }
   }
@@ -220,7 +221,7 @@ class WatchPartyService {
     try {
       await CloudClient.db.rpc('sweep_stale_rooms');
     } catch (e) {
-      debugPrint('[WatchParty] sweep failed (soft): $e');
+      AppLog.d('[WatchParty] sweep failed (soft): $e');
     }
   }
 
@@ -232,7 +233,7 @@ class WatchPartyService {
         'p_room_id': roomId.trim().toUpperCase(),
       });
     } catch (e) {
-      debugPrint('[WatchParty] touch failed (soft): $e');
+      AppLog.d('[WatchParty] touch failed (soft): $e');
     }
   }
 
@@ -352,6 +353,18 @@ class WatchPartyRoom {
 
   /// What the room is watching now (new columns first, legacy fallback).
   String? get nowWatchingRef => currentMediaRef ?? mediaRef;
+
+  /// P12: true while the host has put something on (vs picking).
+  bool get isLiveNow =>
+      (currentTitle != null && currentTitle!.trim().isNotEmpty) ||
+      (currentMediaRef != null && currentMediaRef!.trim().isNotEmpty);
+
+  /// P12: lobby line — the LIVE title, or the picking state. Never empty.
+  String get watchingLabel {
+    final t = (currentTitle ?? '').trim();
+    if (t.isNotEmpty) return t;
+    return 'Choosing…';
+  }
 
   factory WatchPartyRoom.fromJson(Map<String, dynamic> json) => WatchPartyRoom(
         roomId: json['room_id']?.toString() ?? '',

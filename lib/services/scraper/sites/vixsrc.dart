@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart VixSrc Stream Scraper.
 ///
@@ -55,7 +56,7 @@ class VixSrcScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[VixSrcScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[VixSrcScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -140,7 +141,7 @@ class VixSrcScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[VixSrcScraper] error: $e');
+      if (kDebugMode) AppLog.d('[VixSrcScraper] error: $e');
     }
   }
 }

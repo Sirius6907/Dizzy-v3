@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dizzy/models/subtitle/subtitle_model.dart';
 import 'package:dizzy/services/subtitles/subtitle_service.dart';
 import 'player_glass.dart';
+import '../../services/errors/app_log.dart';
 
 /// Full-featured subtitle selection, search, and timing menu.
 /// Responsive across mobile portrait, mobile landscape, tablet, and desktop screens.
@@ -117,7 +118,7 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
           ? _searchQuery!
           : cleanMediaTitle(rawTitle);
 
-      debugPrint('[PlayerSubtitleMenu] Searching subtitles online for: "$query" (year: $year, imdb: ${widget.imdbId})');
+      AppLog.d('[PlayerSubtitleMenu] Searching subtitles online for: "$query" (year: $year, imdb: ${widget.imdbId})');
       final results = await SubtitleService().fetchAllSubtitles(
         query,
         imdbId: widget.imdbId,
@@ -125,7 +126,7 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         episode: widget.episode,
         year: year,
       );
-      debugPrint('[PlayerSubtitleMenu] Found ${results.length} subtitle language groups');
+      AppLog.d('[PlayerSubtitleMenu] Found ${results.length} subtitle language groups');
       if (mounted) {
         setState(() {
           _dynamicGroups = results;
@@ -135,7 +136,7 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         });
       }
     } catch (e) {
-      debugPrint('[PlayerSubtitleMenu] search error: $e');
+      AppLog.d('[PlayerSubtitleMenu] search error: $e');
     } finally {
       if (mounted) setState(() => _isLoadingSearch = false);
     }

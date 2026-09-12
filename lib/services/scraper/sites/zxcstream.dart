@@ -7,6 +7,7 @@ import 'package:pointycastle/export.dart';
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart ZxcStream Stream Scraper.
 ///
@@ -113,7 +114,7 @@ class ZxcStreamScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[ZxcStreamScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[ZxcStreamScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -228,7 +229,7 @@ class ZxcStreamScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[ZxcStreamScraper] error: $e');
+      if (kDebugMode) AppLog.d('[ZxcStreamScraper] error: $e');
     }
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import '../cloud/watch_party_service.dart';
+import '../errors/app_error_log.dart';
 import 'party_session.dart';
 import 'watch_sync_engine.dart';
 
@@ -165,6 +166,9 @@ class PartyPlaybackSession {
         msg = WatchSyncMessage.fromJson(
             Map<String, dynamic>.from(jsonDecode(event.text!)));
       } catch (_) {
+        // P15: malformed realtime payload — silent-but-logged (parse class).
+        unawaited(AppErrorLog.log(
+            code: 'sync_msg_parse', screen: 'party'));
         return;
       }
       if (!msg.isUsable) return;

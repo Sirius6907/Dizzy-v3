@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart KissKH Stream Scraper.
 ///
@@ -150,7 +151,7 @@ class KissKhScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[KissKhScraper] error: $e');
+      if (kDebugMode) AppLog.d('[KissKhScraper] error: $e');
     }
   }
 }

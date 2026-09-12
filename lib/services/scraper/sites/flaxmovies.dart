@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart FlaxMovies Stream Scraper.
 ///
@@ -119,7 +120,7 @@ class FlaxMoviesScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[FlaxMoviesScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[FlaxMoviesScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -191,7 +192,7 @@ class FlaxMoviesScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[FlaxMoviesScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[FlaxMoviesScraper] scrapeStream error: $e');
     }
   }
 }

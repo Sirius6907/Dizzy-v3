@@ -6,6 +6,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../errors/app_log.dart';
 
 /// Subtitle styling preset for rapid 1-tap appearance selection.
 enum SubtitleStylePreset {
@@ -388,9 +389,9 @@ abstract final class PlayerSettings {
       }
 
       _extractedAnime4kDir = shadersDir.path;
-      debugPrint('[PlayerSettings] Anime4K shaders extracted to: $_extractedAnime4kDir');
+      AppLog.d('[PlayerSettings] Anime4K shaders extracted to: $_extractedAnime4kDir');
     } catch (e) {
-      debugPrint('[PlayerSettings] Error extracting Anime4K shaders: $e');
+      AppLog.d('[PlayerSettings] Error extracting Anime4K shaders: $e');
     }
   }
 
@@ -437,10 +438,10 @@ abstract final class PlayerSettings {
       if (await fontFile.exists() && (await fontFile.length()) > 0) {
         _extractedFontDir = fontsDir.path;
         _extractedFontPath = fontFile.path;
-        debugPrint('[PlayerSettings] libass font extracted successfully to: $_extractedFontPath');
+        AppLog.d('[PlayerSettings] libass font extracted successfully to: $_extractedFontPath');
       }
     } catch (e) {
-      debugPrint('[PlayerSettings] Error extracting libass font fallback: $e');
+      AppLog.d('[PlayerSettings] Error extracting libass font fallback: $e');
     }
   }
 
@@ -486,7 +487,7 @@ abstract final class PlayerSettings {
         await platform.setProperty('stream-lavf-o', '');
       }
     } catch (e) {
-      debugPrint('[PlayerSettings] applyStreamContinuity warning: $e');
+      AppLog.d('[PlayerSettings] applyStreamContinuity warning: $e');
     }
   }
 
@@ -568,7 +569,7 @@ abstract final class PlayerSettings {
               .map((f) => p.join(_extractedAnime4kDir!, f))
               .join(separator);
           await platform.setProperty('glsl-shaders', shaderChain);
-          debugPrint('[PlayerSettings] Applied Anime4K pre-open shader chain: ${anime4kPreset.value.label}');
+          AppLog.d('[PlayerSettings] Applied Anime4K pre-open shader chain: ${anime4kPreset.value.label}');
         } else {
           await platform.setProperty('glsl-shaders', '');
         }
@@ -629,7 +630,7 @@ abstract final class PlayerSettings {
       await platform.setProperty('demuxer-lavf-analyzeduration', '20');
       await platform.setProperty('demuxer-lavf-o', 'strict=experimental');
     } catch (e) {
-      debugPrint('[PlayerSettings] applyPreOpenProperties warning: $e');
+      AppLog.d('[PlayerSettings] applyPreOpenProperties warning: $e');
     }
   }
 
@@ -639,7 +640,7 @@ abstract final class PlayerSettings {
     try {
       await applySubtitleStyling(player);
     } catch (e) {
-      debugPrint('[PlayerSettings] applyPostOpenProperties warning: $e');
+      AppLog.d('[PlayerSettings] applyPostOpenProperties warning: $e');
     }
   }
 
@@ -875,7 +876,7 @@ abstract final class PlayerSettings {
         }
       }
     } catch (e) {
-      debugPrint('[PlayerSettings] applySubtitleStyling error: $e');
+      AppLog.d('[PlayerSettings] applySubtitleStyling error: $e');
     }
   }
 
@@ -981,7 +982,7 @@ abstract final class PlayerSettings {
 
       return 'Fontname=$font,Fontsize=$size,PrimaryColour=$primaryColour,BackColour=$backColour,OutlineColour=$outlineColour,Bold=$bold,Italic=$italic,BorderStyle=$borderStyle,Outline=$outline,Shadow=$shadow,MarginV=$marginV';
     } catch (e) {
-      debugPrint('[_buildAssForceStyleString] error: $e');
+      AppLog.d('[_buildAssForceStyleString] error: $e');
       return '';
     }
   }

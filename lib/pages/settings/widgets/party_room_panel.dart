@@ -154,6 +154,18 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // P12: green speaking dot from the LIVE voice feed.
+                if (live) ...[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: const BoxDecoration(
+                      color: Colors.greenAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
                 Text(m.displayName,
                     style: const TextStyle(
                         color: Colors.white,

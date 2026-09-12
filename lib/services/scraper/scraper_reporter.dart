@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cloud/cloud_client.dart';
+import '../errors/app_log.dart';
 
 /// v1.2.0-ADMIN: crowdsourced dead-scraper votes → `scraper-ingest` edge.
 ///
@@ -43,7 +43,7 @@ class ScraperReporter {
         },
       );
     } catch (e) {
-      debugPrint('[ScraperReporter] vote failed (soft): $e');
+      AppLog.d('[ScraperReporter] vote failed (soft): $e');
     }
   }
 }

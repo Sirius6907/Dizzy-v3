@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env_service.dart';
+import '../errors/app_log.dart';
 
 /// S2 (v1.1.9): lazy Supabase client. Keys come from --dart-define
 /// (never hardcoded). All cloud calls fail soft — app never blocks.
@@ -29,22 +30,30 @@ class CloudClient {
   static final ValueNotifier<bool> cloudAvailable =
       ValueNotifier<bool>(false);
 
+  /// P14: edge-function URL builder (tmdb-proxy, catalog, resolve…).
+  /// '' when unconfigured — callers fail soft.
+  static String functionUrl(String name) =>
+      _url.isEmpty ? '' : '$_url/functions/v1/$name';
+
+  /// P14: anon key for edge-function calls (CORS-allowed `apikey` header).
+  static String get anonKey => _anonKey;
+
   static SupabaseClient get db => Supabase.instance.client;
 
   /// Init once at startup. Returns false (soft) if keys missing.
   static Future<bool> init() async {
     if (!isConfigured) {
-      debugPrint('[Cloud] SUPABASE_URL/ANON_KEY missing — cloud disabled.');
+      AppLog.d('[Cloud] SUPABASE_URL/ANON_KEY missing — cloud disabled.');
       return false;
     }
     try {
       await Supabase.initialize(url: _url, anonKey: _anonKey);
       _ready = true;
       cloudAvailable.value = true;
-      debugPrint('[Cloud] Supabase ready.');
+      AppLog.d('[Cloud] Supabase ready.');
       return true;
     } catch (e) {
-      debugPrint('[Cloud] init failed (soft): $e');
+      AppLog.d('[Cloud] init failed (soft): $e');
       return false;
     }
   }

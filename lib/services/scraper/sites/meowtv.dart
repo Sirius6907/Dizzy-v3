@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart MeowTV Stream Scraper.
 ///
@@ -68,7 +69,7 @@ class MeowTvScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[MeowTvScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[MeowTvScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -129,7 +130,7 @@ class MeowTvScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[MeowTvScraper] error: $e');
+      if (kDebugMode) AppLog.d('[MeowTvScraper] error: $e');
     }
   }
 }

@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../errors/app_log.dart';
 
 /// F0 (v1.1.9): Dead Scraper Quarantine.
 ///
@@ -132,7 +132,7 @@ class ScraperQuarantineService {
     final key = scraperName.trim().toLowerCase();
     if (_quarantineMap.remove(key) != null) {
       _persist();
-      debugPrint('[Quarantine] $scraperName recovered! Unquarantined.');
+      AppLog.d('[Quarantine] $scraperName recovered! Unquarantined.');
     }
   }
 

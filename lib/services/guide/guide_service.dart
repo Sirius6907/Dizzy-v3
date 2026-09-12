@@ -33,10 +33,22 @@ class GuideService {
 
   /// All guide keys (for Settings → Help → Show guides again).
   static const allKeys = <String>[
-    'watch_party',
+    'party_v2',
     'downloads',
     'cloud_sync',
     'sources_health',
     'subtitles',
   ];
+
+  /// P13 one-line migration: users who saw the old party guide don't get
+  /// re-nagged by the new one. Old key left in prefs (harmless).
+  static Future<void> migrateLegacyPartyKey() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if ((prefs.getBool('${_prefix}watch_party') ?? false) &&
+          !(prefs.getBool('${_prefix}party_v2') ?? false)) {
+        await prefs.setBool('${_prefix}party_v2', true);
+      }
+    } catch (_) {}
+  }
 }

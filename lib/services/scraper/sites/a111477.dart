@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// 111477 Stremio Stream Scraper.
 ///
@@ -104,7 +104,7 @@ class A111477Scraper extends StreamScraper {
         }
 
         if (targetIds.isEmpty) {
-          debugPrint('[111477] No valid IMDB or TMDb ID for "$title"');
+          AppLog.d('[111477] No valid IMDB or TMDb ID for "$title"');
           controller.close();
           return;
         }
@@ -125,7 +125,7 @@ class A111477Scraper extends StreamScraper {
           }
 
           try {
-            debugPrint('[111477] Fetching streams from $endpoint');
+            AppLog.d('[111477] Fetching streams from $endpoint');
             final res = await http
                 .get(Uri.parse(endpoint), headers: _defaultHeaders)
                 .timeout(const Duration(seconds: 12));
@@ -134,7 +134,7 @@ class A111477Scraper extends StreamScraper {
               final data = jsonDecode(res.body);
               if (data is Map && data['streams'] is List) {
                 final streams = data['streams'] as List;
-                debugPrint('[111477] Received ${streams.length} streams for $id');
+                AppLog.d('[111477] Received ${streams.length} streams for $id');
 
                 for (final item in streams) {
                   if (item is! Map) continue;
@@ -177,7 +177,7 @@ class A111477Scraper extends StreamScraper {
               }
             }
           } catch (e) {
-            debugPrint('[111477] Error fetching from $endpoint: $e');
+            AppLog.d('[111477] Error fetching from $endpoint: $e');
           }
         }
 
@@ -188,7 +188,7 @@ class A111477Scraper extends StreamScraper {
           );
         }
       } catch (e) {
-        debugPrint('[111477] Global scrape error: $e');
+        AppLog.d('[111477] Global scrape error: $e');
       } finally {
         if (!controller.isClosed) {
           controller.close();

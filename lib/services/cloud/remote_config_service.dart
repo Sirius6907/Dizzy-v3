@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloud_client.dart';
+import '../errors/app_log.dart';
 
 /// v1.2.0-ADMIN: remote config pulled from Supabase `remote_config` table.
 ///
@@ -125,7 +126,7 @@ class RemoteConfigService {
           _cacheAtKey, DateTime.now().millisecondsSinceEpoch);
       revision.value++;
     } catch (e) {
-      debugPrint('[RemoteConfig] refresh failed (soft): $e');
+      AppLog.d('[RemoteConfig] refresh failed (soft): $e');
     }
   }
 

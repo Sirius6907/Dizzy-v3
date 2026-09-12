@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
+import '../../errors/app_log.dart';
 
 /// Pure-Dart Mapple Stream Scraper.
 ///
@@ -84,7 +85,7 @@ class MappleScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) debugPrint('[MappleScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) AppLog.d('[MappleScraper] Could not resolve TMDB ID for "$title"');
         return;
       }
 
@@ -267,7 +268,7 @@ class MappleScraper extends StreamScraper {
         client.close();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[MappleScraper] scrapeStream error: $e');
+      if (kDebugMode) AppLog.d('[MappleScraper] scrapeStream error: $e');
     }
   }
 }
