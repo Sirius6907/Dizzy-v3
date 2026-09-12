@@ -7,6 +7,7 @@ import 'package:dizzy/models/movie/video.dart';
 import '../../models/download/download_task_model.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/download/download_service.dart';
+import '../../widgets/guide/guide_card.dart';
 import '../../utils/platform/open_file_location_helper.dart';
 import '../../utils/download/download_path_helper.dart';
 import '../player/player_screen.dart';
@@ -25,6 +26,10 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // v1.2.0-T2.6: first-time Downloads guide (skipable, never nags).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GuideCard.maybeShow(context, 'downloads', AppGuides.downloads);
+    });
   }
 
   @override
@@ -194,20 +199,63 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
               ),
             ),
           ),
-          body: ValueListenableBuilder<List<DownloadTask>>(
-            valueListenable: DownloadService.instance.tasksNotifier,
-            builder: (context, tasks, _) {
-              final activeTasks = tasks.where((t) => !t.isCompleted).toList();
-              final completedTasks = tasks.where((t) => t.isCompleted).toList();
+          body: Column(
+            children: [
+              // v1.2.0-T2.2: offline banner — Easy English, no tech words.
+              ValueListenableBuilder<bool>(
+                valueListenable: DownloadService.instance.offlineNotifier,
+                builder: (context, offline, _) {
+                  if (!offline) return const SizedBox.shrink();
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.4)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.wifi_off_rounded,
+                            color: Colors.orange, size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'No internet. Waiting… downloads continue when you are back.',
+                            style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Expanded(
+                child: ValueListenableBuilder<List<DownloadTask>>(
+                  valueListenable: DownloadService.instance.tasksNotifier,
+                  builder: (context, tasks, _) {
+                    final activeTasks =
+                        tasks.where((t) => !t.isCompleted).toList();
+                    final completedTasks =
+                        tasks.where((t) => t.isCompleted).toList();
 
-              return TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildActiveList(activeTasks, palette),
-                  _buildCompletedList(completedTasks, palette),
-                ],
-              );
-            },
+                    return TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildActiveList(activeTasks, palette),
+                        _buildCompletedList(completedTasks, palette),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -230,6 +278,19 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
             Text(
               'Media you download from the video player will show up here.',
               style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+            ),
+            // v1.2.0-T2.7: empty state always has 1 action (nani test).
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF7C5CFF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.maybePop(context),
+              icon: const Icon(Icons.explore_rounded, size: 18),
+              label: const Text('Find something to save'),
             ),
           ],
         ),

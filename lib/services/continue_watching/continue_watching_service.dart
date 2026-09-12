@@ -19,6 +19,7 @@ import '../../services/stream/stream_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../trakt/trakt_service.dart';
 import '../trakt/trakt_continue_watching_service.dart';
+import '../home/genre_preference_service.dart';
 import '../simkl/simkl_service.dart';
 import '../simkl/simkl_continue_watching_service.dart';
 
@@ -335,6 +336,11 @@ class ContinueWatchingService {
     // Persist via dirty-flag (Task 16): UI updates now, disk writes flush
     // on a 15s trailing window or immediately on pause/dispose.
     _markDirty(trimmed);
+
+    // v1.2.0-T2.5: learn genre taste on episode/movie complete (cheap, once).
+    if (isFinished && detail.genres.isNotEmpty) {
+      unawaited(GenrePreferenceService.recordGenres(detail.genres));
+    }
 
     // Push cloud scrobble / history to Trakt and Simkl
     _syncCloudPlayback(

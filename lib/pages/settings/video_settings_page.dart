@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/stream/last_good_source_store.dart';
+import 'subtitle_settings_page.dart';
 
 class VideoSettingsPage extends StatefulWidget {
   const VideoSettingsPage({super.key});
@@ -344,6 +345,97 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                           },
                         ),
                       ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 32),
+
+              // ── Words on screen (v1.2.0-T2.4): subtitle styles entry ──
+              ValueListenableBuilder<SubtitleStylePreset>(
+                valueListenable: PlayerSettings.subStylePreset,
+                builder: (context, preset, _) {
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SubtitleSettingsPage(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E121B),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: palette.primaryColor
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.subtitles_rounded,
+                              color: palette.primaryColor,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Words on screen',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  'Change how subtitles look — style, size, bold. Preview included.',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: Colors.white70,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: palette.primaryColor
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              preset.label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: palette.primaryColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.chevron_right_rounded,
+                              color: Colors.white38, size: 22),
+                        ],
+                      ),
                     ),
                   );
                 },

@@ -90,17 +90,15 @@ class WatchPartyService {
       RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$')
           .hasMatch(id.trim().toUpperCase());
 
+  /// v1.2.0-P1: persistent rooms — name + pass only. No media needed.
+  /// The host's current title is tracked via [updateCurrentMedia] as events.
   static Future<WatchPartyRoom?> createRoom({
     required String title,
-    required String? mediaRef,
     required bool isPrivate,
     String? pass,
     bool isAdult = false,
   }) async {
     if (!isAvailable || (isPrivate && !validPass(pass ?? ''))) return null;
-    // WP-P2 mandatory-playback gate: no media attached = no room.
-    // (Player auto-prefill lands in WP-P2b; until then the dialog collects it.)
-    if (mediaRef == null || mediaRef.trim().isEmpty) return null;
     try {
       final uid = CloudClient.db.auth.currentUser!.id;
       final id = generateRoomId();
@@ -108,7 +106,6 @@ class WatchPartyService {
         'room_id': id,
         'host_user_id': uid,
         'title': title.trim().isEmpty ? 'Watch Party' : title.trim(),
-        'media_ref': mediaRef,
         'visibility': isPrivate ? 'private' : 'public',
         'pass_hash': isPrivate ? hashPass(pass!) : null,
         'is_adult': isAdult || isAdultContent(title: title),
@@ -128,6 +125,26 @@ class WatchPartyService {
     } catch (e) {
       debugPrint('[WatchParty] create failed (soft): $e');
       return null;
+    }
+  }
+
+  /// v1.2.0-P1: host sets "now watching" (called on every host play/switch).
+  /// Writes both new columns + legacy media_ref (old lobby views read it).
+  /// Fail-soft: room still works, guests just see "Choosing…".
+  static Future<void> updateCurrentMedia({
+    required String roomId,
+    String? ref,
+    String? title,
+  }) async {
+    if (!isAvailable) return;
+    try {
+      await CloudClient.db.from('rooms').update({
+        'current_media_ref': ref,
+        'current_title': title,
+        'media_ref': ref,
+      }).eq('room_id', roomId.trim().toUpperCase());
+    } catch (e) {
+      debugPrint('[WatchParty] current media update failed (soft): $e');
     }
   }
 
@@ -253,13 +270,40 @@ class WatchPartyService {
   static Future<void> leaveRoom(String roomId) async {
     try {
       if (isAvailable) {
-        await CloudClient.db
-            .from('room_members')
-            .delete()
-            .match({'room_id': roomId, 'user_id': CloudClient.db.auth.currentUser!.id});
+        // v1.2.0-P5: server promotes oldest member if host leaves,
+        // closes the room when the last one walks out.
+        await CloudClient.db.rpc('leave_watch_room', params: {
+          'p_room_id': roomId.trim().toUpperCase(),
+        });
       }
-    } catch (_) {}
+    } catch (_) {
+      try {
+        if (isAvailable) {
+          await CloudClient.db.from('room_members').delete().match({
+            'room_id': roomId,
+            'user_id': CloudClient.db.auth.currentUser!.id
+          });
+        }
+      } catch (_) {}
+    }
     await disconnect();
+  }
+
+  /// v1.2.0-P5: how full is this room (for the "Room is full" easy message).
+  /// Null = unknown (fail-soft to the generic join error).
+  static Future<int?> roomMemberCount(String roomId) async {
+    if (!isAvailable) return null;
+    try {
+      final row = await CloudClient.db
+          .from('public_rooms_safe')
+          .select('member_count')
+          .eq('room_id', roomId.trim().toUpperCase())
+          .maybeSingle();
+      if (row == null) return null;
+      return int.tryParse(row['member_count']?.toString() ?? '');
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<void> closeRoom(String roomId) async {
@@ -287,6 +331,8 @@ class WatchPartyRoom {
   final String roomId;
   final String title;
   final String? mediaRef;
+  final String? currentMediaRef;
+  final String? currentTitle;
   final bool isPrivate;
   final String status;
   final int memberCount;
@@ -296,16 +342,23 @@ class WatchPartyRoom {
     required this.roomId,
     required this.title,
     required this.mediaRef,
+    this.currentMediaRef,
+    this.currentTitle,
     required this.isPrivate,
     required this.status,
     this.memberCount = 0,
     this.isAdult = false,
   });
 
+  /// What the room is watching now (new columns first, legacy fallback).
+  String? get nowWatchingRef => currentMediaRef ?? mediaRef;
+
   factory WatchPartyRoom.fromJson(Map<String, dynamic> json) => WatchPartyRoom(
         roomId: json['room_id']?.toString() ?? '',
         title: json['title']?.toString() ?? 'Watch Party',
         mediaRef: json['media_ref']?.toString(),
+        currentMediaRef: json['current_media_ref']?.toString(),
+        currentTitle: json['current_title']?.toString(),
         isPrivate: json['visibility']?.toString() == 'private',
         status: json['status']?.toString() ?? 'lobby',
         memberCount: int.tryParse(json['member_count']?.toString() ?? '') ?? 0,

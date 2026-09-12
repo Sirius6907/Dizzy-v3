@@ -55,12 +55,16 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _saveSearchHistory(String query) async {
-    if (query.trim().isEmpty) return;
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
     final history = prefs.getStringList('search_history') ?? [];
-    history.remove(query);
-    history.insert(0, query);
-    if (history.length > 10) history.removeLast();
+    // v1.2.0-T2.3 (PRD FR-3): cap 50 stored, dedupe bumps re-search to top.
+    history.remove(trimmed);
+    history.insert(0, trimmed);
+    while (history.length > 50) {
+      history.removeLast();
+    }
     await prefs.setStringList('search_history', history);
     if (mounted) {
       setState(() {
@@ -454,7 +458,7 @@ class _SearchPageState extends State<SearchPage> {
       ),
       physics: const BouncingScrollPhysics(),
       children: [
-        // Recent Searches
+        // Recent Searches — v1.2.0-T2.3: last 10 shown (50 stored), tap = search.
         if (_searchHistory.isNotEmpty) ...[
           const SizedBox(height: 6),
           Padding(
@@ -491,7 +495,7 @@ class _SearchPageState extends State<SearchPage> {
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _searchHistory.map((query) {
+              children: _searchHistory.take(10).map((query) {
                 return InputChip(
                   label: Text(query),
                   labelStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),

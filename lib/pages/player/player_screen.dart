@@ -23,6 +23,7 @@ import '../../services/theme/glass_settings.dart';
 import '../../services/trakt/trakt_service.dart';
 import '../../services/simkl/simkl_service.dart';
 import '../../services/player/player_settings.dart';
+import '../../services/player/playback_brain.dart';
 import '../../services/discord/discord_rpc_service.dart';
 
 import '../../widgets/player/player_glass.dart';
@@ -51,6 +52,8 @@ import '../../utils/download/download_path_helper.dart';
 import '../../services/stream/next_episode_engine.dart';
 import '../../services/stream/source_ranker.dart';
 import '../../services/stream/last_good_source_store.dart';
+import '../../services/watchparty/party_session.dart';
+import '../../services/watchparty/party_playback_session.dart';
 import '../../services/system/resource_governor.dart';
 import '../../widgets/player/next_episode_countdown.dart';
 
@@ -130,6 +133,9 @@ class _PlayerScreenState extends State<PlayerScreen>
   double _playbackRate = 1.0;
   BoxFit _videoFit = BoxFit.contain;
   List<PlayerAudioTrack> _audioTracks = [];
+
+  // Party sync (v1.2.0-T2.8) — null when not in a Watch Together room.
+  PartyPlaybackSession? _partySession;
 
   // Lock mode (v1.1.8) — swallows all player-area input when locked.
   bool _isLocked = false;
@@ -350,11 +356,122 @@ class _PlayerScreenState extends State<PlayerScreen>
     ]);
 
     _initStream();
+    _startPartySync();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+  }
+
+  /// v1.2.0-T2.8: wire Watch Together sync (no-op when not in a party).
+  /// Host broadcasts state; guest silently follows. Player-agnostic session
+  /// gets thin callbacks into media_kit — nothing else in init changes.
+  void _startPartySync() {
+    final s = PartySession.instance;
+    if (!s.inParty) return;
+    _partySession = PartyPlaybackSession(
+      getPositionMs: () => _player.state.position.inMilliseconds,
+      isPlaying: () => _player.state.playing,
+      getSpeed: () => _playbackRate,
+      seekToMs: (ms) async {
+        await _player.seek(Duration(milliseconds: ms));
+      },
+      setPlaying: (play) async {
+        if (play) {
+          await _player.play();
+        } else {
+          await _player.pause();
+        }
+      },
+      onToast: _partyToast,
+      onGuestMediaSwitch: (msg) async {
+        final title = (msg.mediaTitle ?? '').trim();
+        _partyToast(title.isEmpty
+            ? 'Host switched movie — open it to rejoin sync.'
+            : 'Host is playing $title — opening it for you…');
+      },
+    );
+    _partySession!.start();
+    // v1.2.0-P2: host announces what just opened (any title, unlimited/room).
+    _announceHostMedia();
+  }
+
+  /// True when this device follows the host (controls locked, banner shown).
+  bool get _partyGuestLocked =>
+      PartySession.instance.inParty && !PartySession.instance.isHost;
+
+  /// v1.2.0-P2: canonical ref for what THIS player shows right now
+  /// (movie / episode). Null when detail is missing (e.g. deep-link file).
+  String? _partyRefForCurrent() {
+    final d = widget.detail;
+    if (d == null) return null;
+    if (d.id.startsWith('tt')) return PartySession.imdbRef(d.id);
+    final tmdb = d.tmdbId ?? d.id;
+    final ep = _currentEpisode ?? widget.episode;
+    if (ep != null) {
+      return PartySession.tvRef(tmdb, ep.season ?? 1, ep.episode ?? 1);
+    }
+    return PartySession.movieRef(tmdb);
+  }
+
+  /// v1.2.0-P2: host tells the room "I am playing X now".
+  /// Guests get media_switch + DB row; auto-open itself lands in P3.
+  void _announceHostMedia() {
+    final s = PartySession.instance;
+    if (!s.inParty || !s.isHost || _partySession == null) return;
+    final ref = _partyRefForCurrent();
+    if (ref == null || ref == s.mediaRef) return; // no-op: same title
+    final ep = _currentEpisode ?? widget.episode;
+    unawaited(_partySession!.announceMedia(
+      ref: ref,
+      title: _currentTitle,
+      season: ep?.season,
+      episode: ep?.episode,
+    ));
+  }
+
+  void _partyToast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
+  }
+
+  /// v1.2.0-T2.8: party banner pill (Easy English, non-tech).
+  /// Host sees LIVE pill; guest sees locked-controls note.
+  Widget _buildPartyBanner() {
+    final isHost = PartySession.instance.isHost;
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 56,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        child: Center(
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: (isHost
+                      ? const Color(0xFFE5484D)
+                      : const Color(0xFF7C5CFF))
+                  .withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              isHost
+                  ? '🔴 LIVE • Watch Together'
+                  : 'Host controls play. You control sound + chat.',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _initStream() async {
@@ -929,7 +1046,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not load subtitle: $errorMsg'),
+            content: Text(PlaybackBrain.easyErrorMessage(errorMsg)),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -995,14 +1112,15 @@ class _PlayerScreenState extends State<PlayerScreen>
         _isLoading = false;
         _showSourcesPanel = true;
         _sourcesEpisode = _currentEpisode;
-        _sourcesErrorMessage = 'Playback error: $errorMsg. Please select another source below.';
+        _sourcesErrorMessage =
+            '${PlaybackBrain.easyErrorMessage(errorMsg)} Please pick another video below.';
       });
       return;
     }
 
     setState(() {
       _isLoading = false;
-      _statusMessage = 'Playback error: $errorMsg';
+      _statusMessage = PlaybackBrain.easyErrorMessage(errorMsg);
     });
   }
 
@@ -1055,11 +1173,27 @@ class _PlayerScreenState extends State<PlayerScreen>
   }
 
   void _togglePlayPause() {
+    // v1.2.0-T2.8: guest follows host — local toggle locked with easy note.
+    if (_partyGuestLocked) {
+      _partyToast('Host controls play. You control sound + chat.');
+      return;
+    }
     _player.playOrPause();
+    // v1.2.0-T2.8: host action → immediate broadcast (no 500ms wait).
+    if (PartySession.instance.inParty) {
+      unawaited(_partySession?.sendAction(
+        _player.state.playing ? 'pause' : 'play',
+      ));
+    }
     _startHideControlsTimer();
   }
 
   void _seekRelative(Duration offset) {
+    // v1.2.0-T2.8: guest seek locked — host seeks, guest auto-follows.
+    if (_partyGuestLocked) {
+      _partyToast('Host controls play. You control sound + chat.');
+      return;
+    }
     final cur = _player.state.position;
     final dur = _player.state.duration;
     final target = cur + offset;
@@ -1068,6 +1202,13 @@ class _PlayerScreenState extends State<PlayerScreen>
         : (dur > Duration.zero && target > dur ? dur : target);
     _onUserSeek(clamped);
     _player.seek(clamped);
+    // v1.2.0-T2.8: host seek → immediate broadcast so guests jump together.
+    if (PartySession.instance.inParty) {
+      unawaited(_partySession?.sendAction(
+        'seek',
+        positionMs: clamped.inMilliseconds,
+      ));
+    }
     _startHideControlsTimer();
   }
 
@@ -1517,6 +1658,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     _initStream();
 
+    // v1.2.0-P2: host episode change (incl. auto next-ep) re-announces.
+    _announceHostMedia();
+
     // Binge chain continues: re-arm the gated prefetch for THIS
     // episode's successor (fires at 25%/3min into the new episode).
     _prefetchStarted = false;
@@ -1605,6 +1749,9 @@ class _PlayerScreenState extends State<PlayerScreen>
     PlayerSettings.changeNotifier.removeListener(_onPlayerSettingsChanged);
     _stallWatchdog?.cancel();
     _lastGoodTimer?.cancel();
+    // v1.2.0-T2.8: stop party heartbeat / guest listener.
+    unawaited(_partySession?.stop());
+    _partySession = null;
     ResourceGovernor.instance.level.removeListener(_onResourceLevelChanged);
     ResourceGovernor.instance.playbackActive = false;
     _positionNotifier.dispose();
@@ -1653,6 +1800,11 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Sets playback rate and keeps `_playbackRate` in sync (used by the
   /// speed menu, keyboard, and the gesture layer's long-press 2x hold).
   void _setPlaybackRate(double rate) {
+    // v1.2.0-T2.8: guest speed locked — host speed wins for everyone.
+    if (_partyGuestLocked) {
+      _partyToast('Host controls play. You control sound + chat.');
+      return;
+    }
     setState(() => _playbackRate = rate);
     _player.setRate(rate);
   }
@@ -1927,6 +2079,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     return Stack(
       children: [
+        // v1.2.0-T2.8: party banner — host LIVE pill / guest locked note.
+        if (PartySession.instance.inParty) _buildPartyBanner(),
+
         // Outside Tap Barrier to dismiss active floating menu
         if (_activeMenu != null)
           Positioned.fill(

@@ -21,12 +21,16 @@ import 'about_settings_page.dart';
 import '../stats/stats_page.dart';
 import 'privacy_settings_page.dart';
 import 'profiles_settings_page.dart';
+import 'scraper_health_page.dart';
 import 'watch_party_page.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
 import '../../services/discord/discord_rpc_service.dart';
 import '../../services/backup/backup_restore_service.dart';
+import '../../services/cloud/remote_config_service.dart';
+import '../../services/guide/guide_service.dart';
+import '../../widgets/guide/guide_card.dart';
 import '../../services/home/home_page_settings.dart';
 
 import '../../widgets/common/animated_ambient_background.dart';
@@ -46,9 +50,14 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _traktConnected = false;
   bool _simklConnected = false;
 
-  void _showBackupRestoreDialog() {
+  void _showBackupRestoreDialog() async {
+    // Capture navigator before the async gap (lint-safe, same route).
+    final navigator = Navigator.of(context);
+    // v1.2.0-T2.6: first-time cloud guide before backup dialog (skipable).
+    await GuideCard.maybeShow(context, 'cloud_sync', AppGuides.cloudSync);
+    if (!mounted) return;
     showDialog(
-      context: context,
+      context: navigator.context,
       builder: (ctx) {
         return Dialog(
           backgroundColor: const Color(0xFF12151E),
@@ -512,6 +521,24 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
+              // v1.2.0-P2 (T2.1): Sources health dashboard (non-tech: "Sources").
+              ValueListenableBuilder<int>(
+                valueListenable: RemoteConfigService.revision,
+                builder: (context, _, __) {
+                  return _SettingsCategoryTile(
+                    icon: Icons.rss_feed_rounded,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Sources',
+                    subtitle: 'See which video Sources are working now',
+                    badgeText: 'NEW',
+                    badgeColor: const Color(0xFF10B981),
+                    onTap: () => _navigateTo(const ScraperHealthPage()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 12),
+
               // 3. Debrid & Cloud Streaming
               _SettingsCategoryTile(
                 icon: Icons.cloud_download_rounded,
@@ -687,6 +714,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 badgeText: _appVersion != null ? 'v$_appVersion' : 'Check',
                 badgeColor: const Color(0xFFF59E0B),
                 onTap: () => _navigateTo(const UpdatesSettingsPage()),
+              ),
+
+              const SizedBox(height: 12),
+
+              // v1.2.0-T2.6: replay first-time guides.
+              _SettingsCategoryTile(
+                icon: Icons.help_outline_rounded,
+                iconColor: const Color(0xFF7C5CFF),
+                title: 'Show guides again',
+                subtitle: 'Replay easy intro cards for all features',
+                onTap: () async {
+                  await GuideService.resetAll(GuideService.allKeys);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Guides reset. Open any feature to see its intro again.'),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 12),

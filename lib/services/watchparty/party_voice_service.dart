@@ -15,6 +15,7 @@ class PartyVoiceService {
 
   static final ValueNotifier<bool> connected = ValueNotifier<bool>(false);
   static final ValueNotifier<bool> micOn = ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> deafened = ValueNotifier<bool>(false);
   static final ValueNotifier<Set<String>> speakingIds =
       ValueNotifier<Set<String>>(<String>{});
   static final ValueNotifier<int> memberCount = ValueNotifier<int>(0);
@@ -88,6 +89,7 @@ class PartyVoiceService {
       currentRoomCode = code;
       connected.value = true;
       micOn.value = false;
+      deafened.value = false;
       _refreshCount(room);
       return true;
     } catch (e) {
@@ -103,17 +105,95 @@ class PartyVoiceService {
     } catch (_) {}
   }
 
+  /// People in the voice channel right now (their device-code identities).
+  /// Powers the host per-user mute sheet. Empty when disconnected.
+  static List<String> get remoteIds {
+    final room = _room;
+    if (room == null) return const [];
+    try {
+      return room.remoteParticipants.values.map((p) => p.identity).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Pure: mute-user edge payload. Unit tested.
+  static Map<String, dynamic> muteUserRequest(String roomCode, String identity) {
+    return {
+      'room_code': roomCode.trim().toUpperCase(),
+      'action': 'mute_user',
+      'target_identity': identity,
+    };
+  }
+
   static Future<void> toggleMic() async =>
       setMicEnabled(!micOn.value);
 
   static Future<void> setMicEnabled(bool enabled) async {
     final room = _room;
     if (room == null || !connected.value) return;
+    // Deafened = mic stays off (Discord rule). Undeafen first to speak.
+    if (enabled && deafened.value) return;
     try {
       await room.localParticipant?.setMicrophoneEnabled(enabled);
       micOn.value = enabled;
     } catch (e) {
       debugPrint('[Voice] mic toggle failed (soft): $e');
+    }
+  }
+
+  /// v1.2.0-P4: deafen — hear nobody + mic forced off (local only).
+  /// Undeafen re-subscribes; mic stays off until the user taps (Discord rule).
+  static Future<void> setDeafened(bool deafen) async {
+    final room = _room;
+    if (room == null || !connected.value) {
+      deafened.value = deafen;
+      return;
+    }
+    try {
+      if (deafen) {
+        await room.localParticipant?.setMicrophoneEnabled(false);
+        micOn.value = false;
+        for (final p in room.remoteParticipants.values) {
+          for (final pub in p.audioTrackPublications) {
+            try {
+              await pub.unsubscribe();
+            } catch (_) {}
+          }
+        }
+      } else {
+        for (final p in room.remoteParticipants.values) {
+          for (final pub in p.audioTrackPublications) {
+            try {
+              await pub.subscribe();
+            } catch (_) {}
+          }
+        }
+      }
+      deafened.value = deafen;
+    } catch (e) {
+      debugPrint('[Voice] deafen failed (soft): $e');
+    }
+  }
+
+  static Future<void> toggleDeafen() async =>
+      setDeafened(!deafened.value);
+
+  /// Host-only: server-mutes ONE user (edge `mute_user`).
+  /// Needs a redeploy of the party-voice-admin function (mute_user action).
+  static Future<bool> muteUser(String identity) async {
+    final code = currentRoomCode;
+    if (!amHost || code == null || !CloudClient.isReady) return false;
+    if (identity.trim().isEmpty) return false;
+    try {
+      final res = await CloudClient.db.functions.invoke(
+        'party-voice-admin',
+        body: muteUserRequest(code, identity.trim()),
+      );
+      return (res.data as Map?)?['ok'] == true;
+    } catch (e) {
+      debugPrint('[Voice] mute-user failed (soft): $e');
+      return false;
     }
   }
 
@@ -150,6 +230,7 @@ class PartyVoiceService {
     }
     connected.value = false;
     micOn.value = false;
+    deafened.value = false;
     speakingIds.value = <String>{};
     memberCount.value = 0;
     amHost = false;

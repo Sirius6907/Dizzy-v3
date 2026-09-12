@@ -261,9 +261,20 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(m.displayName,
-                style: const TextStyle(
-                    color: Colors.white54, fontSize: 10)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(m.displayName,
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 10)),
+                const SizedBox(width: 6),
+                Text(
+                  '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                      color: Colors.white38, fontSize: 9),
+                ),
+              ],
+            ),
             Text(m.body,
                 style: const TextStyle(
                     color: Colors.white, fontSize: 13)),

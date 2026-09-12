@@ -64,8 +64,8 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
               (v) => setState(() => _genrePrefs = v),
             ),
             _toggle(
-              'Crash counts',
-              'How often the app crashes. No personal data, no stack traces.',
+              'Help fix bugs',
+              'Sends problem type only (like "slow internet"). No titles, no links. Off = nothing leaves your phone.',
               _crash,
               (v) => setState(() => _crash = v),
             ),
