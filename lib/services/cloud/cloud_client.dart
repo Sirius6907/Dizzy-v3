@@ -51,10 +51,27 @@ class CloudClient {
       _ready = true;
       cloudAvailable.value = true;
       AppLog.d('[Cloud] Supabase ready.');
+      // v1.2.0-WTFIX: anonymous-first — OAuth removed, so boot mints an
+      // anon session. Without this currentUser is null and Watch Together
+      // (create/join/voice/chat) silently refuses everything.
+      await _ensureAnonSession();
       return true;
     } catch (e) {
       AppLog.d('[Cloud] init failed (soft): $e');
       return false;
+    }
+  }
+
+  /// Mint an anonymous session when none exists. Fail-soft: if the
+  /// dashboard has anonymous sign-ins OFF, cloud features stay disabled
+  /// and the UI shows the Easy-English line (never a crash).
+  static Future<void> _ensureAnonSession() async {
+    try {
+      if (db.auth.currentUser != null) return;
+      await db.auth.signInAnonymously();
+      AppLog.d('[Cloud] anon session ready.');
+    } catch (e) {
+      AppLog.d('[Cloud] anon sign-in failed (soft): $e');
     }
   }
 }
