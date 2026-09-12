@@ -12,30 +12,102 @@ class PartyChatService {
   static const maxBodyLength = 500;
   static const ttlHours = 24;
 
+  /// P11: the only reactions that exist (server enforces the same list).
+  static const allowedEmoji = ['❤️', '😂', '😮', '😢', '😡', '👍', '👏', '🎉'];
+
   /// Pure: client-side pre-check (server re-validates). Unit tested.
   static bool validBody(String body) {
     final t = body.trim();
     return t.isNotEmpty && t.length <= maxBodyLength;
   }
 
-  /// Pure: hide messages older than the TTL. Unit tested.
-  static bool isExpired(DateTime createdAt, {DateTime? now}) {
-    final ref = (now ?? DateTime.now()).toUtc();
-    return ref.difference(createdAt.toUtc()).inHours >= ttlHours;
+  /// Pure: reaction jsonb → emoji → count. Accepts {emoji:[uids]} (server
+  /// shape) and {emoji:int} (forgiving). Garbage → empty. Unit tested.
+  static Map<String, int> parseReactions(dynamic raw) {
+    if (raw is! Map) return const {};
+    final out = <String, int>{};
+    for (final e in raw.entries) {
+      final key = e.key?.toString() ?? '';
+      if (key.isEmpty || key.length > 8) continue;
+      final v = e.value;
+      if (v is List) {
+        if (v.isNotEmpty) out[key] = v.length;
+      } else if (v is int && v > 0) {
+        out[key] = v;
+      }
+    }
+    return out;
   }
 
-  static Future<bool> sendMessage(String roomId, String body) async {
+  static Future<bool> sendMessage(String roomId, String body,
+      {String? replyToId}) async {
     if (!CloudClient.isReady || !validBody(body)) return false;
     try {
-      final ok = await CloudClient.db.rpc('send_room_message', params: {
+      final params = <String, dynamic>{
         'p_room_id': roomId.trim().toUpperCase(),
         'p_body': body.trim(),
-      });
+      };
+      if (replyToId != null && replyToId.isNotEmpty) {
+        params['p_reply_to_id'] = replyToId;
+      }
+      final ok =
+          await CloudClient.db.rpc('send_room_message', params: params);
       return ok == true;
     } catch (e) {
       debugPrint('[Chat] send failed (soft): $e');
       return false;
     }
+  }
+
+  /// P11: toggle one reaction (server flips caller in/out). Fail-soft.
+  static Future<bool> toggleReaction(String messageId, String emoji) async {
+    if (!CloudClient.isReady || !allowedEmoji.contains(emoji)) return false;
+    try {
+      final ok = await CloudClient.db.rpc('react_to_message', params: {
+        'p_msg_id': messageId,
+        'p_emoji': emoji,
+      });
+      return ok == true;
+    } catch (e) {
+      debugPrint('[Chat] react failed (soft): $e');
+      return false;
+    }
+  }
+
+  /// P11: host pins ([messageId]) or unpins (null). Fail-soft.
+  static Future<bool> setPinned(String roomId, String? messageId) async {
+    if (!CloudClient.isReady) return false;
+    try {
+      final ok = await CloudClient.db.rpc('pin_room_message', params: {
+        'p_room_id': roomId.trim().toUpperCase(),
+        'p_msg_id': messageId,
+      });
+      return ok == true;
+    } catch (e) {
+      debugPrint('[Chat] pin failed (soft): $e');
+      return false;
+    }
+  }
+
+  /// P11: live pin banner (null = nothing pinned). Members-only via RLS.
+  static Stream<String?> watchPinned(String roomId) {
+    if (!CloudClient.isReady) return const Stream.empty();
+    return CloudClient.db
+        .from('rooms')
+        .stream(primaryKey: ['room_id'])
+        .eq('room_id', roomId.trim().toUpperCase())
+        .map((rows) {
+      if (rows.isEmpty) return null;
+      final t =
+          (rows.first as Map)['pinned_text']?.toString().trim() ?? '';
+      return t.isEmpty ? null : t;
+    });
+  }
+
+  /// Pure: hide messages older than the TTL. Unit tested.
+  static bool isExpired(DateTime createdAt, {DateTime? now}) {
+    final ref = (now ?? DateTime.now()).toUtc();
+    return ref.difference(createdAt.toUtc()).inHours >= ttlHours;
   }
 
   /// Live message feed, oldest-first, TTL-filtered.
@@ -131,12 +203,24 @@ class PartyChatMessage {
   final String body;
   final DateTime createdAt;
 
+  /// P11: reply link + server-filled quote (no extra fetch to display).
+  final String? replyToId;
+  final String? replyPreview;
+  final String? replyToCode;
+
+  /// P11: emoji → count (uid lists never reach the UI).
+  final Map<String, int> reactions;
+
   const PartyChatMessage({
     required this.id,
     required this.senderId,
     required this.senderCode,
     required this.body,
     required this.createdAt,
+    this.replyToId,
+    this.replyPreview,
+    this.replyToCode,
+    this.reactions = const {},
   });
 
   factory PartyChatMessage.fromJson(Map<String, dynamic> json) =>
@@ -147,12 +231,22 @@ class PartyChatMessage {
         body: json['body']?.toString() ?? '',
         createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        replyToId: json['reply_to_id']?.toString(),
+        replyPreview: json['reply_preview']?.toString(),
+        replyToCode: json['reply_to_code']?.toString(),
+        reactions: PartyChatService.parseReactions(json['reactions']),
       );
 
   /// Introvert-friendly display: device code, never raw uuid.
   String get displayName => senderCode != null && senderCode!.isNotEmpty
       ? 'DIZ-$senderCode'
       : 'Guest';
+
+  /// Quote header for a reply ("DIZ-4820193" or "Guest").
+  String get replyName =>
+      replyToCode != null && replyToCode!.isNotEmpty
+          ? 'DIZ-$replyToCode'
+          : 'Guest';
 }
 
 class PartyMember {

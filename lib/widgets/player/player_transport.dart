@@ -23,6 +23,7 @@ class PlayerTransport extends StatelessWidget {
   final bool isSubtitlesActive;
   final bool isSubSyncActive;
   final bool isAudioActive;
+  final bool isQualityManual;
   final bool isEpisodesActive;
   final bool isFullscreen;
   final bool hasPrevEpisode;
@@ -39,6 +40,7 @@ class PlayerTransport extends StatelessWidget {
   final VoidCallback onToggleAspectMenu;
   final VoidCallback onToggleSpeedMenu;
   final VoidCallback onToggleAudioMenu;
+  final VoidCallback onToggleQualityMenu;
   final VoidCallback onToggleSubtitleMenu;
   final VoidCallback onToggleSubSync;
   final VoidCallback onToggleFullscreen;
@@ -61,6 +63,7 @@ class PlayerTransport extends StatelessWidget {
     required this.isSubtitlesActive,
     required this.isSubSyncActive,
     required this.isAudioActive,
+    required this.isQualityManual,
     this.isEpisodesActive = false,
     required this.isFullscreen,
     this.hasPrevEpisode = false,
@@ -75,6 +78,7 @@ class PlayerTransport extends StatelessWidget {
     required this.onToggleAspectMenu,
     required this.onToggleSpeedMenu,
     required this.onToggleAudioMenu,
+    required this.onToggleQualityMenu,
     required this.onToggleSubtitleMenu,
     required this.onToggleSubSync,
     required this.onToggleFullscreen,
@@ -266,6 +270,18 @@ class PlayerTransport extends StatelessWidget {
                     icon: const Icon(Icons.audiotrack_rounded),
                     tooltip: 'Audio Tracks',
                     onPressed: onToggleAudioMenu,
+                  ),
+
+                  SizedBox(width: gap),
+
+                  // Quality Menu Trigger (P7)
+                  PlayerIconButton(
+                    size: btnSize,
+                    iconSize: btnIconSize,
+                    icon: const Icon(Icons.high_quality_rounded),
+                    tooltip: 'Quality',
+                    showActiveBadge: isQualityManual,
+                    onPressed: onToggleQualityMenu,
                   ),
 
                   SizedBox(width: gap),

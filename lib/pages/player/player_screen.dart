@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:http/http.dart' as http;
 import 'package:media_kit_video/media_kit_video.dart' as mk;
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
@@ -24,6 +25,9 @@ import '../../services/trakt/trakt_service.dart';
 import '../../services/simkl/simkl_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/player/playback_brain.dart';
+import '../../services/player/quality_service.dart';
+import '../../services/player/bandwidth_meter.dart';
+import '../../services/player/hls_rendition_parser.dart';
 import '../../services/discord/discord_rpc_service.dart';
 
 import '../../widgets/player/player_glass.dart';
@@ -36,6 +40,7 @@ import '../../services/player/skip_segments_service.dart';
 import '../../services/player/pip_service.dart';
 import '../../widgets/player/player_aspect_menu.dart';
 import '../../widgets/player/player_audio_menu.dart';
+import '../../widgets/player/player_quality_menu.dart';
 import '../../widgets/player/player_gesture_layer.dart';
 import '../../widgets/player/player_lock_button.dart';
 import '../../widgets/player/player_subtitle_menu.dart';
@@ -120,9 +125,21 @@ class _PlayerScreenState extends State<PlayerScreen>
   late AnimationController _logoAnimController;
 
   // Active Menu / Popover
-  String? _activeMenu; // 'subtitle' | 'audio' | 'speed' | 'aspect' | 'style' | null
+  String? _activeMenu; // 'subtitle' | 'audio' | 'quality' | 'speed' | 'aspect' | 'style' | null
   bool _showSubSyncBar = false;
   bool _showTextSyncOverlay = false;
+
+  // P7 — manual quality (Auto default, per-device persisted).
+  final QualityService _qualityService = QualityService();
+  QualityChoice _qualityChoice = QualityChoice.auto;
+
+  // P8 — auto quality by real speed (Auto mode only; manual wins).
+  final BandwidthMeter _bandwidthMeter = BandwidthMeter();
+  Timer? _autoQualityTimer;
+  QualityChoice? _autoEffective;
+
+  // P9 — rendition ladder fetch state (one flight per source).
+  bool _renditionsFetching = false;
 
   // Playback & Audio State
   double _volume = 1.0;
@@ -214,6 +231,15 @@ class _PlayerScreenState extends State<PlayerScreen>
     _volume = PlayerSettings.lastVolume.value.clamp(
         0.0, PlayerVolumeControl.maxVolume);
     if (_volume == 0) _volume = 1.0;
+
+    // P7: restore saved quality choice (per-device, Auto default).
+    unawaited(_qualityService.load().then((c) {
+      if (mounted) setState(() => _qualityChoice = c);
+    }));
+
+    // P8: 2s speed probe — fires only on a stable 10s window, Auto mode only.
+    _autoQualityTimer =
+        Timer.periodic(const Duration(seconds: 2), (_) => _autoQualityTick());
 
     // Build the ranked failover chain (Phase 3.2): backups exclude the
     // primary source, ordered by SourceRanker with persisted history.
@@ -417,7 +443,7 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   /// v1.2.0-P2: host tells the room "I am playing X now".
   /// Guests get media_switch + DB row; auto-open itself lands in P3.
-  void _announceHostMedia() {
+  void _announceHostMedia({bool prefetchReady = false}) {
     final s = PartySession.instance;
     if (!s.inParty || !s.isHost || _partySession == null) return;
     final ref = _partyRefForCurrent();
@@ -428,6 +454,34 @@ class _PlayerScreenState extends State<PlayerScreen>
       title: _currentTitle,
       season: ep?.season,
       episode: ep?.episode,
+      prefetchReady: prefetchReady,
+    ));
+  }
+
+  /// P10: countdown just appeared → the next episode is ~5s away. Tell
+  /// guests EARLY (preview-only, `ready:true`) so they pre-resolve metadata
+  /// and the real switch opens in ~1s. Local state/DB untouched.
+  void _announcePrefetchHint() {
+    final s = PartySession.instance;
+    if (!s.inParty || !s.isHost || _partySession == null) return;
+    final d = widget.detail;
+    final nextEp = _nextEpisodeEngine.prefetchedEpisode;
+    if (d == null || nextEp == null) return;
+    final String ref;
+    if (d.id.startsWith('tt')) {
+      ref = PartySession.imdbRef(d.id);
+    } else {
+      ref = PartySession.tvRef(
+          d.tmdbId ?? d.id, nextEp.season ?? 1, nextEp.episode ?? 1);
+    }
+    if (ref == s.mediaRef) return;
+    unawaited(_partySession!.announceMedia(
+      ref: ref,
+      title: _currentTitle,
+      season: nextEp.season,
+      episode: nextEp.episode,
+      prefetchReady: true,
+      previewOnly: true,
     ));
   }
 
@@ -1461,6 +1515,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Called from _initStream success and after every successful source switch.
   void _armPlaybackGuards() {
     _lastProgressPosition = Duration.zero;
+    _maybeFetchRenditions(); // P9: HLS master → attach ladder in background
     _lastProgressAt = DateTime.now();
 
     _stallWatchdog?.cancel();
@@ -1554,6 +1609,8 @@ class _PlayerScreenState extends State<PlayerScreen>
         await _player.stop();
         setState(() => _isLoading = true);
         _currentSource = next;
+        _bandwidthMeter.reset(); // P8: fresh source → fresh speed history
+        _autoEffective = null;
         // Reopen via the standard init path, resuming AT the saved position
         // via Media(start:) — atomic open (no seek-after-open race).
         _resumeAtOverride = savedPos > Duration.zero ? savedPos : null;
@@ -1579,6 +1636,159 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (mounted) _armPlaybackGuards();
       }
     }());
+  }
+
+  // ── P7: Manual quality (+ P8 auto) ─────────────────────────────────
+  //
+  // HLS → live `hls-bitrate-max` cap (no reopen). Progressive → reopen the
+  // ranked file whose badge matches (same resume pattern as failover;
+  // mpv lands the resume on a keyframe). Fail-soft everywhere.
+  // [auto]=true → toast gains the "(auto)" suffix, choice is NOT persisted
+  // (Auto mode stays Auto; only the effective rendition moves).
+  void _applyQualityChoice(QualityChoice choice, {bool auto = false}) {
+    setState(() {
+      if (!auto) _qualityChoice = choice;
+      _activeMenu = null;
+    });
+    final toast = QualityService.toastFor(choice) + (auto ? ' (auto)' : '');
+    if (auto) {
+      _autoEffective = choice;
+    } else {
+      unawaited(_qualityService.save(choice));
+      _autoEffective = null;
+      _bandwidthMeter.reset();
+    }
+
+    final url = _currentSource.url ?? '';
+    if (QualityService.isHlsUrl(url)) {
+      // P9: exact ladder rung known → cap at ITS bitrate (seamless, no reopen).
+      final rung = _currentSource.renditions
+          .where((r) => QualityChoice.fromBadge(r.label) == choice)
+          .firstOrNull;
+      final cap = rung != null && rung.bitrate > 0
+          ? rung.bitrate.toString()
+          : (choice.maxBitrate?.toString() ?? '0');
+      try {
+        final np = _player.platform as dynamic;
+        np.setProperty('hls-bitrate-max', cap);
+      } catch (_) {}
+      _showAudioHudToast(toast);
+      return;
+    }
+    if (choice == QualityChoice.auto) {
+      _showAudioHudToast(toast);
+      return;
+    }
+    // P8: straining device + AV1 file → prefer the H264 twin (same badge).
+    final strained =
+        ResourceGovernor.instance.level.value != ResourceLevel.normal;
+    final ranked = [_currentSource, ..._failoverChain]
+        .where((s) =>
+            !_failedFingerprints.contains(SourceRanker.fingerprint(s)))
+        .toList();
+    final match = QualityService.matchProgressive(ranked, choice,
+        avoidAv1: strained);
+    if (match == null) {
+      _showAudioHudToast('That quality is not available for this video.');
+      return;
+    }
+    if (SourceRanker.fingerprint(match) ==
+        SourceRanker.fingerprint(_currentSource)) {
+      _showAudioHudToast(toast);
+      return;
+    }
+    final savedPos = _player.state.position;
+    unawaited(() async {
+      try {
+        await _player.stop();
+        if (!mounted) return;
+        setState(() => _isLoading = true);
+        _currentSource = match;
+        _bandwidthMeter.reset();
+        _resumeAtOverride = savedPos > Duration.zero ? savedPos : null;
+        await _initStream();
+        _resumeAtOverride = null;
+        if (mounted) _showAudioHudToast(toast);
+      } catch (e) {
+        debugPrint('[Quality] switch failed: $e');
+        if (mounted) {
+          _showAudioHudToast('Could not switch quality. Keep watching.');
+        }
+      } finally {
+        _resumeAtOverride = null;
+        if (mounted) _armPlaybackGuards();
+      }
+    }());
+  }
+
+  // ── P9: rendition ladder lazy-fill ────────────────────────────────
+  //
+  // Any extractor emitting an HLS master automatically grows renditions:
+  // fetch → parse → attach. Fail-soft (timeout/offline/bad playlist =
+  // no renditions, playback untouched). One flight per source.
+  void _maybeFetchRenditions() {
+    final url = _currentSource.url ?? '';
+    if (!QualityService.isHlsUrl(url)) return;
+    if (_currentSource.renditions.isNotEmpty || _renditionsFetching) return;
+    _renditionsFetching = true;
+    final fp = SourceRanker.fingerprint(_currentSource);
+    unawaited(() async {
+      try {
+        final res = await http
+            .get(Uri.parse(url),
+                headers: _currentSource.headers ?? const {})
+            .timeout(const Duration(seconds: 8));
+        if (res.statusCode != 200 || !mounted) return;
+        final parsed = HlsRenditionParser.parseMaster(res.body, url);
+        if (parsed.isEmpty) return;
+        if (SourceRanker.fingerprint(_currentSource) != fp) return;
+        setState(
+            () => _currentSource = _currentSource.copyWith(renditions: parsed));
+        debugPrint(
+            '[Renditions] attached ${parsed.length} to ${_currentSource.addonName}');
+      } catch (_) {
+        // Offline / auth-walled / weird playlist — play on without ladder.
+      } finally {
+        _renditionsFetching = false;
+      }
+    }());
+  }
+
+  // ── P8: 2s auto-quality probe ───────────────────────────────────────
+  //
+  // Feeds the meter from demuxer cache-fill (no pings). Applies the stable
+  // target ONLY in Auto mode, steady playback, non-torrent sources.
+  // Manual choice always wins — the probe goes quiet.
+  void _autoQualityTick() {
+    if (!mounted) return;
+    if (_qualityChoice != QualityChoice.auto) return;
+    if (_isLoading || !_isPlaying) return;
+    final url = _currentSource.url ?? '';
+    if (url.startsWith('magnet:')) return;
+    if ((_currentSource.infoHash ?? '').isNotEmpty) return;
+    final buf = _buffered;
+    if (buf == null) return;
+    final aheadSec =
+        (buf.inMilliseconds - _player.state.position.inMilliseconds) / 1000.0;
+    if (aheadSec < 0) return;
+    final assumed = QualityChoice.fromBadge(_currentSource.quality)
+            ?.maxBitrate ??
+        BandwidthMeter.fallbackBitrateBps;
+    _bandwidthMeter.addSample(
+      at: DateTime.now(),
+      bufferedAheadSec: aheadSec,
+      assumedBitrateBps: assumed,
+    );
+    final target = _bandwidthMeter.stableTarget(
+        dataSaver: PlayerSettings.dataSaver.value);
+    if (target == null || target == _autoEffective) return;
+    // Already watching at the target rendition → remember, don't toast.
+    if (target == QualityChoice.fromBadge(_currentSource.quality) &&
+        !QualityService.isHlsUrl(url)) {
+      _autoEffective = target;
+      return;
+    }
+    _applyQualityChoice(target, auto: true);
   }
 
   // ── Next-Episode Autoplay (Phase 2) ────────────────────────────────────
@@ -1615,6 +1825,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     if (_showNextEpisodeCountdown) return;
 
     setState(() => _showNextEpisodeCountdown = true);
+    _announcePrefetchHint(); // P10: guests pre-resolve during the countdown
   }
 
   /// Starts playing the prefetched next episode (countdown finished or
@@ -1626,7 +1837,7 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     setState(() => _showNextEpisodeCountdown = false);
 
-    _switchToEpisodeVideo(nextEp, src);
+    _switchToEpisodeVideo(nextEp, src, prefetched: true);
   }
 
   /// Cancels the countdown and stays on the (ended) current episode.
@@ -1636,7 +1847,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   /// Switches the player to [nextEp] using verified [source] without
   /// leaving the player route (reuses the in-player episode switch path).
-  void _switchToEpisodeVideo(Video nextEp, StreamSource source) {
+  /// [prefetched]=true (countdown path) → guests get the `ready:true` mark.
+  void _switchToEpisodeVideo(Video nextEp, StreamSource source,
+      {bool prefetched = false}) {
     if (!mounted) return;
 
     setState(() {
@@ -1659,7 +1872,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     _initStream();
 
     // v1.2.0-P2: host episode change (incl. auto next-ep) re-announces.
-    _announceHostMedia();
+    _announceHostMedia(prefetchReady: prefetched);
 
     // Binge chain continues: re-arm the gated prefetch for THIS
     // episode's successor (fires at 25%/3min into the new episode).
@@ -1749,6 +1962,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     PlayerSettings.changeNotifier.removeListener(_onPlayerSettingsChanged);
     _stallWatchdog?.cancel();
     _lastGoodTimer?.cancel();
+    _autoQualityTimer?.cancel();
     // v1.2.0-T2.8: stop party heartbeat / guest listener.
     unawaited(_partySession?.stop());
     _partySession = null;
@@ -2189,6 +2403,8 @@ class _PlayerScreenState extends State<PlayerScreen>
                           isSubtitlesActive: _isSubtitleEnabled && _currentSubtitleVariant != null,
                           isSubSyncActive: _selectedEmbeddedSubtitleIndex == null && (_showSubSyncBar || _subtitleDelayMs != 0),
                           isAudioActive: _selectedAudioTrackIndex > 0,
+                          isQualityManual:
+                              _qualityChoice != QualityChoice.auto,
                           isEpisodesActive: _showEpisodesPanel || _showSourcesPanel,
                           isFullscreen: isFs,
                           onToggleEpisodes: (widget.detail?.videos.isNotEmpty == true)
@@ -2212,6 +2428,7 @@ class _PlayerScreenState extends State<PlayerScreen>
                           onToggleAspectMenu: () => _toggleMenu('aspect'),
                           onToggleSpeedMenu: () => _toggleMenu('speed'),
                           onToggleAudioMenu: () => _toggleMenu('audio'),
+                          onToggleQualityMenu: () => _toggleMenu('quality'),
                           onToggleSubtitleMenu: () => _toggleMenu('subtitle'),
                           onToggleSubSync: () {
                             if (_selectedEmbeddedSubtitleIndex != null) {
@@ -2350,6 +2567,32 @@ class _PlayerScreenState extends State<PlayerScreen>
                   } catch (_) {}
                   _showAudioHudToast('AUDIO SYNC: ${sec > 0 ? "+" : ""}${sec.toStringAsFixed(2)}s');
                 },
+                onClose: () => setState(() => _activeMenu = null),
+              ),
+            ),
+
+          // Floating Quality Menu Popover (P7 — manual rendition picker)
+          if (_activeMenu == 'quality' && !_isLoading)
+            Positioned(
+              bottom: MediaQuery.sizeOf(context).height < 500
+                  ? 46
+                  : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
+              right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
+              child: PlayerQualityMenu(
+                options: QualityService.optionsFor(
+                  isHls: QualityService.isHlsUrl(_currentSource.url),
+                  badges: {
+                    if (_currentSource.quality != null)
+                      _currentSource.quality!,
+                    for (final s in _failoverChain)
+                      if (s.quality != null) s.quality!,
+                  },
+                  renditionLabels: {
+                    for (final r in _currentSource.renditions) r.label,
+                  },
+                ),
+                current: _qualityChoice,
+                onSelected: _applyQualityChoice,
                 onClose: () => setState(() => _activeMenu = null),
               ),
             ),

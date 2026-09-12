@@ -38,6 +38,10 @@ class SourceRanker {
   static const int _wPreferredLangHindi = 45;
   static const int _penaltyRecentFailure = 30;
 
+  /// P9: rendition-bearing sources decode to something playable far more
+  /// often (ladder to step down) — prefer them at rank time.
+  static const int _wRenditions = 15;
+
   /// Stable identity for a source across retries/scrapes.
   /// addon + url/infoHash is enough to recognize "the same stream".
   static String fingerprint(StreamSource s) {
@@ -90,6 +94,9 @@ class SourceRanker {
     if (ctx.failedThisSession.contains(fingerprint(s))) {
       score -= _penaltyRecentFailure;
     }
+
+    // 8. P9: renditions known → always something playable.
+    if (s.renditions.isNotEmpty) score += _wRenditions;
 
     return score;
   }
