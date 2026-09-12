@@ -508,6 +508,7 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   /// v1.2.0-T2.8: party banner pill (Easy English, non-tech).
   /// Host sees LIVE pill; guest sees locked-controls note.
+  /// Polish P5: tokens only — same copy, same colors.
   Widget _buildPartyBanner() {
     final isHost = PartySession.instance.isHost;
     return Positioned(
@@ -517,8 +518,10 @@ class _PlayerScreenState extends State<PlayerScreen>
       child: IgnorePointer(
         child: Center(
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DizzySpace.md - 2,
+              vertical: DizzySpace.xs - 1,
+            ),
             decoration: BoxDecoration(
               color: (isHost
                       ? const Color(0xFFE5484D)
@@ -532,8 +535,8 @@ class _PlayerScreenState extends State<PlayerScreen>
                   : 'Host controls play. You control sound + chat.',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontSize: DizzyType.caption,
+                fontWeight: DizzyType.wBold,
               ),
             ),
           ),
