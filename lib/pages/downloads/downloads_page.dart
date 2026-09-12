@@ -9,6 +9,7 @@ import '../../services/theme/app_theme_service.dart';
 import '../../services/download/download_service.dart';
 import '../../services/download/download_progress_text.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../widgets/common/notify.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../../utils/platform/open_file_location_helper.dart';
 import '../../utils/download/download_path_helper.dart';
@@ -82,40 +83,17 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     );
   }
 
-  void _confirmDelete(DownloadTask task) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF131622),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Delete Download',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
+  void _confirmDelete(DownloadTask task) async {
+    // Polish P18: one dialog voice — Cancel left, Delete right (red).
+    final ok = await DizzyDialogs.confirm(
+      context,
+      title: 'Delete Download',
+      line:
           'Are you sure you want to delete "${task.title}" and remove the file from storage?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              DownloadService.instance.deleteDownload(task.id);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete',
+      danger: true,
     );
+    if (ok) DownloadService.instance.deleteDownload(task.id);
   }
 
   @override

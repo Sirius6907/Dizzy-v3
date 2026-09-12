@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../design/dizzy_tokens.dart';
 import '../../services/cloud/watch_party_service.dart';
 import '../../services/watchparty/party_session.dart';
+import '../common/notify.dart';
 
 /// v1.2.0-T2.8: one-tap Watch Together entry (non-tech flagship).
 /// Movie/TV page pe bada button → room auto-create with media prefilled →
@@ -41,11 +42,11 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
       );
       if (!mounted) return;
       if (room == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                "Couldn't start Watch Together. Check net, tap Retry."),
-          ),
+        // Polish P18: one toast voice.
+        DizzyNotify.show(
+          context,
+          "Couldn't start Watch Together. Check net, tap Retry.",
+          tone: NotifyTone.warn,
         );
         return;
       }
@@ -124,9 +125,8 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: code));
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Code copied.')),
-                      );
+                      DizzyNotify.show(ctx, 'Code copied.',
+                          tone: NotifyTone.success);
                     },
                     icon: const Icon(Icons.copy_rounded, size: 18),
                     label: const Text('Copy'),
@@ -144,11 +144,11 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                         text:
                             'Join my Watch Together: $code — ${widget.mediaTitle}',
                       ));
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Invite copied. Paste it on WhatsApp.'),
-                        ),
+                      ScaffoldMessenger.of(ctx).hideCurrentSnackBar();
+                      DizzyNotify.show(
+                        ctx,
+                        'Invite copied. Paste it on WhatsApp.',
+                        tone: NotifyTone.success,
                       );
                     },
                     icon: const Icon(Icons.share_rounded, size: 18),
