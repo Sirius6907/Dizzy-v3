@@ -42,8 +42,13 @@ void main() {
       expect(reconstructed.receivedBytes, equals(500 * 1024 * 1024));
       expect(reconstructed.totalBytes, equals(1000 * 1024 * 1024));
       expect(reconstructed.progressPercent, closeTo(0.5, 0.001));
-      expect(reconstructed.speedLabel, equals('5.00 MB/s'));
-      expect(reconstructed.etaLabel, equals('1m 40s'));
+      // P18 fix (was stale): live telemetry (speed/ETA/peers) is transient
+      // by design — toJson drops it, so a reloaded task restarts at zero
+      // until the engine resumes. Identity + progress must survive.
+      expect(task.speedLabel, equals('5.00 MB/s'));
+      expect(reconstructed.speedLabel, equals('0 KB/s'));
+      expect(task.etaLabel, equals('1m 40s'));
+      expect(reconstructed.etaLabel, equals('--'));
       expect(reconstructed.isDownloading, isTrue);
       expect(reconstructed.isCompleted, isFalse);
     });
