@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../design/dizzy_tokens.dart';
 import '../../services/guide/guide_service.dart';
 
 /// v1.2.0-T2.6: reusable swipeable guide card (Easy English only).
@@ -30,7 +31,7 @@ class GuideCard extends StatefulWidget {
       barrierDismissible: false,
       builder: (_) => Dialog(
         backgroundColor: const Color(0xFF141A26),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: DizzyRadius.lgAll),
         child: GuideCard(guideKey: guideKey, steps: steps),
       ),
     );
@@ -58,8 +59,10 @@ class _GuideCardState extends State<GuideCard> {
   @override
   Widget build(BuildContext context) {
     final total = widget.steps.length;
-    return Padding(
-      padding: const EdgeInsets.all(20),
+    return Semantics(
+      label: 'Intro card ${_page + 1} of $total',
+      child: Padding(
+      padding: const EdgeInsets.all(DizzySpace.lg),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -75,22 +78,22 @@ class _GuideCardState extends State<GuideCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(s.icon, style: const TextStyle(fontSize: 48)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: DizzySpace.sm),
                     Text(
                       s.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                        fontSize: DizzyType.subtitle + 1,
+                        fontWeight: DizzyType.wBold,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: DizzySpace.xs),
                     Text(
                       s.line,
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontSize: 13.5,
+                        fontSize: DizzyType.body - 0.5,
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
@@ -100,40 +103,52 @@ class _GuideCardState extends State<GuideCard> {
               },
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DizzySpace.xs),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               total,
               (i) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+                margin: const EdgeInsets.symmetric(
+                    horizontal: DizzySpace.xxs - 1),
                 width: _page == i ? 20 : 7,
                 height: 7,
                 decoration: BoxDecoration(
                   color: _page == i
                       ? const Color(0xFF7C5CFF)
                       : Colors.white24,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: DizzyRadius.smAll,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DizzySpace.md),
           Row(
             children: [
-              TextButton(
+              Semantics(
+                button: true,
+                label: 'Skip intro',
+                child: TextButton(
                 onPressed: _dismiss,
                 child: const Text(
                   'Skip',
-                  style: TextStyle(color: Colors.white54, fontSize: 14),
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: DizzyType.body),
                 ),
               ),
+              ),
               const Spacer(),
-              FilledButton(
+              Semantics(
+                button: true,
+                label: _page == total - 1
+                    ? 'Finish intro'
+                    : 'Next intro card',
+                child: FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF7C5CFF),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: DizzyRadius.mdAll,
                   ),
                 ),
                 onPressed: () {
@@ -141,17 +156,20 @@ class _GuideCardState extends State<GuideCard> {
                     _dismiss();
                   } else {
                     _ctrl.nextPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
+                      duration: DizzyMotion.fast,
+                      curve: DizzyMotion.easeOut,
                     );
                   }
                 },
-                child: Text(_page == total - 1 ? 'Got it' : 'Next'),
+                child:
+                    Text(_page == total - 1 ? 'Got it' : 'Next'),
+              ),
               ),
             ],
           ),
         ],
       ),
+    ),
     );
   }
 }
