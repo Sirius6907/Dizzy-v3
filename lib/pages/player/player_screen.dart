@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:media_kit_video/media_kit_video.dart' as mk;
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:dizzy/models/movie/video.dart';
 import 'package:dizzy/models/movie/movie_detail.dart';
@@ -63,6 +64,8 @@ import '../../services/watchparty/party_playback_session.dart';
 import '../../services/system/resource_governor.dart';
 import '../../widgets/player/next_episode_countdown.dart';
 import '../../services/errors/app_log.dart';
+import '../../services/theme/app_theme_service.dart';
+import '../../design/dizzy_tokens.dart';
 
 class PlayerScreen extends StatefulWidget {
   final StreamSource source;
@@ -149,6 +152,8 @@ class _PlayerScreenState extends State<PlayerScreen>
   bool _isMuted = false;
   bool _showVolumeHud = false;
   Timer? _volumeHudTimer;
+  // Polish P4: first-run gesture hints (once per device).
+  bool _showGestureHints = false;
   double _playbackRate = 1.0;
   BoxFit _videoFit = BoxFit.contain;
   List<PlayerAudioTrack> _audioTracks = [];
@@ -237,6 +242,13 @@ class _PlayerScreenState extends State<PlayerScreen>
     // P7: restore saved quality choice (per-device, Auto default).
     unawaited(_qualityService.load().then((c) {
       if (mounted) setState(() => _qualityChoice = c);
+    }));
+
+    // Polish P4: gesture hints once per device (Easy English, dismissable).
+    unawaited(SharedPreferences.getInstance().then((prefs) {
+      if (mounted && !(prefs.getBool('player_gesture_hints_seen') ?? false)) {
+        setState(() => _showGestureHints = true);
+      }
     }));
 
     // P8: 2s speed probe — fires only on a stable 10s window, Auto mode only.
@@ -882,7 +894,7 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   void _startHideControlsTimer() {
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 4), () {
+    _hideTimer = Timer(DizzyMotion.controlsAutoHide, () {
       if (mounted &&
           _isPlaying &&
           !_isHoveringUI &&
@@ -898,6 +910,41 @@ class _PlayerScreenState extends State<PlayerScreen>
     if (_showTextSyncOverlay || _activeMenu != null) return;
     setState(() => _showControls = !_showControls);
     if (_showControls) _startHideControlsTimer();
+  }
+
+  /// Polish P4: hints dismissed → never shown again on this device.
+  Future<void> _dismissGestureHints() async {
+    if (!_showGestureHints) return;
+    setState(() => _showGestureHints = false);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('player_gesture_hints_seen', true);
+    } catch (_) {}
+  }
+
+  /// One row of the first-run gesture hints card (icon + Easy English line).
+  Widget _hintRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DizzySpace.xs),
+      child: Row(
+        children: [
+          Icon(icon,
+              color: AppThemeService.currentPalette.value.primaryColor,
+              size: 20),
+          const SizedBox(width: DizzySpace.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: DizzyType.body,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handlePointerActivity() {
@@ -2342,7 +2389,8 @@ class _PlayerScreenState extends State<PlayerScreen>
               opacity: (_showControls || _isLoading) && !_showSubSyncBar && !_showTextSyncOverlay
                   ? 1.0
                   : 0.0,
-              duration: const Duration(milliseconds: 200),
+              duration: DizzyMotion.fast,
+              curve: DizzyMotion.easeOut,
               child: MouseRegion(
                 onEnter: (_) {
                   _isHoveringUI = true;
@@ -2401,7 +2449,8 @@ class _PlayerScreenState extends State<PlayerScreen>
                 ignoring: (!_showControls && _activeMenu == null) || _showTextSyncOverlay,
                 child: AnimatedOpacity(
                   opacity: (_showControls || _activeMenu != null) && !_showTextSyncOverlay ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 200),
+                  duration: DizzyMotion.fast,
+                  curve: DizzyMotion.easeOut,
                   child: MouseRegion(
                     onEnter: (_) {
                       _isHoveringUI = true;
@@ -2771,11 +2820,91 @@ class _PlayerScreenState extends State<PlayerScreen>
               right: MediaQuery.sizeOf(context).width < 680 ? 16 : 28,
               child: AnimatedOpacity(
                 opacity: _showSkipButton ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 250),
+                duration: DizzyMotion.fast,
+                curve: DizzyMotion.easeOut,
                 child: PlayerSkipButton(
                   segment: _activeSkipSegment!,
                   onSkip: () => _handleSkipSegment(_activeSkipSegment!),
                   onDismiss: () => _handleDismissSkipSegment(_activeSkipSegment!),
+                ),
+              ),
+            ),
+
+          // Polish P4: first-run gesture hints — every control explains itself.
+          // One tap anywhere (or Got it) dismisses forever on this device.
+          if (_showGestureHints && !_isLoading)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _dismissGestureHints,
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(DizzySpace.lg),
+                  child: GestureDetector(
+                    onTap: () {}, // card taps don't dismiss
+                    child: PlayerGlassCard(
+                      width: (340.0).clamp(
+                          260.0, MediaQuery.sizeOf(context).width - 64),
+                      padding: const EdgeInsets.all(DizzySpace.md + 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Know the moves',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: DizzyType.title,
+                              fontWeight: DizzyType.wBold,
+                            ),
+                          ),
+                          const SizedBox(height: DizzySpace.xs),
+                          const Text(
+                            'Your fingers are the remote:',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: DizzyType.body,
+                            ),
+                          ),
+                          const SizedBox(height: DizzySpace.sm),
+                          _hintRow(Icons.swipe_rounded,
+                              'Swipe left-right — jump in the video'),
+                          _hintRow(Icons.brightness_6_rounded,
+                              'Left edge up-down — brightness'),
+                          _hintRow(Icons.volume_up_rounded,
+                              'Right edge up-down — volume'),
+                          _hintRow(Icons.touch_app_rounded,
+                              'Double-tap sides — skip 10 sec'),
+                          _hintRow(Icons.fast_forward_rounded,
+                              'Press and hold — 2x speed'),
+                          const SizedBox(height: DizzySpace.md),
+                          GestureDetector(
+                            onTap: _dismissGestureHints,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: DizzySpace.sm),
+                              decoration: BoxDecoration(
+                                color: AppThemeService
+                                    .currentPalette.value.primaryColor,
+                                borderRadius: DizzyRadius.mdAll,
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                'Got it!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

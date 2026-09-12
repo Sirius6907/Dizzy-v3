@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'player_glass.dart';
+import 'player_menu_shell.dart';
 
 class AspectOption {
   final String id;
@@ -34,43 +35,14 @@ class PlayerAspectMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-
-    return PlayerGlassCard(
-      width: (320.0).clamp(240.0, screenWidth - 32),
-      padding: const EdgeInsets.all(12),
+    return PlayerMenuShell(
+      title: 'ASPECT RATIO',
+      onClose: onClose,
+      width: 320,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  'ASPECT RATIO',
-                  style: TextStyle(
-                    color: PlayerTheme.inkSubtle,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              PlayerIconButton(
-                size: 28,
-                iconSize: 14,
-                icon: const Icon(Icons.close_rounded),
-                tooltip: 'Close',
-                onPressed: onClose,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-
           // Aspect Options List
           Column(
             children: aspectOptions.map((opt) {

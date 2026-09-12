@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/movie/movie.dart';
 import '../../models/movie/video.dart';
@@ -15,34 +16,9 @@ import '../../widgets/party/watch_together_button.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../discover/discover_page.dart';
 import '../player/watch_screen.dart';
-// ---------------------------------------------------------------------------
-// Design tokens
-// ---------------------------------------------------------------------------
-class _Space {
-  static const xs = 8.0;
-  static const sm = 12.0;
-  static const md = 16.0;
-  static const lg = 24.0;
-  static const xl = 32.0;
-  static const xxl = 48.0;
-}
-
-class _Palette {
-  static const bg = Color(0xFF0B0D12);
-  static const surface = Color(0xFF15171F);
-  static const accent = Color(0xFFE50914);
-  static const accentDim = Color(0xFF9A0710);
-  static const gold = Color(0xFFFFC107);
-
-  static const avatarPairs = [
-    [Color(0xFF3A1C71), Color(0xFFD76D77)],
-    [Color(0xFF11998E), Color(0xFF38EF7D)],
-    [Color(0xFF1F4037), Color(0xFF99F2C8)],
-    [Color(0xFF2C3E50), Color(0xFF4CA1AF)],
-    [Color(0xFF614385), Color(0xFF516395)],
-    [Color(0xFF232526), Color(0xFF6E6E6E)],
-  ];
-}
+import '../../design/dizzy_tokens.dart';
+import '../../models/download/download_task_model.dart';
+import '../../services/download/download_service.dart';
 
 class DetailsPage extends StatefulWidget {
   final Movie movie;
@@ -401,9 +377,9 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _Palette.bg,
+      backgroundColor: DizzyColors.bg,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: _Palette.accent))
+          ? const Center(child: CircularProgressIndicator(color: DizzyColors.accent))
           : _detail == null
               ? _buildError()
               : _buildContent(context),
@@ -416,9 +392,9 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.broken_image_rounded, size: 64, color: Colors.white24),
-          const SizedBox(height: _Space.md),
+          const SizedBox(height: DizzySpace.md),
           const Text('Details unavailable.', style: TextStyle(color: Colors.white54, fontSize: 18)),
-          const SizedBox(height: _Space.lg),
+          const SizedBox(height: DizzySpace.lg),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white10, foregroundColor: Colors.white),
@@ -460,25 +436,25 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                     opacity: _fadeAnimation,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        isDesktop ? _Space.xxl : _Space.lg,
+                        isDesktop ? DizzySpace.xxl : DizzySpace.lg,
                         0,
-                        isDesktop ? _Space.xxl : _Space.lg,
-                        _Space.xxl + bottomInset,
+                        isDesktop ? DizzySpace.xxl : DizzySpace.lg,
+                        DizzySpace.xxl + bottomInset,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(height: heroHeight - overlap),
                           isDesktop ? _buildDesktopLayout(meta, posterUrl) : _buildMobileLayout(meta, posterUrl),
-                          const SizedBox(height: _Space.xl),
+                          const SizedBox(height: DizzySpace.xl),
                           if (meta.cast.isNotEmpty) ...[
                             _buildCastRow(meta.cast),
-                            const SizedBox(height: _Space.xl),
+                            const SizedBox(height: DizzySpace.xl),
                           ],
                           if (meta.videos.isNotEmpty) ...[
                             if (meta.videos.map((v) => v.season).where((s) => s != null).toSet().length > 1) ...[
                               _buildSeasonSelector(meta),
-                              const SizedBox(height: _Space.lg),
+                              const SizedBox(height: DizzySpace.lg),
                             ],
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 550),
@@ -528,15 +504,15 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                               },
                               child: _buildEpisodeSlider(key: ValueKey(_selectedSeason)),
                             ),
-                            const SizedBox(height: _Space.xl),
+                            const SizedBox(height: DizzySpace.xl),
                           ],
                           if (widget.relatedItems != null && widget.relatedItems!.isNotEmpty) ...[
                             _buildRelatedRow(widget.relatedItems!),
-                            const SizedBox(height: _Space.xl),
+                            const SizedBox(height: DizzySpace.xl),
                           ],
                           if (_similarItems.isNotEmpty) ...[
                             _buildSimilarRow(),
-                            const SizedBox(height: _Space.xl),
+                            const SizedBox(height: DizzySpace.xl),
                           ] else if (_isFetchingSimilar) ...[
                             _buildSectionHeader('Similar Content'),
                             const Center(
@@ -546,14 +522,14 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                                   width: 24, height: 24,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    color: _Palette.accent,
+                                    color: DizzyColors.accent,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: _Space.xl),
+                            const SizedBox(height: DizzySpace.xl),
                           ],
-                          const SizedBox(height: _Space.xxl),
+                          const SizedBox(height: DizzySpace.xxl),
                         ],
                       ),
                     ),
@@ -564,8 +540,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
           ),
         ),
         Positioned(
-          top: isDesktop ? _Space.lg : (topInset + 10),
-          left: isDesktop ? _Space.xxl : _Space.md,
+          top: isDesktop ? DizzySpace.lg : (topInset + 10),
+          left: isDesktop ? DizzySpace.xxl : DizzySpace.md,
           child: ClipOval(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -617,7 +593,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [_Palette.bg, Color(0x991A1D26), Colors.transparent],
+                  colors: [DizzyColors.bg, Color(0x991A1D26), Colors.transparent],
                   stops: [0.0, 0.42, 0.82],
                 ),
               ),
@@ -630,7 +606,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Color(0x661A1D26), _Palette.bg],
+                  colors: [Colors.transparent, Color(0x661A1D26), DizzyColors.bg],
                   stops: [0.0, 0.62, 0.94],
                 ),
               ),
@@ -676,7 +652,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                       // subtle accent-tinted glow behind the poster, on top
                       // of the usual drop shadow, so it reads as "lit" rather
                       // than just floating on black
-                      BoxShadow(color: _Palette.accent.withOpacity(0.18), blurRadius: 46, spreadRadius: -6),
+                      BoxShadow(color: DizzyColors.accent.withOpacity(0.18), blurRadius: 46, spreadRadius: -6),
                       BoxShadow(color: Colors.black.withOpacity(0.55), blurRadius: 30, offset: const Offset(0, 14)),
                     ],
                   ),
@@ -689,34 +665,40 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                         fit: BoxFit.cover,
                         memCacheWidth: 600,
                         maxWidthDiskCache: 600,
-                        errorWidget: (_, __, ___) => const ColoredBox(color: _Palette.surface),
+                        errorWidget: (_, __, ___) => const ColoredBox(color: DizzyColors.surface),
                       ),
                     ),
                   ),
                 ),
-              const SizedBox(height: _Space.lg),
+              const SizedBox(height: DizzySpace.lg),
               _buildPlayButton(fullWidth: true),
-              const SizedBox(height: _Space.sm),
-              _buildLibraryButton(fullWidth: true),
-              const SizedBox(height: _Space.sm),
+              const SizedBox(height: DizzySpace.sm),
+              Row(
+                children: [
+                  Expanded(child: _buildLibraryButton(fullWidth: false)),
+                  const SizedBox(width: DizzySpace.sm),
+                  _buildDownloadButton(),
+                ],
+              ),
+              const SizedBox(height: DizzySpace.sm),
               _buildWatchTogetherButton(),
             ],
           ),
         ),
-        const SizedBox(width: _Space.xl),
+        const SizedBox(width: DizzySpace.xl),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildLogoOrTitle(meta, isDesktop: true),
-              const SizedBox(height: _Space.md),
+              const SizedBox(height: DizzySpace.md),
               _buildMetadataRow(meta),
               if (meta.description != null && meta.description!.isNotEmpty) ...[
-                const SizedBox(height: _Space.lg),
+                const SizedBox(height: DizzySpace.lg),
                 _buildSynopsis(meta.description!),
               ],
               if (meta.genres.isNotEmpty) ...[
-                const SizedBox(height: _Space.lg),
+                const SizedBox(height: DizzySpace.lg),
                 _buildGenreChips(meta.genres),
               ],
             ],
@@ -738,7 +720,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
-                    BoxShadow(color: _Palette.accent.withOpacity(0.16), blurRadius: 28, spreadRadius: -4),
+                    BoxShadow(color: DizzyColors.accent.withOpacity(0.16), blurRadius: 28, spreadRadius: -4),
                     BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 16, offset: const Offset(0, 8)),
                   ],
                 ),
@@ -747,28 +729,30 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                   child: CachedNetworkImage(imageUrl: posterUrl, width: 110, fit: BoxFit.cover, memCacheWidth: 220, maxWidthDiskCache: 220),
                 ),
               ),
-            const SizedBox(width: _Space.md),
+            const SizedBox(width: DizzySpace.md),
             Expanded(child: _buildLogoOrTitle(meta, isDesktop: false)),
           ],
         ),
-        const SizedBox(height: _Space.lg),
+        const SizedBox(height: DizzySpace.lg),
         _buildMetadataRow(meta),
-        const SizedBox(height: _Space.lg),
+        const SizedBox(height: DizzySpace.lg),
         Row(
           children: [
             Expanded(child: _buildPlayButton(fullWidth: true)),
-            const SizedBox(width: _Space.sm),
-            _buildLibraryButton(fullWidth: false),
+            const SizedBox(width: DizzySpace.sm),
+            _buildDownloadButton(),
           ],
         ),
-        const SizedBox(height: _Space.sm),
+        const SizedBox(height: DizzySpace.sm),
+        _buildLibraryButton(fullWidth: true),
+        const SizedBox(height: DizzySpace.sm),
         _buildWatchTogetherButton(),
         if (meta.description != null && meta.description!.isNotEmpty) ...[
-          const SizedBox(height: _Space.lg),
+          const SizedBox(height: DizzySpace.lg),
           _buildSynopsis(meta.description!),
         ],
         if (meta.genres.isNotEmpty) ...[
-          const SizedBox(height: _Space.md),
+          const SizedBox(height: DizzySpace.md),
           _buildGenreChips(meta.genres),
         ],
       ],
@@ -796,15 +780,21 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
   }
 
   Widget _buildTextTitle(String text, bool isDesktop) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: isDesktop ? 40 : 28,
-        fontWeight: FontWeight.w800,
-        height: 1.1,
-        letterSpacing: -1.0,
-        color: Colors.white,
-        shadows: [Shadow(color: Colors.black.withOpacity(0.7), blurRadius: 20, offset: const Offset(0, 6))],
+    // Never truncated: wraps to as many lines as needed (no ellipsis,
+    // so no word is ever cut mid-way). Screen readers get a header role.
+    return Semantics(
+      header: true,
+      child: Text(
+        text,
+        softWrap: true,
+        style: TextStyle(
+          fontSize: isDesktop ? 40 : 28,
+          fontWeight: FontWeight.w800,
+          height: 1.1,
+          letterSpacing: -1.0,
+          color: Colors.white,
+          shadows: [Shadow(color: Colors.black.withOpacity(0.7), blurRadius: 20, offset: const Offset(0, 6))],
+        ),
       ),
     );
   }
@@ -814,8 +804,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
   // lightweight row instead of a card that left dead space under the poster.
   Widget _buildGenreChips(List<String> genres) {
     return Wrap(
-      spacing: _Space.xs,
-      runSpacing: _Space.xs,
+      spacing: DizzySpace.xs,
+      runSpacing: DizzySpace.xs,
       children: genres
           .map(
             (g) {
@@ -879,7 +869,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.star_rounded, color: _Palette.gold, size: 14),
+              const Icon(Icons.star_rounded, color: DizzyColors.gold, size: 14),
               const SizedBox(width: 4),
               Text(meta.imdbRating!, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
             ],
@@ -897,7 +887,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
       spaced.add(items[i]);
       if (i < items.length - 1) {
         spaced.add(const Padding(
-          padding: EdgeInsets.symmetric(horizontal: _Space.sm),
+          padding: EdgeInsets.symmetric(horizontal: DizzySpace.sm),
           child: Text('•', style: TextStyle(color: Colors.white30, fontSize: 16)),
         ));
       }
@@ -917,9 +907,9 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
         width: fullWidth ? double.infinity : null,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [_Palette.accent, _Palette.accentDim]),
+          gradient: const LinearGradient(colors: [DizzyColors.accent, DizzyColors.accentDim]),
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [BoxShadow(color: _Palette.accent.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: DizzyColors.accent.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 4))],
         ),
         child: Row(
           mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
@@ -993,6 +983,159 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
           ),
         );
       },
+    );
+  }
+
+  /// Polish P3: Save-for-offline entry. Downloads need a resolved stream
+  /// (player ke paas hota hai), isliye button seedha player kholne ka
+  /// easy rasta deta hai — dead-end kabhi nahi.
+  Widget _buildDownloadButton() {
+    return ValueListenableBuilder<List<DownloadTask>>(
+      valueListenable: DownloadService.instance.tasksNotifier,
+      builder: (context, tasks, _) {
+        final saved = _detail != null &&
+            tasks.any((t) =>
+                t.mediaId == _detail!.id &&
+                t.status == DownloadStatus.completed);
+        return _HoverButton(
+          onTap: _showDownloadSheet,
+          child: Tooltip(
+            message: saved ? 'Already saved' : 'Save for offline',
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: DizzySpace.sm, vertical: DizzySpace.sm),
+              decoration: BoxDecoration(
+                color: saved
+                    ? const Color(0xFF10B981).withOpacity(0.16)
+                    : Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: saved
+                      ? const Color(0xFF10B981).withOpacity(0.4)
+                      : Colors.white.withOpacity(0.14),
+                ),
+              ),
+              child: Icon(
+                saved
+                    ? Icons.download_done_rounded
+                    : Icons.download_rounded,
+                color:
+                    saved ? const Color(0xFF34D399) : Colors.white,
+                size: 22,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDownloadSheet() {
+    final d = _detail;
+    if (d == null) return;
+    final alreadySaved = DownloadService.instance.tasksNotifier.value.any(
+      (t) => t.mediaId == d.id && t.status == DownloadStatus.completed,
+    );
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: DizzyColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            DizzySpace.lg,
+            DizzySpace.sm,
+            DizzySpace.lg,
+            DizzySpace.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: DizzyRadius.smAll,
+                  ),
+                ),
+              ),
+              const SizedBox(height: DizzySpace.md),
+              Text(
+                alreadySaved ? 'Already on your device ✓' : 'Watch offline?',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: DizzyType.title,
+                  fontWeight: DizzyType.wBold,
+                ),
+              ),
+              const SizedBox(height: DizzySpace.xs),
+              Text(
+                alreadySaved
+                    ? 'Ye wali pehle se saved hai. Downloads tab me mil jayegi, bina internet ke.'
+                    : 'Dizzy plays dabate hi best copy khud chun leta hai. Player kholo, phir wahan Download dabao — safar ke liye save ho jayega.',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: DizzyType.body,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: DizzySpace.lg),
+              if (!alreadySaved)
+                _HoverButton(
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _handlePlayAction(
+                      _currentSeasonEpisodes.isNotEmpty
+                          ? _currentSeasonEpisodes.first
+                          : (d.videos.isNotEmpty ? d.videos.first : null),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: DizzySpace.sm),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [
+                        DizzyColors.accent,
+                        DizzyColors.accentDim
+                      ]),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.play_arrow_rounded,
+                            color: Colors.white, size: 22),
+                        SizedBox(width: 6),
+                        Text(
+                          'Open player',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text(
+                    'Not now',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1077,7 +1220,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
               ),
             ),
             if (isOverflowing) ...[
-              const SizedBox(height: _Space.xs),
+              const SizedBox(height: DizzySpace.xs),
               GestureDetector(
                 onTap: () => setState(() => _isSynopsisExpanded = !_isSynopsisExpanded),
                 child: Text(
@@ -1094,7 +1237,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: _Space.md),
+      padding: const EdgeInsets.only(bottom: DizzySpace.md),
       child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.3)),
     );
   }
@@ -1118,13 +1261,13 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   itemCount: cast.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: _Space.lg),
+                  separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.lg),
                   itemBuilder: (context, index) {
                     final name = cast[index];
                     final initials = name.isNotEmpty
                         ? name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase()
                         : '?';
-                    final pair = _Palette.avatarPairs[name.hashCode.abs() % _Palette.avatarPairs.length];
+                    final pair = DizzyColors.avatarPairs[name.hashCode.abs() % DizzyColors.avatarPairs.length];
 
                     return SizedBox(
                       width: 84,
@@ -1212,7 +1355,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: seasons.length,
-              separatorBuilder: (_, __) => const SizedBox(width: _Space.sm),
+              separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.sm),
               itemBuilder: (context, index) {
                 final season = seasons[index];
                 final isSelected = _selectedSeason == season;
@@ -1309,7 +1452,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 itemCount: _currentSeasonEpisodes.length,
-                separatorBuilder: (_, __) => const SizedBox(width: _Space.md),
+                separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.md),
                 itemBuilder: (context, index) {
                   final ep = _currentSeasonEpisodes[index];
                   return SizedBox(
@@ -1336,8 +1479,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          _Palette.bg,
-                          _Palette.bg.withValues(alpha: 0.0),
+                          DizzyColors.bg,
+                          DizzyColors.bg.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -1363,8 +1506,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                         begin: Alignment.centerRight,
                         end: Alignment.centerLeft,
                         colors: [
-                          _Palette.bg,
-                          _Palette.bg.withValues(alpha: 0.0),
+                          DizzyColors.bg,
+                          DizzyColors.bg.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -1433,7 +1576,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: related.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: _Space.md),
+                    separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.md),
                     itemBuilder: (context, index) {
                       final item = related[index];
                       return SizedBox(
@@ -1452,7 +1595,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                               aspectRatio: 2 / 3,
                               child: item.poster != null
                                   ? CachedNetworkImage(imageUrl: item.poster!, fit: BoxFit.cover, memCacheWidth: 500, memCacheHeight: 750, maxWidthDiskCache: 500)
-                                  : const ColoredBox(color: _Palette.surface),
+                                  : const ColoredBox(color: DizzyColors.surface),
                             ),
                           ),
                         ),
@@ -1473,8 +1616,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              _Palette.bg,
-                              _Palette.bg.withValues(alpha: 0.0),
+                              DizzyColors.bg,
+                              DizzyColors.bg.withValues(alpha: 0.0),
                             ],
                           ),
                         ),
@@ -1500,8 +1643,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                             begin: Alignment.centerRight,
                             end: Alignment.centerLeft,
                             colors: [
-                              _Palette.bg,
-                              _Palette.bg.withValues(alpha: 0.0),
+                              DizzyColors.bg,
+                              DizzyColors.bg.withValues(alpha: 0.0),
                             ],
                           ),
                         ),
@@ -1571,7 +1714,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: _similarItems.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: _Space.md),
+                    separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.md),
                     itemBuilder: (context, index) {
                       final item = _similarItems[index];
                       return SizedBox(
@@ -1594,14 +1737,14 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                                               imageUrl: item.thumbUrl,
                                               fit: BoxFit.cover,
                                               errorWidget: (_, __, ___) => Container(
-                                                color: _Palette.surface,
+                                                color: DizzyColors.surface,
                                                 child: const Center(
                                                   child: Icon(Icons.movie_rounded, color: Colors.white24, size: 36),
                                                 ),
                                               ),
                                             )
                                           : Container(
-                                              color: _Palette.surface,
+                                              color: DizzyColors.surface,
                                               child: const Center(
                                                 child: Icon(Icons.movie_rounded, color: Colors.white24, size: 36),
                                               ),
@@ -1618,7 +1761,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                                         decoration: BoxDecoration(
                                           color: Colors.black.withOpacity(0.75),
                                           borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: _Palette.accent.withOpacity(0.6)),
+                                          border: Border.all(color: DizzyColors.accent.withOpacity(0.6)),
                                         ),
                                         child: Text(
                                           '${item.similarityPercent}%',
@@ -1644,7 +1787,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(Icons.star_rounded, color: _Palette.gold, size: 13),
+                                            const Icon(Icons.star_rounded, color: DizzyColors.gold, size: 13),
                                             const SizedBox(width: 3),
                                             Text(
                                               item.rating!.toStringAsFixed(1),
@@ -1706,8 +1849,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                             colors: [
-                              _Palette.bg,
-                              _Palette.bg.withValues(alpha: 0.0),
+                              DizzyColors.bg,
+                              DizzyColors.bg.withValues(alpha: 0.0),
                             ],
                           ),
                         ),
@@ -1733,8 +1876,8 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                             begin: Alignment.centerRight,
                             end: Alignment.centerLeft,
                             colors: [
-                              _Palette.bg,
-                              _Palette.bg.withValues(alpha: 0.0),
+                              DizzyColors.bg,
+                              DizzyColors.bg.withValues(alpha: 0.0),
                             ],
                           ),
                         ),
@@ -1820,7 +1963,7 @@ class _EpisodeCardState extends State<_EpisodeCard> {
           curve: Curves.easeOutCubic,
           child: Container(
             decoration: BoxDecoration(
-              color: _Palette.surface,
+              color: DizzyColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _hovered ? Colors.white.withOpacity(0.22) : Colors.white.withOpacity(0.04)),
               boxShadow: _hovered
@@ -1874,14 +2017,14 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(_Space.sm),
+                    padding: const EdgeInsets.all(DizzySpace.sm),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Row(
                           children: [
-                            Text('EP ${ep.episode ?? "?"}', style: const TextStyle(color: _Palette.accent, fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text('EP ${ep.episode ?? "?"}', style: const TextStyle(color: DizzyColors.accent, fontWeight: FontWeight.bold, fontSize: 12)),
                             const Spacer(),
                             if (ep.released != null && ep.released!.length >= 10)
                               Text(ep.released!.substring(0, 10), style: const TextStyle(color: Colors.white38, fontSize: 11)),
@@ -1937,16 +2080,31 @@ class _HoverButtonState extends State<_HoverButton> {
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() { _isHovered = false; _isPressed = false; }),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.96 : (_isHovered ? widget.scaleAmount : 1.0),
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          child: widget.child,
+      // Keyboard / DPAD friendly: Enter ya Space se bhi dab jaye (P3/P13).
+      child: Focus(
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.space)) {
+            widget.onTap();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Semantics(
+          button: true,
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => _isPressed = true),
+            onTapUp: (_) => setState(() => _isPressed = false),
+            onTapCancel: () => setState(() => _isPressed = false),
+            onTap: widget.onTap,
+            child: AnimatedScale(
+              scale: _isPressed ? 0.96 : (_isHovered ? widget.scaleAmount : 1.0),
+              duration: DizzyMotion.instant,
+              curve: DizzyMotion.easeOut,
+              child: widget.child,
+            ),
+          ),
         ),
       ),
     );

@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../design/dizzy_tokens.dart';
+
 class AppThemePalette {
   final String id;
   final String name;
@@ -208,6 +210,26 @@ abstract final class AppThemeService {
             ? const Color(0x1AE2E8F0)
             : const Color(0x12FFFFFF),
         thickness: 1,
+      ),
+      // Frozen type scale (Polish P1) — har screen yahi sizes use kare.
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(
+            fontSize: DizzyType.display,
+            fontWeight: DizzyType.wBold,
+            letterSpacing: -0.5),
+        headlineMedium: TextStyle(
+            fontSize: DizzyType.headline,
+            fontWeight: DizzyType.wBold,
+            letterSpacing: -0.3),
+        titleLarge: TextStyle(
+            fontSize: DizzyType.title, fontWeight: DizzyType.wSemiBold),
+        titleMedium: TextStyle(
+            fontSize: DizzyType.subtitle, fontWeight: DizzyType.wMedium),
+        bodyLarge: TextStyle(fontSize: DizzyType.body),
+        bodyMedium: TextStyle(fontSize: DizzyType.body),
+        bodySmall: TextStyle(fontSize: DizzyType.caption),
+        labelSmall:
+            TextStyle(fontSize: DizzyType.micro, fontWeight: DizzyType.wMedium),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

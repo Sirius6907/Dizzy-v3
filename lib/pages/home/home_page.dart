@@ -21,6 +21,8 @@ import '../../services/my_list/my_list_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/animated_ambient_background.dart';
 import '../../widgets/common/error_view.dart';
+import '../../widgets/common/poster_skeleton.dart';
+import '../../design/dizzy_tokens.dart';
 import '../../widgets/home/continue_watching_slider.dart';
 import '../../widgets/movie/movie_slider_section.dart';
 import '../search/search_page.dart';
@@ -421,9 +423,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           // ── Main scrollable content ──
           if (_loading && !_showIntro && _sections.isEmpty)
-            Center(
-              child: CircularProgressIndicator(color: palette.primaryColor),
-            )
+            _HomeLoadingSkeleton(topPadding: topPadding)
           else if (_error != null && _sections.isEmpty)
             ErrorView(error: _error, onRetry: _loadHome)
           else
@@ -1127,9 +1127,13 @@ class _HeroCarouselState extends State<_HeroCarousel> {
                     final active = i == _index;
                     return GestureDetector(
                       onTap: () => _goTo(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
+                      child: Semantics(
+                        button: true,
+                        selected: active,
+                        label: 'Show featured title ${i + 1}',
+                        child: AnimatedContainer(
+                        duration: DizzyMotion.fast,
+                        curve: DizzyMotion.easeOut,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         width: active ? 22 : 7,
                         height: 7,
@@ -1146,6 +1150,7 @@ class _HeroCarouselState extends State<_HeroCarousel> {
                                   ),
                                 ]
                               : null,
+                        ),
                         ),
                       ),
                     );
@@ -1209,12 +1214,16 @@ class _CarouselArrowState extends State<_CarouselArrow> {
       onExit: (_) => setState(() => _isHoveringArrow = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
+        child: Semantics(
+          button: true,
+          label: 'Previous featured title',
+          child: AnimatedContainer(
+            duration: DizzyMotion.fast,
+            curve: DizzyMotion.easeOut,
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
             color: _isHoveringArrow
                 ? Colors.black.withOpacity(0.6)
                 : Colors.black.withOpacity(0.3),
@@ -1229,6 +1238,7 @@ class _CarouselArrowState extends State<_CarouselArrow> {
             widget.icon,
             color: _isHoveringArrow ? Colors.white : Colors.white70,
             size: 24,
+          ),
           ),
         ),
       ),
@@ -1848,6 +1858,84 @@ class _HoverArrowState extends State<_HoverArrow> {
             size: 22,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Home loading skeleton (Polish P2) — cold open pe khaali spinner ki jagah
+// hero + rows ka shimmer shape. Fail-soft: data aate hi real list replace.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HomeLoadingSkeleton extends StatelessWidget {
+  final double topPadding;
+
+  const _HomeLoadingSkeleton({required this.topPadding});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final heroHeight =
+        screenWidth < DizzyBreakpoints.mobile ? 420.0 : 520.0;
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            DizzySpace.md,
+            topPadding + 76,
+            DizzySpace.md,
+            0,
+          ),
+          child: ClipRRect(
+            borderRadius: DizzyRadius.xlAll,
+            child: SizedBox(height: heroHeight, child: const PosterSkeleton()),
+          ),
+        ),
+        const SizedBox(height: DizzySpace.lg),
+        _skeletonRow(screenWidth),
+        _skeletonRow(screenWidth),
+      ],
+    );
+  }
+
+  Widget _skeletonRow(double screenWidth) {
+    final cardWidth = (screenWidth - DizzySpace.md * 2 - DizzySpace.sm * 2) / 3;
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: DizzySpace.md,
+        top: DizzySpace.lg,
+        bottom: DizzySpace.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 140,
+            height: 16,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: DizzyRadius.smAll,
+            ),
+          ),
+          const SizedBox(height: DizzySpace.sm),
+          SizedBox(
+            height: cardWidth * 1.5,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 4,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(width: DizzySpace.sm),
+              itemBuilder: (context, _) => ClipRRect(
+                borderRadius: DizzyRadius.mdAll,
+                child: SizedBox(width: cardWidth, child: const PosterSkeleton()),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
