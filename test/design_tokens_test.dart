@@ -37,6 +37,11 @@ void main() {
       expect(DizzyMotion.fast, lessThan(DizzyMotion.standard));
       expect(DizzyMotion.standard, lessThan(DizzyMotion.slow));
     });
+
+    test('reverse sits between standard and slow (P11)', () {
+      expect(DizzyMotion.standard, lessThan(DizzyMotion.reverse));
+      expect(DizzyMotion.reverse, lessThan(DizzyMotion.slow));
+    });
   });
 
   group('DizzyColors (legacy details-page parity)', () {

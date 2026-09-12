@@ -59,6 +59,10 @@ abstract final class DizzyMotion {
   static const Duration slow = Duration(milliseconds: 600);
   static const Duration hero = Duration(milliseconds: 700);
 
+  /// Reverse/exit transitions (pop, dismiss). Feel frozen — do not retune
+  /// per-screen; pick from this scale only.
+  static const Duration reverse = Duration(milliseconds: 500);
+
   /// Player controls auto-hide delay (P4 unify — sab player isi ko use kare).
   static const Duration controlsAutoHide = Duration(seconds: 4);
 
