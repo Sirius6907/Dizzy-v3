@@ -71,8 +71,18 @@ void main() {
       expect(back.positionMs, 42170);
       expect(back.playing, isTrue);
 
+      // Frozen protocol (docs/party-protocol-v2.md): v1 legacy + v2 current
+      // BOTH accepted; v3+ (future) and v0 rejected.
       expect(
         WatchSyncMessage.fromJson({'v': 2, 'media_ref': 'x'}).isUsable,
+        isTrue,
+      );
+      expect(
+        WatchSyncMessage.fromJson({'v': 1, 'media_ref': 'x'}).isUsable,
+        isTrue,
+      );
+      expect(
+        WatchSyncMessage.fromJson({'v': 3, 'media_ref': 'x'}).isUsable,
         isFalse,
       );
       expect(WatchSyncMessage.fromJson({}).isUsable, isFalse);
