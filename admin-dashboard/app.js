@@ -86,7 +86,7 @@ function show(name) {
   if (name === 'users') loadUsers();
   if (name === 'push') loadAnn();
   if (name === 'config') loadCfg();
-  if (name === 'audit') loadAudit();
+  if (name === 'audit') loadAudit(); else stopAuditLive();
 }
 
 async function rpc(name, params) {
@@ -359,11 +359,31 @@ async function saveCfg(key, value) {
 }
 
 // ── audit ──
+// Polish P17: live mode (15s poll) + action pills for readability.
+// Phone se admin kaam ho jaye: table scrolls, pills scan fast.
+let _auditTimer = null;
+function toggleAuditLive() {
+  const on = document.getElementById('auditLive').checked;
+  if (_auditTimer) { clearInterval(_auditTimer); _auditTimer = null; }
+  if (on) { loadAudit(); _auditTimer = setInterval(loadAudit, 15000); }
+}
+function stopAuditLive() {
+  if (_auditTimer) { clearInterval(_auditTimer); _auditTimer = null; }
+  const box = document.getElementById('auditLive');
+  if (box) box.checked = false;
+}
+function auditPill(action) {
+  const a = String(action || '').toLowerCase();
+  if (a.includes('delete') || a.includes('kill') || a.includes('ban')) return 'p-adult';
+  if (a.includes('save') || a.includes('create') || a.includes('add') || a.includes('upsert')) return 'p-live';
+  if (a.includes('update') || a.includes('edit')) return 'p-lobby';
+  return 'p-closed';
+}
 async function loadAudit() {
   try {
     const rows = await rpc('admin_audit_tail', { p_limit: 50 });
     document.querySelector('#auditTbl tbody').innerHTML = rows.map((a) =>
-      `<tr><td class="mut">${ago(a.created_at)}</td><td><b>${esc(a.action)}</b></td>
+      `<tr><td class="mut">${ago(a.created_at)}</td><td><span class="pill ${auditPill(a.action)}">${esc(a.action)}</span></td>
        <td class="mono">${esc(a.target)}</td><td class="mut">${esc(JSON.stringify(a.detail))}</td></tr>`).join('')
       || '<tr><td colspan="4" class="mut">No audit entries yet.</td></tr>';
   } catch (e) { toast('Audit failed: ' + e.message); }

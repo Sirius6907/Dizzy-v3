@@ -211,7 +211,8 @@ canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
 
     <section id="s-audit">
       <div class="card"><h3>🧾 Audit log <span class="sub">every admin write</span>
-        <button class="btn btn-sm btn-ghost" style="float:right" onclick="loadAudit()">↻ Refresh</button></h3>
+        <span style="float:right"><label class="mut" style="font-weight:400"><input type="checkbox" id="auditLive" onchange="toggleAuditLive()" style="width:auto;accent-color:#10b981"> live</label>
+        <button class="btn btn-sm btn-ghost" onclick="loadAudit()">↻ Refresh</button></span></h3>
         <div style="overflow-x:auto"><table id="auditTbl"><thead><tr><th>When</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
       </div>
     </section>
