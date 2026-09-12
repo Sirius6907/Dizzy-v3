@@ -2,6 +2,44 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.2.0+30] — 2026-09-12 — "Watch Together 10x" (P1–P19)
+
+### Watch Together (flagship, 10x flawless + dead-easy)
+- Persistent rooms (name + pass; P1) with LIVE lobby cards: watching title,
+  headcount, Choosing… state, pull-to-refresh (P12).
+- Host 2 Hz heartbeat + guest silent follow (1.5 s auto-fix, Catching up… past 5 s).
+- Guest auto-open on media switch (P3): prefetch metadata first, title fallback,
+  Easy-English toasts — guest never stares at a dead screen.
+- Voice rail (P4): join-muted sheet, mute/deafen by Discord rules, speaking dots.
+- Chat with soul (P11): host pins, reactions, timestamps, host badges.
+- Room safety (P5): private passes, adult filter, 20-member cap, stale sweep.
+- 3-card first-time guide flow (create → join → host plays), old key retired (P13).
+
+### Player
+- Manual quality menu (P7): Auto + 480p–4K from the real ladder; choice saved per device.
+- Auto quality (P8): bandwidth tiers (<3→480, 3–8→720, 8–20→1080, 20+→max),
+  10 s stability gate, Data Saver 720p cap, weak-device AV1 dodge.
+- Rendition contract (P9): every rung one tap away; progressive first-match switch.
+- Instant zapping (P10): verified-source prefetch, <1 s handoffs.
+- Keyless TMDB (P14): own edge proxy first → build key → .env key → keyless
+  last resort. Release APK carries no TMDB key.
+- Format matrix: HLS VOD/live, progressive, torrents, debrid, external subs
+  (`docs/format-support.md`).
+
+### Engineering health
+- Silent-catch triage (P15): network/parse = silent-but-logged (enum codes,
+  consent-gated, throttled); user paths always toast (`docs/silent-catch-triage.md`).
+- Log hygiene (P16): `AppLog.d` release-stripped logger across player/scraper/party.
+- God-file split started (P17): resolve pipeline → `watch_resolve_controller.dart`,
+  pure move + contract tests.
+- Tests: stale DownloadTask telemetry fixed; +22 P18 tests (rooms, media_switch
+  matrix, rendition policy, bandwidth tiers, deafen/mute, proxy fallback).
+- Protocol frozen: `docs/party-protocol-v2.md` (v1–2 guard, guest rules).
+
+### ⚠️ Needs you (Supabase SQL Editor, run once each)
+- `supabase/migrations/20260912_wp_p11_chat_soul.sql` — chat soul columns.
+- `supabase/migrations/20260912_wp_p12_lobby.sql` — lobby watching columns.
+
 ## [1.2.0] — 2026-09-12 — "Zero-Tech User"
 
 ### Watch Together 10x (flagship)
