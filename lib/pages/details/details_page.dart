@@ -17,6 +17,7 @@ import '../../utils/navigation/route_transitions.dart';
 import '../discover/discover_page.dart';
 import '../player/watch_screen.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../utils/perf/image_caps.dart';
 import '../../models/download/download_task_model.dart';
 import '../../services/download/download_service.dart';
 
@@ -585,7 +586,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CachedNetworkImage(imageUrl: bgUrl, fit: BoxFit.cover, alignment: Alignment.topCenter, memCacheWidth: 1280, maxWidthDiskCache: 1280),
+            CachedNetworkImage(imageUrl: bgUrl, fit: BoxFit.cover, alignment: Alignment.topCenter, memCacheWidth: ImageCaps.kBackdrop, maxWidthDiskCache: ImageCaps.kBackdrop),
             // horizontal wash — darkens where the title/synopsis sit, leaves
             // the rest of the image breathing room instead of blacking it all out
             const DecoratedBox(
@@ -1984,6 +1985,9 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                           CachedNetworkImage(
                             imageUrl: imgUrl,
                             fit: BoxFit.cover,
+                            // Polish P14: uncapped decode = OOM risk on 3GB.
+                            memCacheWidth: ImageCaps.kCardW,
+                            maxWidthDiskCache: ImageCaps.kCardW,
                             errorWidget: (context, url, error) => const ColoredBox(color: Color(0xFF1B1E27)),
                           )
                         else
