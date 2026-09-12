@@ -6,9 +6,9 @@ void main() {
   group('P14: keyless-first chain', () {
     test('edge always first; direct only with key; keyless always last', () {
       expect(TmdbHelper.resolveChain(edgeReady: true, key: true),
-          ['edge', 'direct', 'keyless']);
+          ['resolve', 'edge', 'direct', 'keyless']);
       expect(TmdbHelper.resolveChain(edgeReady: true, key: false),
-          ['edge', 'keyless']);
+          ['resolve', 'edge', 'keyless']);
       expect(TmdbHelper.resolveChain(edgeReady: false, key: true),
           ['direct', 'keyless']);
       expect(TmdbHelper.resolveChain(edgeReady: false, key: false),

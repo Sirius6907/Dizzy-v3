@@ -4,6 +4,26 @@ All notable changes to PlayTorrio V3 will be documented in this file.
 
 ## [1.2.0+30] — 2026-09-12 — "Watch Together 10x" (P1–P19)
 
+### P20–P23 (this batch)
+- Release builds: `app-release.apk` (161.9 MB, debug-signed local gate build)
+  + Windows `dizzy.exe` — both built clean, analyze zero.
+- Cloud resolve API (P21): `resolve` edge fn client (`CloudResolveService`,
+  30-day prefs cache, 2 reads + 1 write) wired as chain step 0 in tmdb_helper.
+- Catalog warm-cache (P22): `catalog` edge read-through (`warm:true/false`,
+  6h fresh) + `catalog_cache` table + app `CatalogService` (edge → snapshot → null).
+- Instant-open player (P23): title on first frame + decode-capped skeleton
+  (backdrop ≤960px, logo ≤400px) for ≤3GB RAM devices.
+- Tests: +6 (cloud resolve guards, catalog cards).
+
+### ⚠️ Needs you (Supabase — SQL Editor run once each, then deploy)
+1. `supabase/migrations/20260912_wp_p11_chat_soul.sql` — chat soul columns.
+2. `supabase/migrations/20260912_wp_p12_lobby.sql` — lobby watching columns.
+3. `supabase/migrations/20260912_p22_catalog_cache.sql` — warm-cache table.
+4. Dashboard → Edge Functions → deploy/redeploy: `resolve`, `catalog`,
+   `tmdb-proxy`. Set secrets: `TMDB_API_KEY` (or BEARER).
+5. Dashboard → Edge Functions → `catalog` → Schedules → New cron
+   `30 6 * * *` (= 12:00 IST noon refresh of trending/popular feeds).
+
 ### Watch Together (flagship, 10x flawless + dead-easy)
 - Persistent rooms (name + pass; P1) with LIVE lobby cards: watching title,
   headcount, Choosing… state, pull-to-refresh (P12).
@@ -35,10 +55,7 @@ All notable changes to PlayTorrio V3 will be documented in this file.
 - Tests: stale DownloadTask telemetry fixed; +22 P18 tests (rooms, media_switch
   matrix, rendition policy, bandwidth tiers, deafen/mute, proxy fallback).
 - Protocol frozen: `docs/party-protocol-v2.md` (v1–2 guard, guest rules).
-
-### ⚠️ Needs you (Supabase SQL Editor, run once each)
-- `supabase/migrations/20260912_wp_p11_chat_soul.sql` — chat soul columns.
-- `supabase/migrations/20260912_wp_p12_lobby.sql` — lobby watching columns.
+  (Supabase manual steps moved to the P20–P23 section above.)
 
 ## [1.2.0] — 2026-09-12 — "Zero-Tech User"
 

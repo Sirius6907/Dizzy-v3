@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../config/env_service.dart';
 import '../../cloud/cloud_client.dart';
+import '../../cloud/cloud_resolve_service.dart';
 import '../../errors/app_error_log.dart';
 
 /// P14 — keyless-first TMDB chain:
 ///
+///   0. `resolve` edge fn (server key, year-pinned smart match) — P21.
 ///   1. OWN edge proxy (`tmdb-proxy` fn) — no key on device at all.
 ///   2. Official API with `--dart-define=TMDB_API_KEY` (CI/release opt-in).
 ///   3. Official API with runtime `.env` [EnvService] key (desktop dev).
@@ -41,14 +43,14 @@ class TmdbHelper {
     return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
-  /// Pure: ordered strategies for this device. Edge is ALWAYS first;
+  /// Pure: ordered strategies for this device. Cloud edge is ALWAYS first;
   /// direct entries exist only when a key exists; keyless third-party
   /// fallback is ALWAYS last (cloud-off survival, never preferred).
   /// Unit-tested (chain order is the P14 success metric).
   static List<String> resolveChain(
       {required bool edgeReady, required bool key}) {
     final chain = <String>[];
-    if (edgeReady) chain.add('edge');
+    if (edgeReady) chain.addAll(['resolve', 'edge']);
     if (key) chain.add('direct');
     chain.add('keyless');
     return chain;
@@ -130,6 +132,21 @@ class TmdbHelper {
   }) async {
     final cacheKey = '${imdbId ?? ""}|$title|$type|${year ?? ""}';
     if (_cache.containsKey(cacheKey)) return _cache[cacheKey];
+
+    // 0. P21: Cloud resolve API (server key, year-pinned) — first when ready.
+    final rawId = (imdbId ?? '').trim();
+    if (_edgeReady && (rawId.isNotEmpty || title.isNotEmpty)) {
+      final smart = await CloudResolveService.resolveIds(
+        title: title,
+        type: type == 'tv' ? 'tv' : 'movie',
+        imdbId: rawId.startsWith('tt') ? rawId : null,
+      );
+      final smartId = int.tryParse('${smart?['tmdbId'] ?? ''}');
+      if (smartId != null) {
+        _cache[cacheKey] = smartId;
+        return smartId;
+      }
+    }
 
     String cleanId = (imdbId ?? '').trim();
     cleanId = cleanId.replaceAll(RegExp(r'^(tmdb|movie|tv|imdb):', caseSensitive: false), '');

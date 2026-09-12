@@ -2154,11 +2154,14 @@ class _PlayerScreenState extends State<PlayerScreen>
     return Stack(
       children: [
         // Loading Backdrop
+        // P23: decode-capped (≤960px) — the skeleton must stay light so the
+        // stream can attach behind it on ≤3GB RAM devices.
         if (_isLoading && widget.backdropUrl != null)
           Positioned.fill(
             child: Opacity(
               opacity: 0.4,
-              child: Image.network(widget.backdropUrl!, fit: BoxFit.cover),
+              child: Image.network(widget.backdropUrl!,
+                  fit: BoxFit.cover, cacheWidth: 960),
             ),
           ),
 
@@ -2185,11 +2188,29 @@ class _PlayerScreenState extends State<PlayerScreen>
                           widget.logoUrl!,
                           height: 100,
                           fit: BoxFit.contain,
+                          cacheWidth: 400, // P23: skeleton stays light.
                         ),
                       )
                     else
                       const CircularProgressIndicator(color: PlayerTheme.accent),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+                    // P23: title paints on the FIRST frame — the user knows
+                    // WHAT opened while the stream attaches behind.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        widget.detail?.name ?? widget.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       _statusMessage,
                       style: const TextStyle(
