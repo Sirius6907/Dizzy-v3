@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/profiles/dizzy_profile_service.dart';
+import '../../services/profiles/kids_mode.dart';
 import '../../services/theme/app_theme_service.dart';
 
 /// S3B (v1.1.9): local-first profile selector and manager.
@@ -58,14 +59,42 @@ class ProfilesSettingsPage extends StatelessWidget {
           ? palette.primaryColor.withValues(alpha: 0.16)
           : const Color(0xFF11141B),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: palette.primaryColor.withValues(alpha: 0.22),
-          child: Text(p.avatar, style: const TextStyle(fontSize: 22)),
+        // Polish P15: kids avatar wears a gold ring + cub badge.
+        leading: Semantics(
+          label: p.isKids ? 'Kids profile ${p.name}' : 'Profile ${p.name}',
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: KidsMode.ring(isKids: p.isKids),
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  backgroundColor:
+                      palette.primaryColor.withValues(alpha: 0.22),
+                  child:
+                      Text(p.avatar, style: const TextStyle(fontSize: 22)),
+                ),
+              ),
+              if (p.isKids)
+                const Positioned(
+                  right: -4,
+                  bottom: -2,
+                  child: Text(KidsMode.kKidsBadge,
+                      style: TextStyle(fontSize: 16)),
+                ),
+            ],
+          ),
         ),
         title: Text(p.name,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         subtitle: Text(
-          '${p.isKids ? 'Kids profile · ' : ''}${p.hasPin ? 'PIN protected' : 'No PIN'}',
+          KidsMode.subtitle(isKids: p.isKids, hasPin: p.hasPin),
           style: const TextStyle(color: Colors.white60, fontSize: 12),
         ),
         trailing: active
