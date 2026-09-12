@@ -15,14 +15,12 @@ All notable changes to PlayTorrio V3 will be documented in this file.
   (backdrop ≤960px, logo ≤400px) for ≤3GB RAM devices.
 - Tests: +6 (cloud resolve guards, catalog cards).
 
-### ⚠️ Needs you (Supabase — SQL Editor run once each, then deploy)
-1. `supabase/migrations/20260912_wp_p11_chat_soul.sql` — chat soul columns.
-2. `supabase/migrations/20260912_wp_p12_lobby.sql` — lobby watching columns.
-3. `supabase/migrations/20260912_p22_catalog_cache.sql` — warm-cache table.
-4. Dashboard → Edge Functions → deploy/redeploy: `resolve`, `catalog`,
-   `tmdb-proxy`. Set secrets: `TMDB_API_KEY` (or BEARER).
-5. Dashboard → Edge Functions → `catalog` → Schedules → New cron
-   `30 6 * * *` (= 12:00 IST noon refresh of trending/popular feeds).
+### ✅ Supabase — done via CLI (2026-09-12, no dashboard needed)
+- `resolve`, `catalog`, `tmdb-proxy` deployed + live-tested (trending feed,
+  Fight Club → tmdbId 550, movie/550 full data all OK).
+- P11 (already ran) + P12 view + P22 `catalog_cache` applied + verified.
+- `TMDB_API_KEY` secret set. `catalog-noon-refresh` cron live (`30 6 * * *`
+  = 12:00 IST). Warm row confirmed: `trending|all|1` = 20 items.
 
 ### Watch Together (flagship, 10x flawless + dead-easy)
 - Persistent rooms (name + pass; P1) with LIVE lobby cards: watching title,
