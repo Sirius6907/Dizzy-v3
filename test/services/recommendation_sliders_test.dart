@@ -4,6 +4,7 @@ import 'package:dizzy/models/my_list/my_list_item.dart';
 import 'package:dizzy/services/continue_watching/continue_watching_service.dart';
 import 'package:dizzy/services/home/home_page_settings.dart';
 import 'package:dizzy/services/my_list/my_list_service.dart';
+import '../helpers/live_gate.dart';
 
 import 'dart:io';
 
@@ -12,7 +13,7 @@ class _TestHttpOverrides extends HttpOverrides {}
 void main() {
   HttpOverrides.global = _TestHttpOverrides();
 
-  test('Test BestSimilar recommendations for My List and Continue Watching', () async {
+  test('Test BestSimilar recommendations for My List and Continue Watching', skip: liveSkip, () async {
     // 1. Setup My List with a movie
     MyListService.items.value = [
       MyListItem(

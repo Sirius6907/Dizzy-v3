@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dizzy/services/scraper/sites/vadapav.dart';
 import 'package:dizzy/services/addon/addon_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'helpers/live_gate.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
@@ -10,7 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _AllowAllHttpOverrides();
 
-  group('VadapavScraper Tests', () {
+  group('VadapavScraper Tests', skip: liveSkip, () {
     test('Fetches streams for movie and TV series', () async {
       final scraper = VadapavScraper();
 
@@ -56,7 +57,7 @@ void main() {
     });
   });
 
-  group('Stremio Scheme Normalization Tests', () {
+  group('Stremio Scheme Normalization Tests', skip: liveSkip, () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
     });

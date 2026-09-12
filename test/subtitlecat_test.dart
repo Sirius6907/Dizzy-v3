@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dizzy/services/subtitles/subtitlecat_service.dart';
+import 'helpers/live_gate.dart';
 
 void main() {
   HttpOverrides.global = null;
 
-  test('SubtitleCat scraper and search', () async {
+  test('SubtitleCat scraper and search', skip: liveSkip, () async {
     final entries = await SubtitleCatService.instance.searchAndExtract(
       title: 'Inception',
       year: 2010,

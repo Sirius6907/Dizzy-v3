@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dizzy/services/anime/extractors/luna_extractor.dart';
 import 'package:dizzy/services/anime/extractors/anineko_extractor.dart';
+import 'helpers/live_gate.dart';
 
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
@@ -9,7 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _AllowAllHttpOverrides();
 
-  group('Chunk 2 Anime Scrapers Tests', () {
+  group('Chunk 2 Anime Scrapers Tests', skip: liveSkip, () {
     test('Luna extractor resolves streams for One Piece (AniList 21 Ep 1)', () async {
       final extractor = LunaExtractor.instance;
       final results = await extractor.extract(
