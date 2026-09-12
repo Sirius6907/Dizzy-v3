@@ -7,6 +7,8 @@ import 'package:dizzy/models/movie/video.dart';
 import '../../models/download/download_task_model.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/download/download_service.dart';
+import '../../services/download/download_progress_text.dart';
+import '../../design/dizzy_tokens.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../../utils/platform/open_file_location_helper.dart';
 import '../../utils/download/download_path_helper.dart';
@@ -397,14 +399,17 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      isFailed
-                          ? 'Failed: ${task.error ?? "Unknown error"}'
-                          : isPaused
-                              ? 'Paused (${(progress * 100).toStringAsFixed(1)}%)'
-                              : '${(progress * 100).toStringAsFixed(1)}% • ${task.speedLabel} • ETA: ${task.etaLabel}',
+                      DownloadProgressText.line(
+                        progress: progress,
+                        speedLabel: task.speedLabel,
+                        etaLabel: task.etaLabel,
+                        isPaused: isPaused,
+                        isFailed: isFailed,
+                        error: task.error,
+                      ),
                       style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+                        fontSize: DizzyType.caption,
+                        fontWeight: DizzyType.wMedium,
                         color: isFailed
                             ? const Color(0xFFEF4444)
                             : (isPaused ? Colors.amber : Colors.white70),
@@ -414,21 +419,29 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                 ),
               ),
 
-              // Actions
+              // Actions (Polish P7: pause/resume always visible + labelled).
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isDownloading)
-                    IconButton(
+                    Semantics(
+                      button: true,
+                      label: 'Pause download of ${task.title}',
+                      child: IconButton(
                       icon: const Icon(Icons.pause_circle_rounded, color: Colors.amber, size: 26),
                       tooltip: 'Pause',
                       onPressed: () => DownloadService.instance.pauseDownload(task.id),
+                    ),
                     )
                   else if (isPaused || isFailed)
-                    IconButton(
+                    Semantics(
+                      button: true,
+                      label: 'Resume download of ${task.title}',
+                      child: IconButton(
                       icon: Icon(Icons.play_circle_fill_rounded, color: palette.primaryColor, size: 26),
                       tooltip: 'Resume',
                       onPressed: () => DownloadService.instance.resumeDownload(task.id),
+                    ),
                     ),
                   IconButton(
                     icon: Icon(Icons.folder_open_rounded, color: Colors.white.withValues(alpha: 0.6), size: 22),
@@ -474,11 +487,11 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
             children: [
               Text(
                 task.sizeLabel,
-                style: TextStyle(fontSize: 10.5, color: Colors.white.withValues(alpha: 0.45)),
+                style: TextStyle(fontSize: DizzyType.captionSm, color: Colors.white.withValues(alpha: 0.45)),
               ),
               Text(
-                '${(progress * 100).toStringAsFixed(1)}%',
-                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white.withValues(alpha: 0.6)),
+                '${DownloadProgressText.wholePercent(progress)}%',
+                style: TextStyle(fontSize: DizzyType.captionSm, fontWeight: DizzyType.wBold, color: Colors.white.withValues(alpha: 0.6)),
               ),
             ],
           ),
