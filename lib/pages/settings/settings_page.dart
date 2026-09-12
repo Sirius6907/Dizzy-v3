@@ -34,6 +34,7 @@ import '../../widgets/guide/guide_card.dart';
 import '../../services/home/home_page_settings.dart';
 
 import '../../widgets/common/animated_ambient_background.dart';
+import 'settings_search_delegate.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -338,6 +339,21 @@ class _SettingsPageState extends State<SettingsPage> {
           'Settings',
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
         ),
+        // Polish P8: in-settings search — koi setting 3 taps se door nahi.
+        actions: [
+          Semantics(
+            button: true,
+            label: 'Find a setting',
+            child: IconButton(
+              icon: const Icon(Icons.search_rounded, color: Colors.white),
+              tooltip: 'Find a setting',
+              onPressed: () => showSearch(
+                context: context,
+                delegate: SettingsSearchDelegate(),
+              ),
+            ),
+          ),
+        ],
       ),
       body: AnimatedAmbientBackground(
         child: Center(
@@ -719,12 +735,44 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 12),
 
               // v1.2.0-T2.6: replay first-time guides.
+              // Polish P8: confirm pattern — destructive actions always ask.
               _SettingsCategoryTile(
                 icon: Icons.help_outline_rounded,
                 iconColor: const Color(0xFF7C5CFF),
                 title: 'Show guides again',
                 subtitle: 'Replay easy intro cards for all features',
                 onTap: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: const Color(0xFF131622),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: const Text(
+                        'Show guides again?',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      content: const Text(
+                        'Easy intro cards will appear again on each feature.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel',
+                              style: TextStyle(color: Colors.white60)),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Show guides'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok != true || !context.mounted) return;
                   await GuideService.resetAll(GuideService.allKeys);
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
