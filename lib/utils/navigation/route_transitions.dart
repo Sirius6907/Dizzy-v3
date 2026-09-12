@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../design/dizzy_tokens.dart';
+
 /// A premium, liquid-like circular reveal transition. 
 /// The new screen expands like a drop of liquid from the exact point the user tapped,
 /// while the old screen scales back slightly into the distance.
@@ -13,10 +15,13 @@ class LiquidRevealRoute extends PageRouteBuilder {
     this.tapPosition,
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: const Duration(milliseconds: 750), // Slower for that fluid, majestic feel
-          reverseTransitionDuration: const Duration(milliseconds: 650),
+          // Polish P11: frozen scale (hero in, slow out) — majestic feel kept.
+          transitionDuration: DizzyMotion.hero,
+          reverseTransitionDuration: DizzyMotion.slow,
           opaque: true, // During transition it will still show the previous route, but stops rendering it when finished!
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Polish P11: reduced-motion → snap, no liquid sweep.
+            if (MediaQuery.disableAnimationsOf(context)) return child;
             // A highly organic, fluid curve (starts fast, very long smooth tail)
             final curve = CurvedAnimation(
               parent: animation,
@@ -106,10 +111,13 @@ class CinematicSlideRoute extends PageRouteBuilder {
     required this.page,
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: const Duration(milliseconds: 600),
-          reverseTransitionDuration: const Duration(milliseconds: 500),
+          // Polish P11: frozen scale (slow in, reverse out).
+          transitionDuration: DizzyMotion.slow,
+          reverseTransitionDuration: DizzyMotion.reverse,
           opaque: true,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Polish P11: reduced-motion → snap, no slide/fade sweep.
+            if (MediaQuery.disableAnimationsOf(context)) return child;
             // Incoming page: slide from right + fade in
             final inCurve = CurvedAnimation(
               parent: animation,
