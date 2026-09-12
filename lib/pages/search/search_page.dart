@@ -8,7 +8,9 @@ import '../../models/movie/movie_section.dart';
 import '../../models/stream/stream_model.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/home/home_page_settings.dart';
+import '../../services/search/search_history_helper.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../design/dizzy_tokens.dart';
 import '../../widgets/movie/movie_slider_section.dart';
 import '../../widgets/search/magnet_files_view.dart';
 import '../ai/wewatch_quiz_page.dart';
@@ -59,16 +61,12 @@ class _SearchPageState extends State<SearchPage> {
     if (trimmed.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
     final history = prefs.getStringList('search_history') ?? [];
-    // v1.2.0-T2.3 (PRD FR-3): cap 50 stored, dedupe bumps re-search to top.
-    history.remove(trimmed);
-    history.insert(0, trimmed);
-    while (history.length > 50) {
-      history.removeLast();
-    }
-    await prefs.setStringList('search_history', history);
+    // Polish P6: single rule — 50 stored, bump-to-top (see helper).
+    final next = SearchHistoryHelper.add(history, trimmed);
+    await prefs.setStringList('search_history', next);
     if (mounted) {
       setState(() {
-        _searchHistory = history;
+        _searchHistory = next;
       });
     }
   }
@@ -200,7 +198,7 @@ class _SearchPageState extends State<SearchPage> {
       });
     }
 
-    _debounce = Timer(const Duration(milliseconds: 600), () {
+    _debounce = Timer(DizzyMotion.slow, () {
       if (trimmed != _lastQuery) {
         _performSearch(trimmed);
       }
@@ -417,14 +415,31 @@ class _SearchPageState extends State<SearchPage> {
                     size: 64,
                     color: Colors.white.withValues(alpha: 0.2),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: DizzySpace.md),
                   Text(
                     'No results for "$_lastQuery"',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontSize: DizzyType.subtitle,
+                      fontWeight: DizzyType.wMedium,
                     ),
+                  ),
+                  // Polish P6: 2nd tap = back to suggestions (Easy English).
+                  const SizedBox(height: DizzySpace.xs),
+                  const Text(
+                    'Check spelling, or try a shorter name.',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: DizzyType.body,
+                    ),
+                  ),
+                  const SizedBox(height: DizzySpace.sm),
+                  TextButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      _onSearchChanged('');
+                    },
+                    child: const Text('Clear search'),
                   ),
                 ],
               ),
@@ -491,14 +506,17 @@ class _SearchPageState extends State<SearchPage> {
           ),
           const SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: DizzySpace.md),
             child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _searchHistory.take(10).map((query) {
-                return InputChip(
+              spacing: DizzySpace.xs,
+              runSpacing: DizzySpace.xs,
+              children: SearchHistoryHelper.shown(_searchHistory).map((query) {
+                return Semantics(
+                  button: true,
+                  label: 'Search again for $query',
+                  child: InputChip(
                   label: Text(query),
-                  labelStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                  labelStyle: const TextStyle(color: Colors.white, fontSize: DizzyType.caption, fontWeight: DizzyType.wMedium),
                   backgroundColor: Colors.white.withValues(alpha: 0.07),
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                   onPressed: () {
@@ -508,7 +526,8 @@ class _SearchPageState extends State<SearchPage> {
                   onDeleted: () => _removeSearchHistory(query),
                   deleteIconColor: Colors.white38,
                   deleteIcon: const Icon(Icons.close_rounded, size: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: DizzyRadius.mdAll),
+                ),
                 );
               }).toList(),
             ),
