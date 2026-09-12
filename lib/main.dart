@@ -28,6 +28,7 @@ import './services/audiobook/audiobook_settings.dart';
 import './services/home/home_page_settings.dart';
 import './services/iptv/iptv_controller.dart';
 import './services/iptv/iptv_settings.dart';
+import './utils/a11y/a11y.dart';
 import './services/manga/manga_settings.dart';
 import './services/music/music_download_service.dart';
 import './services/music/music_settings.dart';
@@ -180,6 +181,13 @@ class _DizzyAppState extends State<DizzyApp>
           theme: AppThemeService.createThemeData(palette),
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             overscroll: false,
+          ),
+          // Polish P12: 200% font safety rail — layouts never break,
+          // TalkBack + focus order untouched.
+          builder: (context, child) =>
+              MediaQuery.withClampedTextScaling(
+            maxScaleFactor: DizzyA11y.kMaxTextScale,
+            child: child ?? const SizedBox.shrink(),
           ),
           home: const HomePage(),
         );
