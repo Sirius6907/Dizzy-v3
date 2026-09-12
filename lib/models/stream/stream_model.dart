@@ -1,5 +1,36 @@
 /// Models for Stremio stream sources.
 
+/// One playable quality level of a source (P9 contract).
+///
+/// Filled when known: HLS master playlists (parsed lazily by the player),
+/// multi-file providers (extractors attach directly). Empty = single-shot
+/// source — the player treats it exactly like before (progressive switch).
+class Rendition {
+  /// Display badge: '480p', '720p', '1080p', '1440p', '2160p'.
+  final String label;
+
+  /// Direct URL of this rendition (variant playlist or file).
+  final String url;
+
+  /// Bits per second when known, else 0.
+  final int bitrate;
+
+  const Rendition({
+    required this.label,
+    required this.url,
+    this.bitrate = 0,
+  });
+
+  factory Rendition.fromJson(Map<String, dynamic> json) => Rendition(
+        label: json['label']?.toString() ?? '',
+        url: json['url']?.toString() ?? '',
+        bitrate: int.tryParse(json['bitrate']?.toString() ?? '') ?? 0,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'label': label, 'url': url, 'bitrate': bitrate};
+}
+
 class StreamSource {
   final String? name;
   final String? title;
@@ -13,6 +44,9 @@ class StreamSource {
   final List<String>? sources;
   Map<String, String>? headers;
 
+  /// Known renditions, best-first preferred (P9 — empty = single-shot).
+  final List<Rendition> renditions;
+
   StreamSource({
     this.name,
     this.title,
@@ -25,6 +59,7 @@ class StreamSource {
     this.behaviorHints,
     this.sources,
     this.headers,
+    this.renditions = const [],
   });
 
   factory StreamSource.fromJson(Map<String, dynamic> json, String addonName) {
@@ -70,7 +105,25 @@ class StreamSource {
       behaviorHints: hints,
       sources: srcList,
       headers: headersMap,
+      renditions: _parseRenditions(json['renditions']),
     );
+  }
+
+  /// Fail-soft: malformed entries are skipped, never crash the scrape.
+  static List<Rendition> _parseRenditions(dynamic raw) {
+    if (raw is! List) return const [];
+    final out = <Rendition>[];
+    for (final e in raw) {
+      if (e is Map<String, dynamic>) {
+        final r = Rendition.fromJson(e);
+        if (r.url.isNotEmpty) out.add(r);
+      } else if (e is Map) {
+        final r = Rendition.fromJson(
+            e.map((k, v) => MapEntry(k.toString(), v)));
+        if (r.url.isNotEmpty) out.add(r);
+      }
+    }
+    return out;
   }
 
   StreamSource copyWith({
@@ -85,6 +138,7 @@ class StreamSource {
     Map<String, dynamic>? behaviorHints,
     List<String>? sources,
     Map<String, String>? headers,
+    List<Rendition>? renditions,
   }) {
     return StreamSource(
       name: name ?? this.name,
@@ -98,6 +152,7 @@ class StreamSource {
       behaviorHints: behaviorHints ?? this.behaviorHints,
       sources: sources ?? this.sources,
       headers: headers ?? this.headers,
+      renditions: renditions ?? this.renditions,
     );
   }
 

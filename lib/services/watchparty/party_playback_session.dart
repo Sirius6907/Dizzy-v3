@@ -92,21 +92,28 @@ class PartyPlaybackSession {
   /// v1.2.0-P2: host announces "I am now playing X" (any title, any time).
   /// One call does all three: local session state + realtime event for guests
   /// + DB "now watching" row (fail-soft each). Unlimited titles per room.
+  /// P10: [prefetchReady]=true marks prefetch-verified titles (guest prewarms).
+  /// [previewOnly]=true sends ONLY the realtime event (upcoming-title hint):
+  /// local session + DB row stay untouched so the real announce still fires.
   Future<void> announceMedia({
     required String ref,
     String? title,
     int? season,
     int? episode,
+    bool prefetchReady = false,
+    bool previewOnly = false,
   }) async {
     final s = PartySession.instance;
     if (!s.inParty || !s.isHost) return;
-    s.switchMedia(mediaRef: ref, mediaTitle: title, season: season, episode: episode);
-    // ignore: unawaited_futures
-    WatchPartyService.updateCurrentMedia(
-      roomId: s.room!.roomId,
-      ref: ref,
-      title: title,
-    );
+    if (!previewOnly) {
+      s.switchMedia(mediaRef: ref, mediaTitle: title, season: season, episode: episode);
+      // ignore: unawaited_futures
+      WatchPartyService.updateCurrentMedia(
+        roomId: s.room!.roomId,
+        ref: ref,
+        title: title,
+      );
+    }
     try {
       await WatchPartyService.sendControl(
         type: 'media_switch',
@@ -119,6 +126,7 @@ class PartyPlaybackSession {
           positionMs: 0,
           playing: true,
           hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+          prefetchReady: prefetchReady,
         ).toJson()),
       );
     } catch (_) {
@@ -198,6 +206,10 @@ class PartyPlaybackSession {
       try {
         final msg = WatchSyncMessage.fromJson(
             Map<String, dynamic>.from(jsonDecode(event.text!)));
+        // P10: ready-hint is GuestFollowService's (prewarm only) — the player
+        // stays quiet until the real switch lands. Never set guest media early:
+        // that would make the follow-service skip the real open as "same".
+        if (msg.prefetchReady) return;
         if (msg.isUsable) {
           s.setGuestMedia(
             mediaRef: msg.mediaRef,

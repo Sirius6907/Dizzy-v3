@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../../models/stream/stream_model.dart';
 import '../../models/movie/video.dart';
 import '../player/dub_mode_service.dart';
+import '../player/hls_rendition_parser.dart';
 import 'dub_filter.dart';
 import 'stream_probe_race.dart';
 import 'stream_service.dart';
@@ -145,7 +147,7 @@ class NextEpisodeEngine {
         // Trusted embedded debrid links need no probe — pick directly.
         // (Old code offered them to a race then close()d it synchronously,
         // which settled the winner to null before probes ran.)
-        _prefetchedSource = embeddedHindi.first;
+        _prefetchedSource = await withRenditions(embeddedHindi.first);
         debugPrint('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
         _running = false;
         return;
@@ -212,6 +214,12 @@ class NextEpisodeEngine {
     _prefetchedSource = await winnerFuture;
     _running = false;
 
+    // P10: the winner carries its rendition ladder when known, so the
+    // host's next-play AND any guest switch off it start instantly.
+    if (_prefetchedSource != null) {
+      _prefetchedSource = await withRenditions(_prefetchedSource!);
+    }
+
     if (_prefetchedSource != null) {
       debugPrint('[NextEpisodeEngine] Prefetch ready: '
           '${_prefetchedSource!.name ?? "?"} (${_prefetchedSource!.addonName}) '
@@ -219,6 +227,41 @@ class NextEpisodeEngine {
     } else {
       debugPrint('[NextEpisodeEngine] No playable source found for next episode.');
     }
+  }
+
+  /// P10: attach the HLS rendition ladder to [source] when it's a master
+  /// with no renditions yet. Fail-soft: any failure returns [source]
+  /// unchanged (playback never waits on the ladder).
+  /// [fetchBody] is injectable for tests (defaults to a real GET).
+  static Future<StreamSource> withRenditions(
+    StreamSource source, {
+    Future<String?> Function(Uri uri, Map<String, String> headers)? fetchBody,
+  }) async {
+    final url = source.url ?? '';
+    if (!url.toLowerCase().split('?').first.split('#').first.endsWith('.m3u8')) {
+      return source;
+    }
+    if (source.renditions.isNotEmpty) return source;
+    try {
+      final body = await (fetchBody != null
+          ? fetchBody(Uri.parse(url), source.headers ?? const {})
+          : _getMasterBody(Uri.parse(url), source.headers ?? const {}));
+      if (body == null || body.isEmpty) return source;
+      final parsed = HlsRenditionParser.parseMaster(body, url);
+      if (parsed.isEmpty) return source;
+      return source.copyWith(renditions: parsed);
+    } catch (_) {
+      return source;
+    }
+  }
+
+  static Future<String?> _getMasterBody(
+      Uri uri, Map<String, String> headers) async {
+    final res = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) return null;
+    return res.body;
   }
 
   /// Cancels the in-flight cycle and clears the prefetched state.

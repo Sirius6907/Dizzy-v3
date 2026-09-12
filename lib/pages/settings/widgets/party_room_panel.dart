@@ -29,6 +29,8 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   bool _sending = false;
   bool _locked = false;
   int _memberTick = 0;
+  // P11: message being replied to (null = fresh message).
+  PartyChatMessage? _replyTo;
   // Perf: memoized members query — rebuilds (e.g. voice bar updates in the
   // parent) must NOT refire Supabase. Refresh button resets it.
   Future<List<PartyMember>>? _membersFuture;
@@ -184,6 +186,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   Widget _chat() => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _pinnedBanner(),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 220),
             child: StreamBuilder<List<PartyChatMessage>>(
@@ -208,6 +211,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
             ),
           ),
           const SizedBox(height: 8),
+          if (_replyTo != null) _replyStrip(),
           Row(
             children: [
               Expanded(
@@ -240,48 +244,257 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
         ],
       );
 
-  Widget _bubble(PartyChatMessage m) {
-    final mine = m.senderId == _myUid;
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        constraints: const BoxConstraints(maxWidth: 440),
-        decoration: BoxDecoration(
-          color: mine
-              ? const Color(0xFF8B5CF6).withValues(alpha: 0.35)
-              : const Color(0xFF0D1017),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
+  /// P11: host's pinned note ("interval in 5 min"). Host can unpin.
+  Widget _pinnedBanner() => StreamBuilder<String?>(
+        stream: PartyChatService.watchPinned(_roomId),
+        builder: (c, snap) {
+          final text = snap.data;
+          if (text == null || text.isEmpty) return const SizedBox.shrink();
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: Colors.amber.withValues(alpha: 0.4)),
+            ),
+            child: Row(
               children: [
-                Text(m.displayName,
-                    style: const TextStyle(
-                        color: Colors.white54, fontSize: 10)),
+                const Text('📌', style: TextStyle(fontSize: 13)),
                 const SizedBox(width: 6),
-                Text(
-                  '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                      color: Colors.white38, fontSize: 9),
+                Expanded(
+                  child: Text(text,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
                 ),
+                if (widget.isHost)
+                  GestureDetector(
+                    onTap: () async {
+                      await PartyChatService.setPinned(_roomId, null);
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: Icon(Icons.close_rounded,
+                          color: Colors.white54, size: 16),
+                    ),
+                  ),
               ],
             ),
-            Text(m.body,
+          );
+        },
+      );
+
+  /// P11: "replying to X" strip above the composer.
+  Widget _replyStrip() {
+    final r = _replyTo!;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text('↩ ${r.displayName}: ${r.body}',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 13)),
-          ],
+                    color: Colors.white70, fontSize: 11),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _replyTo = null),
+            child: const Icon(Icons.close_rounded,
+                color: Colors.white54, size: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bubble(PartyChatMessage m) {
+    final mine = m.senderId == _myUid;
+    return GestureDetector(
+      onLongPress: () => _messageActions(m),
+      child: Align(
+        alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          constraints: const BoxConstraints(maxWidth: 440),
+          decoration: BoxDecoration(
+            color: mine
+                ? const Color(0xFF8B5CF6).withValues(alpha: 0.35)
+                : const Color(0xFF0D1017),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(m.displayName,
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 10)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 9),
+                  ),
+                ],
+              ),
+              // P11: quoted parent (server-filled preview, no fetch).
+              if (m.replyPreview != null && m.replyPreview!.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border(
+                      left: BorderSide(
+                          color: const Color(0xFF8B5CF6)
+                              .withValues(alpha: 0.7),
+                          width: 2),
+                    ),
+                  ),
+                  child: Text('↩ ${m.replyName}: ${m.replyPreview}',
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 11),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(m.body,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 13)),
+              ),
+              // P11: reaction chips (tap = toggle mine).
+              if (m.reactions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      for (final e in m.reactions.entries)
+                        GestureDetector(
+                          onTap: () =>
+                              PartyChatService.toggleReaction(m.id, e.key),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white
+                                  .withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text('${e.key} ${e.value}',
+                                style: const TextStyle(fontSize: 11)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// P11: long-press → reply / react / pin (host).
+  Future<void> _messageActions(PartyChatMessage m) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF161A23),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (c) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(m.body,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                children: [
+                  for (final e in PartyChatService.allowedEmoji)
+                    GestureDetector(
+                      onTap: () => Navigator.pop(c, 'react:$e'),
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color:
+                              Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(e,
+                            style: const TextStyle(fontSize: 20)),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pop(c, 'reply'),
+                      icon: const Icon(Icons.reply_rounded, size: 16),
+                      label: const Text('Reply'),
+                    ),
+                  ),
+                  if (widget.isHost) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(c, 'pin'),
+                        icon: const Icon(Icons.push_pin_rounded,
+                            size: 16),
+                        label: const Text('Pin'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'reply') {
+      setState(() => _replyTo = m);
+    } else if (action == 'pin') {
+      final ok = await PartyChatService.setPinned(_roomId, m.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ok ? 'Pinned for everyone. 📌' : 'Pin failed.')));
+    } else if (action.startsWith('react:')) {
+      await PartyChatService.toggleReaction(m.id, action.substring(6));
+    }
   }
 
   Widget _controls() => Wrap(
@@ -318,7 +531,8 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
     final text = _input.text;
     if (!PartyChatService.validBody(text) || _sending) return;
     setState(() => _sending = true);
-    final ok = await PartyChatService.sendMessage(_roomId, text);
+    final ok = await PartyChatService.sendMessage(_roomId, text,
+        replyToId: _replyTo?.id);
     if (mounted) setState(() => _sending = false);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -326,6 +540,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
       return;
     }
     _input.clear();
+    if (mounted) setState(() => _replyTo = null);
   }
 
   Future<void> _toggleLock() async {

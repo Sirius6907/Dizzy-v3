@@ -25,6 +25,24 @@ class GuestAutoOpen {
   static String? _handlingRef;
   static const _resolveTimeout = Duration(seconds: 20);
 
+  /// P10: pre-resolved metadata cache (ref → detail). A `ready:true` hint
+  /// warms it; the real switch then opens in ~1s (no resolve wait).
+  /// Bounded (forget oldest past 8) — lobby-sitting guests included.
+  static final Map<String, MovieDetail> _detailCache = {};
+
+  /// Test/maintenance hook: read the warmed entry (null when cold).
+  static MovieDetail? cachedDetail(String ref) => _detailCache[ref];
+
+  /// Test hook: seed the cache without network.
+  static void cacheDetail(String ref, MovieDetail detail) {
+    _detailCache[ref] = detail;
+    while (_detailCache.length > 8) {
+      _detailCache.remove(_detailCache.keys.first);
+    }
+  }
+
+  static void clearCache() => _detailCache.clear();
+
   static bool get busy => _handlingRef != null;
 
   /// Parsed host ref → what to fetch. Pure (unit-tested).
@@ -82,7 +100,8 @@ class GuestAutoOpen {
       _toast('Host is playing something unknown — stay, next title follows.');
       return;
     }
-    final detail = await _resolveDetail(target);
+    // P10: warmed by the ready-hint? Skip the resolve wait (~1s feel).
+    final detail = cachedDetail(msg.mediaRef) ?? await _resolveDetail(target);
     if (detail == null) {
       _toast("Couldn't find this one — host, pick a popular title.");
       return;
@@ -118,6 +137,21 @@ class GuestAutoOpen {
       season: target.season,
       episode: target.episode,
     );
+  }
+
+  /// P10: `ready:true` hint → pre-RESOLVE metadata only (NO player open,
+  /// NO video preload — bandwidth stays untouched). Warms [_detailCache]
+  /// so the real switch opens in ~1s. Silent on failure (real switch
+  /// resolves normally).
+  static Future<void> prewarm(WatchSyncMessage msg) async {
+    if (!msg.isUsable || cachedDetail(msg.mediaRef) != null) return;
+    try {
+      final target = parseRef(msg.mediaRef,
+          title: msg.mediaTitle, season: msg.season, episode: msg.episode);
+      if (target == null) return;
+      final detail = await _resolveDetail(target).timeout(_resolveTimeout);
+      if (detail != null) cacheDetail(msg.mediaRef, detail);
+    } catch (_) {}
   }
 
   /// tmdb/imdb ref → full MovieDetail via Cinemeta (keyless).
@@ -206,6 +240,11 @@ class GuestFollowService {
         if (decoded is! Map) return;
         final msg = WatchSyncMessage.fromJson(
             Map<String, dynamic>.from(decoded));
+        // P10: prefetch-verified hint → warm metadata only (no open).
+        if (msg.isUsable && msg.prefetchReady && msg.mediaRef != s.mediaRef) {
+          await GuestAutoOpen.prewarm(msg);
+          return;
+        }
         if (msg.isUsable && msg.mediaRef != s.mediaRef) {
           await GuestAutoOpen.handle(msg);
         }
@@ -216,5 +255,6 @@ class GuestFollowService {
   static Future<void> disarm() async {
     await _sub?.cancel();
     _sub = null;
+    GuestAutoOpen.clearCache(); // P10: warmed entries die with the party
   }
 }

@@ -68,6 +68,10 @@ class WatchSyncMessage {
   final String? subTrack;
   final int hostSentAtMs;
 
+  /// P10: host verified this title via prefetch (source proven playable).
+  /// Guests pre-RESOLVE metadata on sight (no video pre-open — bandwidth).
+  final bool prefetchReady;
+
   const WatchSyncMessage({
     this.version = 2,
     required this.mediaRef,
@@ -80,6 +84,7 @@ class WatchSyncMessage {
     this.audioTrack,
     this.subTrack,
     required this.hostSentAtMs,
+    this.prefetchReady = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -95,6 +100,7 @@ class WatchSyncMessage {
         'audio_track': audioTrack,
         'sub_track': subTrack,
         'host_sent_at': hostSentAtMs,
+        'prefetch_ready': prefetchReady,
       };
 
   factory WatchSyncMessage.fromJson(Map<String, dynamic> json) =>
@@ -112,6 +118,8 @@ class WatchSyncMessage {
         subTrack: json['sub_track']?.toString(),
         hostSentAtMs:
             int.tryParse(json['host_sent_at']?.toString() ?? '') ?? 0,
+        // Old clients never send the key → false (no behavior change).
+        prefetchReady: json['prefetch_ready'] == true,
       );
 
   bool get isUsable => version >= 1 && version <= 2 && mediaRef.isNotEmpty;
