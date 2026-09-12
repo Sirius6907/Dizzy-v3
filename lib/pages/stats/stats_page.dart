@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../design/dizzy_tokens.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
 import '../../services/home/genre_preference_service.dart';
 import '../../services/stats/watch_stats.dart';
+import '../../services/stats/wrap_copy.dart';
 import '../../services/theme/app_theme_service.dart';
 
 /// F5 (v1.1.9): "My Dizzy Wrap" — Spotify-Wrapped style stats page.
@@ -54,7 +56,8 @@ class StatsPage extends StatelessWidget {
                   _statTile(palette, Icons.check_circle_rounded,
                       '${stats.episodesFinished}', 'Finished (90%+)'),
                   _statTile(palette, Icons.local_fire_department_rounded,
-                      '${stats.currentStreakDays}d', 'Day streak'),
+                      '${stats.currentStreakDays}d',
+                      WrapCopy.streakLine(stats.currentStreakDays)),
                   _statTile(
                       palette,
                       Icons.tv_rounded,
@@ -72,8 +75,12 @@ class StatsPage extends StatelessWidget {
   }
 
   Widget _heroCard(dynamic palette, WatchStats stats) {
-    return Container(
-      padding: const EdgeInsets.all(22),
+    // Polish P19: editorial cheer under the big number + tokens.
+    final cheer = WrapCopy.hoursCheer(stats.minutesWatched);
+    return Semantics(
+      label: 'Total watch time ${stats.hoursLabel}. $cheer',
+      child: Container(
+      padding: const EdgeInsets.all(DizzySpace.lg - 2),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -83,7 +90,7 @@ class StatsPage extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: DizzyRadius.xlAll,
         border: Border.all(
           color: palette.primaryColor.withValues(alpha: 0.30),
         ),
@@ -92,17 +99,23 @@ class StatsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('⏱️ Total watch time',
-              style: TextStyle(color: Colors.white70, fontSize: 14)),
-          const SizedBox(height: 4),
+              style: TextStyle(
+                  color: Colors.white70, fontSize: DizzyType.body)),
+          const SizedBox(height: DizzySpace.xxs),
           Text(
             stats.hoursLabel,
             style: const TextStyle(
-                fontSize: 44, fontWeight: FontWeight.w900, color: Colors.white),
+                fontSize: DizzyType.display + 12,
+                fontWeight: DizzyType.wBold,
+                color: Colors.white),
           ),
-          const Text('across everything you watch on Dizzy',
-              style: TextStyle(color: Colors.white60, fontSize: 13)),
+          const SizedBox(height: DizzySpace.xxs),
+          Text(cheer,
+              style: const TextStyle(
+                  color: Colors.white60, fontSize: DizzyType.caption)),
         ],
       ),
+    ),
     );
   }
 
@@ -152,9 +165,10 @@ class StatsPage extends StatelessWidget {
                   color: Colors.white)),
           const SizedBox(height: 12),
           if (topGenres.isEmpty)
-            const Text(
-              'Watch something and your taste profile builds here.',
-              style: TextStyle(color: Colors.white60, fontSize: 13),
+            Text(
+              WrapCopy.emptyTaste(),
+              style: const TextStyle(
+                  color: Colors.white60, fontSize: DizzyType.body - 1),
             )
           else
             for (final g in topGenres)
