@@ -452,4 +452,55 @@ class MusicDownloadService extends ChangeNotifier {
       debugPrint('[MusicDownloadService] Save error: $e');
     }
   }
+
+  Future<int> getTotalDownloadsSizeBytes() async {
+    int total = 0;
+    for (final track in _downloadedTracks) {
+      final audioFile = File(track.localAudioPath);
+      if (audioFile.existsSync()) {
+        total += audioFile.lengthSync();
+      }
+      if (track.localCoverPath.isNotEmpty) {
+        final coverFile = File(track.localCoverPath);
+        if (coverFile.existsSync()) {
+          total += coverFile.lengthSync();
+        }
+      }
+    }
+    return total;
+  }
+
+  Future<String> getFormattedTotalStorage() async {
+    final bytes = await getTotalDownloadsSizeBytes();
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+    }
+  }
+
+  Future<void> deleteAllDownloads() async {
+    for (final track in List<DownloadedMusicTrack>.from(_downloadedTracks)) {
+      await deleteDownloadedTrack(track.id);
+    }
+    notifyListeners();
+  }
+
+  void downloadAllLikedTracks(List<MusicTrack> likedTracks) {
+    for (final track in likedTracks) {
+      if (!isDownloaded(track.id) && !isQueued(track.id)) {
+        queueTrack(track);
+      }
+    }
+  }
+
+  /// Background smart pre-cacher for the upcoming track in the playlist queue
+  Future<void> precacheUpcomingTrack(MusicTrack nextTrack) async {
+    if (isDownloaded(nextTrack.id)) return;
+    try {
+      await MusicService.instance.getAudioStream(nextTrack);
+    } catch (_) {}
+  }
 }

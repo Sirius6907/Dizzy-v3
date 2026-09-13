@@ -11,6 +11,9 @@ import 'music_service.dart';
 import 'youtube_stream_http.dart';
 import '../discord/discord_rpc_service.dart';
 import '../player/player_settings.dart';
+import 'music_settings.dart';
+import 'music_equalizer_service.dart';
+import 'music_stats_service.dart';
 
 enum MusicRepeatMode { off, all, one }
 
@@ -47,6 +50,7 @@ class MusicPlayerController extends ChangeNotifier {
   int _activeLyricIndex = -1;
 
   // Getters
+  Player? get player => _player;
   MusicTrack? get currentTrack => _currentTrack;
   List<MusicTrack> get playlist => _playlist;
   int get currentIndex => _currentIndex;
@@ -138,6 +142,7 @@ class MusicPlayerController extends ChangeNotifier {
     _currentTrack = track;
     _isLoading = true;
     _errorMessage = null;
+    _hasPrecachedNext = false;
     _position = startPosition ?? Duration.zero;
     _duration = track.durationSeconds > 0
         ? Duration(seconds: track.durationSeconds)
@@ -146,8 +151,9 @@ class MusicPlayerController extends ChangeNotifier {
     _activeLyricIndex = -1;
     notifyListeners();
 
-    // Add to recent history
+    // Add to recent history & stats
     MusicLibraryService.instance.addToRecent(track);
+    MusicStatsService.instance.recordTrackPlay(track);
 
     // Fetch lyrics asynchronously
     _fetchLyricsForTrack(track);
@@ -212,6 +218,8 @@ class MusicPlayerController extends ChangeNotifier {
         player.stream.position.listen((pos) {
           _position = pos;
           _updateActiveLyricIndex();
+          _checkCrossfadeTransition(pos, _duration);
+          _checkPrecacheNext(pos, _duration);
           notifyListeners();
         }),
         player.stream.duration.listen((dur) {
@@ -251,6 +259,7 @@ class MusicPlayerController extends ChangeNotifier {
       _player = player;
       _isLoading = false;
       _isPlaying = true;
+      MusicEqualizerService.instance.applyFilters();
       notifyListeners();
     } catch (e) {
       _isLoading = false;
@@ -306,12 +315,65 @@ class MusicPlayerController extends ChangeNotifier {
     }
   }
 
+  bool _isAutoAdvancing = false;
+  bool _hasPrecachedNext = false;
+
+  void _checkPrecacheNext(Duration pos, Duration dur) {
+    if (_hasPrecachedNext || dur <= const Duration(seconds: 15)) return;
+    if (pos >= dur * 0.5 && upcomingTracks.isNotEmpty) {
+      _hasPrecachedNext = true;
+      MusicDownloadService.instance.precacheUpcomingTrack(upcomingTracks.first);
+    }
+  }
+
+  void _checkCrossfadeTransition(Duration pos, Duration dur) {
+    if (_isAutoAdvancing || dur <= const Duration(seconds: 15)) return;
+    final crossfadeSec = MusicSettings.crossfadeSeconds.value;
+    if (crossfadeSec <= 0.0) return;
+
+    final remaining = dur - pos;
+    if (remaining.inMilliseconds <= (crossfadeSec * 1000) && remaining.inMilliseconds > 250) {
+      if (hasNext || _repeatMode == MusicRepeatMode.all) {
+        _isAutoAdvancing = true;
+        _executeCrossfadeNext();
+      }
+    }
+  }
+
+  Future<void> _executeCrossfadeNext() async {
+    try {
+      final startVol = _volume;
+      for (int i = 6; i >= 0; i--) {
+        await _player?.setVolume((startVol * (i / 6.0)) * 100.0);
+        await Future.delayed(const Duration(milliseconds: 60));
+      }
+      await playNext();
+      for (int i = 1; i <= 6; i++) {
+        await _player?.setVolume((startVol * (i / 6.0)) * 100.0);
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+    } catch (_) {
+      await playNext();
+    } finally {
+      _isAutoAdvancing = false;
+    }
+  }
+
   Future<void> play() async {
     if (_player != null) {
-      await _player!.play();
-      _isPlaying = true;
-      _updateDiscordRpc(isPaused: false);
-      notifyListeners();
+      try {
+        await _player?.setVolume(_volume * 25.0);
+        await _player!.play();
+        _isPlaying = true;
+        _updateDiscordRpc(isPaused: false);
+        notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 40));
+        await _player?.setVolume(_volume * 70.0);
+        await Future.delayed(const Duration(milliseconds: 40));
+        await _player?.setVolume(_volume * 100.0);
+      } catch (_) {
+        await _player?.play();
+      }
     } else if (_currentTrack != null) {
       await _loadAndPlayTrack(_currentTrack!);
     }
@@ -319,7 +381,16 @@ class MusicPlayerController extends ChangeNotifier {
 
   Future<void> pause() async {
     if (_player != null) {
-      await _player!.pause();
+      try {
+        await _player?.setVolume(_volume * 50.0);
+        await Future.delayed(const Duration(milliseconds: 35));
+        await _player?.setVolume(_volume * 15.0);
+        await Future.delayed(const Duration(milliseconds: 35));
+        await _player!.pause();
+        await _player?.setVolume(_volume * 100.0);
+      } catch (_) {
+        await _player?.pause();
+      }
       _isPlaying = false;
       _updateDiscordRpc(isPaused: true);
       notifyListeners();
@@ -429,6 +500,68 @@ class MusicPlayerController extends ChangeNotifier {
     _playlist.clear();
     _currentIndex = 0;
     notifyListeners();
+  }
+
+  /// History of tracks played in this session before current track
+  List<MusicTrack> get historyTracks {
+    if (_currentIndex <= 0 || _playlist.isEmpty) return const [];
+    return _playlist.sublist(0, _currentIndex);
+  }
+
+  /// Upcoming tracks in queue after current track
+  List<MusicTrack> get upcomingTracks {
+    if (_currentIndex >= _playlist.length - 1 || _playlist.isEmpty) return const [];
+    return _playlist.sublist(_currentIndex + 1);
+  }
+
+  /// Reorder upcoming queue items
+  void reorderUpcomingQueue(int oldIndex, int newIndex) {
+    if (_currentIndex >= _playlist.length - 1) return;
+    final upcomingStartIndex = _currentIndex + 1;
+    final actualOld = upcomingStartIndex + oldIndex;
+    var actualNew = upcomingStartIndex + newIndex;
+    if (actualOld < upcomingStartIndex || actualOld >= _playlist.length) return;
+    if (actualOld < actualNew) {
+      actualNew -= 1;
+    }
+    final item = _playlist.removeAt(actualOld);
+    _playlist.insert(actualNew.clamp(upcomingStartIndex, _playlist.length), item);
+    notifyListeners();
+  }
+
+  /// Add track to play immediately after current track
+  void playTrackNext(MusicTrack track) {
+    if (_playlist.isEmpty) {
+      playTrack(track);
+      return;
+    }
+    final nextIndex = _currentIndex + 1;
+    _playlist.insert(nextIndex.clamp(0, _playlist.length), track);
+    _originalPlaylist.add(track);
+    notifyListeners();
+  }
+
+  /// Add track to the end of queue
+  void addTrackToQueue(MusicTrack track) {
+    _playlist.add(track);
+    _originalPlaylist.add(track);
+    notifyListeners();
+  }
+
+  /// Jump straight to a specific index in playlist
+  Future<void> jumpToQueueIndex(int index) async {
+    if (index >= 0 && index < _playlist.length) {
+      _currentIndex = index;
+      await _loadAndPlayTrack(_playlist[_currentIndex]);
+    }
+  }
+
+  /// Clear all upcoming tracks after the currently playing one
+  void clearUpcomingQueue() {
+    if (_currentIndex < _playlist.length - 1) {
+      _playlist = _playlist.sublist(0, _currentIndex + 1);
+      notifyListeners();
+    }
   }
 
   void _updateDiscordRpc({bool? isPaused}) {
