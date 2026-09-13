@@ -15,6 +15,7 @@ import '../../widgets/movie/movie_slider_section.dart';
 import '../../widgets/search/magnet_files_view.dart';
 import '../ai/wewatch_quiz_page.dart';
 import '../player/player_screen.dart';
+import 'universal_spotlight_modal.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -372,6 +373,16 @@ class _SearchPageState extends State<SearchPage> {
                                         },
                                       );
                                     },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.travel_explore_rounded,
+                                      size: 19,
+                                      color: Color(0xFF00E5FF),
+                                    ),
+                                    tooltip: 'Universal Spotlight (Ctrl+K)',
+                                    splashRadius: 18,
+                                    onPressed: () => UniversalSpotlightModal.show(context),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.content_paste_rounded, size: 17),

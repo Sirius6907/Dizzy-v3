@@ -15,6 +15,8 @@ import './services/books/continue_reading_service.dart';
 import './services/books/reader_settings.dart';
 import './services/continue_watching/continue_watching_service.dart';
 import './services/theme/custom_background_service.dart';
+import './services/theme/custom_accent_service.dart';
+import './services/media/global_media_coordinator.dart';
 import './services/theme/dock_settings.dart';
 import './services/theme/glass_settings.dart';
 import './services/player/dub_mode_service.dart';
@@ -45,6 +47,7 @@ import './services/discord/discord_rpc_service.dart';
 import './widgets/updater/update_dialog.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
+import './pages/search/universal_spotlight_modal.dart';
 import './services/system/resource_governor.dart';
 import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
@@ -70,10 +73,16 @@ void main() async {
   // Drives PerformanceMode (ambient/glass/buffer shedding) on breach.
   ResourceGovernor.instance.start();
   PerformanceMode.isLowRamDevice = isMobile && await _isLowRamPhone();
-  // P17: Smooth Mode defaults ON for ≤3GB-RAM phones (non-tech default).
+  PerformanceMode.detectDeviceTier(isMobile: isMobile);
+  // P17 / UX3: Smooth Mode & Low-End Mode defaults ON for ≤3GB-RAM phones.
   final prefs = await SharedPreferences.getInstance();
-  final smoothSaved = prefs.getBool('perf_smooth_mode');
-  PerformanceMode.setSmoothMode(smoothSaved ?? PerformanceMode.isLowRamDevice);
+  final lowEndSaved = prefs.getBool('perf_low_end_device_mode');
+  if (lowEndSaved ?? PerformanceMode.isLowRamDevice) {
+    PerformanceMode.setLowEndDeviceMode(true);
+  } else {
+    final smoothSaved = prefs.getBool('perf_smooth_mode');
+    PerformanceMode.setSmoothMode(smoothSaved ?? PerformanceMode.isLowRamDevice);
+  }
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await EnvService.initialize();
   await PlayerSettings.initialize();
@@ -97,6 +106,7 @@ void main() async {
     ContinueReadingService.initialize(),
     ReaderSettings.initialize(),
     CustomBackgroundService.initialize(),
+    CustomAccentService.initialize(),
     DockSettings.initialize(),
     GlassSettings.initialize(),
     HomePageSettings.initialize(),
@@ -122,6 +132,8 @@ void main() async {
   };
   // v1.2.0-T3.2: global error boundary — branded screen, never white-screen.
   installGlobalErrorHandlers(restartApp: () => runApp(const DizzyApp()));
+  // UX5: video<->music conflict resolution (one sound at a time).
+  GlobalMediaCoordinator.instance.attach();
   runApp(const DizzyApp());
 }
 
@@ -238,10 +250,26 @@ class _DizzyAppState extends State<DizzyApp>
           ),
           // Polish P12: 200% font safety rail — layouts never break,
           // TalkBack + focus order untouched.
-          builder: (context, child) =>
-              MediaQuery.withClampedTextScaling(
-            maxScaleFactor: DizzyA11y.kMaxTextScale,
-            child: child ?? const SizedBox.shrink(),
+          // UX1: Universal Spotlight Search via Ctrl+K / Cmd+K
+          builder: (context, child) => Focus(
+            autofocus: true,
+            onKeyEvent: (node, event) {
+              if (event is KeyDownEvent &&
+                  (HardwareKeyboard.instance.isControlPressed ||
+                      HardwareKeyboard.instance.isMetaPressed) &&
+                  event.logicalKey == LogicalKeyboardKey.keyK) {
+                final currentCtx = navigatorKey.currentContext;
+                if (currentCtx != null) {
+                  UniversalSpotlightModal.show(currentCtx);
+                  return KeyEventResult.handled;
+                }
+              }
+              return KeyEventResult.ignored;
+            },
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: DizzyA11y.kMaxTextScale,
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
           home: const HomePage(),
         );

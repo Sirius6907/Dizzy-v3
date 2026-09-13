@@ -1,20 +1,24 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-
-import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/models/movie/movie_detail.dart';
 import 'package:dizzy/models/movie/video.dart';
+import 'package:path_provider/path_provider.dart';
 
-import '../../models/download/download_task_model.dart';
-import '../../services/theme/app_theme_service.dart';
-import '../../services/download/download_service.dart';
-import '../../services/download/download_progress_text.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../models/download/download_task_model.dart';
+import '../../models/music/downloaded_music_track.dart';
+import '../../services/download/download_progress_text.dart';
+import '../../services/download/download_service.dart';
+import '../../services/music/music_download_service.dart';
+import '../../services/music/music_player_controller.dart';
+import '../../services/theme/app_theme_service.dart';
+import '../../utils/download/download_path_helper.dart';
+import '../../utils/perf/image_caps.dart';
+import '../../utils/platform/open_file_location_helper.dart';
+import '../../utils/platform/storage_space_helper.dart';
 import '../../widgets/common/notify.dart';
 import '../../widgets/guide/guide_card.dart';
-import '../../utils/platform/open_file_location_helper.dart';
-import '../../utils/download/download_path_helper.dart';
 import '../player/player_screen.dart';
 
 class DownloadsPage extends StatefulWidget {
@@ -26,19 +30,74 @@ class DownloadsPage extends StatefulWidget {
 
 class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  StorageSpaceInfo? _storageSpace;
+  bool _isCleaningCache = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    MusicDownloadService.instance.addListener(_onMusicChanged);
+    _loadStorageSpace();
     // v1.2.0-T2.6: first-time Downloads guide (skipable, never nags).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       GuideCard.maybeShow(context, 'downloads', AppGuides.downloads);
     });
   }
 
+  void _onMusicChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadStorageSpace() async {
+    try {
+      final path = await DownloadPathHelper.getDownloadsDirectoryPath();
+      final space = await StorageSpaceHelper.getAvailableSpace(path);
+      if (mounted) {
+        setState(() => _storageSpace = space);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _cleanCache() async {
+    if (_isCleaningCache) return;
+    setState(() => _isCleaningCache = true);
+    try {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      final tempDir = await getTemporaryDirectory();
+      if (await tempDir.exists()) {
+        final files = tempDir.listSync(recursive: false);
+        for (final f in files) {
+          try {
+            if (f is File) await f.delete();
+          } catch (_) {}
+        }
+      }
+      await _loadStorageSpace();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cache cleaned successfully! 🧹 Storage freed.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Color(0xFF1E212B),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cache clean failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCleaningCache = false);
+    }
+  }
+
   @override
   void dispose() {
+    MusicDownloadService.instance.removeListener(_onMusicChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -164,6 +223,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                 builder: (context, tasks, _) {
                   final activeCount = tasks.where((t) => !t.isCompleted && !t.isFailed).length;
                   final completedCount = tasks.where((t) => t.isCompleted).length;
+                  final musicCount = MusicDownloadService.instance.downloadedTracks.length;
 
                   return TabBar(
                     controller: _tabController,
@@ -171,10 +231,11 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                     indicatorWeight: 3,
                     labelColor: palette.primaryColor,
                     unselectedLabelColor: Colors.white54,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                     tabs: [
                       Tab(text: 'Active ($activeCount)'),
-                      Tab(text: 'Downloaded ($completedCount)'),
+                      Tab(text: 'Video ($completedCount)'),
+                      Tab(text: 'Music ($musicCount)'),
                     ],
                   );
                 },
@@ -183,6 +244,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
           ),
           body: Column(
             children: [
+              _buildStorageGauge(palette),
               // v1.2.0-T2.2: offline banner — Easy English, no tech words.
               ValueListenableBuilder<bool>(
                 valueListenable: DownloadService.instance.offlineNotifier,
@@ -232,6 +294,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                       children: [
                         _buildActiveList(activeTasks, palette),
                         _buildCompletedList(completedTasks, palette),
+                        _buildMusicDownloadedList(palette),
                       ],
                     );
                   },
@@ -707,5 +770,294 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
         ),
       ),
     );
+  }
+
+  Widget _buildStorageGauge(AppThemePalette palette) {
+    final videoBytes = DownloadService.instance.tasksNotifier.value
+        .where((t) => t.isCompleted)
+        .fold<int>(0, (sum, t) {
+      try {
+        final f = File(t.targetFilePath);
+        return sum + (f.existsSync() ? f.lengthSync() : t.totalBytes);
+      } catch (_) {
+        return sum + t.totalBytes;
+      }
+    });
+    final musicBytes = MusicDownloadService.instance.totalDownloadedSizeBytes;
+    final dizzyTotalBytes = videoBytes + musicBytes;
+
+    final dizzyFormatted = _formatBytes(dizzyTotalBytes);
+    final freeFormatted = _storageSpace != null ? _storageSpace!.freeFormatted : 'Free space checking…';
+
+    double usedRatio = 0.05;
+    if (_storageSpace != null && _storageSpace!.totalBytes > 0) {
+      usedRatio = (dizzyTotalBytes / _storageSpace!.totalBytes).clamp(0.02, 1.0);
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13151D),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.pie_chart_outline_rounded, size: 18, color: palette.primaryColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Dizzy Storage: $dizzyFormatted',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                freeFormatted,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              height: 7,
+              child: LinearProgressIndicator(
+                value: usedRatio,
+                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(palette.primaryColor),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  foregroundColor: const Color(0xFF00E5FF),
+                ),
+                onPressed: _cleanCache,
+                icon: _isCleaningCache
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
+                      )
+                    : const Icon(Icons.cleaning_services_rounded, size: 16),
+                label: const Text('Clean Cache', style: TextStyle(fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  foregroundColor: Colors.white70,
+                ),
+                onPressed: () async {
+                  final dir = await DownloadPathHelper.getDownloadsDirectoryPath();
+                  final opened = await OpenFileLocationHelper.openLocation(dir);
+                  if (!opened && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Folder path: $dir')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.folder_open_rounded, size: 16),
+                label: const Text('Export Downloads', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMusicDownloadedList(AppThemePalette palette) {
+    final tracks = MusicDownloadService.instance.downloadedTracks;
+    if (tracks.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.music_off_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+            const SizedBox(height: 16),
+            const Text(
+              'No offline music yet',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white70),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Songs you download will show up here for offline listening.',
+              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF7C5CFF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => Navigator.maybePop(context),
+              icon: const Icon(Icons.music_note_rounded, size: 18),
+              label: const Text('Explore Music'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      itemCount: tracks.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final track = tracks[index];
+        final sizeFormatted = _formatBytes(track.fileSizeBytes);
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: palette.cardBackgroundColor.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  color: const Color(0xFF1C1E2A),
+                  child: track.localCoverPath.isNotEmpty && File(track.localCoverPath).existsSync()
+                      ? Image.file(
+                          File(track.localCoverPath),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white38),
+                        )
+                      : (track.coverUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: track.coverUrl,
+                              memCacheWidth: 100,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white38),
+                            )
+                          : const Icon(Icons.music_note, color: Colors.white38)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      track.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '${track.artist} • ${track.album}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            track.format.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF00E5FF),
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          sizeFormatted,
+                          style: const TextStyle(color: Colors.white38, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF00E5FF), size: 30),
+                onPressed: () {
+                  MusicPlayerController.instance.playTrack(
+                    track.toMusicTrack(),
+                    playlistQueue: tracks.map((t) => t.toMusicTrack()).toList(),
+                  );
+                },
+                tooltip: 'Play',
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, color: Colors.white38, size: 20),
+                onPressed: () => _confirmDeleteMusic(track),
+                tooltip: 'Delete',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteMusic(DownloadedMusicTrack track) async {
+    final ok = await DizzyDialogs.confirm(
+      context,
+      title: 'Delete Music Download',
+      line: 'Are you sure you want to delete "${track.title}" from offline storage?',
+      confirmLabel: 'Delete',
+      danger: true,
+    );
+    if (ok) {
+      await MusicDownloadService.instance.deleteDownloadedTrack(track.id);
+      await _loadStorageSpace();
+      if (mounted) setState(() {});
+    }
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    int i = 0;
+    double count = bytes.toDouble();
+    while (count >= 1024 && i < suffixes.length - 1) {
+      count /= 1024;
+      i++;
+    }
+    return '${count.toStringAsFixed(i == 0 ? 0 : 1)} ${suffixes[i]}';
   }
 }
