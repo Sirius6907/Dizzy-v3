@@ -93,7 +93,7 @@ void main() async {
   // ignore: unawaited_futures
   CloudClient.init().then((_) => CloudAuthService.init()).then((_) {
     RemoteConfigService.initialize();
-    AnnouncementService.initialize(appVersion: '1.2.0');
+    AnnouncementService.initialize(appVersion: '1.2.1');
     // v1.2.0-T2.2: opted-in error queue flush (no-op when consent OFF).
     AppErrorLog.schedulePeriodicFlush();
     AppErrorLog.flushOnStart();
