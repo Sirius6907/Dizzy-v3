@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../services/updater/app_updater_service.dart';
-import '../../widgets/updater/update_dialog.dart';
+import '../../widgets/updater/release_notes_studio.dart';
 
 class UpdatesSettingsPage extends StatefulWidget {
   const UpdatesSettingsPage({super.key});
@@ -25,9 +25,11 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
       if (!context.mounted) return;
 
       if (updateInfo != null) {
-        showDialog(
+        showModalBottomSheet<void>(
           context: context,
-          builder: (context) => UpdateDialog(updateInfo: updateInfo),
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => ReleaseNotesStudio(updateInfo: updateInfo),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
