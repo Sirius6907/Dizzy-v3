@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/audiobook/audiobook_settings.dart';
 import '../../services/theme/custom_background_service.dart';
+import '../../services/theme/custom_accent_service.dart';
+import '../../widgets/theme/accent_studio_sheet.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../services/iptv/iptv_settings.dart';
@@ -83,6 +85,29 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                           setState(() {});
                         },
                       );
+                    },
+                  );
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              // UX6: Accent Studio & OLED Mode
+              ValueListenableBuilder<Color?>(
+                valueListenable: CustomAccentService.customAccent,
+                builder: (context, customAccent, _) {
+                  final isOled = CustomAccentService.amoledTrueBlack.value;
+                  final displayColor = customAccent ?? AppThemeService.currentPalette.value.primaryColor;
+                  return _buildSectionButton(
+                    icon: Icons.palette_rounded,
+                    iconColor: displayColor,
+                    title: 'Accent Studio & OLED Mode',
+                    subtitle: 'Custom hex neon accent glow, true AMOLED 0x000000 pure black, and blur tuning',
+                    badgeText: isOled ? 'AMOLED Black' : (customAccent != null ? 'Custom Glow' : 'Default'),
+                    badgeColor: displayColor,
+                    onTap: () async {
+                      await AccentStudioSheet.show(context);
+                      setState(() {});
                     },
                   );
                 },

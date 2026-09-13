@@ -23,6 +23,7 @@ import 'privacy_settings_page.dart';
 import 'profiles_settings_page.dart';
 import 'scraper_health_page.dart';
 import 'watch_party_page.dart';
+import '../../widgets/social/social_hub_sheet.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
@@ -520,6 +521,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 badgeText: 'NEW',
                 badgeColor: palette.primaryColor,
                 onTap: () => _navigateTo(const ProfilesSettingsPage()),
+              ),
+
+              const SizedBox(height: 12),
+
+              // UX8: Unified Social Hub
+              _SettingsCategoryTile(
+                icon: Icons.hub_rounded,
+                iconColor: const Color(0xFFEC4899),
+                title: 'Social Hub',
+                subtitle: 'Watch Together rooms, Listen Together sessions & 1-tap invite',
+                badgeText: 'HOT',
+                badgeColor: const Color(0xFFEC4899),
+                onTap: () => SocialHubSheet.show(context),
               ),
 
               const SizedBox(height: 12),
