@@ -2,6 +2,49 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.2.1+31] — 2026-09-13 — "Spotify Music + 40-Phase Polish"
+
+### Performance Foundation (Perf P0–P10)
+- Bounded net retry (3 attempts, backoff, transient-family classification)
+- Performance mode auto-detect: Budget / Mid / Flagship tiers
+- Storage guard: disk-full choke, stale `.part`/`.tmp` cleanup, 5-min cached sync
+- `DizzyImage` widget with enforced `memCacheWidth` caps across all cards
+- Waveform seekbar visibility-aware ticker gating (zero GPU burn when hidden)
+- Ambient background + liquid lens optimization (RepaintBoundary isolation)
+
+### UX1–UX10: App Experience Upgrade
+- **UX1** Universal Spotlight Search (Ctrl+K, cross-section movies/anime/music)
+- **UX2** Download Hub (Active/Video/Music tabs, storage gauge, cache clean)
+- **UX3** Low-End Mode (auto-tuning for 2GB phones at 60fps)
+- **UX4** Onboarding Superpower Cards (3 slides, first launch only)
+- **UX5** Media Dock (live pulse dot, video↔music conflict resolver)
+- **UX6** Accent Studio (custom hex glow, AMOLED 0x000000 black, blur slider)
+- **UX7** Calm Errors (offline banner, friendly messages, no tech codes)
+- **UX8** Social Hub (Watch + Listen Together unified sheet)
+- **UX9** TV/D-Pad Navigation (focus ring, keyboard shortcuts)
+- **UX10** Release Notes Studio (What's New bottom-sheet cards)
+
+### Music M1–M20: Spotify-Level Music Suite
+- 5 tab views: Home, Browse, Library, Search, Radio
+- Bottom player bar + expanded full-screen player + queue drawer
+- Lyrics drawer, equalizer modal, audio visualizer
+- Sleep timer, smart mixes, trending artists row
+- Album/artist/playlist detail modals with hero transitions
+- Listen Together (music co-listen rooms)
+- Playlist sharing, music download manager, Wrapped stats modal
+- Desktop mini-PiP widget + keyboard shortcuts
+
+### Fixes
+- UX4/UX6/UX8/UX10 entry points wired into home + settings pages
+- Release builds now include `--dart-define-from-file=.env` (Supabase keys)
+
+### Stats
+- 118 files changed, 16,011 insertions, 73 new files
+- 5 new test files (net_retry, performance_mode, storage_guard, ux5_ux10, music_m1_m20)
+- `flutter analyze`: 0 issues
+
+---
+
 ## [1.2.0+30] — 2026-09-12 — "Watch Together 10x" (P1–P19)
 
 ### P20–P23 (this batch)
