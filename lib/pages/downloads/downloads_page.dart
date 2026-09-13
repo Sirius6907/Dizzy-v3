@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/models/movie/movie_detail.dart';
 import 'package:dizzy/models/movie/video.dart';
@@ -323,6 +325,9 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                       ? CachedNetworkImage(
                           imageUrl: task.posterUrl!,
                           fit: BoxFit.cover,
+                          // P12: decode-capped (was full-res).
+                          memCacheWidth: ImageCaps.kThumb,
+                          maxWidthDiskCache: ImageCaps.kThumb,
                           errorWidget: (_, __, ___) => const Icon(Icons.movie_rounded, color: Colors.white24),
                         )
                       : const Icon(Icons.movie_rounded, color: Colors.white24),
@@ -542,6 +547,9 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                         ? CachedNetworkImage(
                             imageUrl: task.posterUrl!,
                             fit: BoxFit.cover,
+                            // P12: decode-capped (was full-res).
+                            memCacheWidth: ImageCaps.kCardW,
+                            maxWidthDiskCache: ImageCaps.kCardW,
                             errorWidget: (_, __, ___) => const Center(
                               child: Icon(Icons.movie_rounded, color: Colors.white24, size: 36),
                             ),

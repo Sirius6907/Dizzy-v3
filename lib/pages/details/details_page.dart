@@ -1737,6 +1737,9 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
                                           ? CachedNetworkImage(
                                               imageUrl: item.thumbUrl,
                                               fit: BoxFit.cover,
+                                              // P12: decode-capped (was full-res).
+                                              memCacheWidth: ImageCaps.kCardW,
+                                              maxWidthDiskCache: ImageCaps.kCardW,
                                               errorWidget: (_, __, ___) => Container(
                                                 color: DizzyColors.surface,
                                                 child: const Center(

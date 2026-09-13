@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/player/player_settings.dart';
+import '../../utils/perf/performance_mode.dart';
 import '../../services/stream/last_good_source_store.dart';
 import 'subtitle_settings_page.dart';
 
@@ -97,6 +99,76 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                 ),
               ),
 
+              const SizedBox(height: 24),
+
+              // ── P17: Battery & Heat (non-tech Smooth Mode + buffer profile) ──
+              Text(
+                'BATTERY & HEAT',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.35),
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ValueListenableBuilder<bool>(
+                valueListenable: PerformanceMode.smoothMode,
+                builder: (context, val, _) => _buildIntelTile(
+                  palette: palette,
+                  icon: Icons.thermostat_auto_rounded,
+                  title: 'Smooth Mode (cool phone)',
+                  subtitle:
+                      'Turns off background animations and shine effects, uses small battery-friendly buffers. Best for long watching hours. Auto-ON for low-memory phones.',
+                  value: val,
+                  onChanged: _setSmoothMode,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ValueListenableBuilder<PlaybackProfile>(
+                valueListenable: PlayerSettings.playbackProfile,
+                builder: (context, current, _) {
+                  return Column(
+                    children: [
+                      _buildBufferCard(
+                        profile: PlaybackProfile.eco,
+                        title: 'Eco Buffer',
+                        subtitle:
+                            'Smallest buffers (32MB phone). Coolest phone, kind to mobile data.',
+                        tag: 'Coolest',
+                        tagColor: const Color(0xFF10B981),
+                        icon: Icons.eco_rounded,
+                        isSelected: current == PlaybackProfile.eco,
+                        palette: palette,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildBufferCard(
+                        profile: PlaybackProfile.medium,
+                        title: 'Balanced Buffer',
+                        subtitle:
+                            'Default. Smooth on WiFi without heating the phone (48MB phone).',
+                        tag: 'Recommended',
+                        tagColor: Colors.white38,
+                        icon: Icons.balance_rounded,
+                        isSelected: current == PlaybackProfile.medium,
+                        palette: palette,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildBufferCard(
+                        profile: PlaybackProfile.max,
+                        title: 'Max Buffer',
+                        subtitle:
+                            'Largest buffers. Only for stable WiFi and big-memory devices.',
+                        tag: 'WiFi only',
+                        tagColor: const Color(0xFF7C5CFF),
+                        icon: Icons.bolt_rounded,
+                        isSelected: current == PlaybackProfile.max,
+                        palette: palette,
+                      ),
+                    ],
+                  );
+                },
+              ),
               const SizedBox(height: 24),
 
               // ── Section: Presets ──
@@ -677,6 +749,112 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
             onChanged: onChanged,
           ),
         ],
+      ),
+    );
+  }
+
+  /// P17: Smooth Mode toggle — persists across launches (main.dart reads
+  /// `perf_smooth_mode` at startup; low-RAM default when never set).
+  /// Easy English, zero tech words: ON = cool phone, OFF = full shine.
+  Future<void> _setSmoothMode(bool val) async {
+    PerformanceMode.setSmoothMode(val);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('perf_smooth_mode', val);
+    } catch (_) {}
+  }
+
+  /// P17: buffer profile card (mirrors _buildPresetCard styling).
+  Widget _buildBufferCard({
+    required PlaybackProfile profile,
+    required String title,
+    required String subtitle,
+    required String tag,
+    required Color tagColor,
+    required IconData icon,
+    required bool isSelected,
+    required AppThemePalette palette,
+  }) {
+    return InkWell(
+      onTap: () => PlayerSettings.setPlaybackProfile(profile),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? palette.primaryColor.withValues(alpha: 0.08)
+              : const Color(0xFF0E121B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? palette.primaryColor
+                : Colors.white.withValues(alpha: 0.08),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? palette.primaryColor.withValues(alpha: 0.14)
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(icon, size: 20, color: palette.primaryColor),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: tagColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          tag,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: tagColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

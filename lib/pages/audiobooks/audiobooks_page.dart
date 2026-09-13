@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
@@ -733,6 +735,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                 },
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
+                // P12: hero cover capped (was full-res decode).
+                memCacheWidth: ImageCaps.kBackdrop,
+                maxWidthDiskCache: ImageCaps.kBackdrop,
                 placeholder: (_, __) => const SizedBox.shrink(),
                 errorWidget: (_, __, ___) => const SizedBox.shrink(),
               ),
@@ -770,6 +775,10 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                                 },
                                 fit: BoxFit.cover,
+                                // P12: card cover capped.
+                                memCacheWidth: ImageCaps.kCardW,
+                                memCacheHeight: ImageCaps.kCardH,
+                                maxWidthDiskCache: ImageCaps.kCardW,
                                 placeholder: (_, __) => Container(color: const Color(0xFF161A24)),
                                 errorWidget: (_, __, ___) => Container(
                                   color: const Color(0xFF161A24),
@@ -1367,6 +1376,10 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                                 ? CachedNetworkImage(
                                     imageUrl: book.coverImage,
                                     fit: BoxFit.cover,
+                                    // P12: card cover capped.
+                                    memCacheWidth: ImageCaps.kCardW,
+                                    memCacheHeight: ImageCaps.kCardH,
+                                    maxWidthDiskCache: ImageCaps.kCardW,
                                     placeholder: (_, __) => Container(color: const Color(0xFF1A1F2C)),
                                     errorWidget: (_, __, ___) => Container(
                                       color: const Color(0xFF1A1F2C),
@@ -1642,6 +1655,9 @@ class _AudiobookCardState extends State<_AudiobookCard> {
                               imageUrl: book.coverImage,
                               width: double.infinity,
                               fit: BoxFit.cover,
+                              // P12: full-width banner capped.
+                              memCacheWidth: ImageCaps.kBackdrop,
+                              maxWidthDiskCache: ImageCaps.kBackdrop,
                               placeholder: (_, __) => Container(color: const Color(0xFF1A1F2C)),
                               errorWidget: (_, __, ___) => Container(
                                 color: const Color(0xFF1A1F2C),

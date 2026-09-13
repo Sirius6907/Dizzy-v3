@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import '../../models/book/book_result.dart';
 import '../../services/books/bookracy_service.dart';
@@ -521,6 +523,10 @@ class _BookCardState extends State<_BookCard> {
                               ? CachedNetworkImage(
                                   imageUrl: book.coverUrl,
                                   fit: BoxFit.cover,
+                                  // P12: cover capped (was full-res decode).
+                                  memCacheWidth: ImageCaps.kCardW,
+                                  memCacheHeight: ImageCaps.kCardH,
+                                  maxWidthDiskCache: ImageCaps.kCardW,
                                   placeholder: (_, __) => Container(
                                     color: const Color(0xFF1E202B),
                                     child: const Center(

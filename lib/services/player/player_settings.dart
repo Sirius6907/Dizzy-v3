@@ -110,6 +110,19 @@ enum Anime4KPreset {
   );
 }
 
+/// P3 — playback buffer profiles. Eco sips battery/radio, Max pre-buffers
+/// aggressively for stable WiFi. Medium is the default everywhere.
+enum PlaybackProfile {
+  eco('Eco', 'Smallest buffers, coolest phone. Best for mobile data.'),
+  medium('Balanced', 'Default. Smooth on WiFi without heating the phone.'),
+  max('Max', 'Largest buffers. Only for stable WiFi + big-RAM devices.');
+
+  final String label;
+  final String description;
+
+  const PlaybackProfile(this.label, this.description);
+}
+
 /// Central service managing video engine properties, Anime4K upscaling, and subtitle customization
 /// using media_kit / libmpv.
 ///
@@ -200,9 +213,56 @@ abstract final class PlayerSettings {
   static const _keyLastVolume = 'player_last_volume';
   static final ValueNotifier<double> lastVolume = ValueNotifier<double>(1.0);
 
-  /// mpv cache sizing (MB) — data-saver caps these hard.
-  static int get demuxerMaxBytesMB =>
-      dataSaver.value ? 24 : (Platform.isAndroid || Platform.isIOS ? 64 : 150);
+  /// P3 — playback buffer profiles (hard caps, not user-tweakable internals).
+  /// Eco keeps the radio/CPU asleep; Max is for stable WiFi + big RAM.
+  /// Governor critical + Smooth Mode force [eco] automatically.
+  static const _keyPlaybackProfile = 'player_playback_profile';
+  static final ValueNotifier<PlaybackProfile> playbackProfile =
+      ValueNotifier<PlaybackProfile>(PlaybackProfile.medium);
+
+  /// mpv cache sizing (MB) — profile-driven, data-saver caps hardest.
+  static int get demuxerMaxBytesMB {
+    if (dataSaver.value) return 24;
+    if (playbackProfile.value == PlaybackProfile.eco) {
+      return Platform.isAndroid || Platform.isIOS ? 32 : 64;
+    }
+    if (playbackProfile.value == PlaybackProfile.max) {
+      return Platform.isAndroid || Platform.isIOS ? 64 : 150;
+    }
+    // medium (default): lean on phones, standard on desktop
+    return Platform.isAndroid || Platform.isIOS ? 48 : 120;
+  }
+
+  /// P3: forward cache seconds per profile (eco sleeps the radio sooner).
+  static int get cacheSecs {
+    if (dataSaver.value) return 8;
+    switch (playbackProfile.value) {
+      case PlaybackProfile.eco:
+        return 8;
+      case PlaybackProfile.medium:
+        return 12;
+      case PlaybackProfile.max:
+        return 20;
+    }
+  }
+
+  /// P3: demuxer readahead seconds per profile.
+  static int get readaheadSecs {
+    if (dataSaver.value) return 6;
+    switch (playbackProfile.value) {
+      case PlaybackProfile.eco:
+        return 6;
+      case PlaybackProfile.medium:
+        return 12;
+      case PlaybackProfile.max:
+        return 20;
+    }
+  }
+
+  /// P3: lean probe — 8MB / 5s finds streams without decoding half the file.
+  /// (Was 32MB / 20s: pure CPU + net burn on every open, worst on 4K.)
+  static String get probeSize => '8388608';
+  static String get analyzeDuration => '5';
 
   // Anime4K Video Upscaling ValueNotifier
   static final ValueNotifier<Anime4KPreset> anime4kPreset =
@@ -302,6 +362,14 @@ abstract final class PlayerSettings {
         prefs.getBool(_keyNextEpisodeAutoPlay) ?? true;
     autoFailover.value = prefs.getBool(_keyAutoFailover) ?? true;
     dataSaver.value = prefs.getBool(_keyDataSaver) ?? false;
+    // P3: load saved buffer profile; Smooth Mode (low-RAM default) forces eco.
+    final profileStr = prefs.getString(_keyPlaybackProfile);
+    if (profileStr != null) {
+      playbackProfile.value = PlaybackProfile.values.firstWhere(
+        (p) => p.name == profileStr,
+        orElse: () => PlaybackProfile.medium,
+      );
+    }
     allowInsecureProbes.value = prefs.getBool(_keyAllowInsecureProbes) ?? false;
     lastVolume.value =
         (prefs.getDouble(_keyLastVolume) ?? 1.0).clamp(0.0, 1.0);
@@ -458,9 +526,8 @@ abstract final class PlayerSettings {
 
   /// Returns a configured [PlayerConfiguration] for constructing a media_kit [Player].
   static PlayerConfiguration getMediaKitPlayerConfiguration() {
-    // Platform-aware demuxer budget: phones share RAM with the OS — keep
-    // buffers lean (64MB); desktops can afford 150MB for smoother seeks.
-    final bufferBytes = Platform.isAndroid || Platform.isIOS ? 64 << 20 : 150 << 20;
+    // P3: profile-aware buffer — eco 32MB / medium 48MB on phones.
+    final bufferBytes = demuxerMaxBytesMB << 20;
     return PlayerConfiguration(
       libass: useLibass.value,
       libassAndroidFont: 'assets/fonts/Poppins-Medium.ttf',
@@ -586,13 +653,20 @@ abstract final class PlayerSettings {
       final isMobile = Platform.isAndroid || Platform.isIOS;
       // ──────────────────────────────────────────────────────────────────────
       if (isTorrent) {
+        // P3: torrents need patience for piece gaps, but NOT 100MB on a
+        // phone — profile-capped (eco 48MB / medium 64MB mobile).
+        final tMaxMB = dataSaver.value
+            ? 32
+            : (playbackProfile.value == PlaybackProfile.eco
+                ? (isMobile ? 48 : 64)
+                : (isMobile ? 64 : 120));
         await platform.setProperty('cache', 'yes');
-        await platform.setProperty('cache-secs', isMobile ? '20' : '30');
-        await platform.setProperty('demuxer-readahead-secs', isMobile ? '20' : '30');
+        await platform.setProperty('cache-secs', '$cacheSecs');
+        await platform.setProperty('demuxer-readahead-secs', '$readaheadSecs');
         await platform.setProperty('demuxer-max-bytes',
-            isMobile ? '104857600' : '157286400'); // 100MB mobile / 150MB desktop
+            '${tMaxMB * 1024 * 1024}');
         await platform.setProperty('demuxer-max-back-bytes',
-            isMobile ? '31457280' : '52428800'); // 30MB mobile / 50MB desktop
+            '${tMaxMB * 1024 * 1024 ~/ 3}');
         await platform.setProperty('network-timeout', '60'); // 60s — torrents need patience
         await platform.setProperty('stream-lavf-o',
           'reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=10',
@@ -605,18 +679,17 @@ abstract final class PlayerSettings {
       // Platform-aware: Android/iOS lean (phone RAM), desktop standard.
       // ──────────────────────────────────────────────────────────────────────
       await platform.setProperty('cache', 'yes');
-      // Data Saver (v1.1.8): hard-cap the network buffers on mobile-data
-      // constrained users — 24MB forward + 8MB readahead ≈ 60-70% less
-      // buffered download vs the lean mobile profile.
-      // Slow-net resilience: forward cache raised so fluctuating connections
-      // survive 15-20s throughput gaps without the spinner freezing playback.
+      // P3: profile-driven buffers (medium = 48MB/12s mobile, 120MB/12s
+      // desktop). Data Saver still caps hardest — 24MB + 8s.
+      // Slow-net resilience: 12s forward cache survives ~10s throughput
+      // gaps without the spinner freezing playback.
       const mb = 1024 * 1024;
       final dsMax = '${demuxerMaxBytesMB * mb}';
       final dsBack = '${(demuxerMaxBytesMB * mb) ~/ 3}';
-      await platform.setProperty('demuxer-max-bytes', isMobile ? dsMax : '157286400'); // DS-aware mobile / 150MB desktop
-      await platform.setProperty('demuxer-max-back-bytes', isMobile ? dsBack : '52428800'); // DS-aware mobile / 50MB desktop
-      await platform.setProperty('cache-secs', isMobile ? (dataSaver.value ? '8' : '20') : '20');
-      await platform.setProperty('demuxer-readahead-secs', isMobile ? (dataSaver.value ? '6' : '20') : '20');
+      await platform.setProperty('demuxer-max-bytes', dsMax);
+      await platform.setProperty('demuxer-max-back-bytes', dsBack);
+      await platform.setProperty('cache-secs', '$cacheSecs');
+      await platform.setProperty('demuxer-readahead-secs', '$readaheadSecs');
       await platform.setProperty('network-timeout', '45'); // slow/fluctuating nets need patience, not 30s drops
 
       // Network Stream Continuity (Live IPTV vs VOD separation)
@@ -626,8 +699,8 @@ abstract final class PlayerSettings {
       // Data Saver: cap HLS bitrate instead of pulling the max variant.
       await platform.setProperty(
           'hls-bitrate', dataSaver.value ? '1000000' : 'max'); // ~1 Mbps cap when saving data
-      await platform.setProperty('demuxer-lavf-probesize', '32768000');
-      await platform.setProperty('demuxer-lavf-analyzeduration', '20');
+      await platform.setProperty('demuxer-lavf-probesize', probeSize);
+      await platform.setProperty('demuxer-lavf-analyzeduration', analyzeDuration);
       await platform.setProperty('demuxer-lavf-o', 'strict=experimental');
     } catch (e) {
       AppLog.d('[PlayerSettings] applyPreOpenProperties warning: $e');
@@ -1258,6 +1331,16 @@ abstract final class PlayerSettings {
     dataSaver.value = val;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyDataSaver, val);
+    _notify();
+  }
+
+  /// P17: persists the buffer profile (Eco/Balanced/Max). Eco is forced
+  /// automatically on governor-critical; the saved value is the user's
+  /// preference for normal conditions.
+  static Future<void> setPlaybackProfile(PlaybackProfile val) async {
+    playbackProfile.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyPlaybackProfile, val.name);
     _notify();
   }
 

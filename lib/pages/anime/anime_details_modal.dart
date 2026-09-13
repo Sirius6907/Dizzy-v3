@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -193,6 +195,9 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                 imageUrl: _anime.backdropUrl,
                                 fit: BoxFit.cover,
                                 alignment: Alignment.topCenter,
+                                // P12: modal backdrop capped.
+                                memCacheWidth: ImageCaps.kBackdrop,
+                                maxWidthDiskCache: ImageCaps.kBackdrop,
                                 errorWidget: (_, __, ___) => Container(
                                   color: const Color(0xFF141724),
                                 ),
@@ -751,6 +756,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                                   width: 85,
                                                   height: 85,
                                                   fit: BoxFit.cover,
+                                                  // P12: capped thumb.
+                                                  memCacheWidth: ImageCaps.kThumb,
+                                                  memCacheHeight: ImageCaps.kThumb,
+                                                  maxWidthDiskCache: ImageCaps.kThumb,
                                                   errorWidget: (_, __, ___) => Container(
                                                     color: const Color(0xFF1A1D2B),
                                                     child: const Icon(Icons.person_rounded, color: Colors.white24),
@@ -825,6 +834,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                                   width: 105,
                                                   height: 125,
                                                   fit: BoxFit.cover,
+                                                  // P12: capped thumb.
+                                                  memCacheWidth: ImageCaps.kThumb,
+                                                  memCacheHeight: ImageCaps.kThumb,
+                                                  maxWidthDiskCache: ImageCaps.kThumb,
                                                   errorWidget: (_, __, ___) => Container(
                                                     color: const Color(0xFF1A1D2B),
                                                     child: const Icon(Icons.movie_creation_outlined, color: Colors.white24),
@@ -896,6 +909,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                                   width: 115,
                                                   height: 140,
                                                   fit: BoxFit.cover,
+                                                  // P12: capped thumb.
+                                                  memCacheWidth: ImageCaps.kThumb,
+                                                  memCacheHeight: ImageCaps.kThumb,
+                                                  maxWidthDiskCache: ImageCaps.kThumb,
                                                   errorWidget: (_, __, ___) => Container(
                                                     color: const Color(0xFF1A1D2B),
                                                     child: const Icon(Icons.movie_creation_outlined, color: Colors.white24),

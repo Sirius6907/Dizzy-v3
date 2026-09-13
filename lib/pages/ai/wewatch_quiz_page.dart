@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/movie/movie.dart';
@@ -680,6 +682,10 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                                       width: 28,
                                       height: 42,
                                       fit: BoxFit.cover,
+                                      // P12: 28px thumb must never decode full-res.
+                                      memCacheWidth: ImageCaps.kThumb,
+                                      memCacheHeight: ImageCaps.kThumb,
+                                      maxWidthDiskCache: ImageCaps.kThumb,
                                     )
                                   : Container(width: 28, height: 42, color: Colors.white10),
                             ),
@@ -763,6 +769,10 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                                         width: 64,
                                         height: 86,
                                         fit: BoxFit.cover,
+                                        // P12: capped thumb.
+                                        memCacheWidth: ImageCaps.kThumb,
+                                        memCacheHeight: ImageCaps.kThumb,
+                                        maxWidthDiskCache: ImageCaps.kThumb,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -795,6 +805,10 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                             width: 64,
                             height: 96,
                             fit: BoxFit.cover,
+                            // P12: capped thumb.
+                            memCacheWidth: ImageCaps.kThumb,
+                            memCacheHeight: ImageCaps.kThumb,
+                            maxWidthDiskCache: ImageCaps.kThumb,
                           ),
                         ),
                       const SizedBox(width: 14),
@@ -1055,6 +1069,10 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                                   width: isMobile ? 80 : 96,
                                   height: isMobile ? 120 : 144,
                                   fit: BoxFit.cover,
+                                  // P12: capped thumb (display ≤144px).
+                                  memCacheWidth: ImageCaps.kThumb,
+                                  memCacheHeight: ImageCaps.kThumb,
+                                  maxWidthDiskCache: ImageCaps.kThumb,
                                 )
                               : Container(
                                   width: isMobile ? 80 : 96,

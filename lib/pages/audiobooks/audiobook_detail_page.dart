@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
@@ -110,6 +112,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                   },
                   fit: BoxFit.cover,
+                  // P12: decode-capped (was full-res).
+                  memCacheWidth: ImageCaps.kBackdrop,
+                  maxWidthDiskCache: ImageCaps.kBackdrop,
                   placeholder: (_, __) => const SizedBox.shrink(),
                   errorWidget: (_, __, ___) => const SizedBox.shrink(),
                 ),
@@ -284,6 +289,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
             ? CachedNetworkImage(
                 imageUrl: book.coverImage,
                 fit: BoxFit.cover,
+                // P12: decode-capped (was full-res).
+                memCacheWidth: ImageCaps.kCardW,
+                maxWidthDiskCache: ImageCaps.kCardW,
                 placeholder: (_, __) => Container(color: const Color(0xFF161A26)),
                 errorWidget: (_, __, ___) => Container(
                   color: const Color(0xFF161A26),

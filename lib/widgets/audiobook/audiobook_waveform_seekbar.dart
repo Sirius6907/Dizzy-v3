@@ -42,7 +42,21 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
     _waveAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat();
+    );
+    // P7: ticker runs ONLY while audio plays (see music_waveform_seekbar).
+    if (widget.isPlaying) _waveAnimController.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant AudiobookWaveformSeekbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlaying != oldWidget.isPlaying) {
+      if (widget.isPlaying) {
+        _waveAnimController.repeat();
+      } else {
+        _waveAnimController.stop();
+      }
+    }
   }
 
   @override

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import 'package:media_kit/media_kit.dart';
@@ -566,6 +568,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                                 },
                                 fit: BoxFit.cover,
+                                // P12: decode-capped (was full-res).
+                                memCacheWidth: ImageCaps.kBackdrop,
+                                maxWidthDiskCache: ImageCaps.kBackdrop,
                                 placeholder: (_, __) => const SizedBox.shrink(),
                                 errorWidget: (_, __, ___) => const SizedBox.shrink(),
                               ),
@@ -623,6 +628,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                   },
                   fit: BoxFit.cover,
+                  // P12: decode-capped (was full-res).
+                  memCacheWidth: ImageCaps.kBackdrop,
+                  maxWidthDiskCache: ImageCaps.kBackdrop,
                   placeholder: (_, __) => const SizedBox.shrink(),
                   errorWidget: (_, __, ___) => const SizedBox.shrink(),
                 ),
@@ -996,7 +1004,15 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: hasCover
-                          ? CachedNetworkImage(imageUrl: widget.audiobook.coverImage, width: 48, height: 48, fit: BoxFit.cover)
+                          ? CachedNetworkImage(
+                              imageUrl: widget.audiobook.coverImage,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              // P12: decode-capped (was full-res).
+                              memCacheWidth: ImageCaps.kThumb,
+                              maxWidthDiskCache: ImageCaps.kThumb,
+                            )
                           : Container(width: 48, height: 48, color: Colors.white12),
                     ),
                     const SizedBox(width: 14),
@@ -1195,6 +1211,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
             ? CachedNetworkImage(
                 imageUrl: widget.audiobook.coverImage,
                 fit: BoxFit.cover,
+                // P12: decode-capped (was full-res).
+                memCacheWidth: ImageCaps.kCardW,
+                maxWidthDiskCache: ImageCaps.kCardW,
                 placeholder: (_, __) => Container(color: const Color(0xFF161A26)),
                 errorWidget: (_, __, ___) => Container(
                   color: const Color(0xFF161A26),
@@ -1243,6 +1262,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                   width: size,
                   height: size,
                   fit: BoxFit.cover,
+                  // P12: decode-capped (was full-res).
+                  memCacheWidth: ImageCaps.kCardW,
+                  maxWidthDiskCache: ImageCaps.kCardW,
                   errorWidget: (_, __, ___) => Container(
                     color: const Color(0xFF161A26),
                     child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),

@@ -43,7 +43,22 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
     _waveAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat();
+    );
+    // P7: ticker runs ONLY while audio plays — a paused seekbar holding a
+    // 60-120fps repeat() is pure GPU burn for a frozen frame.
+    if (widget.isPlaying) _waveAnimController.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant MusicWaveformSeekbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlaying != oldWidget.isPlaying) {
+      if (widget.isPlaying) {
+        _waveAnimController.repeat();
+      } else {
+        _waveAnimController.stop();
+      }
+    }
   }
 
   @override

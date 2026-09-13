@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
@@ -417,6 +419,9 @@ class _WatchScreenState extends State<WatchScreen>
           CachedNetworkImage(
             imageUrl: url,
             fit: BoxFit.cover,
+            // P12: decode-capped (was full-res).
+            memCacheWidth: ImageCaps.kCardW,
+            maxWidthDiskCache: ImageCaps.kCardW,
             errorWidget: (_, __, ___) => const ColoredBox(color: _C.bg),
           ),
           // Left-to-right dimming: dark on left (text side), lighter on right
@@ -777,6 +782,9 @@ class _WatchScreenState extends State<WatchScreen>
           imageUrl: meta.logo!,
           alignment: Alignment.bottomLeft,
           fit: BoxFit.contain,
+          // P12: decode-capped (was full-res).
+          memCacheWidth: ImageCaps.kLogo,
+          maxWidthDiskCache: ImageCaps.kLogo,
           errorWidget: (_, __, ___) => _buildTextTitle(meta.name, isDesktop),
         ),
       );
@@ -3096,6 +3104,9 @@ class _AddonSourceIcon extends StatelessWidget {
             width: 32,
             height: 32,
             fit: BoxFit.contain,
+            // P12: decode-capped (was full-res).
+            memCacheWidth: ImageCaps.kThumb,
+            maxWidthDiskCache: ImageCaps.kThumb,
             placeholder: (context, url) => Container(
               color: Colors.white.withValues(alpha: 0.04),
               child: const Center(

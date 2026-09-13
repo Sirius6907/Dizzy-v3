@@ -3,6 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../../utils/perf/performance_mode.dart';
+import '../errors/app_error_log.dart';
+
 /// How aggressively the app must shed resources.
 enum ResourceLevel {
   /// Normal operation — full quality, full buffers.
@@ -54,8 +57,10 @@ class ResourceGovernor {
   bool anime4kActive = false;
 
   // ── Budgets ────────────────────────────────────────────────────────────
-  int get ramBudgetMb =>
-      Platform.isAndroid ? (Platform.isLinux ? 2800 : 1800) : 2800;
+  // P9: Android phones share RAM with the radio/camera/system — hard 1.8GB
+  // ceiling (was a nested ternary that always resolved to 1800 on Android
+  // anyway; now explicit). Desktop keeps 2.8GB.
+  int get ramBudgetMb => Platform.isAndroid ? 1800 : 2800;
   static const double cpuBudgetPercent = 20.0;
   static const int gpuBudgetMb = 2560; // 2.5 GB total GPU
 
@@ -233,11 +238,29 @@ class ResourceGovernor {
     if (current != ResourceLevel.critical &&
         (_overStreak >= 3 || s.rssMb > 0.92 * ramBudgetMb)) {
       level.value = ResourceLevel.critical;
+      // P9: critical = ambient OFF + glass OFF + eco buffers (player
+      // listens via _onResourceLevelChanged; visuals via PerformanceMode).
+      PerformanceMode.applyLevel(PerfLevel.critical);
+      // P18: opt-in, throttled (24h/code) perf telemetry for the admin
+      // dashboard — enums only, never URLs/titles/raw text.
+      unawaited(AppErrorLog.log(
+        code: 'perf_critical',
+        screen: 'governor',
+        detail: 'ram_${s.rssMb}_cpu_${s.cpuPercent.round()}',
+      ));
       debugPrint('[ResourceGovernor] CRITICAL ram=${s.rssMb}MB '
           'cpu=${s.cpuPercent.toStringAsFixed(1)}% gpu=${s.gpuTotalMb}MB');
     } else if (current == ResourceLevel.normal &&
         _overStreak >= 2) {
       level.value = ResourceLevel.caution;
+      // P9: caution = ambient frozen, glass → flat fallback.
+      PerformanceMode.applyLevel(PerfLevel.caution);
+      // P18: caution telemetry (same opt-in contract as critical).
+      unawaited(AppErrorLog.log(
+        code: 'perf_caution',
+        screen: 'governor',
+        detail: 'ram_${s.rssMb}_cpu_${s.cpuPercent.round()}',
+      ));
       debugPrint('[ResourceGovernor] CAUTION ram=${s.rssMb}MB '
           'cpu=${s.cpuPercent.toStringAsFixed(1)}% gpu=${s.gpuTotalMb}MB');
     } else if (current != ResourceLevel.normal &&
@@ -245,6 +268,7 @@ class ResourceGovernor {
         s.rssMb < 0.6 * ramBudgetMb &&
         s.cpuPercent < cpuBudgetPercent * 0.7) {
       level.value = ResourceLevel.normal;
+      PerformanceMode.applyLevel(PerfLevel.normal);
       debugPrint('[ResourceGovernor] back to NORMAL ram=${s.rssMb}MB');
     }
   }

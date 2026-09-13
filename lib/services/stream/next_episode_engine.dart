@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../models/stream/stream_model.dart';
 import '../../models/movie/video.dart';
@@ -9,6 +10,7 @@ import 'dub_filter.dart';
 import 'stream_probe_race.dart';
 import 'stream_service.dart';
 import '../errors/app_log.dart';
+import '../../utils/net/net_retry.dart';
 
 /// Result of computing the "next episode" in a binge chain.
 class NextEpisode {
@@ -261,11 +263,23 @@ class NextEpisodeEngine {
 
   static Future<String?> _getMasterBody(
       Uri uri, Map<String, String> headers) async {
-    final res = await http
-        .get(uri, headers: headers)
-        .timeout(const Duration(seconds: 8));
-    if (res.statusCode != 200) return null;
-    return res.body;
+    // P10: bounded retry (1s/2s/4s + jitter, transient-only) — a flaky
+    // master playlist fetch must not kill the auto-quality ladder.
+    // Fail-soft preserved: null → source plays without renditions.
+    try {
+      return await NetRetry.run(() async {
+        final res = await http
+            .get(uri, headers: headers)
+            .timeout(const Duration(seconds: 8));
+        if (res.statusCode == 200) return res.body;
+        if (NetRetry.shouldRetry(Exception('http'), statusCode: res.statusCode)) {
+          throw HttpException('master ${res.statusCode}');
+        }
+        return null;
+      });
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Cancels the in-flight cycle and clears the prefetched state.

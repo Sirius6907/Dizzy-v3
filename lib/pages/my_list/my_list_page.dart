@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/my_list/my_list_item.dart';
@@ -601,6 +603,10 @@ class _MyListCardState extends State<_MyListCard> {
                     CachedNetworkImage(
                       imageUrl: item.poster!,
                       fit: BoxFit.cover,
+                      // P12: grid poster capped (was full-res decode).
+                      memCacheWidth: ImageCaps.kCardW,
+                      memCacheHeight: ImageCaps.kCardH,
+                      maxWidthDiskCache: ImageCaps.kCardW,
                       errorWidget: (context, url, error) => _buildFallbackPoster(),
                     )
                   else

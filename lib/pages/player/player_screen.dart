@@ -62,6 +62,7 @@ import '../../services/stream/last_good_source_store.dart';
 import '../../services/watchparty/party_session.dart';
 import '../../services/watchparty/party_playback_session.dart';
 import '../../services/system/resource_governor.dart';
+import '../../utils/perf/storage_guard.dart';
 import '../../widgets/player/next_episode_countdown.dart';
 import '../../services/errors/app_log.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -251,9 +252,10 @@ class _PlayerScreenState extends State<PlayerScreen>
       }
     }));
 
-    // P8: 2s speed probe — fires only on a stable 10s window, Auto mode only.
+    // P5: 5s quality probe — was 2s. A speed check every 2s keeps the
+    // radio awake + burns CPU for the whole 40min session.
     _autoQualityTimer =
-        Timer.periodic(const Duration(seconds: 2), (_) => _autoQualityTick());
+        Timer.periodic(const Duration(seconds: 5), (_) => _autoQualityTick());
 
     // Build the ranked failover chain (Phase 3.2): backups exclude the
     // primary source, ordered by SourceRanker with persisted history.
@@ -334,7 +336,8 @@ class _PlayerScreenState extends State<PlayerScreen>
         // v1.1.9 (Task 19): verified correct — comment only, no change.
         if (!_prefetchStarted &&
             PlayerSettings.nextEpisodeAutoPlay.value &&
-            !PlayerSettings.dataSaver.value) {
+            !PlayerSettings.dataSaver.value &&
+            StorageGuard.prefetchAllowed) {
           final dur = _player.state.duration;
           final watched25 = dur.inSeconds >= 4 &&
               pos.inSeconds >= (dur.inSeconds * 0.25).ceil();
@@ -758,7 +761,9 @@ class _PlayerScreenState extends State<PlayerScreen>
       });
 
       _progressSaveTimer?.cancel();
-      _progressSaveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      // P5: progress flush every 10s — was 5s. Dirty-progress is also
+      // flushed on pause/exit, so nothing is lost by halving the rate.
+      _progressSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         _savePlaybackProgress();
       });
     } catch (e, stackTrace) {
@@ -1529,10 +1534,14 @@ class _PlayerScreenState extends State<PlayerScreen>
       if (platform == null) return;
       switch (lvl) {
         case ResourceLevel.normal:
-          // Full quality: restore standard buffers, allow Anime4K if on.
-          await platform.setProperty('demuxer-max-bytes', '157286400'); // 150MB
-          await platform.setProperty('demuxer-max-back-bytes', '52428800'); // 50MB
-          await platform.setProperty('demuxer-readahead-secs', '15');
+          // P3/P9: restore PROFILE buffers — never hardcode 150MB here
+          // (that re-blows the phone budget on every de-escalation).
+          await platform.setProperty('demuxer-max-bytes',
+              '${PlayerSettings.demuxerMaxBytesMB * 1024 * 1024}');
+          await platform.setProperty('demuxer-max-back-bytes',
+              '${PlayerSettings.demuxerMaxBytesMB * 1024 * 1024 ~/ 3}');
+          await platform.setProperty(
+              'demuxer-readahead-secs', '${PlayerSettings.readaheadSecs}');
           await platform.setProperty('vd-lavc-skiploopfilter', '0');
           await platform.setProperty('vd-lavc-skipidct', '0');
           await platform.setProperty('vd-lavc-skipframe', '0');
@@ -1571,7 +1580,9 @@ class _PlayerScreenState extends State<PlayerScreen>
     _lastProgressAt = DateTime.now();
 
     _stallWatchdog?.cancel();
-    _stallWatchdog = Timer.periodic(const Duration(seconds: 2), (_) {
+    // P5: stall check every 5s — was 2s. Detection threshold is still a
+    // 10s+ no-progress window, so nothing is missed; CPU wakes 60% less.
+    _stallWatchdog = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted || _failoverInProgress) return;
       // v1.1.9: chain still ranking → wait (max ~3s), don't fire blind.
       if (_failoverReady != null && _failoverChain.isEmpty) {
