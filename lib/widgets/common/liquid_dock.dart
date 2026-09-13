@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
+import '../../services/music/music_player_controller.dart';
 import '../../services/theme/glass_settings.dart';
 import 'performance_liquid_lens.dart';
 
@@ -279,10 +280,31 @@ class _DockItemWidgetState extends State<_DockItemWidget> {
 
   Widget _icon(double size) => Tooltip(
     message: widget.item.label,
-    child: Icon(
-      widget.item.icon,
-      size: size * 0.45,
-      color: const Color(0xF2FFFFFF),
+    child: Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Icon(
+          widget.item.icon,
+          size: size * 0.45,
+          color: const Color(0xF2FFFFFF),
+        ),
+        // UX5: live audio wave pulse dot on the Music icon while playing.
+        if (widget.item.label == 'Music')
+          Positioned(
+            right: -2,
+            top: -2,
+            child: ListenableBuilder(
+              listenable: MusicPlayerController.instance,
+              builder: (context, _) {
+                final playing =
+                    MusicPlayerController.instance.isPlaying;
+                if (!playing) return const SizedBox.shrink();
+                return const _DockPulseDot();
+              },
+            ),
+          ),
+      ],
     ),
   );
 
@@ -380,6 +402,59 @@ class _DockItemWidgetState extends State<_DockItemWidget> {
         valueListenable: GlassSettings.enabled,
         builder: (context, enabled, _) =>
             enabled ? _buildFullLiquid() : _buildOptimized(),
+      ),
+    );
+  }
+}
+
+/// UX5: tiny pulsing live dot — music is playing right now.
+class _DockPulseDot extends StatefulWidget {
+  const _DockPulseDot();
+
+  @override
+  State<_DockPulseDot> createState() => _DockPulseDotState();
+}
+
+class _DockPulseDotState extends State<_DockPulseDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.55, end: 1.0).animate(
+        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+      ),
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: const Color(0xFF00E5FF),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black87, width: 1.5),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0xAA00E5FF),
+              blurRadius: 6,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
       ),
     );
   }

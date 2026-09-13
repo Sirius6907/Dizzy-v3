@@ -36,5 +36,18 @@ void main() {
       expect(PerformanceMode.ambientAllowed.value, true);
       expect(PerformanceMode.glassAllowed.value, true);
     });
+
+    test('low-end device mode forces visuals off and sets tier', () {
+      PerformanceMode.setLowEndDeviceMode(true);
+      expect(PerformanceMode.ambientAllowed.value, false);
+      expect(PerformanceMode.glassAllowed.value, false);
+      expect(PerformanceMode.lowEndDeviceMode.value, true);
+
+      PerformanceMode.detectDeviceTier(isMobile: true, totalRamMb: 2048);
+      expect(PerformanceMode.deviceTier.value, DeviceTier.budget);
+
+      PerformanceMode.detectDeviceTier(isMobile: false);
+      expect(PerformanceMode.deviceTier.value, DeviceTier.flagship);
+    });
   });
 }
