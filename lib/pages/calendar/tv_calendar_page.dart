@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/movie/movie.dart';
@@ -914,6 +916,10 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                       ? CachedNetworkImage(
                           imageUrl: posterUrl,
                           fit: BoxFit.cover,
+                          // P12: capped card (was full-res decode).
+                          memCacheWidth: ImageCaps.kCardW,
+                          memCacheHeight: ImageCaps.kCardH,
+                          maxWidthDiskCache: ImageCaps.kCardW,
                           placeholder: (_, __) => Container(
                             color: Colors.white.withValues(alpha: 0.05),
                             child: const Center(

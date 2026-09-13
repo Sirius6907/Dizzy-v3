@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
+import '../../utils/perf/performance_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
@@ -708,19 +711,34 @@ class _AnimeHeroCarouselState extends State<_AnimeHeroCarousel> {
   @override
   void initState() {
     super.initState();
+    // P12: governor caution+ freezes auto-rotation (same heater class as
+    // ambient — a 700ms shader/blur slide transition every 8s for 40min).
+    // Manual swipe always works; only the auto-ticker stops.
+    PerformanceMode.ambientAllowed.addListener(_onPerfChanged);
     _startTimer();
   }
 
   @override
   void dispose() {
+    PerformanceMode.ambientAllowed.removeListener(_onPerfChanged);
     _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
+  void _onPerfChanged() {
+    if (!mounted) return;
+    if (PerformanceMode.ambientAllowed.value) {
+      if (!_isHovering) _startTimer();
+    } else {
+      _pauseTimer();
+    }
+  }
+
   void _startTimer() {
     _timer?.cancel();
     if (widget.animeList.length < 2) return;
+    if (!PerformanceMode.ambientAllowed.value) return;
     _timer = Timer.periodic(_rotateEvery, (_) {
       if (!mounted || !_pageController.hasClients) return;
       final next = (_index + 1) % widget.animeList.length;
@@ -895,6 +913,9 @@ class _AnimeHeroSlide extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: const Alignment(0, -0.15),
           filterQuality: FilterQuality.medium,
+          // P12: hero backdrop capped (was full-res decode).
+          memCacheWidth: ImageCaps.kBackdrop,
+          maxWidthDiskCache: ImageCaps.kBackdrop,
           placeholder: (_, __) => const ColoredBox(color: Color(0xFF151822)),
           errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF151822)),
         ),

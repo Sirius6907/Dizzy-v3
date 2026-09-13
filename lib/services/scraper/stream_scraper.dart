@@ -122,9 +122,19 @@ class ScraperManager {
 
     AppLog.d('[ScraperManager] Scraping across ${activeScrapers.length} active scrapers (${activeScrapers.map((s) => s.runtimeType).join(", ")}) for "$title" (P2P enabled: $p2pAllowed)...');
 
+    // P4 (improved): bounded scraper pool. 40+ scrapers firing at once =
+    // 40+ parallel HTTP sessions + parse isolates on a phone radio — the
+    // pre-play RAM/net spike. Max 10 run together; the rest queue in order
+    // and start as slots free. Overflow past the queue sheds silently
+    // (slowest scrapers would lose the probe race anyway).
+    const maxParallelScrapers = 10;
+    const maxQueuedScrapers = 20;
     int pendingScrapers = activeScrapers.length;
     final seenHashes = <String>{};
     final seenUrls = <String>{};
+    final queue = <StreamScraper>[];
+    int running = 0;
+    var shed = 0;
 
     void checkClose() {
       if (pendingScrapers == 0 && !controller.isClosed) {
@@ -132,19 +142,83 @@ class ScraperManager {
       }
     }
 
+    void pump() {
+      while (running < maxParallelScrapers && queue.isNotEmpty) {
+        if (controller.isClosed) return;
+        final scraper = queue.removeAt(0);
+        running++;
+        _runScraper(
+          scraper,
+          type: type,
+          title: title,
+          year: year,
+          season: season,
+          episode: episode,
+          imdbId: imdbId,
+          p2pAllowed: p2pAllowed,
+          controller: controller,
+          seenHashes: seenHashes,
+          seenUrls: seenUrls,
+          onDone: () {
+            running--;
+            pendingScrapers--;
+            checkClose();
+            pump();
+          },
+        );
+      }
+      // Queue is drained below the parallel window but stragglers remain:
+      // if everything running finished and queue is empty, close check runs
+      // via onDone. Nothing else to do here.
+    }
+
     for (final scraper in activeScrapers) {
-      var yielded = 0;
-      scraper
-          .scrapeStream(
-        type: type,
-        title: title,
-        year: year,
-        season: season,
-        episode: episode,
-        imdbId: imdbId,
-      )
-          .listen(
-        (source) {
+      if (queue.length >= maxParallelScrapers + maxQueuedScrapers) {
+        // Shed load: slowest/lowest-priority scrapers lose the race anyway.
+        shed++;
+        pendingScrapers--;
+        continue;
+      }
+      queue.add(scraper);
+    }
+    if (shed > 0) {
+      AppLog.d('[ScraperManager] shed $shed queued scrapers (pool full)');
+    }
+    checkClose();
+    pump();
+
+    return controller.stream;
+  }
+
+  /// Runs ONE scraper's stream into [controller] with dedup + quarantine
+  /// votes. Extracted verbatim from the old inline loop so bounded pooling
+  /// changes concurrency only — never scrape semantics.
+  void _runScraper(
+    StreamScraper scraper, {
+    required String type,
+    required String title,
+    int? year,
+    int? season,
+    int? episode,
+    String? imdbId,
+    required bool p2pAllowed,
+    required StreamController<StreamSource> controller,
+    required Set<String> seenHashes,
+    required Set<String> seenUrls,
+    required void Function() onDone,
+  }) {
+    var yielded = 0;
+    scraper
+        .scrapeStream(
+      type: type,
+      title: title,
+      year: year,
+      season: season,
+      episode: episode,
+      imdbId: imdbId,
+    )
+        .listen(
+      (source) {
           if (controller.isClosed) return;
           yielded++;
 
@@ -187,17 +261,13 @@ class ScraperManager {
           ScraperQuarantineService.markFailed(scraper.name);
         },
         onDone: () {
-          pendingScrapers--;
           if (yielded == 0) {
             // v1.2.0-ADMIN: empty vote (throttled 24h server+client).
             // ignore: unawaited_futures
             ScraperReporter.reportEmpty(scraper.name);
           }
-          checkClose();
+          onDone();
         },
       );
-    }
-
-    return controller.stream;
   }
 }

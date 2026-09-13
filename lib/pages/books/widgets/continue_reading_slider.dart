@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../../utils/perf/image_caps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../models/book/book_result.dart';
@@ -324,6 +326,9 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                           ? CachedNetworkImage(
                               imageUrl: item.coverUrl,
                               fit: BoxFit.cover,
+                              // P12: decode-capped (was full-res).
+                              memCacheWidth: ImageCaps.kCardW,
+                              maxWidthDiskCache: ImageCaps.kCardW,
                               placeholder: (_, __) => Container(
                                 color: const Color(0xFF20212C),
                                 child: const Center(

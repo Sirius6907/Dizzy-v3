@@ -163,20 +163,31 @@ class StreamService {
       });
     }
 
-    for (final addon in addons) {
-      _fetchFromAddon(addon, type, id).then((sources) {
-        if (!controller.isClosed) {
-          for (final source in sources) {
-            controller.add(source);
+    // P4: bounded addon pool — max 10 parallel addon fetches. 20+ Stremio
+    // addons firing at once is the same socket bomb as uncapped scrapers.
+    // Chunks run sequentially; close semantics identical to before.
+    () async {
+      const addonParallel = 10;
+      for (var i = 0; i < addons.length; i += addonParallel) {
+        if (controller.isClosed) return;
+        final chunk = addons.skip(i).take(addonParallel).toList();
+        await Future.wait(chunk.map((addon) async {
+          try {
+            final sources = await _fetchFromAddon(addon, type, id);
+            if (!controller.isClosed) {
+              for (final source in sources) {
+                controller.add(source);
+              }
+            }
+          } catch (_) {} finally {
+            pending--;
+            if (pending <= 0 && !controller.isClosed) {
+              controller.close();
+            }
           }
-        }
-      }).catchError((_) {}).whenComplete(() {
-        pending--;
-        if (pending <= 0 && !controller.isClosed) {
-          controller.close();
-        }
-      });
-    }
+        }));
+      }
+    }();
 
     return controller.stream;
   }

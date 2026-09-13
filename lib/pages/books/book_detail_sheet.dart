@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import '../../models/book/book_result.dart';
 import '../../services/books/book_download_service.dart';
@@ -200,6 +202,9 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                 ? CachedNetworkImage(
                                     imageUrl: book.coverUrl,
                                     fit: BoxFit.cover,
+                                    // P12: decode-capped (was full-res).
+                                    memCacheWidth: ImageCaps.kCardW,
+                                    maxWidthDiskCache: ImageCaps.kCardW,
                                     placeholder: (_, __) => Container(
                                       color: const Color(0xFF22232E),
                                       child: const Center(

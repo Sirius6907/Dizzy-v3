@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:media_kit/media_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:window_manager/window_manager.dart';
 
@@ -44,6 +45,8 @@ import './services/discord/discord_rpc_service.dart';
 import './widgets/updater/update_dialog.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
+import './services/system/resource_governor.dart';
+import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
 import './services/watchparty/guest_auto_open.dart';
 
@@ -54,10 +57,23 @@ void main() async {
     await windowManager.ensureInitialized();
     await WindowService.instance.initialize();
   }
-  // Cap the in-memory image cache: 500 entries / 300 MB decoded bitmaps max.
-  // Posters are decoded at capped sizes (memCacheWidth) so RAM stays bounded.
-  PaintingBinding.instance.imageCache.maximumSize = 500;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 300 << 20;
+  // P0/P1: platform-aware in-memory image caps. Phones share RAM with the
+  // OS — 200 entries / 150MB; desktops keep 500 / 300MB. Every remote
+  // image must ALSO pass memCacheWidth via DizzyImage so full-res files
+  // can never inflate into 8-30MB decoded bitmaps (the 30-40min slow leak).
+  final isMobile = Platform.isAndroid || Platform.isIOS;
+  PaintingBinding.instance.imageCache.maximumSize = isMobile ? 200 : 500;
+  PaintingBinding.instance.imageCache.maximumSizeBytes =
+      (isMobile ? 150 : 300) << 20;
+  // P0/P9: global resource governor (RAM/CPU/GPU sampler) starts with the
+  // app, not just the player — 30-40min browse+watch soak needs it live.
+  // Drives PerformanceMode (ambient/glass/buffer shedding) on breach.
+  ResourceGovernor.instance.start();
+  PerformanceMode.isLowRamDevice = isMobile && await _isLowRamPhone();
+  // P17: Smooth Mode defaults ON for ≤3GB-RAM phones (non-tech default).
+  final prefs = await SharedPreferences.getInstance();
+  final smoothSaved = prefs.getBool('perf_smooth_mode');
+  PerformanceMode.setSmoothMode(smoothSaved ?? PerformanceMode.isLowRamDevice);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await EnvService.initialize();
   await PlayerSettings.initialize();
@@ -109,6 +125,41 @@ void main() async {
   runApp(const DizzyApp());
 }
 
+/// P0/P17: true on phones with ≤3GB total RAM (Android /proc/meminfo;
+/// iOS unknown → false, Smooth Mode stays opt-in there).
+Future<bool> _isLowRamPhone() async {
+  try {
+    if (Platform.isAndroid) {
+      final lines = await File('/proc/meminfo').readAsLines();
+      for (final l in lines) {
+        if (l.startsWith('MemTotal:')) {
+          final kb = int.tryParse(l.split(RegExp(r'\s+'))[1]);
+          if (kb != null) return kb <= 3 * 1024 * 1024;
+        }
+      }
+    }
+  } catch (_) {}
+  return false;
+}
+
+/// P8: app-background suspend — Discord RPC, updater checks, cloud polls
+/// and downloads pause when the app hides; voice (LiveKit) is EXCLUDED
+/// by design and keeps running until room exit (user decision).
+class _PerfLifecycleObserver with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      DownloadService.instance.pauseForNetworkLoss();
+      DiscordRpcService.instance.clearToIdle();
+    } else if (state == AppLifecycleState.resumed) {
+      DownloadService.instance.resumeAfterNetworkReturn();
+    }
+  }
+}
+
+final _perfLifecycleObserver = _PerfLifecycleObserver();
+
 class DizzyApp extends StatefulWidget {
   const DizzyApp({super.key});
 
@@ -125,6 +176,8 @@ class _DizzyAppState extends State<DizzyApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // P8: background-suspend observer (never touches voice).
+    WidgetsBinding.instance.addObserver(_perfLifecycleObserver);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
@@ -138,6 +191,7 @@ class _DizzyAppState extends State<DizzyApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(_perfLifecycleObserver);
     super.dispose();
   }
 

@@ -166,17 +166,19 @@ class _AnimePosterFrame extends StatelessWidget {
           children: [
             const ColoredBox(color: Color(0xFF171A23)),
 
-            // Poster Image
+            // Poster Image — P15: own raster boundary (see movie_card).
             if (hasPoster)
-              CachedNetworkImage(
-                imageUrl: posterUrl,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.medium,
-                memCacheWidth: 500,
-                memCacheHeight: 750,
-                maxWidthDiskCache: 500,
-                placeholder: (context, url) => const PosterSkeleton(),
-                errorWidget: (context, url, error) => const MissingPoster(),
+              RepaintBoundary(
+                child: CachedNetworkImage(
+                  imageUrl: posterUrl,
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.medium,
+                  memCacheWidth: 500,
+                  memCacheHeight: 750,
+                  maxWidthDiskCache: 500,
+                  placeholder: (context, url) => const PosterSkeleton(),
+                  errorWidget: (context, url, error) => const MissingPoster(),
+                ),
               )
             else
               const MissingPoster(),

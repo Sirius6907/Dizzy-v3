@@ -19,6 +19,11 @@ abstract final class ImageCaps {
   /// Overlay logos.
   static const int kLogo = 400;
 
+  /// P12: full-screen reader pages (manga/comic). Content, not chrome —
+  /// capped at 1280px (≈3.5MB) instead of full-res (≈8MB+) so zoom stays
+  /// sharp while a 100-page chapter can't OOM the reader.
+  static const int kPage = 1280;
+
   /// Clamp any requested decode width into the safe range.
   static int capWidth(int requested) =>
       requested.clamp(kThumb, kBackdrop);

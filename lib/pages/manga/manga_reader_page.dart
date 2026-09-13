@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/manga/manga.dart';
+import '../../utils/perf/image_caps.dart';
 import '../../models/manga/manga_chapter.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/manga/manga_service.dart';
@@ -157,8 +158,16 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
         }
       });
 
-      for (final url in urls) {
-        precacheImage(CachedNetworkImageProvider(url), context);
+      // P1/P7: NEVER precache the whole chapter at full-res — a 100-page
+      // chapter = 100 full bitmaps in RAM (the reader OOM). Cap to the next
+      // 3 pages, decoded at backdrop width via ResizeImage.
+      final upcoming = urls.skip(_currentPageIndex + 1).take(3);
+      for (final url in upcoming) {
+        precacheImage(
+          ResizeImage(CachedNetworkImageProvider(url),
+              width: ImageCaps.kBackdrop),
+          context,
+        );
       }
 
       if (_pageController?.hasClients ?? false) {
@@ -614,6 +623,9 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
             child: CachedNetworkImage(
               imageUrl: _pageUrls[index],
               fit: BoxFit.contain,
+              // P12: reader page capped (content stays sharp to 1280px).
+              memCacheWidth: ImageCaps.kPage,
+              maxWidthDiskCache: ImageCaps.kPage,
               placeholder: (context, url) => const Center(
                 child: CircularProgressIndicator(color: Colors.white24),
               ),
@@ -657,6 +669,9 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
               child: CachedNetworkImage(
                 imageUrl: _pageUrls[index],
                 fit: BoxFit.fitWidth,
+                // P12: reader page capped (content stays sharp to 1280px).
+                memCacheWidth: ImageCaps.kPage,
+                maxWidthDiskCache: ImageCaps.kPage,
                 placeholder: (context, url) => const SizedBox(
                   height: 350,
                   child: Center(

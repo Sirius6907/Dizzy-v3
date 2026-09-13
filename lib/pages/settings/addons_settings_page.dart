@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import '../../models/addon/addon.dart';
 import '../../services/addon/addon_manager.dart';
@@ -501,6 +503,9 @@ class _AddonCard extends StatelessWidget {
                               width: 28,
                               height: 28,
                               fit: BoxFit.contain,
+                              // P12: decode-capped (was full-res).
+                              memCacheWidth: ImageCaps.kThumb,
+                              maxWidthDiskCache: ImageCaps.kThumb,
                               errorWidget: (_, __, ___) => Icon(
                                 Icons.extension_rounded,
                                 color: providerColor,

@@ -390,13 +390,17 @@ class _ContinueWatchingCardState extends State<_ContinueWatchingCard> {
                       height: imgHeight,
                       color: const Color(0xFF1E212E),
                       child: imageUrl != null && imageUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: imageUrl,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 500,
-                              memCacheHeight: 280,
-                              maxWidthDiskCache: 500,
-                              errorWidget: (_, __, ___) => _buildPlaceholder(),
+                          // P15: own raster boundary — progress ticks and
+                          // hover animations must not re-raster the backdrop.
+                          ? RepaintBoundary(
+                              child: CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                fit: BoxFit.cover,
+                                memCacheWidth: 500,
+                                memCacheHeight: 280,
+                                maxWidthDiskCache: 500,
+                                errorWidget: (_, __, ___) => _buildPlaceholder(),
+                              ),
                             )
                           : _buildPlaceholder(),
                     ),

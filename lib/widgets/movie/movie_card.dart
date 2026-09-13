@@ -267,17 +267,20 @@ class _PosterFrame extends StatelessWidget {
               color: Color(0xFF171A23),
             ),
 
-            // Poster image (cached)
+            // Poster image (cached) — P15: own raster boundary so row
+            // scrolls / hover animations never re-raster the bitmap.
             if (hasPoster)
-              CachedNetworkImage(
-                imageUrl: posterUrl!,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.medium,
-                memCacheWidth: 500,
-                memCacheHeight: 750,
-                maxWidthDiskCache: 500,
-                placeholder: (context, url) => const PosterSkeleton(),
-                errorWidget: (context, url, error) => const MissingPoster(),
+              RepaintBoundary(
+                child: CachedNetworkImage(
+                  imageUrl: posterUrl!,
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.medium,
+                  memCacheWidth: 500,
+                  memCacheHeight: 750,
+                  maxWidthDiskCache: 500,
+                  placeholder: (context, url) => const PosterSkeleton(),
+                  errorWidget: (context, url, error) => const MissingPoster(),
+                ),
               )
             else
               const MissingPoster(),

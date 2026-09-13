@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../utils/perf/image_caps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -323,6 +325,9 @@ class _MusicPageState extends State<MusicPage> {
                       width: 40,
                       height: 40,
                       fit: BoxFit.cover,
+                      // P12: decode-capped (was full-res).
+                      memCacheWidth: ImageCaps.kThumb,
+                      maxWidthDiskCache: ImageCaps.kThumb,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -455,6 +460,9 @@ class _MusicPageState extends State<MusicPage> {
                         width: 52,
                         height: 52,
                         fit: BoxFit.cover,
+                        // P12: decode-capped (was full-res).
+                        memCacheWidth: ImageCaps.kThumb,
+                        maxWidthDiskCache: ImageCaps.kThumb,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -1193,6 +1201,9 @@ class _MusicPageState extends State<MusicPage> {
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
+                              // P12: decode-capped (was full-res).
+                              memCacheWidth: ImageCaps.kThumb,
+                              maxWidthDiskCache: ImageCaps.kThumb,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -2874,6 +2885,9 @@ class _MusicHeroBillboard extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: track.coverUrl,
                 fit: BoxFit.cover,
+                // P12: decode-capped (was full-res).
+                memCacheWidth: ImageCaps.kCardW,
+                maxWidthDiskCache: ImageCaps.kCardW,
               ),
             ),
             Positioned.fill(
@@ -3034,6 +3048,9 @@ class _MusicTrendingArtists extends StatelessWidget {
                       width: 78,
                       height: 78,
                       fit: BoxFit.cover,
+                      // P12: decode-capped (was full-res).
+                      memCacheWidth: ImageCaps.kThumb,
+                      maxWidthDiskCache: ImageCaps.kThumb,
                     ),
                   ),
                 ),
@@ -3174,6 +3191,9 @@ class _MusicTrackCard extends StatelessWidget {
                       width: 145,
                       height: 145,
                       fit: BoxFit.cover,
+                      // P12: decode-capped (was full-res).
+                      memCacheWidth: ImageCaps.kThumb,
+                      maxWidthDiskCache: ImageCaps.kThumb,
                     ),
                   ),
                   Positioned(
@@ -3250,6 +3270,9 @@ class _MusicAlbumCard extends StatelessWidget {
                   width: 145,
                   height: 145,
                   fit: BoxFit.cover,
+                  // P12: decode-capped (was full-res).
+                  memCacheWidth: ImageCaps.kThumb,
+                  maxWidthDiskCache: ImageCaps.kThumb,
                 ),
               ),
               const SizedBox(height: 8),
@@ -3308,6 +3331,9 @@ class _MusicPlaylistCard extends StatelessWidget {
                   width: 145,
                   height: 145,
                   fit: BoxFit.cover,
+                  // P12: decode-capped (was full-res).
+                  memCacheWidth: ImageCaps.kThumb,
+                  maxWidthDiskCache: ImageCaps.kThumb,
                 ),
               ),
               const SizedBox(height: 8),
@@ -3374,6 +3400,9 @@ class _MusicTrackRow extends StatelessWidget {
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,
+                // P12: decode-capped (was full-res).
+                memCacheWidth: ImageCaps.kThumb,
+                maxWidthDiskCache: ImageCaps.kThumb,
               ),
             ),
             if (isCurrent)
@@ -3727,6 +3756,9 @@ class _MusicBottomPlayerBar extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        // P12: decode-capped (was full-res).
+        memCacheWidth: ImageCaps.kCardW,
+        maxWidthDiskCache: ImageCaps.kCardW,
         errorWidget: (_, __, ___) => Container(
           width: size,
           height: size,
@@ -4124,6 +4156,9 @@ class _MusicQueueDrawer extends StatelessWidget {
                           width: 36,
                           height: 36,
                           fit: BoxFit.cover,
+                          // P12: decode-capped (was full-res).
+                          memCacheWidth: ImageCaps.kThumb,
+                          maxWidthDiskCache: ImageCaps.kThumb,
                         ),
                       ),
                       title: Text(
@@ -4202,6 +4237,9 @@ class _MusicArtistDetailModal extends StatelessWidget {
                       child: CachedNetworkImage(
                         imageUrl: artist.pictureUrl,
                         fit: BoxFit.cover,
+                        // P12: decode-capped (was full-res).
+                        memCacheWidth: ImageCaps.kCardW,
+                        maxWidthDiskCache: ImageCaps.kCardW,
                       ),
                     ),
                     const Positioned.fill(
@@ -4372,6 +4410,9 @@ class _MusicAlbumDetailModal extends StatelessWidget {
                         width: isMobile ? 80 : 120,
                         height: isMobile ? 80 : 120,
                         fit: BoxFit.cover,
+                        // P12: decode-capped (was full-res).
+                        memCacheWidth: ImageCaps.kThumb,
+                        maxWidthDiskCache: ImageCaps.kThumb,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -4526,6 +4567,9 @@ class _MusicCuratedPlaylistDetailModal extends StatelessWidget {
                         width: isMobile ? 80 : 120,
                         height: isMobile ? 80 : 120,
                         fit: BoxFit.cover,
+                        // P12: decode-capped (was full-res).
+                        memCacheWidth: ImageCaps.kThumb,
+                        maxWidthDiskCache: ImageCaps.kThumb,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -4770,6 +4814,9 @@ class _MusicUserPlaylistDetailModal extends StatelessWidget {
                                   width: 44,
                                   height: 44,
                                   fit: BoxFit.cover,
+                                  // P12: decode-capped (was full-res).
+                                  memCacheWidth: ImageCaps.kThumb,
+                                  maxWidthDiskCache: ImageCaps.kThumb,
                                 ),
                               ),
                               title: Text(
@@ -5010,6 +5057,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
                           child: CachedNetworkImage(
                             imageUrl: track.coverUrl,
                             fit: BoxFit.cover,
+                            // P12: decode-capped (was full-res).
+                            memCacheWidth: ImageCaps.kBackdrop,
+                            maxWidthDiskCache: ImageCaps.kBackdrop,
                             errorWidget: (_, __, ___) => const SizedBox.shrink(),
                           ),
                         ),
@@ -5048,6 +5098,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
               child: CachedNetworkImage(
                 imageUrl: track.coverUrl,
                 fit: BoxFit.cover,
+                // P12: decode-capped (was full-res).
+                memCacheWidth: ImageCaps.kBackdrop,
+                maxWidthDiskCache: ImageCaps.kBackdrop,
                 errorWidget: (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
@@ -5410,6 +5463,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
               width: size * 0.44,
               height: size * 0.44,
               fit: BoxFit.cover,
+              // P12: decode-capped (was full-res).
+              memCacheWidth: ImageCaps.kCardW,
+              maxWidthDiskCache: ImageCaps.kCardW,
             ),
           ),
         ),
@@ -5436,6 +5492,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
         child: CachedNetworkImage(
           imageUrl: track.coverUrl,
           fit: BoxFit.cover,
+          // P12: decode-capped (was full-res).
+          memCacheWidth: ImageCaps.kCardW,
+          maxWidthDiskCache: ImageCaps.kCardW,
         ),
       ),
     );
@@ -5464,6 +5523,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
           child: CachedNetworkImage(
             imageUrl: track.coverUrl,
             fit: BoxFit.cover,
+            // P12: decode-capped (was full-res).
+            memCacheWidth: ImageCaps.kCardW,
+            maxWidthDiskCache: ImageCaps.kCardW,
           ),
         ),
       ),
@@ -5478,6 +5540,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
         width: size,
         height: size,
         fit: BoxFit.cover,
+        // P12: decode-capped (was full-res).
+        memCacheWidth: ImageCaps.kCardW,
+        maxWidthDiskCache: ImageCaps.kCardW,
       ),
     );
   }
@@ -5507,6 +5572,9 @@ class _MusicExpandedPlayerState extends State<_MusicExpandedPlayer> with SingleT
           child: CachedNetworkImage(
             imageUrl: track.coverUrl,
             fit: BoxFit.cover,
+            // P12: decode-capped (was full-res).
+            memCacheWidth: ImageCaps.kCardW,
+            maxWidthDiskCache: ImageCaps.kCardW,
           ),
         ),
       );
@@ -5941,6 +6009,9 @@ class _MusicDownloadedTracksModalState extends State<_MusicDownloadedTracksModal
         width: 46,
         height: 46,
         fit: BoxFit.cover,
+        // P12: decode-capped (was full-res).
+        memCacheWidth: ImageCaps.kThumb,
+        maxWidthDiskCache: ImageCaps.kThumb,
         errorWidget: (_, __, ___) => Container(
           width: 46,
           height: 46,

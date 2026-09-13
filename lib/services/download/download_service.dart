@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../models/download/download_task_model.dart';
 import '../../models/stream/stream_model.dart';
 import '../../utils/download/download_path_helper.dart';
+import '../../utils/perf/storage_guard.dart';
 import '../../utils/platform/storage_space_helper.dart';
 import '../debrid/debrid_service.dart';
 import '../errors/app_error_log.dart';
@@ -55,6 +56,17 @@ class DownloadService {
     await _loadPersistedTasks();
     _isInitialized = true;
     _startConnectivityWatcher();
+    // P11: probe disk headroom + purge stale .part/.tmp files (fire-and-
+    // forget — startup must never wait on `df`). Refreshes at most /5min.
+    unawaited(_refreshStorageGuard());
+  }
+
+  /// P11: resolves the downloads dir and refreshes the storage guard.
+  Future<void> _refreshStorageGuard() async {
+    try {
+      final dir = await DownloadPathHelper.getDownloadsDirectoryPath();
+      await StorageGuard.refresh(dir);
+    } catch (_) {}
   }
 
   /// Starts (once) the connectivity listener. Safe to call multiple times.
@@ -235,6 +247,8 @@ class DownloadService {
       _schedulePersist(immediate: terminal);
     }
     _updateWakelockState();
+    // P6: a freed slot starts the oldest queued task (bounded pump).
+    _pumpDownloadQueue();
   }
 
   void _updateWakelockState() {
@@ -266,6 +280,11 @@ class DownloadService {
     await initialize();
 
     final downloadDir = customDownloadDir ?? await DownloadPathHelper.getDownloadsDirectoryPath();
+    // P11: storage-critical (<500MB free or >90% used) → refuse with an
+    // Easy-English line instead of writing into a full disk mid-stream
+    // (that corrupts partials AND stalls playback buffers sharing the disk).
+    await StorageGuard.refresh(downloadDir);
+    final storageBlocked = StorageGuard.isCritical;
     final now = DateTime.now();
     final taskId = 'dl_${mediaId}_${season ?? 0}_${episode ?? 0}_${now.millisecondsSinceEpoch}';
 
@@ -363,12 +382,57 @@ class DownloadService {
     tasksNotifier.value = current;
     await _persistTasks();
 
+    // P11: full disk → fail fast with Easy English (never a half-written
+    // file, never a stuck "downloading 0%" task heating the radio).
+    if (storageBlocked) {
+      _updateTask(task.copyWith(
+        status: DownloadStatus.failed,
+        error: DownloadErrorText.easyText('E_SPACE_FULL'),
+      ));
+      return tasksNotifier.value
+          .firstWhere((t) => t.id == taskId, orElse: () => task);
+    }
+
     // Begin download in background without blocking caller/player
     _executeDownload(task);
     return task;
   }
 
+  // P6: hard concurrency cap — phones get 2 slots, desktops 3. Phones
+  // cannot sustain parallel HTTP/torrent streams without heating +
+  // radio contention; extras wait queued (netPaused=false, user-visible).
+  // P13: platform-tuned (2 = Android/iOS, 3 = desktop).
+  static int get maxParallelDownloads =>
+      Platform.isAndroid || Platform.isIOS ? 2 : 3;
+
+  int get _activeDownloadCount => tasksNotifier.value
+      .where((t) => t.status == DownloadStatus.downloading)
+      .length;
+
+  /// Starts the oldest queued tasks while slots are free. Re-entrant safe:
+  /// [_executeDownload] marks downloading synchronously before any await.
+  void _pumpDownloadQueue() {
+    if (!_isInitialized) return;
+    while (_activeDownloadCount < maxParallelDownloads) {
+      DownloadTask? next;
+      for (final t in tasksNotifier.value) {
+        if (t.status == DownloadStatus.queued && !t.netPaused) {
+          next = t;
+          break;
+        }
+      }
+      if (next == null) return;
+      // ignore: unawaited_futures
+      _executeDownload(next);
+    }
+  }
+
   Future<void> _executeDownload(DownloadTask task) async {
+    // P6: no free slot → stay queued; the pump starts us on completion.
+    if (_activeDownloadCount >= maxParallelDownloads) {
+      _updateTask(task.copyWith(status: DownloadStatus.queued));
+      return;
+    }
     _canceledOrPausedTaskIds.remove(task.id);
     _updateTask(task.copyWith(status: DownloadStatus.downloading, error: null));
 

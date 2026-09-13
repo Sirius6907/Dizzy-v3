@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/custom_background_service.dart';
 import '../../services/home/home_page_settings.dart';
+import '../../utils/perf/image_caps.dart';
+import '../../utils/perf/performance_mode.dart';
 
 /// GPU-accelerated animated ambient background with moving soft-faded
 /// light orbs, aurora waves, gradient meshes, and custom user wallpaper blending.
@@ -36,6 +38,10 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
     HomePageSettings.changeNotifier.addListener(_onSettingsChanged);
     AppThemeService.currentPalette.addListener(_onSettingsChanged);
     CustomBackgroundService.notifier.addListener(_onSettingsChanged);
+    // P2: governor / Smooth Mode kills the infinite ticker instantly —
+    // a 12s repeat() that never stops is the 30-40min GPU heater.
+    PerformanceMode.ambientAllowed.addListener(_onPerfChanged);
+    _applyPerfGate();
   }
 
   void _onSettingsChanged() {
@@ -43,11 +49,27 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
     setState(() {});
   }
 
+  void _onPerfChanged() {
+    if (!mounted) return;
+    _applyPerfGate();
+  }
+
+  /// P2: stops the ticker when perf gates close; restarts when they open.
+  /// No setState needed — ValueListenableBuilder below re-renders.
+  void _applyPerfGate() {
+    if (PerformanceMode.ambientAllowed.value) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      _controller.stop();
+    }
+  }
+
   @override
   void dispose() {
     HomePageSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     CustomBackgroundService.notifier.removeListener(_onSettingsChanged);
+    PerformanceMode.ambientAllowed.removeListener(_onPerfChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -69,6 +91,9 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        // P1: fullscreen wallpaper still decodes capped (backdrop = 960px).
+        memCacheWidth: ImageCaps.kBackdrop,
+        maxWidthDiskCache: ImageCaps.kBackdrop,
         placeholder: (_, __) => const SizedBox.shrink(),
         errorWidget: (_, __, ___) => const SizedBox.shrink(),
       );
@@ -106,57 +131,72 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
             return ValueListenableBuilder<bool>(
               valueListenable: HomePageSettings.enableAmbientLights,
               builder: (context, lightsEnabled, _) {
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // 1. Base solid scaffold background color
-                    Container(color: palette.scaffoldBackgroundColor),
+                // P2: perf gate sits OUTSIDE the AnimatedBuilder — when the
+                // governor closes it, the whole CustomPaint subtree unmounts
+                // (zero per-frame GPU cost) instead of painting statically.
+                return ValueListenableBuilder<bool>(
+                  valueListenable: PerformanceMode.ambientAllowed,
+                  builder: (context, perfAllowed, _) {
+                    final showLights = lightsEnabled &&
+                        perfAllowed &&
+                        (!hasWallpaper || customBg.blendThemeLights);
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // 1. Base solid scaffold background color
+                        Container(color: palette.scaffoldBackgroundColor),
 
-                    // 2. Custom Background Wallpaper (if active)
-                    if (hasWallpaper) ...[
-                      Positioned.fill(
-                        child: _buildWallpaperImage(customBg),
-                      ),
-                      // Theme color tint layer blending over the photo
-                      Positioned.fill(
-                        child: Container(
-                          color: palette.scaffoldBackgroundColor.withValues(
-                            alpha: customBg.themeTintOpacity,
+                        // 2. Custom Background Wallpaper (if active)
+                        if (hasWallpaper) ...[
+                          Positioned.fill(
+                            child: _buildWallpaperImage(customBg),
                           ),
-                        ),
-                      ),
-                    ],
-
-                    // 3. Moving Ambient Lights & Glows (GPU Canvas)
-                    if (lightsEnabled && (!hasWallpaper || customBg.blendThemeLights))
-                      Positioned.fill(
-                        child: AnimatedBuilder(
-                          animation: _controller,
-                          builder: (context, _) {
-                            final speed = HomePageSettings.ambientLightSpeed.value;
-                            final intensity = HomePageSettings.ambientLightIntensity.value;
-                            final pattern = HomePageSettings.ambientLightPattern.value;
-                            final t = (_controller.value * speed) % 1.0;
-
-                            return CustomPaint(
-                              painter: _AmbientBackgroundPainter(
-                                t: t,
-                                palette: palette,
-                                pattern: pattern,
-                                intensity: intensity,
-                                isOverlay: hasWallpaper,
+                          // Theme color tint layer blending over the photo
+                          Positioned.fill(
+                            child: Container(
+                              color: palette.scaffoldBackgroundColor.withValues(
+                                alpha: customBg.themeTintOpacity,
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
+                          ),
+                        ],
 
-                    // 4. Foreground Content
-                    if (widget.child != null)
-                      Positioned.fill(
-                        child: widget.child!,
-                      ),
-                  ],
+                        // 3. Moving Ambient Lights & Glows (GPU Canvas)
+                        if (showLights)
+                          Positioned.fill(
+                            child: AnimatedBuilder(
+                              animation: _controller,
+                              builder: (context, _) {
+                                final speed =
+                                    HomePageSettings.ambientLightSpeed.value;
+                                final intensity = HomePageSettings
+                                    .ambientLightIntensity.value;
+                                final pattern = HomePageSettings
+                                    .ambientLightPattern.value;
+                                final t =
+                                    (_controller.value * speed) % 1.0;
+
+                                return CustomPaint(
+                                  painter: _AmbientBackgroundPainter(
+                                    t: t,
+                                    palette: palette,
+                                    pattern: pattern,
+                                    intensity: intensity,
+                                    isOverlay: hasWallpaper,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                        // 4. Foreground Content
+                        if (widget.child != null)
+                          Positioned.fill(
+                            child: widget.child!,
+                          ),
+                      ],
+                    );
+                  },
                 );
               },
             );
