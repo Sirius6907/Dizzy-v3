@@ -146,6 +146,9 @@ abstract final class MusicSettings {
   static final ValueNotifier<bool> enableLiquidGlass = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showLyricsDrawer = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showQueueDrawer = ValueNotifier<bool>(true);
+  static final ValueNotifier<double> crossfadeSeconds = ValueNotifier<double>(3.0);
+  static final ValueNotifier<bool> enableGaplessPlayback = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableSmartVolumeNormalization = ValueNotifier<bool>(true);
   static final ValueNotifier<List<String>> componentOrderFullscreen = ValueNotifier<List<String>>([
     'artwork',
     'title',
@@ -224,6 +227,9 @@ abstract final class MusicSettings {
     enableLiquidGlass.value = prefs.getBool(_keyEnableLiquidGlass) ?? true;
     showLyricsDrawer.value = prefs.getBool(_keyShowLyricsDrawer) ?? true;
     showQueueDrawer.value = prefs.getBool(_keyShowQueueDrawer) ?? true;
+    crossfadeSeconds.value = prefs.getDouble('music_crossfade_secs') ?? 3.0;
+    enableGaplessPlayback.value = prefs.getBool('music_gapless') ?? true;
+    enableSmartVolumeNormalization.value = prefs.getBool('music_norm') ?? true;
 
     final fullOrderList = prefs.getStringList(_keyComponentOrderFullscreen);
     if (fullOrderList != null && fullOrderList.isNotEmpty) {
@@ -403,6 +409,9 @@ abstract final class MusicSettings {
     customHoverEffect.value = MusicHoverEffect.glassRipple;
     customArtworkStyle.value = MusicArtworkStyle.vinylSpinningDisc;
     enableLiquidGlass.value = true;
+    crossfadeSeconds.value = 3.0;
+    enableGaplessPlayback.value = true;
+    enableSmartVolumeNormalization.value = true;
     componentOrderFullscreen.value = [
       'artwork',
       'title',
@@ -412,6 +421,27 @@ abstract final class MusicSettings {
       'secondaryControls',
       'extraActions',
     ];
+    _notify();
+  }
+
+  static Future<void> setCrossfadeSeconds(double secs) async {
+    crossfadeSeconds.value = secs;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('music_crossfade_secs', secs);
+    _notify();
+  }
+
+  static Future<void> setEnableGaplessPlayback(bool val) async {
+    enableGaplessPlayback.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('music_gapless', val);
+    _notify();
+  }
+
+  static Future<void> setEnableSmartVolumeNormalization(bool val) async {
+    enableSmartVolumeNormalization.value = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('music_norm', val);
     _notify();
   }
 

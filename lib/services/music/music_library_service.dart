@@ -106,6 +106,13 @@ class MusicLibraryService extends ChangeNotifier {
     await _saveUserPlaylists();
   }
 
+  Future<void> importUserPlaylist(UserPlaylist playlist) async {
+    _userPlaylists.removeWhere((p) => p.id == playlist.id);
+    _userPlaylists.insert(0, playlist);
+    notifyListeners();
+    await _saveUserPlaylists();
+  }
+
   Future<void> addTrackToPlaylist(String playlistId, MusicTrack track) async {
     final idx = _userPlaylists.indexWhere((p) => p.id == playlistId);
     if (idx >= 0) {

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// P2/P9/UX3 — single switchboard for every visual & buffer cost in the app.
