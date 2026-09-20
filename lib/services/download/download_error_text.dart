@@ -71,10 +71,16 @@ class DownloadErrorText {
         t.contains('timed out') ||
         t.contains('connection reset') ||
         t.contains('connection terminated') ||
+        t.contains('connection closed') ||
+        t.contains('broken pipe') ||
+        t.contains('network is down') ||
+        t.contains('software caused connection abort') ||
+        t.contains('no address associated with hostname') ||
         t.contains('failed host lookup') ||
         t.contains('network is unreachable') ||
         t.contains('handshake') ||
-        t.contains('connection refused')) {
+        t.contains('connection refused') ||
+        t.contains('os error')) {
       return 'E_NET_TIMEOUT';
     }
     return 'E_UNKNOWN';
@@ -110,6 +116,9 @@ class DownloadErrorText {
 
   /// One-step: raw → user line.
   static String fromRaw(String raw) => easyText(classify(raw));
+
+  /// True when the raw error is caused by connection loss/socket/timeout.
+  static bool isNetworkError(String raw) => classify(raw) == 'E_NET_TIMEOUT';
 
   /// Follow-up action hint for the UI (which button to offer).
   /// 'retry' | 'another' | 'direct' | 'storage' | 'remove' | 'none'

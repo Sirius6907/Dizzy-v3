@@ -72,6 +72,11 @@ class WatchSyncMessage {
   /// Guests pre-RESOLVE metadata on sight (no video pre-open — bandwidth).
   final bool prefetchReady;
 
+  /// Optional cross-media sync attributes (e.g. Manga chapter/page, Audio track).
+  final String? mediaKind;
+  final int? chapterIndex;
+  final int? pageIndex;
+
   const WatchSyncMessage({
     this.version = 2,
     required this.mediaRef,
@@ -85,6 +90,9 @@ class WatchSyncMessage {
     this.subTrack,
     required this.hostSentAtMs,
     this.prefetchReady = false,
+    this.mediaKind,
+    this.chapterIndex,
+    this.pageIndex,
   });
 
   Map<String, dynamic> toJson() => {
@@ -101,6 +109,9 @@ class WatchSyncMessage {
         'sub_track': subTrack,
         'host_sent_at': hostSentAtMs,
         'prefetch_ready': prefetchReady,
+        if (mediaKind != null) 'media_kind': mediaKind,
+        if (chapterIndex != null) 'chapter_index': chapterIndex,
+        if (pageIndex != null) 'page_index': pageIndex,
       };
 
   factory WatchSyncMessage.fromJson(Map<String, dynamic> json) =>
@@ -120,6 +131,9 @@ class WatchSyncMessage {
             int.tryParse(json['host_sent_at']?.toString() ?? '') ?? 0,
         // Old clients never send the key → false (no behavior change).
         prefetchReady: json['prefetch_ready'] == true,
+        mediaKind: json['media_kind']?.toString(),
+        chapterIndex: int.tryParse(json['chapter_index']?.toString() ?? ''),
+        pageIndex: int.tryParse(json['page_index']?.toString() ?? ''),
       );
 
   bool get isUsable => version >= 1 && version <= 2 && mediaRef.isNotEmpty;

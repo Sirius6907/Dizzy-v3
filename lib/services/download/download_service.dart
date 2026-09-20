@@ -114,15 +114,23 @@ class DownloadService {
   Future<void> pauseForNetworkLoss() async {
     final toPause = tasksToNetPause(tasksNotifier.value);
     for (final task in toPause) {
-      _canceledOrPausedTaskIds.add(task.id);
-      _cleanupHttpTask(task.id);
-      _updateTask(task.copyWith(
-        status: DownloadStatus.paused,
-        netPaused: true,
-        speedBytesPerSec: 0.0,
-        etaSeconds: null,
-      ));
+      await pauseSingleTaskForNetwork(task.id);
     }
+  }
+
+  /// Pause a single downloading task due to network drop (marks netPaused).
+  Future<void> pauseSingleTaskForNetwork(String taskId) async {
+    _canceledOrPausedTaskIds.add(taskId);
+    _cleanupHttpTask(taskId);
+    final task = tasksNotifier.value.where((t) => t.id == taskId).firstOrNull;
+    if (task == null) return;
+    _updateTask(task.copyWith(
+      status: DownloadStatus.paused,
+      netPaused: true,
+      speedBytesPerSec: 0.0,
+      etaSeconds: null,
+      error: null,
+    ));
   }
 
   /// Resume tasks that were auto-paused by network loss.
@@ -142,6 +150,10 @@ class DownloadService {
   void _failTask(DownloadTask task, Object e, {String screen = 'downloads'}) {
     if (_canceledOrPausedTaskIds.contains(task.id)) return;
     final raw = e.toString();
+    if (DownloadErrorText.isNetworkError(raw)) {
+      unawaited(pauseSingleTaskForNetwork(task.id));
+      return;
+    }
     final code = DownloadErrorText.classify(raw);
     final latest =
         tasksNotifier.value.where((t) => t.id == task.id).firstOrNull ?? task;
@@ -180,7 +192,10 @@ class DownloadService {
           var task = DownloadTask.fromJson(item);
           // If app was terminated while downloading, set state to paused
           if (task.status == DownloadStatus.downloading || task.status == DownloadStatus.queued) {
-            task = task.copyWith(status: DownloadStatus.paused);
+            task = task.copyWith(
+              status: DownloadStatus.paused,
+              netPaused: task.status == DownloadStatus.downloading,
+            );
           }
           // Verify completed file still exists on disk
           if (task.status == DownloadStatus.completed) {
@@ -188,7 +203,7 @@ class DownloadService {
             if (!f.existsSync()) {
               task = task.copyWith(
                 status: DownloadStatus.failed,
-                error: 'File was moved or deleted from disk',
+                error: DownloadErrorText.easyText('E_FILE_GONE'),
               );
             }
           }
@@ -413,6 +428,7 @@ class DownloadService {
   /// [_executeDownload] marks downloading synchronously before any await.
   void _pumpDownloadQueue() {
     if (!_isInitialized) return;
+    if (offlineNotifier.value) return;
     while (_activeDownloadCount < maxParallelDownloads) {
       DownloadTask? next;
       for (final t in tasksNotifier.value) {
@@ -428,6 +444,10 @@ class DownloadService {
   }
 
   Future<void> _executeDownload(DownloadTask task) async {
+    if (offlineNotifier.value) {
+      _updateTask(task.copyWith(status: DownloadStatus.queued));
+      return;
+    }
     // P6: no free slot → stay queued; the pump starts us on completion.
     if (_activeDownloadCount >= maxParallelDownloads) {
       _updateTask(task.copyWith(status: DownloadStatus.queued));
@@ -480,6 +500,8 @@ class DownloadService {
         throw Exception('TorrServer could not resolve media stream URL');
       }
 
+      if (_canceledOrPausedTaskIds.contains(task.id)) return;
+
       final match = RegExp(r'[0-9a-fA-F]{40}').firstMatch(streamUrl);
       final hash = match?.group(0) ?? task.infoHash;
 
@@ -510,6 +532,8 @@ class DownloadService {
       if (debridFiles.isEmpty || debridFiles.first.downloadUrl.isEmpty) {
         throw Exception('Debrid cloud returned no direct download links');
       }
+
+      if (_canceledOrPausedTaskIds.contains(task.id)) return;
 
       final directDownloadUrl = debridFiles.first.downloadUrl;
       final debridTask = task.copyWith(rawUrl: directDownloadUrl);
@@ -542,7 +566,10 @@ class DownloadService {
   Future<void> _executeHttpDownload(DownloadTask task) async {
     final urlStr = task.rawUrl;
     if (urlStr == null || urlStr.isEmpty) {
-      _updateTask(task.copyWith(status: DownloadStatus.failed, error: 'Empty download URL'));
+      _updateTask(task.copyWith(
+        status: DownloadStatus.failed,
+        error: DownloadErrorText.easyText('E_FILE_GONE'),
+      ));
       return;
     }
 
