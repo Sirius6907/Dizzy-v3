@@ -449,8 +449,9 @@ class _SearchPageState extends State<SearchPage> {
                     onPressed: () {
                       _searchController.clear();
                       _onSearchChanged('');
+                      _focusNode.requestFocus();
                     },
-                    child: const Text('Clear search'),
+                    child: const Text('Try another search'),
                   ),
                 ],
               ),

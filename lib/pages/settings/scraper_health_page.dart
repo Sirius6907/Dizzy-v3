@@ -133,6 +133,7 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
   }
 
   Widget _introCard(int working, int resting, int off) {
+    final summary = _summaryText(working, resting, off);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -144,22 +145,41 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
         border: Border.all(
             color: const Color(0xFF10B981).withValues(alpha: 0.30)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('📡 Where do videos come from?',
+          const Text('📡 Where do videos come from?',
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w900)),
-          SizedBox(height: 6),
-          Text(
+          const SizedBox(height: 6),
+          const Text(
             'Dizzy finds videos from many Sources. Green means working. Orange means resting. Grey means off for now.',
             style: TextStyle(color: Colors.white70, fontSize: 13.5),
           ),
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              summary,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _summaryText(int working, int resting, int off) {
+    final parts = <String>[];
+    if (working > 0) parts.add('$working working');
+    if (resting > 0) parts.add('$resting resting');
+    if (off > 0) parts.add('$off off');
+    if (parts.isEmpty) return '';
+    return parts.join(' • ');
   }
 
   Widget _sourceTile(StreamScraper s) {
@@ -185,7 +205,7 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
       dot = const Color(0xFF10B981);
       label = 'Working';
       sub = s.isTorrentScraper
-          ? 'Torrent Source. Needs P2P turned on.'
+          ? 'Needs extra sharing turned on in Settings.'
           : 'Ready to find videos.';
       labelColor = const Color(0xFF10B981);
     }
@@ -235,7 +255,13 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
           ),
           if (resting) ...[
             const SizedBox(width: 8),
-            TextButton(
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(72, 36),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(fontWeight: FontWeight.w800),
+              ),
               onPressed: () => _retry(s.name),
               child: const Text('Retry'),
             ),

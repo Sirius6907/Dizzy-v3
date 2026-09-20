@@ -43,6 +43,7 @@ class StreamProbeRace {
 
   /// Safety net so a hung probe can never block the winner future forever.
   static const Duration _drainDeadline = Duration(seconds: 4);
+  Timer? _drainTimer;
   Timer? _batchTimer;
   final List<StreamSource> _pendingUiBatch = [];
   int _inFlight = 0;
@@ -125,6 +126,10 @@ class StreamProbeRace {
     // settle the winner via close() when the last probe lands, and a
     // verified source must never be dropped by that settle.
     if (alive) {
+      if (_closed) {
+        _onProbeDone();
+        return;
+      }
       verifiedSources.add(source);
       if (!_winnerCompleter.isCompleted) {
         _winnerCompleter.complete(source);
@@ -154,6 +159,8 @@ class StreamProbeRace {
     if (_closed) return;
     _closed = true;
     _draining = false;
+    _drainTimer?.cancel();
+    _drainTimer = null;
     _flushUiBatch();
     if (!_winnerCompleter.isCompleted) {
       _winnerCompleter.complete(null); // no alive source found
@@ -173,7 +180,8 @@ class StreamProbeRace {
       close();
       return;
     }
-    Timer(_drainDeadline, () {
+    _drainTimer?.cancel();
+    _drainTimer = Timer(_drainDeadline, () {
       if (!_closed) close(); // hung probe safety net
     });
   }

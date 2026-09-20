@@ -45,7 +45,7 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
         // Polish P18: one toast voice.
         DizzyNotify.show(
           context,
-          "Couldn't start Watch Together. Check net, tap Retry.",
+          "Couldn't start Watch Together. Check internet and tap Retry.",
           tone: NotifyTone.warn,
         );
         return;
@@ -88,7 +88,7 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
             const Text('👥', style: TextStyle(fontSize: 40)),
             const SizedBox(height: DizzySpace.xs),
             const Text(
-              'Room ready! Friend ko code bhejo.',
+              'Room ready! Send this code to your friend.',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: DizzyType.subtitle,
@@ -140,14 +140,15 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                     ),
                     onPressed: () {
                       // v1.2.0: no share dep — copy full invite text instead.
-                      Clipboard.setData(ClipboardData(
-                        text:
-                            'Join my Watch Together: $code — ${widget.mediaTitle}',
-                      ));
+                      // TODO: add share_plus and call Share.share(invite) here
+                      // for one-tap system share sheet.
+                      final invite =
+                          'Watch ${widget.mediaTitle} with me on Dizzy! Use code $code in Watch Together.';
+                      Clipboard.setData(ClipboardData(text: invite));
                       ScaffoldMessenger.of(ctx).hideCurrentSnackBar();
                       DizzyNotify.show(
                         ctx,
-                        'Invite copied. Paste it on WhatsApp.',
+                        'Invite copied. Send it to your friend.',
                         tone: NotifyTone.success,
                       );
                     },
