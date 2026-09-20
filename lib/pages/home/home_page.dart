@@ -40,6 +40,7 @@ import '../../widgets/cloud/consent_onboarding_sheet.dart';
 import '../../widgets/onboarding/onboarding_superpower_sheet.dart';
 import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/player/dub_mode_service.dart';
+import 'package:dizzy/pages/social/instagram_profile_page.dart';
 
 /// Trending row (P22 warm catalog edge feed → snapshot → hidden).
 /// Fail-soft by design: offline/empty = no row, never an error.
@@ -924,6 +925,23 @@ class _GlassAppBar extends StatelessWidget {
                     );
                     onSettingsTap(offset);
                   },
+                );
+              },
+            ),
+            // Profile
+            IconButton(
+              icon: Icon(
+                Icons.person_rounded,
+                color: Colors.white.withValues(alpha: 0.65),
+                size: 24,
+              ),
+              tooltip: 'Profile',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const InstagramProfilePage(),
+                  ),
                 );
               },
             ),

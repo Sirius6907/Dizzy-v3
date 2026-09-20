@@ -14,6 +14,7 @@ import '../../pages/settings/settings_page.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../utils/navigation/route_transitions.dart';
 import 'liquid_dock.dart';
+import 'package:dizzy/widgets/tactile/dizzy_tactile_dock.dart';
 
 /// Reusable global Liquid Glass Dock Navbar connected to [DockSettings].
 class AppLiquidDock extends StatelessWidget {
@@ -267,7 +268,7 @@ class AppLiquidDock extends StatelessWidget {
           }
         }
 
-        return LiquidDock(items: items);
+        return DizzyTactileDock(items: items);
       },
     );
   }
