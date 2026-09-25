@@ -556,6 +556,26 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       _snack('Could not join ${r.roomId}. It may have just closed.');
       return;
     }
+    // Cinema-hall parity: code-join jaisa guest session yahan bhi boot karo.
+    // Iske bina GuestFollowService kabhi arm nahi hota aur guest ko host ka
+    // content follow nahi hota (sirf chat/voice rehta hai).
+    PartySession.instance.startAsGuest(room: room);
+    // Mid-title join → live switch wala auto-open path (P3).
+    final nowRef = room.nowWatchingRef;
+    if (nowRef != null && nowRef.isNotEmpty) {
+      // ignore: unawaited_futures
+      GuestAutoOpen.handle(WatchSyncMessage(
+        mediaRef: nowRef,
+        mediaTitle: room.currentTitle,
+        positionMs: 0,
+        playing: true,
+        hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+      ));
+      PartySession.instance.setGuestMedia(
+        mediaRef: nowRef,
+        mediaTitle: room.currentTitle,
+      );
+    }
     _showRoomReady(room);
     if (mounted) {
       _lobbyFuture = null; // joined rooms change member counts
