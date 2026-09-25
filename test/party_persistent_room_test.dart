@@ -37,6 +37,35 @@ void main() {
       expect(WatchPartyService.maxMembers, 20);
     });
 
+    test('late-join catch-up: room row carries host now-watching', () {
+      // joinRoom full `rooms` row padhta hai — current_media_ref se guest
+      // Task 1 wala catch-up chalta hai. Ye contract pin karta hai ki
+      // fromJson ye columns parse kare (select * hai, column drop nahi).
+      final room = WatchPartyRoom.fromJson({
+        'room_id': 'AB23CD',
+        'title': 'Late Join Room',
+        'media_ref': null,
+        'current_media_ref': 'tmdb:movie:99',
+        'current_title': 'Late Movie',
+        'visibility': 'public',
+        'status': 'lobby',
+      });
+      expect(room.nowWatchingRef, 'tmdb:movie:99');
+      expect(room.currentTitle, 'Late Movie');
+      expect(room.isLiveNow, isTrue);
+      expect(room.watchingLabel, 'Late Movie');
+      // Empty room → guest "Choosing…" par, auto-open skip.
+      const empty = WatchPartyRoom(
+        roomId: 'XY78ZZ',
+        title: 'Empty',
+        mediaRef: null,
+        isPrivate: false,
+        status: 'lobby',
+      );
+      expect(empty.nowWatchingRef, isNull);
+      expect(empty.watchingLabel, 'Choosing…');
+    });
+
     test('public-list join boots the same guest session as code join', () {
       // Contract for _joinPublic (watch_party_page.dart): joinRoom success ke
       // baad PartySession me guest state hona chahiye — warna GuestFollow
