@@ -1710,6 +1710,12 @@ class _PlayerScreenState extends State<PlayerScreen>
                 'Switched to ${next.name ?? next.addonName} (backup)'),
             duration: const Duration(seconds: 2),
           ));
+          // Cinema-hall parity: backup source live → guest ko turant sahi
+          // position (500ms heartbeat ka wait nahi). host_state me real
+          // position hoti hai; same-ref media_switch me 0 hoti — wo KABHI NAHI.
+          if (PartySession.instance.isHost) {
+            unawaited(_partySession?.sendAction('host_state'));
+          }
         }
       } catch (e) {
         AppLog.d('[Failover] switch failed: $e');
