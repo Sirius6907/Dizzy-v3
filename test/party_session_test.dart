@@ -168,6 +168,54 @@ void main() {
     });
   });
 
+  group('Same-title resync (cinema-hall parity)', () {
+    WatchSyncMessage switchMsg({
+      int positionMs = 90000,
+      bool playing = true,
+      int sentAt = 1000,
+    }) =>
+        WatchSyncMessage(
+          mediaRef: 'tmdb:movie:550',
+          positionMs: positionMs,
+          playing: playing,
+          hostSentAtMs: sentAt,
+        );
+
+    test('far guest seeks to host, play state follows', () {
+      final r = PartyPlaybackSession.sameTitleResync(
+        switchMsg(),
+        guestPositionMs: 10000, // 80s behind
+        guestPlaying: true,
+        nowMs: 3000,
+      );
+      expect(r.seekMs, isNotNull);
+      expect(r.seekMs!, greaterThanOrEqualTo(90000));
+      expect(r.play, isNull); // already playing — no toggle
+    });
+
+    test('in-sync guest gets no seek, pause follows', () {
+      final r = PartyPlaybackSession.sameTitleResync(
+        switchMsg(positionMs: 50000, playing: false, sentAt: 1000),
+        guestPositionMs: 50500, // 500ms drift — inside 1.5s tolerance
+        guestPlaying: true,
+        nowMs: 3000, // target ≈ 52000
+      );
+      expect(r.seekMs, isNull);
+      expect(r.play, isFalse); // host paused → guest pauses
+    });
+
+    test('in-sync + same play state → fully quiet (no-op)', () {
+      final r = PartyPlaybackSession.sameTitleResync(
+        switchMsg(positionMs: 50000, playing: true, sentAt: 1000),
+        guestPositionMs: 50500,
+        guestPlaying: true,
+        nowMs: 3000,
+      );
+      expect(r.seekMs, isNull);
+      expect(r.play, isNull);
+    });
+  });
+
   group('Media ref builders', () {
     test('canonical formats', () {
       expect(PartySession.movieRef('550'), 'tmdb:movie:550');
