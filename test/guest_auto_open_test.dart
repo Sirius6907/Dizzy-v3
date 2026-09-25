@@ -66,5 +66,45 @@ void main() {
       await GuestFollowService.disarm();
       expect(GuestFollowService.armed, isFalse);
     });
+
+    test('parseRef covers all ref shapes for auto-open chain', () {
+      // Guest auto-open chain: msg → parseRef → WatchScreen → autoplay →
+      // wired PlayerScreen. Har ref shape parse honi chahiye warna guest
+      // "Couldn't open this one" par atakta hai.
+      expect(
+          GuestAutoOpen.parseRef('tmdb:movie:550', title: 'Fight Club'),
+          isNotNull);
+      expect(GuestAutoOpen.parseRef('tmdb:tv:123:S2:E5'), isNotNull);
+      expect(
+          GuestAutoOpen.parseRef('imdb:tt1234567', title: 'Some Movie'),
+          isNotNull);
+      // host position ke saath wala msg bhi usable hona chahiye.
+      const msg = WatchSyncMessage(
+        mediaRef: 'tmdb:movie:550',
+        mediaTitle: 'Fight Club',
+        positionMs: 90000,
+        playing: true,
+        hostSentAtMs: 1,
+      );
+      expect(msg.isUsable, isTrue);
+      expect(GuestAutoOpen.parseRef(msg.mediaRef, title: msg.mediaTitle),
+          isNotNull);
+    });
+
+    test('guest opens near host position, never 0:00 mid-title', () {
+      // host 90s pe hai, msg 2s purana → guest ~92s pe khulna chahiye.
+      const msg = WatchSyncMessage(
+        mediaRef: 'tmdb:movie:550',
+        positionMs: 90000,
+        playing: true,
+        hostSentAtMs: 1000,
+      );
+      final pos = GuestAutoOpen.initialPositionFor(msg, nowMs: 3000);
+      expect(pos.inMilliseconds, greaterThanOrEqualTo(90000));
+      expect(pos.inMilliseconds, lessThan(95000));
+      // stale/future timestamp → elapsed 0, host position as-is (no jump).
+      final same = GuestAutoOpen.initialPositionFor(msg, nowMs: 500);
+      expect(same.inMilliseconds, 90000);
+    });
   });
 }
