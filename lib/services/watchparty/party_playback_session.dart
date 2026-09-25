@@ -250,4 +250,35 @@ class PartyPlaybackSession {
   /// Test hook: backoff delays for attempt n (0-based).
   static int backoffForAttempt(int n) =>
       _backoff[n.clamp(0, _backoff.length - 1)];
+
+  /// Cinema-hall parity: same-title `media_switch` (host seek-jump ya
+  /// failover re-announce) par guest kya kare — pure, unit-tested.
+  /// Returns `seekMs` (null = already in sync) + `play` (null = no change).
+  static SameTitleResync sameTitleResync(
+    WatchSyncMessage msg, {
+    required int guestPositionMs,
+    required bool guestPlaying,
+    int? nowMs,
+  }) {
+    final now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final target = WatchSyncEngine.targetPosition(
+      hostPositionMs: msg.positionMs,
+      hostSentAtMs: msg.hostSentAtMs,
+      nowMs: now,
+      clockOffsetMs: 0,
+    );
+    final seek = WatchSyncEngine.resyncPosition(
+      guestPositionMs: guestPositionMs,
+      targetPositionMs: target,
+    );
+    final play = msg.playing == guestPlaying ? null : msg.playing;
+    return SameTitleResync(seekMs: seek, play: play);
+  }
+}
+
+/// Same-title switch decision (see [PartyPlaybackSession.sameTitleResync]).
+class SameTitleResync {
+  final int? seekMs;
+  final bool? play;
+  const SameTitleResync({this.seekMs, this.play});
 }

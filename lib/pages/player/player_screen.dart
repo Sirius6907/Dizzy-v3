@@ -429,6 +429,27 @@ class _PlayerScreenState extends State<PlayerScreen>
       },
       onToast: _partyToast,
       onGuestMediaSwitch: (msg) async {
+        // Cinema-hall parity: same title (host seek-jump / failover
+        // re-announce) → guest seek + play/pause match kare, sirf toast nahi.
+        final s = PartySession.instance;
+        if (msg.mediaRef == s.mediaRef) {
+          final resync = PartyPlaybackSession.sameTitleResync(
+            msg,
+            guestPositionMs: _player.state.position.inMilliseconds,
+            guestPlaying: _player.state.playing,
+          );
+          if (resync.seekMs != null) {
+            await _player.seek(Duration(milliseconds: resync.seekMs!));
+          }
+          if (resync.play != null) {
+            if (resync.play!) {
+              await _player.play();
+            } else {
+              await _player.pause();
+            }
+          }
+          return;
+        }
         final title = (msg.mediaTitle ?? '').trim();
         _partyToast(title.isEmpty
             ? 'Host switched movie — open it to rejoin sync.'
