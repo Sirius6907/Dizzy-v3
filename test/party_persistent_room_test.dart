@@ -45,7 +45,7 @@ void main() {
       PartySession.instance.end();
       expect(PartySession.instance.inParty, isFalse);
 
-      final room = const WatchPartyRoom(
+      const room = WatchPartyRoom(
         roomId: 'AB23CD',
         title: 'Test Room',
         mediaRef: null,

@@ -4,10 +4,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../core/nav_key.dart';
+import '../../design/dizzy_tactile.dart';
 import '../../models/movie/movie_detail.dart';
 import '../../models/movie/video.dart';
 import '../../pages/player/watch_screen.dart';
 import '../../utils/navigation/route_transitions.dart';
+import '../../widgets/tactile/dizzy_7segment.dart';
 import '../cloud/watch_party_service.dart';
 import '../errors/app_error_log.dart';
 import '../metadata/metadata_service.dart';
@@ -86,16 +88,29 @@ class GuestAutoOpen {
     try {
       await _open(msg).timeout(_resolveTimeout);
     } on TimeoutException {
-      _toast("Couldn't open this one — ask host to pick a popular title.");
-      // P15: user got the easy message; log the code for diagnostics.
+      _handlingRef = null; // release immediately so retry can re-acquire
       unawaited(
           AppErrorLog.log(code: 'guest_open', screen: 'party', detail: 'timeout_20s'));
+      await _showTimeoutRetry(msg, context: navigatorKey.currentContext);
     } catch (_) {
       _toast("Couldn't open this one — check net, you'll rejoin on next play.");
       unawaited(AppErrorLog.log(code: 'guest_open', screen: 'party'));
     } finally {
       _handlingRef = null;
     }
+  }
+
+  /// Guest open position: host snapshot + in-flight elapsed (clamped ≥ 0).
+  /// Pure (unit-tested) — guest host ke paas khulta hai, 0:00 se nahi.
+  static Duration initialPositionFor(WatchSyncMessage msg, {int? nowMs}) {
+    final now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final target = WatchSyncEngine.targetPosition(
+      hostPositionMs: msg.positionMs,
+      hostSentAtMs: msg.hostSentAtMs,
+      nowMs: now,
+      clockOffsetMs: 0,
+    );
+    return Duration(milliseconds: target < 0 ? 0 : target);
   }
 
   static Future<void> _open(WatchSyncMessage msg) async {
@@ -127,7 +142,13 @@ class GuestAutoOpen {
       ep ??= vids.isNotEmpty ? vids.first : null;
     }
     final route = CinematicSlideRoute(
-      page: WatchScreen(detail: detail, type: type, selectedEpisode: ep),
+      page: WatchScreen(
+        detail: detail,
+        type: type,
+        selectedEpisode: ep,
+        // Cinema-hall parity: guest host ke paas khulta hai (0:00 nahi).
+        initialPosition: initialPositionFor(msg),
+      ),
     );
     if (PartyPlaybackSession.activeCount > 0) {
       // Guest already in player → replace (no stacked players / double audio).
@@ -207,6 +228,153 @@ class GuestAutoOpen {
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
     );
+  }
+
+  /// v1.2.0-W4: graceful resolve-timeout UI — 7-segment countdown and
+  /// explicit retry action. Runs as a bottom-sheet overlay.
+  /// Guarded: no sheet when the app is backgrounded, never an unawaited
+  /// fire-and-forget (the countdown owns the only retry), and Cancel
+  /// truly cancels (no auto-retry after user dismisses).
+  static Future<void> _showTimeoutRetry(WatchSyncMessage msg, {BuildContext? context}) async {
+    final ctx = context ?? navigatorKey.currentContext;
+    if (ctx == null) return;
+    // Dead context guard: pushing a sheet on a defunct route tree throws.
+    Element? element;
+    try {
+      element = ctx as Element?;
+    } catch (_) {
+      return;
+    }
+    if (element == null || !element.mounted) return;
+    // Double-guard: no attached overlay (app backgrounded) → skip silently.
+    try {
+      final overlay = Navigator.of(ctx, rootNavigator: true).overlay;
+      if (overlay == null || !overlay.mounted) return;
+    } catch (_) {
+      return;
+    }
+    final countdown = ValueNotifier<int>(3);
+    Timer? timer;
+    var retryCount = 0;
+    var settled = false; // exactly one outcome: auto-retry XOR button XOR cancel
+
+    void settle({required bool retry}) {
+      if (settled) return;
+      settled = true;
+      timer?.cancel();
+      // Sheet may already be gone (back button / route pop) — never throw.
+      try {
+        final nav = Navigator.of(ctx, rootNavigator: true);
+        if (nav.canPop()) nav.pop();
+      } catch (_) {}
+      if (retry) {
+        retryCount++;
+        unawaited(_retryOpen(msg, attempts: retryCount));
+      }
+    }
+
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (countdown.value <= 1) {
+        settle(retry: true);
+      } else {
+        countdown.value--;
+      }
+    });
+
+    try {
+      await showModalBottomSheet(
+        context: ctx,
+        useRootNavigator: true,
+        isDismissible: false,
+        enableDrag: false,
+        backgroundColor: const Color(0xFF0D1017),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (sheetCtx) {
+          return PopScope(
+            canPop: false, // back button can't strand the timer
+            child: ValueListenableBuilder<int>(
+              valueListenable: countdown,
+              builder: (context, remaining, _) {
+                final locked = settled;
+                return SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Having trouble opening this',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Dizzy7Segment(
+                          value: remaining.toString().padLeft(2, '0'),
+                          activeColor: DizzyGlow.volt,
+                          digitWidth: 26.0,
+                          digitHeight: 44.0,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Trying again in a moment…',
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            FilledButton.tonal(
+                              onPressed: locked
+                                  ? null
+                                  : () => settle(retry: true),
+                              child: const Text('Retry Now'),
+                            ),
+                            FilledButton(
+                              onPressed: locked
+                                  ? null
+                                  : () => settle(retry: false),
+                              child: const Text('Cancel'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
+    } catch (_) {
+      // Sheet never showed (route race) — fall back to one silent retry.
+      settle(retry: true);
+    } finally {
+      timer.cancel();
+      countdown.dispose();
+    }
+  }
+
+  static Future<void> _retryOpen(WatchSyncMessage msg, {int attempts = 0}) async {
+    if (attempts >= 3) return; // max 3 retries
+    final d = Duration(seconds: 15 - attempts * 3); // 15, 12, 9 seconds
+    try {
+      _handlingRef = msg.mediaRef;
+      await _open(msg).timeout(d);
+    } catch (_) {
+      if (navigatorKey.currentContext != null) {
+        _toast('Still loading — will try again.');
+      }
+    } finally {
+      _handlingRef = null;
+    }
   }
 }
 
