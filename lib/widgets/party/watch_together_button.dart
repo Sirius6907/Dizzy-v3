@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../design/dizzy_tokens.dart';
 import '../../services/cloud/watch_party_service.dart';
+import '../../services/share/native_share.dart';
 import '../../services/watchparty/party_session.dart';
 import '../common/notify.dart';
 
@@ -138,12 +139,13 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF7C5CFF),
                     ),
-                    onPressed: () {
-                      // v1.2.0: no share dep — copy full invite text instead.
-                      // TODO: add share_plus and call Share.share(invite) here
-                      // for one-tap system share sheet.
+                    onPressed: () async {
                       final invite =
                           'Watch ${widget.mediaTitle} with me on Dizzy! Use code $code in Watch Together.';
+                      // Zero-dep native sheet (Android) → clipboard fallback.
+                      final shared = await NativeShare.shareText(invite);
+                      if (!ctx.mounted) return;
+                      if (shared) return;
                       Clipboard.setData(ClipboardData(text: invite));
                       ScaffoldMessenger.of(ctx).hideCurrentSnackBar();
                       DizzyNotify.show(

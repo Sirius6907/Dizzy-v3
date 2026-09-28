@@ -1,6 +1,7 @@
 package com.sirius6907.dizzyv3
 
 import android.content.Context
+import android.content.Intent
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.PowerManager
@@ -62,6 +63,31 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     } catch (e: Exception) {
                         result.error("LOCK_ERROR", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Zero-dep system share sheet (ACTION_SEND chooser).
+        // Called by NativeShare.shareText; no share_plus needed.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/share").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "shareText" -> {
+                    try {
+                        val text = call.argument<String>("text").orEmpty()
+                        if (text.isEmpty()) {
+                            result.success(false)
+                        } else {
+                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, text)
+                            }
+                            startActivity(Intent.createChooser(sendIntent, "Share invite"))
+                            result.success(true)
+                        }
+                    } catch (e: Exception) {
+                        result.error("SHARE_ERROR", e.message, null)
                     }
                 }
                 else -> result.notImplemented()
