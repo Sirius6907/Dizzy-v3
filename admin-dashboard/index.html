@@ -126,6 +126,7 @@ canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
     <button data-s="push" onclick="show('push')">📣 Announcements</button>
     <button data-s="config" onclick="show('config')">⚙️ Config</button>
     <button data-s="audit" onclick="show('audit')">🧾 Audit</button>
+    <button data-s="devicelogs" onclick="show('devicelogs')">🐞 Device logs</button>
   </nav>
   <main>
     <section id="s-overview" class="on">
@@ -214,6 +215,20 @@ canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
         <span style="float:right"><label class="mut" style="font-weight:400"><input type="checkbox" id="auditLive" onchange="toggleAuditLive()" style="width:auto;accent-color:#10b981"> live</label>
         <button class="btn btn-sm btn-ghost" onclick="loadAudit()">↻ Refresh</button></span></h3>
         <div style="overflow-x:auto"><table id="auditTbl"><thead><tr><th>When</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="s-devicelogs">
+      <div class="card"><h3>🐞 Device logs <span class="sub">enum codes only — no titles, no URLs, no stack traces</span>
+        <span style="float:right"><label class="mut" style="font-weight:400"><input type="checkbox" id="dlLive" onchange="toggleDeviceLogsLive()" style="width:auto;accent-color:#10b981"> live</label>
+        <button class="btn btn-sm btn-ghost" onclick="loadDeviceLogs()">↻ Refresh</button></span></h3>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="text" id="dlDevice" placeholder="Filter by device code — DIZ-1234567 or 1234567" onkeydown="if(event.key==='Enter')loadDeviceLogs()">
+          <button class="btn btn-sm" style="width:auto" onclick="loadDeviceLogs()">Filter</button>
+          <button class="btn btn-sm btn-ghost" style="width:auto" onclick="clearDeviceLogFilter()">Clear</button>
+        </div>
+        <div class="mut" id="dlSummary" style="margin-bottom:8px"></div>
+        <div style="overflow-x:auto"><table id="dlTbl"><thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th>Hits</th><th>Platform</th><th>Ver</th><th>Last seen</th></tr></thead><tbody></tbody></table></div>
       </div>
     </section>
   </main>
