@@ -404,12 +404,28 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
   /// Shared failure path for the Android OTA flow: clear state, release the
   /// wakelock, tell the user in Easy English (no tech words), close the dialog.
+  /// The snackbar carries an "Open in browser" action so a failed in-app
+  /// download is never a dead end — the browser fetches the same APK
+  /// (same signing key) and the install still lands in place.
   void _failUpdate(String message) {
     if (!mounted) return;
     setState(() => _isDownloading = false);
     WakelockPlus.disable();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Open in browser',
+          textColor: Colors.white,
+          onPressed: () {
+            AppUpdaterService()
+                .openDownloadPage(widget.updateInfo.downloadUrl);
+          },
+        ),
+      ),
     );
     Navigator.of(context).pop();
   }
