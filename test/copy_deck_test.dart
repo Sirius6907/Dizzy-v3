@@ -83,6 +83,9 @@ void main() {
     lines.add(WrapCopy.emptyTaste());
     // P6: music search empty state (DizzyStateView line).
     lines.add('Try another song, artist or album name.');
+    // P6: narrow-compact bar labels.
+    lines.add('Taste Quiz');
+    lines.add('Go back');
     return lines;
   }
 
