@@ -239,22 +239,29 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
               ],
             ),
             const SizedBox(width: DizzySpace.sm),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '@${widget.recipientUsername}',
-                  style: const TextStyle(
-                    color: DizzyVoid.bone,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '@${widget.recipientUsername}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: DizzyVoid.bone,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const Text(
-                  'Online • Ready to sync',
-                  style: TextStyle(color: DizzyGlow.volt, fontSize: 11),
-                ),
-              ],
+                  const Text(
+                    'Online • Ready to sync',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: DizzyGlow.volt, fontSize: 11),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

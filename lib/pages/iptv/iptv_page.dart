@@ -342,9 +342,13 @@ class _IptvGlassAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    // P6 narrow compact: 360px pe do info pills + teen glass buttons ek line
+    // me nahi samate. Compact mode: "60+ CHANNELS" info pill chhupata hai,
+    // padding aur button gap tight hote hain.
+    final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(28, topPadding + 14, 28, 14),
+      padding: EdgeInsets.fromLTRB(narrow ? 12 : 28, topPadding + 14, narrow ? 12 : 28, 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -394,23 +398,24 @@ class _IptvGlassAppBar extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  '60+ CHANNELS',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+              if (!narrow) const SizedBox(width: 10),
+              if (!narrow)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    '60+ CHANNELS',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
 
@@ -423,7 +428,7 @@ class _IptvGlassAppBar extends StatelessWidget {
             onTap: onSourcesTap,
           ),
 
-          const SizedBox(width: 10),
+          SizedBox(width: narrow ? 6 : 10),
 
           // Search button
           _GlassActionButton(
@@ -432,7 +437,7 @@ class _IptvGlassAppBar extends StatelessWidget {
             onTapWithPosition: onSearchTap,
           ),
 
-          const SizedBox(width: 10),
+          SizedBox(width: narrow ? 6 : 10),
 
           // Settings button
           _GlassActionButton(
