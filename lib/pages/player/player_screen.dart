@@ -21,6 +21,7 @@ import '../../models/stream/stream_model.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
 import '../../services/debrid/debrid_service.dart';
 import '../../services/stream/torrent_stream_service.dart';
+import '../../services/media/global_media_coordinator.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../services/trakt/trakt_service.dart';
 import '../../services/simkl/simkl_service.dart';
@@ -748,6 +749,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
       _player.play();
       _startHideControlsTimer();
+      // P4: one sound at a time — video starting pauses music.
+      unawaited(GlobalMediaCoordinator.instance
+          .notifyVideoStarted(title: _currentSource.name ?? ''));
 
       // Defer background services until after playback starts
       Future.microtask(() {
@@ -2069,6 +2073,8 @@ class _PlayerScreenState extends State<PlayerScreen>
     TorrentStreamService().cleanup();
     WindowService.instance.exitFullscreen();
     DiscordRpcService.instance.clearToIdle();
+    // P4: video closed — music may resume, mini-player hides.
+    GlobalMediaCoordinator.instance.notifyVideoStopped();
     super.dispose();
   }
 
