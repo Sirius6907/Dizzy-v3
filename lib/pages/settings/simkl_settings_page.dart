@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/simkl/simkl_service.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
@@ -135,7 +136,7 @@ class _SimklSettingsPageState extends State<SimklSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -168,7 +169,7 @@ class _SimklSettingsPageState extends State<SimklSettingsPage> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF12151E),
+                  color: DizzyVoid.surface1,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _isAuthed
@@ -383,7 +384,7 @@ class _SimklSettingsPageState extends State<SimklSettingsPage> {
                 ),
                 const SizedBox(height: 12),
                 ListTile(
-                  tileColor: const Color(0xFF12151E),
+                  tileColor: DizzyVoid.surface1,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/cloud/watch_party_service.dart';
 import '../../services/device/device_id_service.dart';
@@ -67,7 +68,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         title: const Text('Watch Party',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
@@ -77,7 +78,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           constraints: const BoxConstraints(maxWidth: 700),
           // P12: pull-to-refresh the lobby (sweep dead rooms + reload).
           child: RefreshIndicator(
-            color: const Color(0xFF8B5CF6),
+            color: DizzyGlow.violet,
             backgroundColor: const Color(0xFF11141B),
             onRefresh: () async {
               try {
@@ -99,7 +100,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   gradient: LinearGradient(
                     colors: [
                       palette.primaryColor.withValues(alpha: 0.24),
-                      const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                      DizzyGlow.violet.withValues(alpha: 0.12),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),

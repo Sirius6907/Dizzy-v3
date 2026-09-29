@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
-import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../widgets/tactile/dizzy_tactile_card.dart';
@@ -641,7 +641,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                     Container(
                       constraints: const BoxConstraints(maxHeight: 220),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0D1017),
+                        color: DizzyVoid.voidB,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
@@ -859,7 +859,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                               label: Text(pill),
                               selected: isSelected,
                               selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                              backgroundColor: const Color(0xFF0D1017).withValues(alpha: 0.6),
+                              backgroundColor: DizzyVoid.voidB.withValues(alpha: 0.6),
                               labelStyle: TextStyle(
                                 color: isSelected ? palette.primaryColor : Colors.white70,
                                 fontSize: 11.5,
@@ -889,7 +889,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                         hintText: 'Additional notes or specifics (optional)...',
                         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12),
                         filled: true,
-                        fillColor: const Color(0xFF0D1017).withValues(alpha: 0.6),
+                        fillColor: DizzyVoid.voidB.withValues(alpha: 0.6),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
@@ -922,7 +922,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? palette.primaryColor.withValues(alpha: 0.22) : const Color(0xFF0D1017).withValues(alpha: 0.6),
+          color: isSelected ? palette.primaryColor.withValues(alpha: 0.22) : DizzyVoid.voidB.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
@@ -1096,7 +1096,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                                     Text(
                                       '•  ★ ${rec.voteAverage!.toStringAsFixed(1)}',
                                       style: const TextStyle(
-                                        color: Color(0xFFFFC107),
+                                        color: DizzyGlow.gold,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),

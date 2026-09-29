@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/addon/addon.dart';
 import '../../services/addon/addon_manager.dart';
 
@@ -95,7 +96,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                     fontSize: 12.5,
                   ),
                   filled: true,
-                  fillColor: const Color(0xFF0D1017),
+                  fillColor: DizzyVoid.voidB,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
@@ -214,7 +215,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -285,7 +286,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                 Container(
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF12151E),
+                    color: DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                   ),
@@ -420,7 +421,7 @@ class _AddonCard extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: addon.enabled

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/updater/app_updater_service.dart';
 import '../../widgets/updater/release_notes_studio.dart';
 
@@ -64,7 +65,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -105,7 +106,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                   return Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12151E),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: const Color(0xFF7C5CFF).withValues(alpha: 0.2),
@@ -236,7 +237,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.05),

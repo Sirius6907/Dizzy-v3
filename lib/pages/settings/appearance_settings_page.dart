@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/audiobook/audiobook_settings.dart';
 import '../../services/theme/custom_background_service.dart';
@@ -33,7 +34,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -376,7 +377,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF12151E),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.08),
@@ -466,7 +467,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.05),

@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/movie/link.dart';
 import '../../models/movie/video.dart';
@@ -1195,7 +1197,7 @@ class _WatchScreenState extends State<WatchScreen>
       label: Text(label),
       selected: isSelected,
       selectedColor: activeColor.withValues(alpha: 0.25),
-      backgroundColor: const Color(0xFF13151C),
+      backgroundColor: DizzyVoid.surface1,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.white70,
         fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -2115,7 +2117,7 @@ class _WatchScreenState extends State<WatchScreen>
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          color: const Color(0xFF16161E).withValues(alpha: 0.96),
+          color: DizzyColors.surface.withValues(alpha: 0.96),
           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/music/music_mini_pip_service.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../utils/perf/image_caps.dart';
@@ -28,7 +29,7 @@ class MusicDesktopPipWidget extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0D14),
+      backgroundColor: DizzyVoid.voidB,
       body: MusicDynamicCanvasBackground(
         track: track,
         child: Column(

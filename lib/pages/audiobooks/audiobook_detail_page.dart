@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -480,7 +481,7 @@ class _ChapterTileState extends State<_ChapterTile> {
               decoration: BoxDecoration(
                 color: _isHovered
                     ? const Color(0xFF1B2030)
-                    : const Color(0xFF12151E).withValues(alpha: 0.7),
+                    : DizzyVoid.surface1.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: _isHovered

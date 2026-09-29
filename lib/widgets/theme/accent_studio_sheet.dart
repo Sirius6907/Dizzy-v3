@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/custom_accent_service.dart';
@@ -32,7 +33,7 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
     Color(0xFF7C5CFF),
     Color(0xFF10B981),
     Color(0xFFFF2A85),
-    Color(0xFFE50914),
+    DizzyGlow.red,
     Color(0xFF3B82F6),
     Color(0xFFE2E8F0),
   ];

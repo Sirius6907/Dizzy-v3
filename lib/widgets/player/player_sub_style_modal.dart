@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/player/player_settings.dart';
 import 'player_glass.dart';
 
@@ -26,9 +27,9 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
   static const List<Map<String, dynamic>> _textColorPalette = [
     {'name': 'White', 'hex': '#FFFFFFFF', 'color': Color(0xFFFFFFFF)},
     {'name': 'Cinema Yellow', 'hex': '#FFFFEB3B', 'color': Color(0xFFFFEB3B)},
-    {'name': 'Amber Gold', 'hex': '#FFFFC107', 'color': Color(0xFFFFC107)},
+    {'name': 'Amber Gold', 'hex': '#FFFFC107', 'color': DizzyGlow.gold},
     {'name': 'Electric Cyan', 'hex': '#00E5FF', 'color': Color(0xFF00E5FF)},
-    {'name': 'Neon Green', 'hex': '#00E676', 'color': Color(0xFF00E676)},
+    {'name': 'Neon Green', 'hex': '#00E676', 'color': DizzyGlow.volt},
     {'name': 'Vibrant Orange', 'hex': '#FF9100', 'color': Color(0xFFFF9100)},
     {'name': 'Soft Rose', 'hex': '#FF80AB', 'color': Color(0xFFFF80AB)},
     {'name': 'Light Gray', 'hex': '#D1D5DB', 'color': Color(0xFFD1D5DB)},
@@ -44,7 +45,7 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
   ];
 
   static const List<Map<String, dynamic>> _borderColorPalette = [
-    {'name': 'Black', 'hex': '#FF000000', 'color': Color(0xFF000000)},
+    {'name': 'Black', 'hex': '#FF000000', 'color': DizzyVoid.obsidian},
     {'name': 'Dark Slate', 'hex': '#FF1E293B', 'color': Color(0xFF1E293B)},
     {'name': 'White', 'hex': '#FFFFFFFF', 'color': Color(0xFFFFFFFF)},
     {'name': 'Gold', 'hex': '#FFFFD700', 'color': Color(0xFFFFD700)},

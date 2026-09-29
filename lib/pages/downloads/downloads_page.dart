@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:dizzy/models/movie/movie_detail.dart';
 import 'package:dizzy/models/movie/video.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../design/dizzy_tokens.dart';
 import '../../models/download/download_task_model.dart';
@@ -81,7 +82,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
           const SnackBar(
             content: Text('Cache cleaned successfully! 🧹 Storage freed.'),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Color(0xFF1E212B),
+            backgroundColor: DizzyVoid.surface2,
           ),
         );
       }
@@ -384,7 +385,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                 child: Container(
                   width: 50,
                   height: 70,
-                  color: const Color(0xFF1E212E),
+                  color: DizzyVoid.surface2,
                   child: task.posterUrl != null && task.posterUrl!.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: task.posterUrl!,
@@ -606,7 +607,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                 fit: StackFit.expand,
                 children: [
                   Container(
-                    color: const Color(0xFF1E212E),
+                    color: DizzyVoid.surface2,
                     child: task.posterUrl != null && task.posterUrl!.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: task.posterUrl!,
@@ -799,7 +800,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF13151D),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -944,7 +945,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                 child: Container(
                   width: 50,
                   height: 50,
-                  color: const Color(0xFF1C1E2A),
+                  color: DizzyVoid.surface2,
                   child: track.localCoverPath.isNotEmpty && File(track.localCoverPath).existsSync()
                       ? Image.file(
                           File(track.localCoverPath),

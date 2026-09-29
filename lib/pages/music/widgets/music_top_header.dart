@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../settings/appearance/music_player_studio_page.dart';
 import '../../settings/appearance/music_settings_page.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -71,7 +72,7 @@ class MusicTopHeader extends StatelessWidget {
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13151F),
+                  color: DizzyVoid.surface1,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                 ),

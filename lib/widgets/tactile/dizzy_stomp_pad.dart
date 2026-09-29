@@ -140,9 +140,9 @@ class _DizzyStompPadState extends State<DizzyStompPad> {
                         borderRadius: BorderRadius.circular(3),
                         color: pressed
                             ? widget.accent
-                            : const Color(0xFF242834),
+                            : DizzyVoid.surface3,
                         border: Border.all(
-                          color: const Color(0xFF000000)
+                          color: DizzyVoid.obsidian
                               .withValues(alpha: 0.45),
                         ),
                       ),

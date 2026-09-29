@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../design/dizzy_tokens.dart';
 
@@ -25,7 +26,7 @@ abstract final class DizzyNotify {
       case NotifyTone.warn:
         return const Color(0xFFB45309);
       case NotifyTone.info:
-        return const Color(0xFF1A1F2B);
+        return DizzyVoid.surface2;
     }
   }
 

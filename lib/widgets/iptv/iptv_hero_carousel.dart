@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/home/home_page_settings.dart';
 import '../../services/iptv/hardcoded_channels.dart';
@@ -321,11 +322,11 @@ class _IptvHeroSlide extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF3B30).withValues(alpha: 0.9),
+                      color: DizzyGlow.ember.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF3B30).withValues(alpha: 0.5),
+                          color: DizzyGlow.ember.withValues(alpha: 0.5),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),

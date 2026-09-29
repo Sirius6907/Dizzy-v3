@@ -4,10 +4,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../utils/perf/image_caps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../../models/book/book_result.dart';
 import '../../../models/book/reading_progress.dart';
 import '../../../services/books/continue_reading_service.dart';
-import '../../../design/dizzy_tokens.dart';
 import '../epub_reader_page.dart';
 import '../pdf_reader_page.dart';
 
@@ -242,7 +242,7 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
   Widget _buildArrowButton(IconData icon, VoidCallback onPressed) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1E26).withValues(alpha: 0.85),
+        color: DizzyColors.scrim.withValues(alpha: 0.85),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white24),
         boxShadow: const [

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/theme/app_theme_service.dart';
 
 class MangaCategoryDropdown extends StatefulWidget {
@@ -198,7 +199,7 @@ class _MangaCategoryDropdownState extends State<MangaCategoryDropdown>
                   ? palette.primaryColor.withValues(alpha: 0.16)
                   : (isSelectedGenre
                       ? palette.primaryColor.withValues(alpha: 0.10)
-                      : const Color(0xFF121520).withValues(alpha: 0.85)),
+                      : DizzyVoid.surface1.withValues(alpha: 0.85)),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isOpen
@@ -435,7 +436,7 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                             end: Alignment.bottomRight,
                             colors: [
                               const Color(0xFF121624).withValues(alpha: 0.95),
-                              const Color(0xFF0A0D15).withValues(alpha: 0.98),
+                              DizzyVoid.voidB.withValues(alpha: 0.98),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(22),

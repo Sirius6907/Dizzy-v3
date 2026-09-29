@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../utils/perf/performance_mode.dart';
@@ -21,7 +22,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -702,7 +703,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1017).withValues(alpha: 0.9),
+        color: DizzyVoid.voidB.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),

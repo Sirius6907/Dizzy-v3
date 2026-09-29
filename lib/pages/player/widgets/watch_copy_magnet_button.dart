@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import 'watch_style.dart';
 
@@ -53,7 +54,7 @@ class WatchCopyMagnetButtonState extends State<WatchCopyMagnetButton> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF1A1D26),
+        backgroundColor: DizzyColors.scrim,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../../services/cloud/cloud_client.dart';
 import '../../../services/cloud/watch_party_service.dart';
@@ -55,7 +56,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
         color: const Color(0xFF11141B),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+            color: DizzyGlow.violet.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +144,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D1017),
+              color: DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                   color: live
@@ -307,7 +308,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+        color: DizzyGlow.violet.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -342,8 +343,8 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
           constraints: const BoxConstraints(maxWidth: 440),
           decoration: BoxDecoration(
             color: mine
-                ? const Color(0xFF8B5CF6).withValues(alpha: 0.35)
-                : const Color(0xFF0D1017),
+                ? DizzyGlow.violet.withValues(alpha: 0.35)
+                : DizzyVoid.voidB,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
                 color: Colors.white.withValues(alpha: 0.08)),
@@ -377,7 +378,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border(
                       left: BorderSide(
-                          color: const Color(0xFF8B5CF6)
+                          color: DizzyGlow.violet
                               .withValues(alpha: 0.7),
                           width: 2),
                     ),

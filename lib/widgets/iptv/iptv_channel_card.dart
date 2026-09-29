@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/iptv/hardcoded_channels.dart';
 import '../../services/iptv/iptv_settings.dart';
@@ -68,7 +69,7 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                           colors: [
                             primaryColor.withValues(alpha: 0.85),
                             secondaryColor.withValues(alpha: 0.70),
-                            const Color(0xFF0D1017),
+                            DizzyVoid.voidB,
                           ],
                           stops: const [0.0, 0.55, 1.0],
                         ),
@@ -148,7 +149,7 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                                     color: Colors.black.withValues(alpha: 0.65),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: const Color(0xFFFF3B30).withValues(alpha: 0.6),
+                                      color: DizzyGlow.ember.withValues(alpha: 0.6),
                                       width: 0.8,
                                     ),
                                   ),
@@ -159,11 +160,11 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                                         width: 6,
                                         height: 6,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFFFF3B30),
+                                          color: DizzyGlow.ember,
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Color(0xFFFF3B30),
+                                              color: DizzyGlow.ember,
                                               blurRadius: 4,
                                             ),
                                           ],

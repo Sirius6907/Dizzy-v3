@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../models/anime/anime_media.dart';
 import '../../models/stream/stream_model.dart';
 import '../../services/anime/anime_scraper_service.dart';
@@ -343,7 +344,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
                                         vertical: 12,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF191C28),
+                                        color: DizzyColors.scrim,
                                         borderRadius: BorderRadius.circular(14),
                                         border: Border.all(
                                           color:

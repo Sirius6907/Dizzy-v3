@@ -35,6 +35,8 @@ import '../../services/home/home_page_settings.dart';
 
 import '../../widgets/common/offline_aware_scaffold.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import 'download_settings_page.dart';
 import 'settings_search_delegate.dart';
 
@@ -63,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: navigator.context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF12151E),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -181,7 +183,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF12151E),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -218,7 +220,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       hintText: 'Paste backup JSON here...',
                       hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                       filled: true,
-                      fillColor: const Color(0xFF0A0C12),
+                      fillColor: DizzyColors.bg,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -796,11 +798,11 @@ class _SettingsPageState extends State<SettingsPage> {
               // Download Settings
               _SettingsCategoryTile(
                 icon: Icons.download_rounded,
-                iconColor: const Color(0xFF00C2FF),
+                iconColor: DizzyGlow.beam,
                 title: 'Downloads',
                 subtitle: 'Pause, resume, and manage download locations',
                 badgeText: 'NEW',
-                badgeColor: const Color(0xFF00C2FF),
+                badgeColor: DizzyGlow.beam,
                 onTap: () => _showDownloadSettings(),
               ),
 
@@ -992,7 +994,7 @@ class _SettingsSwitchTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF12151E),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.08),

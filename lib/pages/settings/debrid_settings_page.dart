@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/debrid/debrid_service.dart';
 
 class DebridSettingsPage extends StatefulWidget {
@@ -252,7 +253,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -286,7 +287,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF12151E),
+                  color: DizzyVoid.surface1,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _useDebrid
@@ -397,7 +398,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF12151E),
+                  color: DizzyVoid.surface1,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.08),
@@ -428,7 +429,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                       dropdownColor: const Color(0xFF151822),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: const Color(0xFF0D1017),
+                        fillColor: DizzyVoid.voidB,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -591,7 +592,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
@@ -676,7 +677,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                       fontSize: 12,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFF0D1017),
+                    fillColor: DizzyVoid.voidB,
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     border: OutlineInputBorder(

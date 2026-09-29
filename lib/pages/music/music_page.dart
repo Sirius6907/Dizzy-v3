@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/music/music_track.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -304,7 +305,7 @@ class _MusicPageState extends State<MusicPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF13151C),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(
@@ -386,7 +387,7 @@ class _MusicPageState extends State<MusicPage> {
                 hintText: 'Enter playlist title...',
                 hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
-                fillColor: const Color(0xFF1B1E2B),
+                fillColor: DizzyVoid.surface2,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -806,7 +807,7 @@ class _MusicPageState extends State<MusicPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          tileColor: const Color(0xFF1B1E2B),
+                          tileColor: DizzyVoid.surface2,
                           leading: Container(
                             width: 44,
                             height: 44,

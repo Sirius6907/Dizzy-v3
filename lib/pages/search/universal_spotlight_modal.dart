@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../models/movie/movie.dart';
@@ -12,7 +14,6 @@ import '../../services/music/music_player_controller.dart';
 import '../../services/music/music_service.dart';
 import '../../services/search/search_history_helper.dart';
 import '../../services/theme/app_theme_service.dart';
-import '../../design/dizzy_tactile.dart';
 import '../../widgets/tactile/dizzy_tactile_card.dart';
 import '../../utils/perf/image_caps.dart';
 import '../anime/anime_details_page.dart';
@@ -233,7 +234,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Playing "${track.title}" • ${track.artist}'),
-        backgroundColor: const Color(0xFF1E212B),
+        backgroundColor: DizzyVoid.surface2,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -612,7 +613,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                         child: Container(
                           width: 105,
                           height: 120,
-                          color: const Color(0xFF1A1D27),
+                          color: DizzyColors.scrim,
                           child: movie.poster != null && movie.poster!.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: movie.poster!,
@@ -681,7 +682,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                         child: Container(
                           width: 105,
                           height: 120,
-                          color: const Color(0xFF1A1D27),
+                          color: DizzyColors.scrim,
                           child: anime.coverImageLarge.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: anime.coverImageLarge,
@@ -734,7 +735,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               child: Container(
                 width: 44,
                 height: 44,
-                color: const Color(0xFF1D202B),
+                color: DizzyVoid.surface2,
                 child: track.coverUrl.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: track.coverUrl,
@@ -789,7 +790,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                     children: [
                       CircleAvatar(
                         radius: 36,
-                        backgroundColor: const Color(0xFF1D202B),
+                        backgroundColor: DizzyVoid.surface2,
                         backgroundImage: artist.pictureUrl.isNotEmpty
                             ? CachedNetworkImageProvider(artist.pictureUrl)
                             : null,
@@ -823,7 +824,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                         child: Container(
                           width: 72,
                           height: 72,
-                          color: const Color(0xFF1D202B),
+                          color: DizzyVoid.surface2,
                           child: album.coverUrl.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: album.coverUrl,

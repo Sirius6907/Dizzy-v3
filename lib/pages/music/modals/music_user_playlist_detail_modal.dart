@@ -2,6 +2,7 @@ import '../../../services/music/music_download_service.dart';
 import '../../../services/music/music_playlist_sharing_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -160,7 +161,7 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              tileColor: const Color(0xFF13151F),
+                              tileColor: DizzyVoid.surface1,
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: CachedNetworkImage(

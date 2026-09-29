@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -32,7 +33,7 @@ class MusicTrackDetailsModal extends StatelessWidget {
       style: PerformanceGlassStyles.sheet,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0C0E14).withValues(alpha: 0.98),
+          color: DizzyVoid.voidB.withValues(alpha: 0.98),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),

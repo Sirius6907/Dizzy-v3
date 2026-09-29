@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
 
 class MusicShortcutsModal extends StatelessWidget {
@@ -66,7 +67,7 @@ class MusicShortcutsModal extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1B1E2B),
+                            color: DizzyVoid.surface2,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: Colors.white12),
                           ),

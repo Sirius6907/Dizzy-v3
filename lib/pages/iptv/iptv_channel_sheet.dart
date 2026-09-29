@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/iptv/iptv_models.dart';
 import '../../services/iptv/hardcoded_channels.dart';
 import '../../services/iptv/iptv_controller.dart';
@@ -121,7 +122,7 @@ class _IptvChannelSheetState extends State<IptvChannelSheet> {
             maxHeight: MediaQuery.sizeOf(context).height * 0.82,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF0C0E15),
+            color: DizzyVoid.voidB,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             boxShadow: const [
@@ -196,7 +197,7 @@ class _IptvChannelSheetState extends State<IptvChannelSheet> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFF3B30),
+                                  color: DizzyGlow.ember,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
@@ -661,7 +662,7 @@ class _IptvChannelSheetState extends State<IptvChannelSheet> {
                                         IconButton(
                                           icon: Icon(
                                             isFav ? Icons.star_rounded : Icons.star_outline_rounded,
-                                            color: isFav ? const Color(0xFFFFC107) : Colors.white38,
+                                            color: isFav ? DizzyGlow.gold : Colors.white38,
                                             size: 22,
                                           ),
                                           onPressed: () => _ctrl.toggleFavoriteHit(hit),

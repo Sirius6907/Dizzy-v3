@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
 
 class MusicMobileBottomNav extends StatelessWidget {
@@ -21,7 +22,7 @@ class MusicMobileBottomNav extends StatelessWidget {
         height: 60 + bottomInset,
         padding: EdgeInsets.only(bottom: bottomInset),
         decoration: BoxDecoration(
-          color: const Color(0xFF0C0E17).withValues(alpha: 0.95),
+          color: DizzyVoid.voidB.withValues(alpha: 0.95),
           border: Border(
             top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),

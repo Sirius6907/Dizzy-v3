@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/movie/video.dart';
 import 'player_glass.dart';
 
@@ -606,7 +607,7 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                       child: Container(
                         width: isSelected ? 116 : (isCompact ? 92 : 104),
                         height: isSelected ? 68 : (isCompact ? 56 : 62),
-                        color: const Color(0xFF1A1F2C),
+                        color: DizzyVoid.surface2,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [

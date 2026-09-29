@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 
 class P2pWarningDialog extends StatelessWidget {
   const P2pWarningDialog({super.key});
 
   static const Color _surfaceColor = Color(0xFF131722);
-  static const Color _backgroundColor = Color(0xFF0A0D14);
+  static const Color _backgroundColor = DizzyVoid.voidB;
   static const Color _warningColor = Color(0xFFF59E0B);
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/player/player_settings.dart';
 import '../../widgets/guide/guide_card.dart';
@@ -325,7 +326,7 @@ class _Tile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1017).withValues(alpha: 0.9),
+        color: DizzyVoid.voidB.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),

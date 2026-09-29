@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_download_service.dart';
 import '../../../services/music/music_playlist_sharing_service.dart';
@@ -358,7 +359,7 @@ class MusicLibraryView extends StatelessWidget {
                   onTap: () => onOpenUserPlaylist(pl),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF13151F),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
