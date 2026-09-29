@@ -2,6 +2,16 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.3.1+33] — 2026-09-30 — "Update Anything, From Anything"
+
+### Fix — in-place updates for every install, no uninstall ever
+- **Root cause of "package not valid"** — releases v1.1.3–v1.1.5 shipped debug-signed (the release keystore was added only at v1.1.7), and some phones carry locally-built test installs; Android only accepts an update signed with the *exact same key*, so those installs could never move to a v1.1.7+ build. Several downloads also failed and the old plugin handed the error body straight to the installer.
+- **Dual-signing update channels** — the app now reads its own signing-cert fingerprint (new `getCertSha256` method channel) and fetches the matching GitHub asset: normal installs get the normal APK, legacy-key installs get `Dizzy-v3-legacy-*` mirrors signed with the original key. Legacy asset names drop the arch token (`legacy-arm64`, not `legacy-arm64-v8a`) so older pickers deterministically land on the normal APK.
+- **Download integrity** — OTA verifies the GitHub asset's sha256 digest before the installer ever opens a file; failed/corrupt downloads now abort with a friendly retry message instead of a system invalid-package error.
+- **Easy-English failures** — raw OTA status codes no longer reach users.
+- **CI release guards** — missing `KEYSTORE_BASE64` fails the release; every APK's signing fingerprint verified (release vs legacy channel); all four base APKs required before publish.
+- Tests: 13 asset-selection cases incl. order-proof guards for older pickers (939 total green).
+
 ## [1.3.0+32] — 2026-09-29 — "Learn It, Then It Just Works"
 
 ### P6 — UI/UX polish, finished
