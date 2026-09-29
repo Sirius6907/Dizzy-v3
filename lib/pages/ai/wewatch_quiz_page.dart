@@ -323,6 +323,10 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
   }
 
   Widget _buildAppBar(AppThemePalette palette) {
+    // P6 narrow compact: 360px pe back button + AI pill + title ek line me
+    // nahi samate. Compact mode: info pill chhupta hai, title chhota hota hai.
+    final narrow = MediaQuery.sizeOf(context).width < 420;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -335,45 +339,51 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            tooltip: 'Go back',
             splashRadius: 20,
             onPressed: () => Navigator.pop(context),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: palette.primaryColor.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.auto_awesome_rounded, size: 14, color: palette.primaryColor),
-                const SizedBox(width: 5),
-                Text(
-                  'AI TASTE MATCH',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: palette.primaryColor,
-                    letterSpacing: 0.6,
+          if (!narrow) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: palette.primaryColor.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome_rounded, size: 14, color: palette.primaryColor),
+                  const SizedBox(width: 5),
+                  Text(
+                    'AI TASTE MATCH',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: palette.primaryColor,
+                      letterSpacing: 0.6,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Text(
+              narrow ? 'Taste Quiz' : 'Recommendation Quiz',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: narrow ? 16 : 17,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
-          const SizedBox(width: 10),
-          const Text(
-            'Recommendation Quiz',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const Spacer(),
           if (_recommendations != null)
             TextButton.icon(
               style: TextButton.styleFrom(
