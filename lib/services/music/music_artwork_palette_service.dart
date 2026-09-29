@@ -16,12 +16,29 @@ class MusicTrackPalette {
     required this.accent,
   });
 
+  /// Floor-clearing tint of the old 0xFF080A12: same near-black navy, but it
+  /// clears [minBackgroundLuminance] so the painted first frame can never be
+  /// mistaken for a black flash.
   static const defaultDark = MusicTrackPalette(
     primary: Color(0xFF7C5CFF),
     secondary: Color(0xFF00D2EF),
-    background: Color(0xFF080A12),
+    background: Color(0xFF191D2C),
     accent: Color(0xFFB57CFF),
   );
+
+  /// Lowest luminance an ambient background may have. Anything darker reads
+  /// as a black flash on the first frame while the real artwork palette is
+  /// still being extracted.
+  static const double minBackgroundLuminance = 0.012;
+
+  /// P6: the ambient canvas paints [background] synchronously in `initState`
+  /// and only swaps in the extracted palette a moment later, so this must
+  /// never be black (or fully transparent) — otherwise the player flashes.
+  bool get isAmbientSafe =>
+      background.a > 0 &&
+      background.computeLuminance() >= minBackgroundLuminance &&
+      primary.computeLuminance() > 0 &&
+      secondary.computeLuminance() > 0;
 }
 
 /// High-speed, zero-dependency dominant color extractor with LRU caching.
@@ -45,7 +62,12 @@ class MusicArtworkPaletteService {
 
     final c1 = HSLColor.fromAHSL(1.0, hue1, 0.70, 0.55).toColor();
     final c2 = HSLColor.fromAHSL(1.0, hue2, 0.65, 0.60).toColor();
-    final bg = HSLColor.fromAHSL(1.0, hue1, 0.40, 0.08).toColor();
+    // Black-flash guard: the background lightness has a hard floor so the
+    // first painted frame is always a tinted surface, never a black hole.
+    final bg = _liftUntilVisible(
+      HSLColor.fromAHSL(1.0, hue1, 0.40, 0.08).toColor(),
+      MusicTrackPalette.minBackgroundLuminance,
+    );
     final accent = HSLColor.fromAHSL(1.0, (hue1 + 40) % 360, 0.80, 0.70).toColor();
 
     final palette = MusicTrackPalette(
@@ -56,6 +78,18 @@ class MusicArtworkPaletteService {
     );
 
     return palette;
+  }
+
+  /// Raises a too-dark color by walking its HSL lightness up until it clears
+  /// [minLuminance]. Keeps the hue, so the tint survives the lift.
+  static Color _liftUntilVisible(Color color, double minLuminance) {
+    if (color.computeLuminance() >= minLuminance) return color;
+    final hsl = HSLColor.fromColor(color);
+    for (var step = 1; step <= 20; step++) {
+      final lifted = hsl.withLightness((hsl.lightness + step * 0.02).clamp(0.0, 1.0)).toColor();
+      if (lifted.computeLuminance() >= minLuminance) return lifted;
+    }
+    return color;
   }
 
   /// Asynchronously extracts actual dominant colors from artwork image URL
@@ -167,12 +201,15 @@ class MusicArtworkPaletteService {
             (hslPrimary.lightness * 1.1).clamp(0.35, 0.75),
           ).toColor();
 
-          final background = HSLColor.fromAHSL(
-            1.0,
-            hslPrimary.hue,
-            (hslPrimary.saturation * 0.5).clamp(0.2, 0.5),
-            0.07,
-          ).toColor();
+          final background = _liftUntilVisible(
+            HSLColor.fromAHSL(
+              1.0,
+              hslPrimary.hue,
+              (hslPrimary.saturation * 0.5).clamp(0.2, 0.5),
+              0.07,
+            ).toColor(),
+            MusicTrackPalette.minBackgroundLuminance,
+          );
 
           final accent = HSLColor.fromAHSL(
             1.0,

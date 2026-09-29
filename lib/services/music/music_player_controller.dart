@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/music/music_track.dart';
 import 'music_download_service.dart';
 import 'music_library_service.dart';
+import 'music_queue_ops.dart';
 import 'music_service.dart';
 import 'youtube_stream_http.dart';
 import '../discord/discord_rpc_service.dart';
@@ -502,30 +503,39 @@ class MusicPlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// History of tracks played in this session before current track
-  List<MusicTrack> get historyTracks {
-    if (_currentIndex <= 0 || _playlist.isEmpty) return const [];
-    return _playlist.sublist(0, _currentIndex);
-  }
-
   /// Upcoming tracks in queue after current track
-  List<MusicTrack> get upcomingTracks {
-    if (_currentIndex >= _playlist.length - 1 || _playlist.isEmpty) return const [];
-    return _playlist.sublist(_currentIndex + 1);
-  }
+  List<MusicTrack> get upcomingTracks =>
+      MusicQueueOps.upcoming(_playlist, _currentIndex);
+
+  /// Tracks already played in this session
+  List<MusicTrack> get historyTracks =>
+      MusicQueueOps.history(_playlist, _currentIndex);
 
   /// Reorder upcoming queue items
   void reorderUpcomingQueue(int oldIndex, int newIndex) {
-    if (_currentIndex >= _playlist.length - 1) return;
-    final upcomingStartIndex = _currentIndex + 1;
-    final actualOld = upcomingStartIndex + oldIndex;
-    var actualNew = upcomingStartIndex + newIndex;
-    if (actualOld < upcomingStartIndex || actualOld >= _playlist.length) return;
-    if (actualOld < actualNew) {
-      actualNew -= 1;
-    }
-    final item = _playlist.removeAt(actualOld);
-    _playlist.insert(actualNew.clamp(upcomingStartIndex, _playlist.length), item);
+    _playlist = MusicQueueOps.reorderUpcoming(
+      _playlist,
+      _currentIndex,
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    notifyListeners();
+  }
+
+  /// P6 test seam: seed the queue + position without booting the media
+  /// backend, so the queue-ordering and hot-swap position contracts can be
+  /// asserted in a plain unit test. Never called by the app.
+  @visibleForTesting
+  void debugSeedPlaybackState({
+    required MusicTrack track,
+    required List<MusicTrack> queue,
+    Duration position = Duration.zero,
+  }) {
+    _playlist = List<MusicTrack>.from(queue);
+    _originalPlaylist = List<MusicTrack>.from(queue);
+    _currentTrack = track;
+    _currentIndex = _playlist.indexOf(track);
+    _position = position;
     notifyListeners();
   }
 
