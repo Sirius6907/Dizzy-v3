@@ -14,6 +14,7 @@ class DizzyTactileCard extends StatefulWidget {
   final EdgeInsetsGeometry? margin;
   final BorderRadius? borderRadius;
   final Color? glowColor;
+  final Color? borderColor;
   final Gradient? gradient;
 
   const DizzyTactileCard({
@@ -26,6 +27,7 @@ class DizzyTactileCard extends StatefulWidget {
     this.margin,
     this.borderRadius,
     this.glowColor,
+    this.borderColor,
     this.gradient,
   });
 
@@ -79,28 +81,13 @@ class _DizzyTactileCardState extends State<DizzyTactileCard> {
                     colors: [DizzyVoid.surface2, DizzyVoid.surface1],
                   ),
               border: Border.fromBorderSide(
-                widget.glowColor != null
-                    ? DizzyEdge.neon(widget.glowColor!)
-                    : DizzyEdge.hairline,
+                widget.borderColor != null
+                    ? BorderSide(color: widget.borderColor!, width: 1.0)
+                    : widget.glowColor != null
+                        ? DizzyEdge.neon(widget.glowColor!)
+                        : DizzyEdge.hairline,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  blurRadius: 0,
-                  offset: const Offset(0, 1),
-                ),
-                if (widget.glowColor != null)
-                  BoxShadow(
-                    color: widget.glowColor!.withValues(alpha: 0.20),
-                    blurRadius: 20,
-                    offset: Offset.zero,
-                  ),
-              ],
+              boxShadow: _isPressed ? DizzyShadow.pressed : DizzyShadow.card,
             ),
             child: Stack(
               children: [
