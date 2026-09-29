@@ -87,6 +87,7 @@ function show(name) {
   if (name === 'push') loadAnn();
   if (name === 'config') loadCfg();
   if (name === 'audit') loadAudit(); else stopAuditLive();
+  if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
 }
 
 async function rpc(name, params) {
@@ -387,6 +388,61 @@ async function loadAudit() {
        <td class="mono">${esc(a.target)}</td><td class="mut">${esc(JSON.stringify(a.detail))}</td></tr>`).join('')
       || '<tr><td colspan="4" class="mut">No audit entries yet.</td></tr>';
   } catch (e) { toast('Audit failed: ' + e.message); }
+}
+
+// ── device logs (P2) ──
+// Error telemetry from the app. Enum codes only: the client and the
+// report-error edge both reject free text, so nothing here is user data.
+// RLS allows SELECT for is_admin() only, so this table is simply not
+// readable by the anon key used by sb.
+const DEVICE_LOG_LIMIT = 100;
+let _dlTimer = null;
+
+function deviceCodeFilter() {
+  const raw = String(document.getElementById('dlDevice')?.value || '').trim();
+  return raw.replace(/^DIZ-/i, '');
+}
+function clearDeviceLogFilter() {
+  const box = document.getElementById('dlDevice');
+  if (box) box.value = '';
+  loadDeviceLogs();
+}
+function toggleDeviceLogsLive() {
+  const on = document.getElementById('dlLive').checked;
+  if (_dlTimer) { clearInterval(_dlTimer); _dlTimer = null; }
+  if (on) { loadDeviceLogs(); _dlTimer = setInterval(loadDeviceLogs, 10000); }
+}
+function stopDeviceLogsLive() {
+  if (_dlTimer) { clearInterval(_dlTimer); _dlTimer = null; }
+  const box = document.getElementById('dlLive');
+  if (box) box.checked = false;
+}
+async function loadDeviceLogs() {
+  try {
+    const filter = deviceCodeFilter();
+    let q = sb.from('device_logs').select('*')
+      .order('last_at', { ascending: false })
+      .limit(DEVICE_LOG_LIMIT);
+    if (filter) q = q.eq('device_code', filter);
+    const { data, error } = await q;
+    if (error) throw error;
+    const rows = data || [];
+    $('dlSummary').textContent = rows.length
+      ? `${rows.length} of the last ${DEVICE_LOG_LIMIT} · ${rows.reduce((n, r) => n + (r.count || 0), 0)} hits`
+      : (filter ? `No logs for device ${esc(filter)}.` : 'No error reports yet.');
+    document.querySelector('#dlTbl tbody').innerHTML = rows.map((r) =>
+      `<tr>
+        <td class="mono">${r.device_code === 'unknown' ? 'unknown' : esc('DIZ-' + r.device_code)}</td>
+        <td><span class="pill ${r.count > 10 ? 'p-adult' : r.count > 2 ? 'p-priv' : 'p-lobby'}">${esc(r.code)}</span></td>
+        <td>${esc(r.screen)}</td>
+        <td class="mut">${esc(r.detail || '—')}</td>
+        <td><b>${Number(r.count) || 0}</b></td>
+        <td>${esc(r.platform)}</td>
+        <td class="mut">${esc(r.app_version || '—')}</td>
+        <td class="mut">${esc(ago(r.last_at))}</td>
+      </tr>`).join('')
+      || '<tr><td colspan="8" class="mut">Nothing to show.</td></tr>';
+  } catch (e) { toast('Device logs failed: ' + e.message); }
 }
 
 window.addEventListener('DOMContentLoaded', boot);

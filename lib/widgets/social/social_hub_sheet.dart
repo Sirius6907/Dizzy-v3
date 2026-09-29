@@ -114,7 +114,7 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Watch & Listen Together',
+                        'Social Hub',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -167,6 +167,15 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
             ),
             const SizedBox(height: 18),
             if (!connected) ...[
+              const Text(
+                'Listen Together',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: palette.primaryColor,
@@ -182,7 +191,7 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
                 },
                 icon: const Icon(Icons.add_rounded),
                 label: const Text(
-                  'Start a room',
+                  'Start a jam room',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -223,7 +232,7 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
                       );
                       _refresh();
                     },
-                    child: const Text('Join'),
+                    child: const Text('Join with code'),
                   ),
                 ],
               ),

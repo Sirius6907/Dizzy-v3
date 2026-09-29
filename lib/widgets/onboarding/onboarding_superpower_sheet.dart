@@ -135,6 +135,19 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Eyebrow header
+            const Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: Text(
+                'SUPERPOWERS',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 3,
+                ),
+              ),
+            ),
             // Slide content
             SizedBox(
               height: 380,
@@ -196,7 +209,7 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
                     ),
                     onPressed: _onNext,
                     child: Text(
-                      _currentPage == _slides.length - 1 ? 'Get Started 🚀' : 'Next →',
+                      _currentPage == _slides.length - 1 ? 'Explore Dizzy' : 'Next',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                     ),
                   ),

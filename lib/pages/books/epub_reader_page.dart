@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../design/dizzy_tactile.dart';
 import '../../models/book/book_result.dart';
 import '../../models/book/reading_progress.dart';
 import '../../services/books/continue_reading_service.dart';
@@ -486,11 +487,11 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: ReaderTokens.space16),
-        decoration: BoxDecoration(
-          color: settings.surfaceColor.withValues(alpha: 0.96),
-          border: Border(bottom: BorderSide(color: settings.borderColor)),
-          boxShadow: const [ReaderTokens.shadowSm],
-        ),
+decoration: BoxDecoration(
+            color: settings.surfaceColor.withValues(alpha: 0.96),
+            border: Border(bottom: BorderSide(color: settings.borderColor)),
+            boxShadow: DizzyShadow.card,
+          ),
         child: Row(
           children: [
             IconButton(
@@ -586,11 +587,11 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
       child: Container(
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: ReaderTokens.space16),
-        decoration: BoxDecoration(
-          color: settings.surfaceColor.withValues(alpha: 0.96),
-          border: Border(top: BorderSide(color: settings.borderColor)),
-          boxShadow: const [ReaderTokens.shadowSm],
-        ),
+decoration: BoxDecoration(
+            color: settings.surfaceColor.withValues(alpha: 0.96),
+            border: Border(top: BorderSide(color: settings.borderColor)),
+            boxShadow: DizzyShadow.card,
+          ),
         child: Row(
           children: [
             IconButton(

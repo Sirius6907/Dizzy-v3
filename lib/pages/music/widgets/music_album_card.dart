@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../design/dizzy_tactile.dart';
+import '../../../design/dizzy_tokens.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import 'music_hoverable.dart';
@@ -26,7 +28,7 @@ class MusicAlbumCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(DizzyRadius.xl),
                 child: CachedNetworkImage(
                   imageUrl: album.coverUrl,
                   width: 145,
@@ -41,7 +43,7 @@ class MusicAlbumCard extends StatelessWidget {
               Text(
                 album.title,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: DizzyVoid.bone,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -52,7 +54,7 @@ class MusicAlbumCard extends StatelessWidget {
               Text(
                 album.artistName,
                 style: const TextStyle(
-                  color: Colors.white54,
+                  color: DizzyVoid.ash,
                   fontSize: 11,
                 ),
                 maxLines: 1,

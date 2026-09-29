@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
+import '../../widgets/tactile/dizzy_tactile_card.dart';
 
 import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/cloud/cloud_client.dart';
@@ -18,7 +21,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D1017),
@@ -39,18 +42,41 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               _sectionTitle('Device identity'),
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.signedIn,
-                builder: (context, signedIn, _) => ListTile(
-                  leading: Icon(Icons.devices_rounded,
-                      color: palette.primaryColor),
-                  title: Text(
-                      signedIn ? 'Cloud connected' : 'Offline mode',
-                      style: const TextStyle(color: Colors.white)),
-                  subtitle: Text(
-                    signedIn
-                        ? 'Sync, backup & watch parties active. Device ID: ${CloudAuthService.anonId?.substring(0, 8) ?? '—'}…'
-                        : 'All features work offline. Sync disabled.',
-                    style:
-                        const TextStyle(color: Colors.white60, fontSize: 12),
+                builder: (context, signedIn, _) => GestureDetector(
+                  onTap: () => HapticFeedback.selectionClick(),
+                  child: DizzyTactileCard(
+                    margin: EdgeInsets.zero,
+                    padding: EdgeInsets.zero,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      child: Row(
+                        children: [
+                          Icon(Icons.devices_rounded,
+                              color: palette.primaryColor, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  signedIn ? 'Cloud connected' : 'Offline mode',
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 14),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  signedIn
+                                      ? 'Sync, backup & watch parties active. ${_shortDeviceId(CloudAuthService.anonId)}'
+                                      : 'All features work offline. Sync disabled.',
+                                  style: const TextStyle(
+                                      color: Colors.white60, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -184,4 +210,12 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 fontWeight: FontWeight.w700,
                 fontSize: 13)),
       );
+
+  /// Short device tag for the status line. Crash-safe: never throws on
+  /// short/unexpected ids (old substring(0,8) assumed ≥8 chars).
+  String _shortDeviceId(String? id) {
+    if (id == null || id.isEmpty) return 'Device ID: —…';
+    final head = id.length >= 8 ? id.substring(0, 8) : id;
+    return 'Device ID: $head…';
+  }
 }

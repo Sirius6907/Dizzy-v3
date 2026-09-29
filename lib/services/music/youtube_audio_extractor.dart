@@ -788,7 +788,7 @@ class YoutubeAudioExtractor {
         .timeout(_requestTimeout);
 
     if (resp.statusCode != 200) {
-      throw StateError('player API ${client.key} failed (${resp.statusCode})');
+      throw StateError('Music playback failed (code ${resp.statusCode})');
     }
 
     final decoded = jsonDecode(resp.body);

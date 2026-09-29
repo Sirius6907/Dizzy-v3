@@ -12,6 +12,8 @@ import '../../services/music/music_player_controller.dart';
 import '../../services/music/music_service.dart';
 import '../../services/search/search_history_helper.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../design/dizzy_tactile.dart';
+import '../../widgets/tactile/dizzy_tactile_card.dart';
 import '../../utils/perf/image_caps.dart';
 import '../anime/anime_details_page.dart';
 import '../details/details_page.dart';
@@ -251,40 +253,24 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Center(
-        child: Container(
-          width: 820,
+        child: ConstrainedBox(
           constraints: BoxConstraints(
+            maxWidth: 820,
             maxHeight: MediaQuery.sizeOf(context).height * 0.88,
           ),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F1117).withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.12),
-              width: 1.2,
+          child: DizzyTactileCard(
+            margin: EdgeInsets.zero,
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(theme),
+                _buildFilterChips(theme),
+                Divider(color: DizzyEdge.hairline.color, height: 1),
+                Flexible(child: _buildBody(theme)),
+                _buildFooter(),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.primaryColor.withValues(alpha: 0.16),
-                blurRadius: 36,
-                spreadRadius: 2,
-              ),
-              const BoxShadow(
-                color: Color(0x99000000),
-                blurRadius: 40,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(theme),
-              _buildFilterChips(theme),
-              const Divider(color: Color(0x1AFFFFFF), height: 1),
-              Flexible(child: _buildBody(theme)),
-              _buildFooter(),
-            ],
           ),
         ),
       ),
@@ -315,14 +301,14 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               focusNode: _focusNode,
               autofocus: true,
               style: const TextStyle(
-                color: Colors.white,
+                color: DizzyVoid.bone,
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
               ),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Search movies, series, anime, songs, artists…',
                 hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: DizzyVoid.ash,
                   fontSize: 15,
                   fontWeight: FontWeight.normal,
                 ),
@@ -338,7 +324,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
           ),
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+              icon: const Icon(Icons.close_rounded, color: DizzyVoid.ash, size: 20),
               onPressed: () {
                 _searchController.clear();
                 _onQueryChanged('');
@@ -346,7 +332,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               tooltip: 'Clear',
             ),
           IconButton(
-            icon: const Icon(Icons.cancel_outlined, color: Colors.white38, size: 22),
+            icon: const Icon(Icons.cancel_outlined, color: DizzyVoid.ash, size: 22),
             onPressed: () => Navigator.of(context).pop(),
             tooltip: 'Close (Esc)',
           ),
@@ -383,14 +369,14 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         selected: selected,
         onSelected: (_) => setState(() => _activeCategory = cat),
         labelStyle: TextStyle(
-          color: selected ? Colors.white : Colors.white70,
+          color: selected ? DizzyVoid.bone : DizzyVoid.ash,
           fontWeight: selected ? FontWeight.bold : FontWeight.w500,
           fontSize: 12.5,
         ),
-        backgroundColor: const Color(0xFF161821),
+        backgroundColor: DizzyVoid.surface1,
         selectedColor: theme.primaryColor.withValues(alpha: 0.35),
         side: BorderSide(
-          color: selected ? theme.primaryColor : Colors.white.withValues(alpha: 0.08),
+          color: selected ? theme.primaryColor : DizzyEdge.hairline.color,
           width: 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -485,7 +471,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               const Text(
                 'RECENT SEARCHES',
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: DizzyVoid.ash,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -495,7 +481,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                 onPressed: _clearAllHistory,
                 child: const Text(
                   'Clear All',
-                  style: TextStyle(color: Color(0xFF00E5FF), fontSize: 12),
+                  style: TextStyle(color: DizzyGlow.beam, fontSize: 12),
                 ),
               ),
             ],
@@ -506,11 +492,11 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
             runSpacing: 8,
             children: SearchHistoryHelper.shown(_searchHistory).map((q) {
               return InputChip(
-                avatar: const Icon(Icons.history_rounded, size: 16, color: Colors.white54),
+                avatar: const Icon(Icons.history_rounded, size: 16, color: DizzyVoid.ash),
                 label: Text(q),
-                labelStyle: const TextStyle(color: Colors.white, fontSize: 12.5),
-                backgroundColor: const Color(0xFF191C26),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                labelStyle: const TextStyle(color: DizzyVoid.bone, fontSize: 12.5),
+                backgroundColor: DizzyVoid.surface1,
+                side: BorderSide(color: DizzyEdge.hairline.color),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 onPressed: () {
                   _searchController.text = q;
@@ -520,7 +506,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                   _performSearch(q);
                 },
                 onDeleted: () => _removeHistoryItem(q),
-                deleteIconColor: Colors.white38,
+                deleteIconColor: DizzyVoid.ash,
               );
             }).toList(),
           ),
@@ -529,7 +515,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         const Text(
           'QUICK EXPLORE',
           style: TextStyle(
-            color: Colors.white54,
+            color: DizzyVoid.ash,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -577,22 +563,17 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         _performSearch(query);
       },
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: DizzyTactileCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF141620),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: const Color(0xFF00E5FF)),
+            Icon(icon, size: 18, color: DizzyGlow.beam),
             const SizedBox(width: 8),
             Text(
               label,
               style: const TextStyle(
-                color: Colors.white70,
+                color: DizzyVoid.bone,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -900,7 +881,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF0B0D12),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
@@ -915,7 +896,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               SizedBox(width: 6),
               Text(
                 'Spotlight everywhere',
-                style: TextStyle(color: Colors.white38, fontSize: 11.5),
+                style: TextStyle(color: DizzyVoid.ash, fontSize: 11.5),
               ),
             ],
           ),
@@ -925,7 +906,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               SizedBox(width: 6),
               Text(
                 'to dismiss',
-                style: TextStyle(color: Colors.white38, fontSize: 11.5),
+                style: TextStyle(color: DizzyVoid.ash, fontSize: 11.5),
               ),
             ],
           ),
@@ -945,14 +926,14 @@ class _KeyBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F222E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(color: DizzyEdge.hairline.color),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Colors.white70,
+          color: DizzyVoid.ash,
           fontSize: 10.5,
           fontWeight: FontWeight.bold,
           fontFamily: 'monospace',
