@@ -65,26 +65,18 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
       body: text,
     );
 
-    if (mounted) {
-      setState(() {
-        _isSending = false;
-        _messages.add(
-          DizzyDirectMessage(
-            id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-            threadId: 'local',
-            senderId: 'me',
-            clientMsgId: '${DateTime.now().millisecondsSinceEpoch}',
-            kind: 'text',
-            body: text,
-            createdAt: DateTime.now(),
-          ),
-        );
-      });
-
-      if (!success) {
-        DizzyNotify.show(context, 'Sent locally (cloud offline)', tone: NotifyTone.info);
-      }
+    if (!mounted) return;
+    setState(() => _isSending = false);
+    if (!mounted) return;
+    if (success) {
+      // Server is the source of truth — realtime delivers the real row.
+      // (Optimistic echo removed: a fail-soft add here used to show a
+      // message that was never sent, with no way to retry it.)
+      return;
     }
+    _textController.text = text;
+    DizzyNotify.show(context, "Couldn't send — check net, then try again.",
+        tone: NotifyTone.warn);
   }
 
   Widget _buildMediaCardBubble(DizzyDirectMessage msg, bool isMe) {

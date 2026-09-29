@@ -447,6 +447,8 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    // P6 narrow compact: 360px pe long title overflow karta hai.
+    final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090C14),
@@ -457,11 +459,14 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.auto_stories_rounded, color: Color(0xFF7C5CFF), size: 22),
-            SizedBox(width: 10),
-            Text('Audiobook Studio & Generator', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            const Icon(Icons.auto_stories_rounded, color: Color(0xFF7C5CFF), size: 22),
+            const SizedBox(width: 10),
+            Text(
+              narrow ? 'Studio' : 'Audiobook Studio & Generator',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
           ],
         ),
         bottom: TabBar(

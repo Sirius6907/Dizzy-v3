@@ -81,6 +81,8 @@ void main() {
     lines.add(WrapCopy.hoursCheer(5000));
     lines.add(WrapCopy.streakLine(7));
     lines.add(WrapCopy.emptyTaste());
+    // P6: music search empty state (DizzyStateView line).
+    lines.add('Try another song, artist or album name.');
     return lines;
   }
 

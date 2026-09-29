@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/my_list/my_list_item.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../utils/navigation/route_transitions.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 import '../details/details_page.dart';
 import '../../models/movie/movie.dart';
 
@@ -129,7 +130,7 @@ class _MyListPageState extends State<MyListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       body: Stack(
         children: [
