@@ -66,7 +66,7 @@ class DizzyIdentityService {
         'hwid_hash': hwidHash,
         'sid': deviceSid.value,
         'platform': defaultTargetPlatform.name,
-        'app_version': '1.2.1',
+        'app_version': '1.3.0',
         'last_seen_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,hwid_hash');
     } catch (e) {
