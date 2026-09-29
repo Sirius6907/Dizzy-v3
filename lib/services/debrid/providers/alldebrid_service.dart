@@ -94,7 +94,7 @@ class AllDebridService {
   }) async {
     final apiKey = await getKey();
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('AllDebrid API key is missing. Please configure it in Settings.');
+      throw Exception('AllDebrid access key is missing. Please add it in Settings.');
     }
     final headers = {'Authorization': 'Bearer $apiKey'};
 
