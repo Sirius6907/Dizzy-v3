@@ -22,7 +22,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
     final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -511,7 +511,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
         gradient: LinearGradient(
           colors: [
             palette.primaryColor.withValues(alpha: 0.3),
-            const Color(0xFF10131E),
+            DizzyVoid.surface1,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

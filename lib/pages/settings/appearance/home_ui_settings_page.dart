@@ -23,7 +23,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
     final myListCount = MyListService.items.value.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -792,7 +792,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
             builder: (context, pos, _) {
               return DropdownButtonFormField<SimilarSectionPosition>(
                 value: pos,
-                dropdownColor: const Color(0xFF151822),
+                dropdownColor: DizzyVoid.surface1,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: DizzyVoid.voidB,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/stream/stream_model.dart';
 import '../../services/anime_arabic/anime_arabic_extractor.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
@@ -147,7 +148,7 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF11141E),
+        color: DizzyVoid.surface1,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.08),
@@ -310,7 +311,7 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF141824),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.08),

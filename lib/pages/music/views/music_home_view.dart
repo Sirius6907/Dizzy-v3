@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_settings.dart';
 import '../../../services/music/music_smart_mix_service.dart';
@@ -49,7 +50,7 @@ class MusicHomeView extends StatelessWidget {
 
     return RefreshIndicator(
       color: const Color(0xFF7C5CFF),
-      backgroundColor: const Color(0xFF151822),
+      backgroundColor: DizzyVoid.surface1,
       onRefresh: onRefresh,
       child: ListView(
         controller: scrollController,

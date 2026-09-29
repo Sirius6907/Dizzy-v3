@@ -453,7 +453,7 @@ class _MusicPageState extends State<MusicPage> {
           child: Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F121C).withValues(alpha: 0.95),
+              color: DizzyVoid.surface1.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               boxShadow: [
@@ -888,7 +888,7 @@ class _MusicPageState extends State<MusicPage> {
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
-        backgroundColor: const Color(0xFF080A0F),
+        backgroundColor: DizzyVoid.voidA,
         body: Stack(
           children: [
             // Dynamic Ambient Background Atmosphere

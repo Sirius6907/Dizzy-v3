@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
@@ -92,7 +93,7 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
       child: Container(
         width: isMobile ? MediaQuery.sizeOf(context).width : 380,
         decoration: BoxDecoration(
-          color: const Color(0xFF0F121C).withValues(alpha: 0.96),
+          color: DizzyVoid.surface1.withValues(alpha: 0.96),
           borderRadius: isMobile
               ? const BorderRadius.vertical(top: Radius.circular(28))
               : const BorderRadius.only(

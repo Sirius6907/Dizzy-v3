@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -268,7 +269,7 @@ class _SearchPageState extends State<SearchPage> {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return OfflineAwareScaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight + 10),
@@ -282,8 +283,8 @@ class _SearchPageState extends State<SearchPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF080A0F).withValues(alpha: 0.90),
-                    const Color(0xFF080A0F).withValues(alpha: 0.60),
+                    DizzyVoid.voidA.withValues(alpha: 0.90),
+                    DizzyVoid.voidA.withValues(alpha: 0.60),
                   ],
                 ),
                 border: Border(

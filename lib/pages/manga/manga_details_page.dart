@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import '../../models/manga/manga.dart';
@@ -124,7 +125,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
         : displayManga.coverSmall;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F111A),
+      backgroundColor: DizzyVoid.voidB,
       body: Stack(
         children: [
           // Background Hero Cover with ambient blur
@@ -135,7 +136,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                 coverUrl,
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
-                errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF0F111A)),
+                errorBuilder: (_, __, ___) => const ColoredBox(color: DizzyVoid.voidB),
               ),
             ),
           ),
@@ -148,9 +149,9 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF0F111A).withValues(alpha: 0.65),
-                    const Color(0xFF0F111A).withValues(alpha: 0.96),
-                    const Color(0xFF0F111A),
+                    DizzyVoid.voidB.withValues(alpha: 0.65),
+                    DizzyVoid.voidB.withValues(alpha: 0.96),
+                    DizzyVoid.voidB,
                   ],
                   stops: const [0.0, 0.45, 1.0],
                 ),
@@ -558,7 +559,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
               errorBuilder: (_, __, ___) => Container(
                 width: 200,
                 height: 290,
-                color: const Color(0xFF1E2230),
+                color: DizzyVoid.surface2,
                 child: const Icon(Icons.book_rounded, color: Colors.white38, size: 48),
               ),
             ),
@@ -667,7 +668,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                 errorBuilder: (_, __, ___) => Container(
                   width: 165,
                   height: 240,
-                  color: const Color(0xFF1E2230),
+                  color: DizzyVoid.surface2,
                   child: const Icon(Icons.book_rounded, color: Colors.white38, size: 40),
                 ),
               ),
@@ -824,7 +825,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
           filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF151822).withValues(alpha: 0.75),
+              color: DizzyVoid.surface1.withValues(alpha: 0.75),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.12),
                 width: 1.2,

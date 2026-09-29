@@ -480,7 +480,7 @@ class _ChapterTileState extends State<_ChapterTile> {
               duration: const Duration(milliseconds: 150),
               decoration: BoxDecoration(
                 color: _isHovered
-                    ? const Color(0xFF1B2030)
+                    ? DizzyVoid.surface2
                     : DizzyVoid.surface1.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(

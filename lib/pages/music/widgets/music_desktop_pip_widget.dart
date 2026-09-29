@@ -18,7 +18,7 @@ class MusicDesktopPipWidget extends StatelessWidget {
 
     if (track == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0D101A),
+        backgroundColor: DizzyVoid.voidB,
         body: Center(
           child: IconButton(
             icon: const Icon(Icons.fullscreen_rounded, color: Colors.white),

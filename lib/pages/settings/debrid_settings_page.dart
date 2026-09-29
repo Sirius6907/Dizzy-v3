@@ -251,7 +251,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -426,7 +426,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: services.contains(_selectedService) ? _selectedService : 'None',
-                      dropdownColor: const Color(0xFF151822),
+                      dropdownColor: DizzyVoid.surface1,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: DizzyVoid.voidB,

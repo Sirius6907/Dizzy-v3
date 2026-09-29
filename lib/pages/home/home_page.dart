@@ -133,7 +133,7 @@ class _HomePageState extends State<HomePage> {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: const Color(0xFF10131A),
+        backgroundColor: DizzyVoid.surface1,
         builder: (_) => const ConsentOnboardingSheet(),
       );
     }
@@ -535,7 +535,7 @@ class _HomePageState extends State<HomePage> {
     ];
 
     return Container(
-      color: const Color(0xFF080A0F),
+      color: DizzyVoid.voidA,
       child: Stack(
         fit: StackFit.expand,
         children: [

@@ -1,5 +1,6 @@
 import '../../../services/music/music_service.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
 import 'music_hoverable.dart';
@@ -84,7 +85,7 @@ class MusicAudioSourceSelectorButton extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F111D).withValues(alpha: 0.95),
+                  color: DizzyVoid.surface1.withValues(alpha: 0.95),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),

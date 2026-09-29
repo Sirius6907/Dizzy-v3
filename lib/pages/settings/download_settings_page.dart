@@ -10,7 +10,7 @@ class DownloadSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return OfflineAwareScaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,

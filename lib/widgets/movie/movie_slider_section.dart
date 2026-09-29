@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/movie/movie_section.dart';
 import '../../design/dizzy_tokens.dart';
@@ -279,7 +280,7 @@ class _SliderArrowState extends State<_SliderArrow> with SingleTickerProviderSta
                   shape: BoxShape.circle,
                   color: _isHovered
                       ? Colors.white.withValues(alpha: 0.15)
-                      : const Color(0xFF080A0F).withValues(alpha: 0.5),
+                      : DizzyVoid.voidA.withValues(alpha: 0.5),
                   border: Border.all(
                     color: _isHovered
                         ? Colors.white.withValues(alpha: 0.3)

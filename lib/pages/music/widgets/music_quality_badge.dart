@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../services/music/music_service.dart';
@@ -103,7 +104,7 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
       style: PerformanceGlassStyles.sheet,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0F121C).withValues(alpha: 0.96),
+          color: DizzyVoid.surface1.withValues(alpha: 0.96),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),

@@ -1107,7 +1107,7 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
                                             width: 38,
                                             height: 28,
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF080A10),
+                                              color: DizzyVoid.voidB,
                                               borderRadius: BorderRadius.circular(4),
                                               border: Border.all(color: const Color(0xFF1E2336)),
                                             ),

@@ -44,7 +44,7 @@ class MusicTopHeader extends StatelessWidget {
           0,
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFF080A0F).withValues(alpha: 0.85),
+          color: DizzyVoid.voidA.withValues(alpha: 0.85),
           border: Border(
             bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
           ),

@@ -613,7 +613,7 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF10131E),
+          color: DizzyVoid.surface1,
           border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 4),
           boxShadow: [
             BoxShadow(

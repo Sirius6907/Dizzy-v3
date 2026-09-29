@@ -1037,7 +1037,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141724),
+                    color: DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white12),
                   ),
@@ -1096,7 +1096,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                   width: 130,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141724),
+                    color: DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.white12),
                   ),
@@ -1136,7 +1136,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     height: 34,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141724),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _Palette.accent.withValues(alpha: 0.4),
@@ -1145,7 +1145,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     child: DropdownButton<int>(
                       value: currentBatchSafe,
                       underline: const SizedBox.shrink(),
-                      dropdownColor: const Color(0xFF141724),
+                      dropdownColor: DizzyVoid.surface1,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -1228,7 +1228,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                       ? _Palette.accent.withValues(alpha: 0.35)
                       : (isWatched
                           ? Colors.white.withValues(alpha: 0.08)
-                          : const Color(0xFF141724)),
+                          : DizzyVoid.surface1),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isHighlighted

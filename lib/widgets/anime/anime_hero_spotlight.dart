@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/anime/anime_media.dart';
 import '../../services/theme/app_theme_service.dart';
 
@@ -93,10 +94,10 @@ class _AnimeHeroSpotlightState extends State<AnimeHeroSpotlight> {
                         memCacheWidth: 1280,
                         maxWidthDiskCache: 1280,
                         placeholder: (_, __) => Container(
-                          color: const Color(0xFF131522),
+                          color: DizzyVoid.surface1,
                         ),
                         errorWidget: (_, __, ___) => Container(
-                          color: const Color(0xFF131522),
+                          color: DizzyVoid.surface1,
                           child: const Icon(
                             Icons.animation_rounded,
                             color: Colors.white24,

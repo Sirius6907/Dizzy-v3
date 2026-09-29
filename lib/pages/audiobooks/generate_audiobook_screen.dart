@@ -455,7 +455,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     return Scaffold(
       backgroundColor: DizzyColors.bg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0E131F).withValues(alpha: 0.9),
+        backgroundColor: DizzyVoid.surface1.withValues(alpha: 0.9),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -553,7 +553,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                     padding: const EdgeInsets.all(32),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF111420),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                     ),
@@ -592,7 +592,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF111522),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -724,7 +724,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                 width: 260,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111420),
+                  color: DizzyVoid.surface1,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
@@ -865,7 +865,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111522),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -1067,7 +1067,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                     padding: const EdgeInsets.all(32),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF111420),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                     ),
@@ -1104,7 +1104,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111522),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),

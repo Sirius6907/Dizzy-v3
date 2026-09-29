@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/theme/app_theme_service.dart';
@@ -113,7 +114,7 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
           vertical: 24,
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFF10131A),
+          color: DizzyVoid.surface1,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.12),

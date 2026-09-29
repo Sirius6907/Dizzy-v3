@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../utils/perf/image_caps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../../models/book/book_result.dart';
 import '../../../models/book/reading_progress.dart';
@@ -331,20 +332,20 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                               memCacheWidth: ImageCaps.kCardW,
                               maxWidthDiskCache: ImageCaps.kCardW,
                               placeholder: (_, __) => Container(
-                                color: const Color(0xFF20212C),
+                                color: DizzyVoid.surface2,
                                 child: const Center(
                                   child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
                                 ),
                               ),
                               errorWidget: (_, __, ___) => Container(
-                                color: const Color(0xFF20212C),
+                                color: DizzyVoid.surface2,
                                 child: const Center(
                                   child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
                                 ),
                               ),
                             )
                           : Container(
-                              color: const Color(0xFF20212C),
+                              color: DizzyVoid.surface2,
                               child: const Center(
                                 child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
                               ),

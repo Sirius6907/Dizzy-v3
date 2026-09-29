@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/stream/stream_model.dart';
 import '../../pages/player/player_screen.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -412,7 +413,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF131722).withValues(alpha: 0.85),
+        color: DizzyVoid.surface1.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: palette.primaryColor.withValues(alpha: 0.3),
@@ -619,7 +620,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
       decoration: BoxDecoration(
         color: file.isVideo
             ? const Color(0xFF161B26).withValues(alpha: 0.75)
-            : const Color(0xFF10141C).withValues(alpha: 0.5),
+            : DizzyVoid.surface1.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: file.isVideo

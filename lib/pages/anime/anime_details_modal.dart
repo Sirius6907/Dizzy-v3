@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/anime/anime_media.dart';
@@ -170,7 +171,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                   width: modalWidth,
                   height: modalHeight,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0D0F18),
+                    color: DizzyVoid.voidB,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                     boxShadow: [
@@ -199,7 +200,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                 memCacheWidth: ImageCaps.kBackdrop,
                                 maxWidthDiskCache: ImageCaps.kBackdrop,
                                 errorWidget: (_, __, ___) => Container(
-                                  color: const Color(0xFF141724),
+                                  color: DizzyVoid.surface1,
                                 ),
                               ),
                             ),
@@ -211,8 +212,8 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.black.withValues(alpha: 0.25),
-                                      const Color(0xFF0D0F18).withValues(alpha: 0.75),
-                                      const Color(0xFF0D0F18),
+                                      DizzyVoid.voidB.withValues(alpha: 0.75),
+                                      DizzyVoid.voidB,
                                     ],
                                     stops: const [0.0, 0.65, 1.0],
                                   ),
@@ -501,7 +502,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                   Container(
                                     padding: const EdgeInsets.all(3),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF141724),
+                                      color: DizzyVoid.surface1,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                                     ),
@@ -628,7 +629,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                         width: 130,
                                         height: 34,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF141724),
+                                          color: DizzyVoid.surface1,
                                           borderRadius: BorderRadius.circular(8),
                                           border: Border.all(color: Colors.white12),
                                         ),
@@ -668,14 +669,14 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                           height: 34,
                                           padding: const EdgeInsets.symmetric(horizontal: 8),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF141724),
+                                            color: DizzyVoid.surface1,
                                             borderRadius: BorderRadius.circular(8),
                                             border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.4)),
                                           ),
                                           child: DropdownButton<int>(
                                             value: currentBatchSafe,
                                             underline: const SizedBox.shrink(),
-                                            dropdownColor: const Color(0xFF141724),
+                                            dropdownColor: DizzyVoid.surface1,
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 12,
@@ -761,7 +762,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                                   memCacheHeight: ImageCaps.kThumb,
                                                   maxWidthDiskCache: ImageCaps.kThumb,
                                                   errorWidget: (_, __, ___) => Container(
-                                                    color: const Color(0xFF1A1D2B),
+                                                    color: DizzyVoid.surface2,
                                                     child: const Icon(Icons.person_rounded, color: Colors.white24),
                                                   ),
                                                 ),
@@ -839,7 +840,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                                   memCacheHeight: ImageCaps.kThumb,
                                                   maxWidthDiskCache: ImageCaps.kThumb,
                                                   errorWidget: (_, __, ___) => Container(
-                                                    color: const Color(0xFF1A1D2B),
+                                                    color: DizzyVoid.surface2,
                                                     child: const Icon(Icons.movie_creation_outlined, color: Colors.white24),
                                                   ),
                                                 ),
@@ -914,7 +915,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                                   memCacheHeight: ImageCaps.kThumb,
                                                   maxWidthDiskCache: ImageCaps.kThumb,
                                                   errorWidget: (_, __, ___) => Container(
-                                                    color: const Color(0xFF1A1D2B),
+                                                    color: DizzyVoid.surface2,
                                                     child: const Icon(Icons.movie_creation_outlined, color: Colors.white24),
                                                   ),
                                                 ),
@@ -1011,7 +1012,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                       ? const Color(0xFF7C5CFF).withValues(alpha: 0.35)
                       : (isWatched
                           ? Colors.white.withValues(alpha: 0.08)
-                          : const Color(0xFF141724)),
+                          : DizzyVoid.surface1),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isHighlighted

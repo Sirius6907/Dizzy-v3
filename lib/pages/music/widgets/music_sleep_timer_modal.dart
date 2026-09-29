@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../services/music/music_sleep_timer_service.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -49,7 +50,7 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
       style: PerformanceGlassStyles.sheet,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0F121C).withValues(alpha: 0.98),
+          color: DizzyVoid.surface1.withValues(alpha: 0.98),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),

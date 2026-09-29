@@ -1,12 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../../services/theme/glass_settings.dart';
 
 /// Design tokens and glass styling for the modern video player UI.
 class PlayerTheme {
   // Backgrounds & Surfaces
-  static const Color canvas = Color(0xFF080C12);
+  static const Color canvas = DizzyVoid.voidB;
   static const Color elevated = Color(0xF0101622);
   static const Color raised = Color(0x1AFFFFFF); // 10% white
   static const Color surfaceHover = Color(0x22FFFFFF); // 13% white

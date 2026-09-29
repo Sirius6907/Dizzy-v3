@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/profiles/dizzy_profile_service.dart';
 import '../../services/profiles/kids_mode.dart';
@@ -12,9 +13,9 @@ class ProfilesSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         title: const Text('Profiles',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
@@ -57,7 +58,7 @@ class ProfilesSettingsPage extends StatelessWidget {
     return Card(
       color: active
           ? palette.primaryColor.withValues(alpha: 0.16)
-          : const Color(0xFF11141B),
+          : DizzyVoid.surface1,
       child: ListTile(
         // Polish P15: kids avatar wears a gold ring + cub badge.
         leading: Semantics(

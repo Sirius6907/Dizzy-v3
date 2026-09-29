@@ -53,7 +53,7 @@ class MusicBottomPlayerBar extends StatelessWidget {
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F121C).withValues(alpha: 0.95),
+          color: DizzyVoid.surface1.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.2),
           boxShadow: [
@@ -83,7 +83,7 @@ class MusicBottomPlayerBar extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               palette.primaryColor.withValues(alpha: 0.28),
-              const Color(0xFF10131E).withValues(alpha: 0.95),
+              DizzyVoid.surface1.withValues(alpha: 0.95),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -135,7 +135,7 @@ class MusicBottomPlayerBar extends StatelessWidget {
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF131522).withValues(alpha: 0.95),
+          color: DizzyVoid.surface1.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.2),
           boxShadow: [
@@ -190,7 +190,7 @@ class MusicBottomPlayerBar extends StatelessWidget {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF131522).withValues(alpha: 0.95),
+        color: DizzyVoid.surface1.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: palette.primaryColor.withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
@@ -230,7 +230,7 @@ class MusicBottomPlayerBar extends StatelessWidget {
         errorWidget: (_, __, ___) => Container(
           width: size,
           height: size,
-          color: const Color(0xFF1A1D2E),
+          color: DizzyVoid.surface2,
           child: const Icon(Icons.music_note_rounded, color: Colors.white54, size: 20),
         ),
       ),

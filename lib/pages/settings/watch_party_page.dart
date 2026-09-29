@@ -66,7 +66,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     final palette = AppThemeService.currentPalette.value;
     final available = WatchPartyService.isAvailable;
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -79,7 +79,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           // P12: pull-to-refresh the lobby (sweep dead rooms + reload).
           child: RefreshIndicator(
             color: DizzyGlow.violet,
-            backgroundColor: const Color(0xFF11141B),
+            backgroundColor: DizzyVoid.surface1,
             onRefresh: () async {
               try {
                 await WatchPartyService.sweepStale();
@@ -178,7 +178,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         builder: (c, code, _) => Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF11141B),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
@@ -244,7 +244,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF11141B),
+                    color: DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                         color: Colors.white.withValues(alpha: 0.08)),
@@ -299,7 +299,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   Widget _pubTile(dynamic palette, WatchPartyRoom r) => Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF11141B),
+          color: DizzyVoid.surface1,
           borderRadius: BorderRadius.circular(14),
           border:
               Border.all(color: Colors.white.withValues(alpha: 0.08)),
@@ -590,7 +590,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   Widget _lockedCard(dynamic palette) => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFF11141B),
+          color: DizzyVoid.surface1,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -623,7 +623,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF11141B),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),

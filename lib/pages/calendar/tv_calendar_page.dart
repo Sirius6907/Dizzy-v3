@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/movie/movie.dart';
 import '../../services/calendar/tv_calendar_service.dart';
@@ -219,7 +220,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
               Expanded(
                 child: RefreshIndicator(
                   color: palette.primaryColor,
-                  backgroundColor: const Color(0xFF131722),
+                  backgroundColor: DizzyVoid.surface1,
                   onRefresh: () => _loadEpisodesForSelectedDay(forceRefresh: true),
                   child: _buildEpisodesContent(palette, screenWidth, isMobile),
                 ),
@@ -882,7 +883,7 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
           decoration: BoxDecoration(
             color: _isHovered
                 ? const Color(0xFF161B29).withValues(alpha: 0.95)
-                : const Color(0xFF10131E).withValues(alpha: 0.85),
+                : DizzyVoid.surface1.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: _isHovered

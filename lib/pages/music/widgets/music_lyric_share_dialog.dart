@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_artwork_palette_service.dart';
@@ -107,7 +108,7 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
           child: Container(
             padding: EdgeInsets.all(isMobile ? 16 : 24),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D101A),
+              color: DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),

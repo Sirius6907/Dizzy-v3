@@ -138,7 +138,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF10131C),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -658,7 +658,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
               decoration: const BoxDecoration(
                 color: DizzyVoid.voidB,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border(top: BorderSide(color: Color(0xFF22283A), width: 1.2)),
+                border: Border(top: BorderSide(color: DizzyVoid.surface3, width: 1.2)),
               ),
               child: Column(
                 children: [
@@ -697,9 +697,9 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                     child: Container(
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141824),
+                        color: DizzyVoid.surface1,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF22283A)),
+                        border: Border.all(color: DizzyVoid.surface3),
                       ),
                       child: TextField(
                         controller: _catSearchCtrl,
@@ -729,7 +729,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Divider(color: Color(0xFF1B2030), height: 1),
+                  const Divider(color: DizzyVoid.surface2, height: 1),
                   Expanded(
                     child: ListView.builder(
                       itemCount: cats.length,
@@ -771,7 +771,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
     final isDesktop = _isDesktop(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07090E),
+      backgroundColor: DizzyVoid.voidA,
       body: SafeArea(
         child: Column(
           children: [
@@ -782,7 +782,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                 decoration: const BoxDecoration(
                   color: DizzyVoid.voidB,
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFF1B2030), width: 1.2),
+                    bottom: BorderSide(color: DizzyVoid.surface2, width: 1.2),
                   ),
                 ),
                 child: Row(
@@ -851,9 +851,9 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF141824),
+                          color: DizzyVoid.surface1,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF22283A)),
+                          border: Border.all(color: DizzyVoid.surface3),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -890,11 +890,11 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                                 )
                               : null,
                           filled: true,
-                          fillColor: const Color(0xFF141824),
+                          fillColor: DizzyVoid.surface1,
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFF22283A)),
+                            borderSide: const BorderSide(color: DizzyVoid.surface3),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -946,7 +946,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                 decoration: const BoxDecoration(
                   color: DizzyVoid.voidB,
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFF1B2030), width: 1.2),
+                    bottom: BorderSide(color: DizzyVoid.surface2, width: 1.2),
                   ),
                 ),
                 child: Column(
@@ -1026,7 +1026,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF141824),
+                              color: DizzyVoid.surface1,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.5)),
                             ),
@@ -1061,9 +1061,9 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                               child: Container(
                                 padding: const EdgeInsets.all(3),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF141824),
+                                  color: DizzyVoid.surface1,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFF22283A)),
+                                  border: Border.all(color: DizzyVoid.surface3),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -1087,9 +1087,9 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                     Container(
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141824),
+                        color: DizzyVoid.surface1,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF22283A)),
+                        border: Border.all(color: DizzyVoid.surface3),
                       ),
                       child: TextField(
                         controller: _searchCtrl,
@@ -1133,7 +1133,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                                     decoration: const BoxDecoration(
                                       color: DizzyVoid.voidB,
                                       border: Border(
-                                        right: BorderSide(color: Color(0xFF1B2030), width: 1.2),
+                                        right: BorderSide(color: DizzyVoid.surface2, width: 1.2),
                                       ),
                                     ),
                                     child: Column(
@@ -1144,9 +1144,9 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                                           child: Container(
                                             height: 38,
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF141824),
+                                              color: DizzyVoid.surface1,
                                               borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(color: const Color(0xFF22283A)),
+                                              border: Border.all(color: DizzyVoid.surface3),
                                             ),
                                             child: TextField(
                                               controller: _catSearchCtrl,
@@ -1580,7 +1580,7 @@ class _CategoryListRowState extends State<_CategoryListRow> {
             decoration: BoxDecoration(
               color: widget.isSelected
                   ? (isFavCategory ? DizzyGlow.gold.withValues(alpha: 0.15) : palette.primaryColor.withValues(alpha: 0.15))
-                  : (_hovered ? const Color(0xFF141724) : Colors.transparent),
+                  : (_hovered ? DizzyVoid.surface1 : Colors.transparent),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: widget.isSelected
@@ -1722,10 +1722,10 @@ class _LiveChannelListRowState extends State<_LiveChannelListRow> {
             duration: const Duration(milliseconds: 120),
             padding: EdgeInsets.symmetric(horizontal: isVerySmall ? 8 : 14, vertical: 8),
             decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFF161A28) : const Color(0xFF0E111A),
+              color: _hovered ? const Color(0xFF161A28) : DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _hovered ? palette.primaryColor.withValues(alpha: 0.7) : const Color(0xFF1B2030),
+                color: _hovered ? palette.primaryColor.withValues(alpha: 0.7) : DizzyVoid.surface2,
                 width: _hovered ? 1.4 : 1.0,
               ),
               boxShadow: _hovered
@@ -1764,7 +1764,7 @@ class _LiveChannelListRowState extends State<_LiveChannelListRow> {
                     height: isVerySmall ? 40 : 46,
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF080A10),
+                      color: DizzyVoid.voidB,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: const Color(0xFF1E2336)),
                     ),
@@ -1854,9 +1854,9 @@ class _LiveChannelListRowState extends State<_LiveChannelListRow> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141824),
+                    color: DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: const Color(0xFF22283A)),
+                    border: Border.all(color: DizzyVoid.surface3),
                   ),
                   child: Text(
                     s.containerExt.toUpperCase(),
@@ -1947,10 +1947,10 @@ class _LiveChannelGridCardState extends State<_LiveChannelGridCard> {
             duration: const Duration(milliseconds: 140),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFF161A28) : const Color(0xFF0E111A),
+              color: _hovered ? const Color(0xFF161A28) : DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _hovered ? palette.primaryColor.withValues(alpha: 0.8) : const Color(0xFF1B2030),
+                color: _hovered ? palette.primaryColor.withValues(alpha: 0.8) : DizzyVoid.surface2,
                 width: _hovered ? 1.5 : 1.0,
               ),
               boxShadow: _hovered
@@ -1975,7 +1975,7 @@ class _LiveChannelGridCardState extends State<_LiveChannelGridCard> {
                         height: 32,
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF080A10),
+                          color: DizzyVoid.voidB,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: const Color(0xFF1E2336)),
                         ),
@@ -2051,9 +2051,9 @@ class _LiveChannelGridCardState extends State<_LiveChannelGridCard> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141824),
+                        color: DizzyVoid.surface1,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0xFF22283A)),
+                        border: Border.all(color: DizzyVoid.surface3),
                       ),
                       child: Text(
                         s.containerExt.toUpperCase(),
@@ -2129,10 +2129,10 @@ class _LiveChannelCompactListRowState extends State<_LiveChannelCompactListRow> 
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFF161A28) : const Color(0xFF0E111A),
+              color: _hovered ? const Color(0xFF161A28) : DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _hovered ? palette.primaryColor.withValues(alpha: 0.7) : const Color(0xFF1B2030),
+                color: _hovered ? palette.primaryColor.withValues(alpha: 0.7) : DizzyVoid.surface2,
               ),
             ),
             child: Row(
@@ -2246,10 +2246,10 @@ class _VodSeriesCardState extends State<_VodSeriesCard> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141824),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _hovered ? const Color(0xFF7C5CFF) : const Color(0xFF22283A),
+                        color: _hovered ? const Color(0xFF7C5CFF) : DizzyVoid.surface3,
                         width: _hovered ? 1.4 : 1.0,
                       ),
                       boxShadow: _hovered
@@ -2499,7 +2499,7 @@ class _SeriesEpisodesSheetState extends State<_SeriesEpisodesSheet> {
                         itemBuilder: (context, index) {
                           final ep = _episodes[index];
                           return ListTile(
-                            tileColor: const Color(0xFF141824),
+                            tileColor: DizzyVoid.surface1,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             leading: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

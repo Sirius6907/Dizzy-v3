@@ -33,7 +33,7 @@ class PerformanceLiquidLens extends StatelessWidget {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF181A22), DizzyVoid.voidB],
+        colors: [DizzyVoid.surface1, DizzyVoid.voidB],
       ),
       border: Border.all(
         color: const Color(0x1CE2E8F0),

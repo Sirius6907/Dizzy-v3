@@ -27,9 +27,9 @@ class SubtitleSettingsPage extends StatelessWidget {
       GuideCard.maybeShow(context, 'subtitles', AppGuides.subtitles);
     });
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF080A0F),
+        backgroundColor: DizzyVoid.voidA,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
