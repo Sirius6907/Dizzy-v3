@@ -1,6 +1,9 @@
 
+import 'dart:async';
+
 import '../cloud/cloud_client.dart';
 import 'party_voice_service.dart';
+import '../errors/app_error_log.dart';
 import '../errors/app_log.dart';
 
 /// WP-P4: room chat + moderation over Supabase.
@@ -55,6 +58,8 @@ class PartyChatService {
       return ok == true;
     } catch (e) {
       AppLog.d('[Chat] send failed (soft): $e');
+      unawaited(AppErrorLog.log(
+          code: 'room_chat_send', screen: 'party', detail: 'rpc_failed'));
       return false;
     }
   }

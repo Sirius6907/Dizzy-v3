@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../../models/music/music_track.dart';
-import '../net/dizzy_net.dart';
-import '../net/retry_policy.dart';
 
 class DeezerApiClient {
   static final DeezerApiClient instance = DeezerApiClient._internal();

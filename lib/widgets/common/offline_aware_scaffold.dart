@@ -17,6 +17,7 @@ class OfflineAwareScaffold extends StatelessWidget {
   final Widget? endDrawer;
   final Color? backgroundColor;
   final bool resizeToAvoidBottomInset;
+  final bool extendBodyBehindAppBar;
   final EdgeInsetsGeometry? padding;
 
   const OfflineAwareScaffold({
@@ -30,6 +31,7 @@ class OfflineAwareScaffold extends StatelessWidget {
     this.endDrawer,
     this.backgroundColor,
     this.resizeToAvoidBottomInset = true,
+    this.extendBodyBehindAppBar = false,
     this.padding,
   });
 
@@ -44,6 +46,7 @@ class OfflineAwareScaffold extends StatelessWidget {
             results.any((r) => r == ConnectivityResult.none);
         return Scaffold(
           appBar: appBar,
+          extendBodyBehindAppBar: extendBodyBehindAppBar,
           body: Stack(
             children: [
               Padding(

@@ -18,6 +18,7 @@ import '../../utils/perf/image_caps.dart';
 import '../../utils/platform/open_file_location_helper.dart';
 import '../../utils/platform/storage_space_helper.dart';
 import '../../widgets/common/notify.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../player/player_screen.dart';
 
@@ -162,7 +163,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     return ValueListenableBuilder<AppThemePalette>(
       valueListenable: AppThemeService.currentPalette,
       builder: (context, palette, _) {
-        return Scaffold(
+        return OfflineAwareScaffold(
           backgroundColor: palette.scaffoldBackgroundColor,
           appBar: AppBar(
             backgroundColor: palette.appBarBackgroundColor,
