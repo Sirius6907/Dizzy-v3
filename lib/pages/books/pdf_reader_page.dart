@@ -6,6 +6,7 @@ import 'package:pdfrx/pdfrx.dart';
 import '../../models/book/book_result.dart';
 import '../../models/book/reading_progress.dart';
 import '../../services/books/continue_reading_service.dart';
+import '../../design/dizzy_tokens.dart';
 import '../../services/books/reader_settings.dart';
 import '../../services/window/window_service.dart';
 import '../../services/discord/discord_rpc_service.dart';
@@ -200,7 +201,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                               Text(
                                 widget.book.displayTitle,
                                 style: const TextStyle(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: DizzyType.fontFamily,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -211,7 +212,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                               Text(
                                 widget.book.displayAuthor,
                                 style: const TextStyle(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: DizzyType.fontFamily,
                                   fontSize: 12,
                                   color: Colors.white70,
                                 ),
@@ -285,7 +286,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                                   Text(
                                     'Page $_currentPage of $_pageCount',
                                     style: const TextStyle(
-                                      fontFamily: 'Poppins',
+                                      fontFamily: DizzyType.fontFamily,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white70,
@@ -294,7 +295,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                                   Text(
                                     '${((_currentPage / (_pageCount > 0 ? _pageCount : 1)) * 100).round()}%',
                                     style: const TextStyle(
-                                      fontFamily: 'Poppins',
+                                      fontFamily: DizzyType.fontFamily,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF7C3AED),

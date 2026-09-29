@@ -11,6 +11,7 @@ import '../../services/home/home_page_settings.dart';
 import '../../services/search/search_history_helper.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/movie/movie_slider_section.dart';
 import '../../widgets/search/magnet_files_view.dart';
 import '../ai/wewatch_quiz_page.dart';
@@ -266,7 +267,7 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(

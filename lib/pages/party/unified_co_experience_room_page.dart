@@ -5,6 +5,7 @@ import 'package:dizzy/design/dizzy_tokens.dart';
 import 'package:dizzy/services/watchparty/party_session.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 
 /// Unified tactile OLED co-experience room for the 3 modes:
 /// Mode 1: Watch Together · Mode 2: Listen Together · Mode 3: Read Together.
@@ -116,14 +117,16 @@ class _UnifiedCoExperienceRoomPageState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // P6 narrow compact: 360px pe long title + room-code pill tight hote hain.
+    final narrow = MediaQuery.sizeOf(context).width < 420;
+    return OfflineAwareScaffold(
       backgroundColor: DizzyVoid.obsidian,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         foregroundColor: DizzyVoid.bone,
-        title: const Text(
-          'Co-Experience Room',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        title: Text(
+          narrow ? 'Co-Room' : 'Co-Experience Room',
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
         ),
         actions: [
           ListenableBuilder(

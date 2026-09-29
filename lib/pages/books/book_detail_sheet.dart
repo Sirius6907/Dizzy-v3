@@ -227,7 +227,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             Text(
                               book.displayTitle,
                               style: const TextStyle(
-                                fontFamily: 'Poppins',
+                                fontFamily: DizzyType.fontFamily,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: DizzyVoid.bone,
@@ -240,7 +240,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             Text(
                               book.displayAuthor,
                               style: const TextStyle(
-                                fontFamily: 'Poppins',
+                                fontFamily: DizzyType.fontFamily,
                                 fontSize: 13,
                                 color: DizzyVoid.ash,
                               ),
@@ -302,7 +302,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                     ? 'Page ${progress.currentPage} of ${progress.totalPages}'
                                     : 'Chapter ${progress.chapterIndex + 1} of ${progress.totalChapters}',
                                 style: const TextStyle(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: DizzyType.fontFamily,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: DizzyVoid.ash,
@@ -311,7 +311,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                               Text(
                                 '${(progress.progressPercent * 100).round()}% Completed',
                                 style: const TextStyle(
-                                  fontFamily: 'Poppins',
+                                  fontFamily: DizzyType.fontFamily,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: DizzyGlow.violet,
@@ -364,7 +364,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                     ? 'Resume Reading'
                                     : 'Read Now',
                             style: const TextStyle(
-                              fontFamily: 'Poppins',
+                              fontFamily: DizzyType.fontFamily,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -434,7 +434,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                     const Text(
                       'Information',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
+                        fontFamily: DizzyType.fontFamily,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: DizzyVoid.bone,
@@ -472,7 +472,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                     const Text(
                       'Overview',
                       style: TextStyle(
-                        fontFamily: 'Poppins',
+                        fontFamily: DizzyType.fontFamily,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: DizzyVoid.bone,
@@ -482,7 +482,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                     Text(
                       book.description,
                       style: const TextStyle(
-                        fontFamily: 'Poppins',
+                        fontFamily: DizzyType.fontFamily,
                         fontSize: 13,
                         color: DizzyVoid.ash,
                         height: 1.5,
@@ -508,7 +508,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
       child: Text(
         text,
         style: TextStyle(
-          fontFamily: 'Poppins',
+          fontFamily: DizzyType.fontFamily,
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: textColor,
@@ -526,7 +526,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'Poppins',
+              fontFamily: DizzyType.fontFamily,
               fontSize: 12,
               color: DizzyVoid.ash,
             ),
@@ -535,7 +535,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
             child: Text(
               value,
               style: const TextStyle(
-                fontFamily: 'Poppins',
+                fontFamily: DizzyType.fontFamily,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: DizzyVoid.bone,

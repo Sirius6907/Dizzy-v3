@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'debrid_resolver.dart';
 import 'models/debrid_file.dart';
 import 'providers/alldebrid_service.dart';
 import 'providers/debrid_link_service.dart';
@@ -78,6 +79,21 @@ class DebridService {
 
   // ── Stream Resolution Dispatcher ──────────────────────────────────────────
 
+  /// P3 — the failover chain, shared process-wide so its ordering and
+  /// its reporting stay consistent across every call site.
+  static final DebridResolver _resolver = DebridResolver();
+
+  /// Resolve a magnet, falling through the provider chain on failure.
+  ///
+  /// [service] pins the chain when supplied: the chosen provider is
+  /// tried first and the rest of the chain still runs behind it. That
+  /// keeps a deliberate user choice (and every existing caller that
+  /// passes one) working, while turning a dead provider from a hard
+  /// failure into a slower success.
+  ///
+  /// Still throws when nothing could resolve — the old contract, and
+  /// every caller already handles it. New callers that want the
+  /// structured answer should call [DebridResolver.resolve] directly.
   Future<List<DebridFile>> resolveMagnet({
     required String magnet,
     String? service,
@@ -88,58 +104,60 @@ class DebridService {
     String? episodeTitle,
   }) async {
     final activeService = service ?? await getSelectedService();
-    if (activeService == 'None' || activeService.isEmpty) {
-      throw Exception('No active Debrid service selected.');
-    }
+    final pinned = _normalizeLabel(activeService);
 
-    switch (activeService) {
+    final result = await _resolver.resolve(
+      magnet: magnet,
+      fileIndex: fileIndex,
+      filename: filename,
+      season: season,
+      episode: episode,
+      episodeTitle: episodeTitle,
+    );
+    if (result.isResolved) return result.files;
+
+    // Pinned-but-unconfigured is the one case worth distinguishing: the
+    // user asked for a service that has no key, and silently using a
+    // different one would be surprising. The chain still ran, so if it
+    // found nothing, say so plainly.
+    if (result.attempted.isEmpty) {
+      if (pinned != null) {
+        throw Exception(
+          'No Debrid key saved for $pinned. Please add it in Settings.',
+        );
+      }
+      throw Exception('No Debrid service is set up. Please add a key in Settings.');
+    }
+    throw Exception(
+      'Every Debrid service failed (${result.attempted.join(', ')}). '
+      'Check your connection or keys in Settings.',
+    );
+  }
+
+  /// Settings stores display names; the chain stores labels. This is the
+  /// single place that reconciles them, so the two cannot drift.
+  static String? _normalizeLabel(String service) {
+    switch (service.trim()) {
       case 'Real-Debrid':
-        return await realDebrid.resolveMagnet(
-          magnet,
-          fileIndex: fileIndex,
-          filename: filename,
-          season: season,
-          episode: episode,
-          episodeTitle: episodeTitle,
-        );
+        return 'Real-Debrid';
       case 'TorBox':
-        return await torBox.resolveMagnet(
-          magnet,
-          fileIndex: fileIndex,
-          filename: filename,
-          season: season,
-          episode: episode,
-          episodeTitle: episodeTitle,
-        );
+        return 'TorBox';
       case 'AllDebrid':
-        return await allDebrid.resolveMagnet(
-          magnet,
-          fileIndex: fileIndex,
-          filename: filename,
-          season: season,
-          episode: episode,
-          episodeTitle: episodeTitle,
-        );
+        return 'AllDebrid';
       case 'Premiumize':
-        return await premiumize.resolveMagnet(
-          magnet,
-          fileIndex: fileIndex,
-          filename: filename,
-          season: season,
-          episode: episode,
-          episodeTitle: episodeTitle,
-        );
+        return 'Premiumize';
       case 'Debrid-Link':
-        return await debridLink.resolveMagnet(
-          magnet,
-          fileIndex: fileIndex,
-          filename: filename,
-          season: season,
-          episode: episode,
-          episodeTitle: episodeTitle,
-        );
+        return 'Debrid-Link';
+      case 'None':
+      case '':
+        return null;
       default:
-        throw Exception('Unknown Debrid provider: $activeService');
+        return service.trim();
     }
   }
+
+  /// The provider order the settings page should display, so the user
+  /// can see the failover chain before it ever runs.
+  static List<String> failoverOrder() =>
+      _resolver.chain().map((a) => a.label).toList(growable: false);
 }

@@ -186,7 +186,7 @@ class _BooksPageState extends State<BooksPage> {
                               ? 'Results for "${_searchController.text.trim()}"'
                               : 'Discover Books',
                           style: const TextStyle(
-                            fontFamily: 'Poppins',
+                            fontFamily: ReaderTokens.uiFont,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -198,7 +198,7 @@ class _BooksPageState extends State<BooksPage> {
                           Text(
                             '${_books.length} Books',
                             style: const TextStyle(
-                              fontFamily: 'Poppins',
+                              fontFamily: ReaderTokens.uiFont,
                               fontSize: 13,
                               color: Colors.white38,
                             ),
@@ -247,7 +247,7 @@ class _BooksPageState extends State<BooksPage> {
                           Text(
                             'No books found',
                             style: TextStyle(
-                              fontFamily: 'Poppins',
+                              fontFamily: ReaderTokens.uiFont,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white70,
@@ -356,7 +356,7 @@ class _BooksPageState extends State<BooksPage> {
               const Text(
                 'Books',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
+                  fontFamily: ReaderTokens.uiFont,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -452,7 +452,7 @@ class _BooksPageState extends State<BooksPage> {
         ),
       ),
       labelStyle: TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: ReaderTokens.uiFont,
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
         color: isSelected ? Colors.white : Colors.white70,

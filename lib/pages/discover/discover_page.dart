@@ -4,6 +4,7 @@ import '../../models/movie/movie.dart';
 import '../../models/movie/movie_section.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../widgets/common/error_view.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/movie/movie_card.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -66,7 +67,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final topPadding = MediaQuery.of(context).padding.top;
     final isDesktop = MediaQuery.sizeOf(context).width >= 800;
 
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       body: Stack(
         children: [

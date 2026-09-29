@@ -17,6 +17,7 @@ import '../../utils/navigation/route_transitions.dart';
 import '../discover/discover_page.dart';
 import '../player/watch_screen.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../models/download/download_task_model.dart';
 import '../../services/download/download_service.dart';
@@ -377,7 +378,7 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: DizzyColors.bg,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: DizzyColors.accent))

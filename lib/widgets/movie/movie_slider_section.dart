@@ -9,6 +9,7 @@ import '../../pages/catalog/catalog_page.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import './movie_card.dart';
+import '../common/horizontal_wheel_scroll.dart';
 import '../common/section_header.dart';
 
 class MovieSliderSection extends StatefulWidget {
@@ -165,22 +166,25 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  ListView.separated(
-                    clipBehavior: Clip.none,
+                  HorizontalWheelScroll(
                     controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding),
-                    itemCount: widget.section.movies.length,
-                    separatorBuilder: (context, index) {
-                      return SizedBox(width: sizing.spacing);
-                    },
-                    itemBuilder: (context, index) {
-                      return SizedBox(
-                        width: sizing.cardWidth,
-                        child: MovieCard(movie: widget.section.movies[index]),
-                      );
-                    },
+                    child: ListView.separated(
+                      clipBehavior: Clip.none,
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding),
+                      itemCount: widget.section.movies.length,
+                      separatorBuilder: (context, index) {
+                        return SizedBox(width: sizing.spacing);
+                      },
+                      itemBuilder: (context, index) {
+                        return SizedBox(
+                          width: sizing.cardWidth,
+                          child: MovieCard(movie: widget.section.movies[index]),
+                        );
+                      },
+                    ),
                   ),
                   
                   // Desktop Scroll Arrows

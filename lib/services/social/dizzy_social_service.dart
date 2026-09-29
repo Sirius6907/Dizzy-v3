@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../cloud/cloud_client.dart';
+import '../errors/app_error_log.dart';
 import '../errors/app_log.dart';
 
 /// User search match result.
@@ -157,6 +159,8 @@ class DizzySocialService {
       return true;
     } catch (e) {
       AppLog.d('sendDirectMessage: $e');
+      unawaited(AppErrorLog.log(
+          code: 'dm_send', screen: 'social', detail: 'insert_failed'));
       return false;
     }
   }

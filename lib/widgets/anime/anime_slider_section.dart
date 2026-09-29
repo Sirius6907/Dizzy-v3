@@ -5,6 +5,7 @@ import '../../models/anime/anime_media.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/common/slider_arrow.dart';
 import '../../widgets/movie/movie_card.dart';
+import '../../widgets/common/horizontal_wheel_scroll.dart';
 import 'anime_card.dart';
 
 class AnimeSliderSection extends StatefulWidget {
@@ -113,25 +114,28 @@ class _AnimeSliderSectionState extends State<AnimeSliderSection> {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  ListView.separated(
-                    clipBehavior: Clip.none,
+                  HorizontalWheelScroll(
                     controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding),
-                    itemCount: widget.animeList.length,
-                    separatorBuilder: (_, __) => SizedBox(width: sizing.spacing),
-                    itemBuilder: (context, index) {
-                      final anime = widget.animeList[index];
-                      return SizedBox(
-                        width: sizing.cardWidth,
-                        child: AnimeCard(
-                          anime: anime,
+                    child: ListView.separated(
+                      clipBehavior: Clip.none,
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding),
+                      itemCount: widget.animeList.length,
+                      separatorBuilder: (_, __) => SizedBox(width: sizing.spacing),
+                      itemBuilder: (context, index) {
+                        final anime = widget.animeList[index];
+                        return SizedBox(
                           width: sizing.cardWidth,
-                          onTap: () => widget.onAnimeTap(anime),
-                        ),
-                      );
-                    },
+                          child: AnimeCard(
+                            anime: anime,
+                            width: sizing.cardWidth,
+                            onTap: () => widget.onAnimeTap(anime),
+                          ),
+                        );
+                      },
+                    ),
                   ),
 
                   // Desktop Floating Scroll Arrows (Matching Home Page)

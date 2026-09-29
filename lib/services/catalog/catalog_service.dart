@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cloud/cloud_client.dart';
+import '../net/dizzy_net.dart';
+import '../net/retry_policy.dart';
 
 /// One slim browse card from the `catalog` edge feed.
 class CatalogCard {
@@ -91,10 +92,20 @@ class CatalogService {
             'type': type,
             'page': '$page',
           });
-          final res = await http.get(uri, headers: {
-            'apikey': CloudClient.anonKey,
-            'Accept': 'application/json',
-          }).timeout(const Duration(seconds: 8));
+          // P3: shared client. A timeout now returns a synthetic 504
+          // instead of throwing, so this falls through to the snapshot
+          // the same way a 500 always did.
+          final res = await DizzyNet.instance.get(
+            uri,
+            headers: {
+              'apikey': CloudClient.anonKey,
+              'Accept': 'application/json',
+            },
+            timeout: const Duration(seconds: 8),
+            policy: RetryPolicy.quick,
+            screen: 'home',
+            code: 'catalog_feed',
+          );
           if (res.statusCode == 200) {
             final data = jsonDecode(res.body) as Map<String, dynamic>?;
             final cards = ((data?['items'] as List?) ?? [])
