@@ -165,7 +165,8 @@ jobs:
               echo "::error::Restored keystore looks corrupted (<1000 bytes)"; exit 1
             fi
           else
-            echo "::warning::KEYSTORE_BASE64 secret not set — APK will be debug-signed and CANNOT update over existing installs!"
+            echo "::error::KEYSTORE_BASE64 secret not set — refusing to publish debug-signed APKs (in-place updates from old versions would fail with 'package not valid'). Set the secret and re-run."
+            exit 1
           fi
 
       - name: Patch pdfrx_engine if needed
@@ -194,6 +195,25 @@ jobs:
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk apks/Dizzy-v3-armeabi-v7a.apk || true
           cp build/app/outputs/flutter-apk/app-x86_64-release.apk apks/Dizzy-v3-x86_64.apk || true
           cp build/app/outputs/flutter-apk/app-release.apk apks/Dizzy-v3-Universal.apk || true
+
+      - name: Verify release signing (block wrong-key APKs)
+        run: |
+          # v1.1.3–v1.1.5 shipped DEBUG-signed and can never update in place.
+          # Refuse to publish anything not signed with the release key (CN=Sirius).
+          EXPECTED="c513faef1906c5d67f01f7ff27946d52fe727773e72324e294c58de5711a1974"
+          APKSIGNER="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          if [ -z "$APKSIGNER" ]; then echo "::error::apksigner not found"; exit 1; fi
+          fail=0
+          for apk in apks/*.apk; do
+            out="$("$APKSIGNER" verify --print-certs "$apk" 2>&1 || true)"
+            fpr="$(echo "$out" | grep -oE 'SHA-256 digest: [0-9a-f]+' | head -1 | awk '{print $3}')"
+            echo "$apk -> ${fpr:-<no-cert-or-invalid-apk>}"
+            if [ "$fpr" != "$EXPECTED" ]; then
+              echo "::error::$apk is NOT signed with the release key (expected ${EXPECTED:0:12}...). Old installs could not update over it — release blocked."
+              fail=1
+            fi
+          done
+          exit "$fail"
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
