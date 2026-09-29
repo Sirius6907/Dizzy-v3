@@ -41,6 +41,7 @@ import 'views/music_search_view.dart';
 import 'views/music_browse_view.dart';
 import 'views/music_radio_view.dart';
 import 'views/music_library_view.dart';
+import '../../widgets/guide/guide_card.dart';
 
 class MusicPage extends StatefulWidget {
   const MusicPage({super.key});
@@ -882,6 +883,11 @@ class _MusicPageState extends State<MusicPage> {
     }
 
     final isDesktop = _isDesktop(context);
+
+    // P7: first-time music studio card.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GuideCard.maybeShow(context, 'music_studio', AppGuides.musicStudio);
+    });
 
     return KeyboardListener(
       focusNode: _keyboardFocusNode,

@@ -409,4 +409,40 @@ class AppGuides {
       line: 'Slide the size until it feels right.',
     ),
   ];
+
+  /// Every guide, keyed by the flag it writes.
+  ///
+  /// `GuideService.allKeys` is the source of truth for *which* guides exist;
+  /// this map is the source of truth for their copy. The P7 test suite fails
+  /// if the two ever drift apart.
+  static const Map<String, List<GuideStep>> byKey = <String, List<GuideStep>>{
+    'home': home,
+    'spotlight': spotlight,
+    'movie': movie,
+    'anime': anime,
+    'manga': manga,
+    'music_studio': musicStudio,
+    'eq': eq,
+    'books': books,
+    'audiobooks': audiobooks,
+    'downloads': downloads,
+    'offline': offline,
+    'my_list': myList,
+    'profiles_pin': profilesPin,
+    'debrid': debrid,
+    'iptv': iptv,
+    'calendar': calendar,
+    'stats': stats,
+    'subtitles': subtitles,
+    'sources_health': sourcesHealth,
+    'cloud_sync': cloudSync,
+    'party_v2': partyV2,
+    'dms': dms,
+    'social_hub': socialHub,
+    'accent_studio': accentStudio,
+    'appearance': appearance,
+  };
+
+  /// The copy for [key], or an empty list when the key is unknown.
+  static List<GuideStep> forKey(String key) => byKey[key] ?? const <GuideStep>[];
 }

@@ -1,25 +1,26 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/models/movie/movie_detail.dart';
 import 'package:dizzy/models/movie/video.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 
-import '../../design/dizzy_tokens.dart';
 import '../../models/download/download_task_model.dart';
 import '../../models/music/downloaded_music_track.dart';
-import '../../services/download/download_progress_text.dart';
 import '../../services/download/download_service.dart';
+import '../../services/download/download_trash.dart';
+import '../../services/download/offline_hub_service.dart';
 import '../../services/music/music_download_service.dart';
 import '../../services/music/music_player_controller.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../utils/download/download_path_helper.dart';
-import '../../utils/perf/image_caps.dart';
 import '../../utils/platform/open_file_location_helper.dart';
 import '../../utils/platform/storage_space_helper.dart';
 import '../../widgets/common/notify.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
+import '../../widgets/download/download_progress_card.dart';
+import '../../widgets/download/downloaded_media_card.dart';
+import '../../widgets/download/downloaded_music_tile.dart';
+import '../../widgets/download/storage_sweep_sheet.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../player/player_screen.dart';
 
@@ -41,12 +42,32 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     _tabController = TabController(length: 3, vsync: this);
     MusicDownloadService.instance.addListener(_onMusicChanged);
     _loadStorageSpace();
+    _bootOfflineHub();
     // v1.2.0-T2.6: first-time Downloads guide (skipable, never nags).
     // P7: the offline guide rides along — the queue in GuideCard stacks them.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       GuideCard.maybeShow(context, 'downloads', AppGuides.downloads);
       GuideCard.maybeShow(context, 'offline', AppGuides.offline);
     });
+  }
+
+  /// F2: bring the hub up, then ask the storage guard whether it has
+  /// anything worth interrupting for. The sheet stays silent on its own
+  /// when the disk is fine — that is the common case.
+  Future<void> _bootOfflineHub() async {
+    await OfflineHubService.instance.initialize();
+    // F2: trash entries past the undo window are disposed of here, so the
+    // space comes back without the user doing anything.
+    await DownloadTrash.purgeExpired();
+    if (!mounted) return;
+    final suggestions = await OfflineHubService.instance.refreshStorageSuggestions();
+    final undoable = await DownloadTrash.undoableEntries();
+    if (!mounted) return;
+    await StorageSweepSheet.maybeShow(
+      context,
+      suggestions: suggestions,
+      undoable: undoable,
+    );
   }
 
   void _onMusicChanged() {
@@ -84,7 +105,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
           const SnackBar(
             content: Text('Cache cleaned successfully! 🧹 Storage freed.'),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: DizzyVoid.surface2,
+            backgroundColor: Color(0xFF1E212B),
           ),
         );
       }
@@ -158,7 +179,27 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       confirmLabel: 'Delete',
       danger: true,
     );
-    if (ok) DownloadService.instance.deleteDownload(task.id);
+    if (!ok) return;
+    // F2: a delete is a move into the trash, not a delete, so the user
+    // gets the 1-tap undo the brief asks for. The bytes stay on disk
+    // until the 7-day window closes.
+    final entry = await DownloadTrash.trash(task);
+    if (!mounted) return;
+    if (entry == null) {
+      OfflineHubService.instance.dismissStorageSuggestions();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Deleted "${task.title}". Undo available for 7 days.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF1E212B),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => OfflineHubService.instance.undoTrash(entry.taskId),
+        ),
+      ),
+    );
   }
 
   @override
@@ -300,8 +341,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                         _buildCompletedList(completedTasks, palette),
                         _buildMusicDownloadedList(palette),
                       ],
-                    );
-                  },
+                    );                  },
                 ),
               ),
             ],
@@ -352,201 +392,11 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final task = tasks[index];
-        return _buildActiveCard(task, palette);
+        return DownloadProgressCard(
+          task: task,
+          onCancel: () => _confirmDelete(task),
+        );
       },
-    );
-  }
-
-  Widget _buildActiveCard(DownloadTask task, AppThemePalette palette) {
-    final progress = task.progressPercent;
-    final isDownloading = task.status == DownloadStatus.downloading;
-    final isPaused = task.status == DownloadStatus.paused;
-    final isFailed = task.status == DownloadStatus.failed;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.cardBackgroundColor.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDownloading
-              ? palette.primaryColor.withValues(alpha: 0.4)
-              : Colors.white.withValues(alpha: 0.08),
-          width: 1.2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 50,
-                  height: 70,
-                  color: DizzyVoid.surface2,
-                  child: task.posterUrl != null && task.posterUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: task.posterUrl!,
-                          fit: BoxFit.cover,
-                          // P12: decode-capped (was full-res).
-                          memCacheWidth: ImageCaps.kThumb,
-                          maxWidthDiskCache: ImageCaps.kThumb,
-                          errorWidget: (_, __, ___) => const Icon(Icons.movie_rounded, color: Colors.white24),
-                        )
-                      : const Icon(Icons.movie_rounded, color: Colors.white24),
-                ),
-              ),
-
-              const SizedBox(width: 14),
-
-              // Title & Engine Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: palette.primaryColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            task.sourceType == DownloadSourceType.p2p
-                                ? 'P2P Torrent'
-                                : (task.sourceType == DownloadSourceType.debrid ? 'Cloud Debrid' : 'Direct HTTP'),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: palette.primaryColor,
-                            ),
-                          ),
-                        ),
-                        if (task.peers > 0) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '${task.peers} peers',
-                            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      DownloadProgressText.line(
-                        progress: progress,
-                        speedLabel: task.speedLabel,
-                        etaLabel: task.etaLabel,
-                        isPaused: isPaused,
-                        isFailed: isFailed,
-                        error: task.error,
-                      ),
-                      style: TextStyle(
-                        fontSize: DizzyType.caption,
-                        fontWeight: DizzyType.wMedium,
-                        color: isFailed
-                            ? const Color(0xFFEF4444)
-                            : (isPaused ? Colors.amber : Colors.white70),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Actions (Polish P7: pause/resume always visible + labelled).
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isDownloading)
-                    Semantics(
-                      button: true,
-                      label: 'Pause download of ${task.title}',
-                      child: IconButton(
-                      icon: const Icon(Icons.pause_circle_rounded, color: Colors.amber, size: 26),
-                      tooltip: 'Pause',
-                      onPressed: () => DownloadService.instance.pauseDownload(task.id),
-                    ),
-                    )
-                  else if (isPaused || isFailed)
-                    Semantics(
-                      button: true,
-                      label: 'Resume download of ${task.title}',
-                      child: IconButton(
-                      icon: Icon(Icons.play_circle_fill_rounded, color: palette.primaryColor, size: 26),
-                      tooltip: 'Resume',
-                      onPressed: () => DownloadService.instance.resumeDownload(task.id),
-                    ),
-                    ),
-                  IconButton(
-                    icon: Icon(Icons.folder_open_rounded, color: Colors.white.withValues(alpha: 0.6), size: 22),
-                    tooltip: 'Open Folder Location',
-                    onPressed: () async {
-                      final opened = await OpenFileLocationHelper.openLocation(task.targetFilePath);
-                      if (!opened && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Folder: ${File(task.targetFilePath).parent.path}')),
-                        );
-                      }
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded, color: Colors.white.withValues(alpha: 0.4), size: 22),
-                    tooltip: 'Cancel',
-                    onPressed: () => _confirmDelete(task),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress > 0 ? progress : null,
-              minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isFailed
-                    ? const Color(0xFFEF4444)
-                    : (isPaused ? Colors.amber : palette.primaryColor),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                task.sizeLabel,
-                style: TextStyle(fontSize: DizzyType.captionSm, color: Colors.white.withValues(alpha: 0.45)),
-              ),
-              Text(
-                '${DownloadProgressText.wholePercent(progress)}%',
-                style: TextStyle(fontSize: DizzyType.captionSm, fontWeight: DizzyType.wBold, color: Colors.white.withValues(alpha: 0.6)),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -583,197 +433,23 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
-        return _buildCompletedCard(task, palette);
+        return DownloadedMediaCard(
+          task: task,
+          onPlay: () => _playDownloadedMedia(task),
+          onOpenFolder: () => _openTaskFolder(task),
+          onDelete: () => _confirmDelete(task),
+        );
       },
     );
   }
 
-  Widget _buildCompletedCard(DownloadTask task, AppThemePalette palette) {
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.cardBackgroundColor.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 1.0,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Poster / Backdrop Thumbnail with Play Trigger
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    color: DizzyVoid.surface2,
-                    child: task.posterUrl != null && task.posterUrl!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: task.posterUrl!,
-                            fit: BoxFit.cover,
-                            // P12: decode-capped (was full-res).
-                            memCacheWidth: ImageCaps.kCardW,
-                            maxWidthDiskCache: ImageCaps.kCardW,
-                            errorWidget: (_, __, ___) => const Center(
-                              child: Icon(Icons.movie_rounded, color: Colors.white24, size: 36),
-                            ),
-                          )
-                        : const Center(
-                            child: Icon(Icons.movie_rounded, color: Colors.white24, size: 36),
-                          ),
-                  ),
-
-                  // Gradient
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.7),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Center Play Button
-                  Center(
-                    child: GestureDetector(
-                      onTap: () => _playDownloadedMedia(task),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: palette.primaryColor,
-                          boxShadow: [
-                            BoxShadow(
-                              color: palette.primaryColor.withValues(alpha: 0.5),
-                              blurRadius: 14,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Open Folder Location (Top-Left)
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: GestureDetector(
-                      onTap: () async {
-                        final opened = await OpenFileLocationHelper.openLocation(task.targetFilePath);
-                        if (!opened && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Path: ${task.targetFilePath}')),
-                          );
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.7),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: const Icon(Icons.folder_open_rounded, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-
-                  // Delete Action (Top-Right)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: GestureDetector(
-                      onTap: () => _confirmDelete(task),
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.7),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: const Icon(Icons.delete_outline_rounded, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-
-                  // File size tag (Bottom-Right)
-                  Positioned(
-                    bottom: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Text(
-                        DownloadTask.formatBytes(task.totalBytes),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Metadata Row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    task.season != null && task.episode != null
-                        ? 'S${task.season}:E${task.episode} • Offline'
-                        : (task.year != null ? '${task.year} • Offline' : 'Offline Media'),
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _openTaskFolder(DownloadTask task) async {
+    final opened = await OpenFileLocationHelper.openLocation(task.targetFilePath);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Folder: ${File(task.targetFilePath).parent.path}')),
+      );
+    }
   }
 
   Widget _buildStorageGauge(AppThemePalette palette) {
@@ -790,7 +466,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     final musicBytes = MusicDownloadService.instance.totalDownloadedSizeBytes;
     final dizzyTotalBytes = videoBytes + musicBytes;
 
-    final dizzyFormatted = _formatBytes(dizzyTotalBytes);
+    final dizzyFormatted = formatDownloadBytes(dizzyTotalBytes);
     final freeFormatted = _storageSpace != null ? _storageSpace!.freeFormatted : 'Free space checking…';
 
     double usedRatio = 0.05;
@@ -802,7 +478,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: const Color(0xFF13151D),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -892,6 +568,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     );
   }
 
+
   Widget _buildMusicDownloadedList(AppThemePalette palette) {
     final tracks = MusicDownloadService.instance.downloadedTracks;
     if (tracks.isEmpty) {
@@ -931,108 +608,13 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final track = tracks[index];
-        final sizeFormatted = _formatBytes(track.fileSizeBytes);
-
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: palette.cardBackgroundColor.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        return DownloadedMusicTile(
+          track: track,
+          onPlay: () => MusicPlayerController.instance.playTrack(
+            track.toMusicTrack(),
+            playlistQueue: tracks.map((t) => t.toMusicTrack()).toList(),
           ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  color: DizzyVoid.surface2,
-                  child: track.localCoverPath.isNotEmpty && File(track.localCoverPath).existsSync()
-                      ? Image.file(
-                          File(track.localCoverPath),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white38),
-                        )
-                      : (track.coverUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: track.coverUrl,
-                              memCacheWidth: 100,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white38),
-                            )
-                          : const Icon(Icons.music_note, color: Colors.white38)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            '${track.artist} • ${track.album}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white54, fontSize: 11.5),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            track.format.toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF00E5FF),
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          sizeFormatted,
-                          style: const TextStyle(color: Colors.white38, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF00E5FF), size: 30),
-                onPressed: () {
-                  MusicPlayerController.instance.playTrack(
-                    track.toMusicTrack(),
-                    playlistQueue: tracks.map((t) => t.toMusicTrack()).toList(),
-                  );
-                },
-                tooltip: 'Play',
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.white38, size: 20),
-                onPressed: () => _confirmDeleteMusic(track),
-                tooltip: 'Delete',
-              ),
-            ],
-          ),
+          onDelete: () => _confirmDeleteMusic(track),
         );
       },
     );
@@ -1053,15 +635,4 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     }
   }
 
-  static String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    int i = 0;
-    double count = bytes.toDouble();
-    while (count >= 1024 && i < suffixes.length - 1) {
-      count /= 1024;
-      i++;
-    }
-    return '${count.toStringAsFixed(i == 0 ? 0 : 1)} ${suffixes[i]}';
-  }
 }

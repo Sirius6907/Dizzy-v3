@@ -33,39 +33,18 @@ void main() {
 
   List<String> deck() {
     final lines = <String>[];
-    // Guides: every card, every flow.
-    for (final flow in [
-      AppGuides.home,
-      AppGuides.spotlight,
-      AppGuides.movie,
-      AppGuides.anime,
-      AppGuides.manga,
-      AppGuides.musicStudio,
-      AppGuides.eq,
-      AppGuides.books,
-      AppGuides.audiobooks,
-      AppGuides.downloads,
-      AppGuides.offline,
-      AppGuides.myList,
-      AppGuides.profilesPin,
-      AppGuides.debrid,
-      AppGuides.iptv,
-      AppGuides.calendar,
-      AppGuides.stats,
-      AppGuides.subtitles,
-      AppGuides.sourcesHealth,
-      AppGuides.cloudSync,
-      AppGuides.partyV2,
-      AppGuides.watchParty,
-      AppGuides.dms,
-      AppGuides.socialHub,
-      AppGuides.accentStudio,
-      AppGuides.appearance,
-    ]) {
-      for (final s in flow) {
-        lines.add(s.title);
-        lines.add(s.line);
+    // P7: every guide card of every feature, straight from the content map
+    // so a new guide can never slip past this gate.
+    for (final entry in AppGuides.byKey.entries) {
+      for (final s in entry.value) {
+        lines.add('${entry.key}: ${s.title}');
+        lines.add('${entry.key}: ${s.line}');
       }
+    }
+    // Retired 4-card party flow, still linked from copy-deck callers.
+    for (final s in AppGuides.watchParty) {
+      lines.add(s.title);
+      lines.add(s.line);
     }
     // Download errors: every code.
     for (final c in [

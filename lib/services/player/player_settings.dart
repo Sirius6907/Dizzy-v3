@@ -184,15 +184,17 @@ abstract final class PlayerSettings {
   static final ValueNotifier<bool> skipIntroHeuristics =
       ValueNotifier<bool>(true);
 
-  /// F2 (v1.1.9): auto-skip intro/recap segments when they start.
-  /// Default OFF — user opts in from Video settings. Manual skip button
-  /// still works regardless. Credits/preview never auto-skip.
+  /// F1: auto-skip intro/recap/credits when they start. Default ON — the
+  /// one-tap promise is "press once, watch the whole thing"; nobody wants
+  /// the opening titles or the "previously on…" again. Turning it off in
+  /// Video settings restores the manual skip button. Previews NEVER
+  /// auto-skip (see `AutoSkipPolicy`).
   static const _keyAutoSkipIntro = 'player_auto_skip_intro';
   static final ValueNotifier<bool> autoSkipIntro =
-      ValueNotifier<bool>(false);
+      ValueNotifier<bool>(true);
   static const _keyAutoSkipRecap = 'player_auto_skip_recap';
   static final ValueNotifier<bool> autoSkipRecap =
-      ValueNotifier<bool>(false);
+      ValueNotifier<bool>(true);
 
   /// Android Direct Surface (SurfaceProducer / SurfaceView) toggle. Default: false (off).
   static final ValueNotifier<bool> enableSurfaceProducer = ValueNotifier<bool>(false);
@@ -374,8 +376,8 @@ abstract final class PlayerSettings {
     lastVolume.value =
         (prefs.getDouble(_keyLastVolume) ?? 1.0).clamp(0.0, 1.0);
     skipIntroHeuristics.value = prefs.getBool(_keySkipIntroHeuristics) ?? true;
-    autoSkipIntro.value = prefs.getBool(_keyAutoSkipIntro) ?? false;
-    autoSkipRecap.value = prefs.getBool(_keyAutoSkipRecap) ?? false;
+    autoSkipIntro.value = prefs.getBool(_keyAutoSkipIntro) ?? true;
+    autoSkipRecap.value = prefs.getBool(_keyAutoSkipRecap) ?? true;
 
     // Extract bundled font for libass fallback
     await _extractLibassFontFallback();

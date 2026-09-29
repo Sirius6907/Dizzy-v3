@@ -28,6 +28,10 @@ import '../../services/simkl/simkl_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/player/playback_brain.dart';
 import '../../services/player/quality_service.dart';
+import '../../services/player/smart_quality_policy.dart';
+import '../../services/player/auto_skip_policy.dart';
+import '../../services/player/audio_track_preference.dart';
+import '../../services/player/dub_mode_service.dart';
 import '../../services/player/bandwidth_meter.dart';
 import '../../services/player/hls_rendition_parser.dart';
 import '../../services/errors/app_error_log.dart';
@@ -60,6 +64,7 @@ import '../../services/download/download_service.dart';
 import '../../utils/download/download_path_helper.dart';
 import '../../services/stream/next_episode_engine.dart';
 import '../../services/stream/source_ranker.dart';
+import '../../services/stream/instant_play_gate.dart';
 import '../../services/stream/last_good_source_store.dart';
 import '../../services/watchparty/party_session.dart';
 import '../../services/watchparty/party_playback_session.dart';
@@ -168,6 +173,10 @@ class _PlayerScreenState extends State<PlayerScreen>
   // Lock mode (v1.1.8) — swallows all player-area input when locked.
   bool _isLocked = false;
   int _selectedAudioTrackIndex = 0;
+  /// F1: the language-tag audio auto-select fires once per source. Reset on
+  /// every episode/source switch so each new media gets its own decision,
+  /// and never re-fires after the user has picked a track by hand.
+  bool _audioAutoSelectDone = false;
   double _audioDelaySec = 0.0;
   bool _showAudioHud = false;
   String _audioHudText = '';
@@ -215,9 +224,16 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Completes when the ranked chain is ready (v1.1.9: stall watchdog waits
   /// for this so an early stall never fires with zero backups).
   Future<void>? _failoverReady;
-  final Set<String> _failedFingerprints = {}; // this-session only
-  int _failoverSwitches = 0;
-  static const int _maxFailoverSwitches = 3;
+  /// F1: the single source of truth for "which source is dead" and "how
+  /// many switches are left". Owns the failed-fingerprint set and the
+  /// switch cap, so the ranker, the quality picker and the failover path
+  /// can never disagree about what has already died.
+  late final InstantPlayGate _playGate = InstantPlayGate(
+    autoplayEnabled: () => PlayerSettings.autoplayFirstVerified.value,
+    autoFailover: () => PlayerSettings.autoFailover.value,
+  );
+  /// Live view of the gate's dead-source set (this-session only).
+  Set<String> get _failedFingerprints => _playGate.deadFingerprints;
   bool _failoverInProgress = false;
   Timer? _stallWatchdog;
   Duration _lastProgressPosition = Duration.zero;
@@ -575,6 +591,10 @@ class _PlayerScreenState extends State<PlayerScreen>
   Future<void> _initStream() async {
     String? streamUrl;
 
+    // F1: every open (first play, failover, quality switch, next episode)
+    // goes through here — re-arm the language-tag audio pick per source.
+    _audioAutoSelectDone = false;
+
     AppLog.d('[PlayerScreen] Initializing playback:');
     AppLog.d('[PlayerScreen]   Title: $_currentTitle');
     AppLog.d('[PlayerScreen]   Source Name: ${_currentSource.name}');
@@ -870,6 +890,38 @@ class _PlayerScreenState extends State<PlayerScreen>
         _selectedAudioTrackIndex = activeIdx;
       }
     });
+
+    // F1: the dub gate's second half — language tags pick the track. A
+    // Hindi source usually carries several tracks and mpv's default pick
+    // is whatever the container listed first, which is regularly English.
+    // Only the FIRST discovery acts, so a later manual pick is never undone.
+    if (_audioAutoSelectDone || audioTracks.isEmpty) return;
+    _audioAutoSelectDone = true;
+    final preferred = AudioTrackPreference.pick(
+      tracks: [
+        for (final t in audioTracks)
+          AudioTrackOption(
+            index: t.index,
+            language: t.language,
+            title: t.title,
+          ),
+      ],
+      hindi: DubModeService.isHindi,
+    );
+    if (preferred == null || preferred == _selectedAudioTrackIndex) return;
+    try {
+      final matching = _player.state.tracks.audio.firstWhere(
+        (t) => t.id == preferred.toString(),
+        orElse: () => AudioTrack(preferred.toString(), null, null),
+      );
+      _player.setAudioTrack(matching);
+      final np = _player.platform as dynamic;
+      np.setProperty('aid', preferred.toString());
+      if (mounted) setState(() => _selectedAudioTrackIndex = preferred);
+      AppLog.d('[AudioGate] auto-selected track $preferred (hindi=${DubModeService.isHindi})');
+    } catch (e) {
+      AppLog.d('[AudioGate] auto-select skipped: $e');
+    }
   }
 
   static String cleanMediaTitle(String raw) {
@@ -1238,7 +1290,8 @@ class _PlayerScreenState extends State<PlayerScreen>
     // ranked backup chain exists; fall back to source picker when exhausted.
     AppLog.d('[PlayerScreen ERROR] Critical player error on dead stream: $errorMsg');
 
-    _failedFingerprints.add(SourceRanker.fingerprint(_currentSource));
+    // F1: poison the chain first, then let the gate pick the replacement.
+    _playGate.markDead(_currentSource);
     if (_failoverChain.where((s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s))).isNotEmpty &&
         PlayerSettings.autoFailover.value) {
       _attemptSilentFailover(reason: 'error: ${errorMsg.substring(0, errorMsg.length > 60 ? 60 : errorMsg.length)}');
@@ -1395,6 +1448,14 @@ class _PlayerScreenState extends State<PlayerScreen>
     _progressSaveTimer?.cancel();
     _savePlaybackProgress();
 
+    // F1: a new episode is fresh media — dead sources and the switch cap
+    // from the previous one must not follow the user into the next one.
+    if (newEpisode.id != _currentEpisode?.id ||
+        newEpisode.episode != _currentEpisode?.episode ||
+        newEpisode.season != _currentEpisode?.season) {
+      _playGate.reset();
+    }
+
     final prevVariant = _currentSubtitleVariant;
     final wasSubEnabled = _isSubtitleEnabled;
 
@@ -1472,11 +1533,17 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     if (matched != null) {
       if (!_dismissedSegmentKeys.contains(matched.uniqueKey)) {
-        // F2 (v1.1.9): auto-skip intro/recap when the user opted in.
-        // Credits/preview never auto-skip (credits go to next-ep handoff).
+        // F1: auto-skip intro/recap/credits, ON by default. Credits ride the
+        // existing "Skip Intro (Smart)" switch (it already promises the
+        // next-episode hand-off); previews NEVER auto-skip. The policy lives
+        // in `AutoSkipPolicy` so the rule is unit-tested, not inline.
         final t = matched.type.toLowerCase();
-        final autoOn = (t == 'intro' && PlayerSettings.autoSkipIntro.value) ||
-            (t == 'recap' && PlayerSettings.autoSkipRecap.value);
+        final autoOn = AutoSkipPolicy.shouldAutoSkip(
+          t,
+          autoSkipIntro: PlayerSettings.autoSkipIntro.value,
+          autoSkipRecap: PlayerSettings.autoSkipRecap.value,
+          autoSkipCredits: PlayerSettings.skipIntroHeuristics.value,
+        );
         if (autoOn) {
           _handleSkipSegment(matched);
           if (mounted) {
@@ -1663,43 +1730,31 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Saves position first, then reopens at the same position.
   void _attemptSilentFailover({String reason = 'error'}) {
     if (!mounted || _failoverInProgress) return;
-    if (_failoverSwitches >= _maxFailoverSwitches) {
-      AppLog.d('[Failover] switch cap reached — showing picker');
+
+    // F1: the gate decides whether we may switch and which source is next.
+    // A dead chain (or the switch cap) hands the choice to the picker.
+    final next = _playGate.advance(
+      chain: _failoverChain,
+      failed: _currentSource,
+    );
+    if (next == null) {
       _failoverChain = [];
-      _showSourcesPanel = true; // let the user decide now
-      setState(() {});
-      return;
-    }
-
-    // Mark current source failed (this session).
-    _failedFingerprints.add(SourceRanker.fingerprint(_currentSource));
-
-    // Rank remaining candidates: exclude failed + current.
-    final currentFp = SourceRanker.fingerprint(_currentSource);
-    final candidates = _failoverChain
-        .where((s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s)))
-        .where((s) => SourceRanker.fingerprint(s) != currentFp)
-        .toList();
-    if (candidates.isEmpty) {
-      AppLog.d('[Failover] no backup sources — showing picker');
-      setState(() => _showSourcesPanel = true);
+      setState(() => _showSourcesPanel = true); // let the user decide now
       return;
     }
 
     _failoverInProgress = true;
     final savedPos = _player.state.position;
-    final next = candidates.first;
-    _failoverSwitches++;
 
     AppLog.d('[Failover] $reason → switching to ${next.name ?? next.addonName} '
-        '(switch $_failoverSwitches/$_maxFailoverSwitches)');
+        '(switch ${_playGate.switches})');
 
     unawaited(() async {
       try {
         await _player.stop();
         setState(() => _isLoading = true);
         _currentSource = next;
-        _bandwidthMeter.reset(); // P8: fresh source → fresh speed history
+        _bandwidthMeter.reset(); // fresh source → fresh speed history
         _autoEffective = null;
         // Reopen via the standard init path, resuming AT the saved position
         // via Media(start:) — atomic open (no seek-after-open race).
@@ -1711,11 +1766,9 @@ class _PlayerScreenState extends State<PlayerScreen>
           await _player.seek(savedPos);
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                'Switched to ${next.name ?? next.addonName} (backup)'),
-            duration: const Duration(seconds: 2),
-          ));
+          // F1: one Easy-English line, no source names / no tech words.
+          // The real reason went to the admin log above.
+          _showAudioHudToast(kTryingNextSourceMessage);
           // Cinema-hall parity: backup source live → guest ko turant sahi
           // position (500ms heartbeat ka wait nahi). host_state me real
           // position hoti hai; same-ref media_switch me 0 hoti — wo KABHI NAHI.
@@ -1775,15 +1828,20 @@ class _PlayerScreenState extends State<PlayerScreen>
       _showAudioHudToast(toast);
       return;
     }
-    // P8: straining device + AV1 file → prefer the H264 twin (same badge).
-    final strained =
-        ResourceGovernor.instance.level.value != ResourceLevel.normal;
+    // F1: weak/straining device + AV1 file → prefer the H264 twin (same
+    // badge). `SmartQualityPolicy` folds device tier, low-RAM, Low-End Mode
+    // and the live resource level into one signal, so a budget phone dodges
+    // AV1 even while the governor is still calm. AV1 remains a fallback.
+    final capability = SmartQualityPolicy.liveCapability();
     final ranked = [_currentSource, ..._failoverChain]
         .where((s) =>
             !_failedFingerprints.contains(SourceRanker.fingerprint(s)))
         .toList();
-    final match = QualityService.matchProgressive(ranked, choice,
-        avoidAv1: strained);
+    final match = SmartQualityPolicy.pickProgressive(
+      ranked: ranked,
+      choice: choice,
+      capability: capability,
+    );
     if (match == null) {
       _showAudioHudToast('That quality is not available for this video.');
       return;
@@ -1877,8 +1935,12 @@ class _PlayerScreenState extends State<PlayerScreen>
       bufferedAheadSec: aheadSec,
       assumedBitrateBps: assumed,
     );
-    final target = _bandwidthMeter.stableTarget(
-        dataSaver: PlayerSettings.dataSaver.value);
+    // F1: the meter reports the RAW speed verdict; SmartQualityPolicy owns
+    // the Data Saver ceiling so the cap has exactly one home.
+    final target = SmartQualityPolicy.autoLadderStep(
+      bandwidthTarget: _bandwidthMeter.stableTarget(dataSaver: false),
+      dataSaver: PlayerSettings.dataSaver.value,
+    );
     if (target == null || target == _autoEffective) return;
     // Already watching at the target rendition → remember, don't toast.
     if (target == QualityChoice.fromBadge(_currentSource.quality) &&
