@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import '../../services/theme/glass_settings.dart';
 import '../../utils/perf/performance_mode.dart';
 
-/// Reusable styles keep the package render object from receiving a new
-/// style identity and repainting when an unrelated parent rebuilds.
+/// Styles kept for API compatibility — always resolves to tactile fallback.
+/// No liquid_glass_easy GPU shaders.
 abstract final class PerformanceGlassStyles {
-  static LiquidGlassStyle get dock => GlassSettings.createDockGlassStyle();
-  static LiquidGlassStyle get sheet => GlassSettings.createSheetGlassStyle();
-  static LiquidGlassStyle get menuButton => GlassSettings.createButtonGlassStyle();
-  static LiquidGlassStyle get menu => GlassSettings.createSheetGlassStyle();
+  static const Map<String, dynamic> dock = {};
+  static const Map<String, dynamic> sheet = {};
+  static const Map<String, dynamic> menuButton = {};
+  static const Map<String, dynamic> menu = {};
 }
 
-/// A deliberately constrained use of the package's real lens.
+/// Tactile fallback lens — zero GPU shader overhead.
+/// Always uses BoxDecoration + LinearGradient + static borders.
 class PerformanceLiquidLens extends StatelessWidget {
-  final LiquidGlassStyle? style;
+  final Object? style; // Preserved for API compatibility, always ignored.
   final Widget child;
   final bool visible;
 
@@ -32,7 +32,7 @@ class PerformanceLiquidLens extends StatelessWidget {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xF0181A22), Color(0xF00E1015)],
+        colors: [Color(0xFF181A22), Color(0xFF0E1015)],
       ),
       border: Border.all(
         color: const Color(0x1CE2E8F0),
@@ -43,35 +43,21 @@ class PerformanceLiquidLens extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
     return ValueListenableBuilder<bool>(
       valueListenable: GlassSettings.enabled,
       child: child,
       builder: (context, enabled, cachedChild) {
-        // P2: governor / Smooth Mode forces the cheap flat fallback —
-        // a live backdrop-blur lens repaints every frame underneath.
         return ValueListenableBuilder<bool>(
           valueListenable: PerformanceMode.glassAllowed,
           builder: (context, perfGlass, __) {
-            if (!enabled || !perfGlass) {
-              return Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: _fallbackDecoration,
-                child: cachedChild,
-              );
-            }
-            return ValueListenableBuilder<int>(
-              valueListenable: GlassSettings.styleRevision,
-              builder: (context, _, ___) {
-                final effectiveStyle = style ?? PerformanceGlassStyles.dock;
-                return RepaintBoundary(
-                  child: LiquidGlassLens(
-                    style: effectiveStyle,
-                    visibility: visible,
-                    useImpellerBackdrop: true,
-                    child: cachedChild,
-                  ),
-                );
-              },
+            // Always use tactile fallback — no liquid_glass_easy shaders.
+            // PerformanceMode.glassAllowed controls whether ambient GPU
+            // effects are allowed; the fallback is static (zero cost).
+            return Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: _fallbackDecoration,
+              child: cachedChild,
             );
           },
         );

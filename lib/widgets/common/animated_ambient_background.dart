@@ -1,16 +1,19 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/custom_background_service.dart';
 import '../../services/home/home_page_settings.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../utils/perf/performance_mode.dart';
 
-/// GPU-accelerated animated ambient background with moving soft-faded
-/// light orbs, aurora waves, gradient meshes, and custom user wallpaper blending.
+/// GPU-free ambient background using animated Container positions.
+/// Zero shaders, zero BackdropFilter, zero CustomPaint — pure compositor
+/// layers only. Respects user wallpaper ([CustomBackgroundService]),
+/// ambient knobs ([HomePageSettings]), and the perf gate
+/// ([PerformanceMode.ambientAllowed]).
 class AnimatedAmbientBackground extends StatefulWidget {
   final Widget? child;
 
@@ -20,7 +23,8 @@ class AnimatedAmbientBackground extends StatefulWidget {
   });
 
   @override
-  State<AnimatedAmbientBackground> createState() => _AnimatedAmbientBackgroundState();
+  State<AnimatedAmbientBackground> createState() =>
+      _AnimatedAmbientBackgroundState();
 }
 
 class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
@@ -38,8 +42,6 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
     HomePageSettings.changeNotifier.addListener(_onSettingsChanged);
     AppThemeService.currentPalette.addListener(_onSettingsChanged);
     CustomBackgroundService.notifier.addListener(_onSettingsChanged);
-    // P2: governor / Smooth Mode kills the infinite ticker instantly —
-    // a 12s repeat() that never stops is the 30-40min GPU heater.
     PerformanceMode.ambientAllowed.addListener(_onPerfChanged);
     _applyPerfGate();
   }
@@ -47,34 +49,32 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
   void _onSettingsChanged() {
     if (!mounted) return;
     setState(() {});
+    _applyPerfGate();
   }
 
   void _onPerfChanged() {
     if (!mounted) return;
     _applyPerfGate();
+    setState(() {});
   }
 
-  /// P2: stops the ticker when perf gates close; restarts when they open.
-  /// No setState needed — ValueListenableBuilder below re-renders.
+  /// Runs the ticker only while animated lights are actually visible.
+  /// Static wallpaper / plain scaffold needs no per-frame ticks.
   void _applyPerfGate() {
-    if (PerformanceMode.ambientAllowed.value) {
+    final customBg = CustomBackgroundService.current;
+    final showLights = HomePageSettings.enableAmbientLights.value &&
+        PerformanceMode.ambientAllowed.value &&
+        (!customBg.hasCustomBackground || customBg.blendThemeLights);
+    if (showLights) {
       if (!_controller.isAnimating) _controller.repeat();
     } else {
       _controller.stop();
     }
   }
 
-  @override
-  void dispose() {
-    HomePageSettings.changeNotifier.removeListener(_onSettingsChanged);
-    AppThemeService.currentPalette.removeListener(_onSettingsChanged);
-    CustomBackgroundService.notifier.removeListener(_onSettingsChanged);
-    PerformanceMode.ambientAllowed.removeListener(_onPerfChanged);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget _buildWallpaperImage(CustomBackgroundData customBg) {
+  /// Wallpaper layer (no blur shader — opacity + theme tint only).
+  /// Decode-capped so fullscreen art never blows the RAM budget.
+  Widget _buildWallpaper(CustomBackgroundData customBg) {
     Widget imageWidget;
     if (customBg.imagePath != null && customBg.imagePath!.isNotEmpty) {
       imageWidget = Image.file(
@@ -91,7 +91,6 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        // P1: fullscreen wallpaper still decodes capped (backdrop = 960px).
         memCacheWidth: ImageCaps.kBackdrop,
         maxWidthDiskCache: ImageCaps.kBackdrop,
         placeholder: (_, __) => const SizedBox.shrink(),
@@ -100,22 +99,27 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
     } else {
       return const SizedBox.shrink();
     }
-
-    if (customBg.blur > 0.1) {
-      imageWidget = ImageFiltered(
-        imageFilter: ImageFilter.blur(
-          sigmaX: customBg.blur,
-          sigmaY: customBg.blur,
-          tileMode: TileMode.clamp,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Opacity(opacity: customBg.opacity, child: imageWidget),
+        // Theme tint so text stays readable over bright photos.
+        Container(
+          color: AppThemeService.currentPalette.value.scaffoldBackgroundColor
+              .withValues(alpha: customBg.themeTintOpacity),
         ),
-        child: imageWidget,
-      );
-    }
-
-    return Opacity(
-      opacity: customBg.opacity,
-      child: imageWidget,
+      ],
     );
+  }
+
+  @override
+  void dispose() {
+    HomePageSettings.changeNotifier.removeListener(_onSettingsChanged);
+    AppThemeService.currentPalette.removeListener(_onSettingsChanged);
+    CustomBackgroundService.notifier.removeListener(_onSettingsChanged);
+    PerformanceMode.ambientAllowed.removeListener(_onPerfChanged);
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -127,76 +131,44 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
           valueListenable: CustomBackgroundService.notifier,
           builder: (context, customBg, _) {
             final hasWallpaper = customBg.hasCustomBackground;
-
             return ValueListenableBuilder<bool>(
-              valueListenable: HomePageSettings.enableAmbientLights,
-              builder: (context, lightsEnabled, _) {
-                // P2: perf gate sits OUTSIDE the AnimatedBuilder — when the
-                // governor closes it, the whole CustomPaint subtree unmounts
-                // (zero per-frame GPU cost) instead of painting statically.
-                return ValueListenableBuilder<bool>(
-                  valueListenable: PerformanceMode.ambientAllowed,
-                  builder: (context, perfAllowed, _) {
-                    final showLights = lightsEnabled &&
-                        perfAllowed &&
-                        (!hasWallpaper || customBg.blendThemeLights);
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // 1. Base solid scaffold background color
-                        Container(color: palette.scaffoldBackgroundColor),
-
-                        // 2. Custom Background Wallpaper (if active)
-                        if (hasWallpaper) ...[
-                          Positioned.fill(
-                            child: _buildWallpaperImage(customBg),
-                          ),
-                          // Theme color tint layer blending over the photo
-                          Positioned.fill(
-                            child: Container(
-                              color: palette.scaffoldBackgroundColor.withValues(
-                                alpha: customBg.themeTintOpacity,
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        // 3. Moving Ambient Lights & Glows (GPU Canvas)
-                        if (showLights)
-                          Positioned.fill(
-                            child: AnimatedBuilder(
-                              animation: _controller,
-                              builder: (context, _) {
-                                final speed =
-                                    HomePageSettings.ambientLightSpeed.value;
-                                final intensity = HomePageSettings
-                                    .ambientLightIntensity.value;
-                                final pattern = HomePageSettings
-                                    .ambientLightPattern.value;
-                                final t =
-                                    (_controller.value * speed) % 1.0;
-
-                                return CustomPaint(
-                                  painter: _AmbientBackgroundPainter(
-                                    t: t,
-                                    palette: palette,
-                                    pattern: pattern,
-                                    intensity: intensity,
-                                    isOverlay: hasWallpaper,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-
-                        // 4. Foreground Content
-                        if (widget.child != null)
-                          Positioned.fill(
-                            child: widget.child!,
-                          ),
-                      ],
-                    );
-                  },
+              valueListenable: PerformanceMode.ambientAllowed,
+              builder: (context, perfAllowed, _) {
+                final showLights = HomePageSettings
+                        .enableAmbientLights.value &&
+                    perfAllowed &&
+                    (!hasWallpaper || customBg.blendThemeLights);
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(color: palette.scaffoldBackgroundColor),
+                    if (hasWallpaper)
+                      Positioned.fill(child: _buildWallpaper(customBg)),
+                    // AnimatedBuilder repaints orbs every tick; when the
+                    // perf gate closes the whole subtree unmounts (zero cost).
+                    if (showLights)
+                      Positioned.fill(
+                        child: AnimatedBuilder(
+                          animation: _controller,
+                          builder: (context, _) {
+                            final speed = HomePageSettings
+                                .ambientLightSpeed.value;
+                            final intensity = HomePageSettings
+                                .ambientLightIntensity.value;
+                            final pattern = HomePageSettings
+                                .ambientLightPattern.value;
+                            final t = (_controller.value * speed) % 1.0;
+                            return _LightOrbs(
+                              t: t,
+                              palette: palette,
+                              pattern: pattern,
+                              intensity: intensity,
+                            );
+                          },
+                        ),
+                      ),
+                    if (widget.child != null) widget.child!,
+                  ],
                 );
               },
             );
@@ -207,166 +179,107 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
   }
 }
 
-class _AmbientBackgroundPainter extends CustomPainter {
+/// Two drifting radial-glow orbs positioned per user pattern.
+/// Pure Container + LinearGradient — no canvas shaders, no blur filters.
+class _LightOrbs extends StatelessWidget {
   final double t;
   final AppThemePalette palette;
   final AmbientLightPattern pattern;
   final double intensity;
-  final bool isOverlay;
 
-  _AmbientBackgroundPainter({
+  const _LightOrbs({
     required this.t,
     required this.palette,
     required this.pattern,
     required this.intensity,
-    this.isOverlay = false,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-
-    // If not acting as an overlay on top of a wallpaper, draw base deep background
-    if (!isOverlay) {
-      final bgPaint = Paint()..color = palette.scaffoldBackgroundColor;
-      canvas.drawRect(rect, bgPaint);
-    }
-
-    final angle = t * 2 * math.pi;
-    final primary = palette.primaryColor;
-    final accent = palette.accentColor;
-
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final a = t * 2 * math.pi;
+    // Pattern controls drift path; intensity scales glow alpha.
+    double x1, y1, x2, y2, s1, s2;
     switch (pattern) {
-      case AmbientLightPattern.dualOrbs:
-        _drawDualOrbs(canvas, size, angle, primary, accent);
-        break;
       case AmbientLightPattern.topAurora:
-        _drawTopAurora(canvas, size, angle, primary, accent);
+        x1 = 0.35 + 0.15 * math.sin(a);
+        y1 = 0.08 + 0.06 * math.cos(a * 1.3);
+        x2 = 0.72 - 0.12 * math.cos(a * 0.9);
+        y2 = 0.14 + 0.08 * math.sin(a * 0.7);
+        s1 = 0.65;
+        s2 = 0.60;
         break;
       case AmbientLightPattern.fullMesh:
-        _drawFullMesh(canvas, size, angle, primary, accent);
+        x1 = 0.30 + 0.20 * math.sin(a);
+        y1 = 0.40 + 0.12 * math.cos(a * 0.7);
+        x2 = 0.70 - 0.20 * math.cos(a * 0.8);
+        y2 = 0.50 + 0.12 * math.sin(a);
+        s1 = 0.70;
+        s2 = 0.70;
         break;
       case AmbientLightPattern.centerPulse:
-        _drawCenterPulse(canvas, size, angle, primary, accent);
+        final pulse = 0.85 + 0.15 * math.sin(a);
+        x1 = 0.50 - 0.275 * pulse;
+        y1 = 0.38 - 0.275 * pulse;
+        x2 = 0.50 - 0.25 * pulse + 0.05 * math.sin(a * 0.5);
+        y2 = 0.42 - 0.25 * pulse;
+        s1 = 0.55 * pulse;
+        s2 = 0.50 * pulse;
+        break;
+      case AmbientLightPattern.dualOrbs:
+        x1 = 0.22 + 0.12 * math.sin(a) - 0.275;
+        y1 = 0.18 + 0.10 * math.cos(a * 0.8) - 0.275;
+        x2 = 0.80 - 0.14 * math.cos(a * 0.9) - 0.25;
+        y2 = 0.70 + 0.12 * math.sin(a * 0.7) - 0.25;
+        s1 = 0.55;
+        s2 = 0.50;
         break;
     }
-  }
-
-  void _drawDualOrbs(Canvas canvas, Size size, double angle, Color primary, Color accent) {
-    // Orb 1 (Top-Left drifting diagonally)
-    final cx1 = size.width * (0.22 + 0.12 * math.sin(angle));
-    final cy1 = size.height * (0.18 + 0.10 * math.cos(angle * 0.8));
-    final r1 = math.max(size.width, size.height) * 0.48;
-
-    final paint1 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          primary.withValues(alpha: intensity * 0.95),
-          primary.withValues(alpha: intensity * 0.40),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.45, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset(cx1, cy1), radius: r1));
-
-    canvas.drawCircle(Offset(cx1, cy1), r1, paint1);
-
-    // Orb 2 (Bottom-Right floating opposite)
-    final cx2 = size.width * (0.80 - 0.14 * math.cos(angle * 0.9));
-    final cy2 = size.height * (0.70 + 0.12 * math.sin(angle * 0.7));
-    final r2 = math.max(size.width, size.height) * 0.52;
-
-    final paint2 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          accent.withValues(alpha: intensity * 0.85),
-          accent.withValues(alpha: intensity * 0.30),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.50, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset(cx2, cy2), radius: r2));
-
-    canvas.drawCircle(Offset(cx2, cy2), r2, paint2);
-  }
-
-  void _drawTopAurora(Canvas canvas, Size size, double angle, Color primary, Color accent) {
-    final wave1 = math.sin(angle) * 0.15;
-    final wave2 = math.cos(angle * 1.3) * 0.12;
-
-    // Crest 1
-    final c1 = Offset(size.width * (0.35 + wave1), size.height * (0.10 + wave2));
-    final r1 = size.width * 0.65;
-    final p1 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          primary.withValues(alpha: intensity * 1.1),
-          accent.withValues(alpha: intensity * 0.45),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.55, 1.0],
-      ).createShader(Rect.fromCircle(center: c1, radius: r1));
-
-    canvas.drawCircle(c1, r1, p1);
-
-    // Crest 2
-    final c2 = Offset(size.width * (0.75 - wave2), size.height * (0.15 - wave1));
-    final r2 = size.width * 0.60;
-    final p2 = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          accent.withValues(alpha: intensity * 0.90),
-          primary.withValues(alpha: intensity * 0.30),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.50, 1.0],
-      ).createShader(Rect.fromCircle(center: c2, radius: r2));
-
-    canvas.drawCircle(c2, r2, p2);
-  }
-
-  void _drawFullMesh(Canvas canvas, Size size, double angle, Color primary, Color accent) {
-    final cx = size.width * 0.5;
-    final cy = size.height * 0.45;
-    final r = math.max(size.width, size.height) * 0.70;
-
-    final p1 = Paint()
-      ..shader = RadialGradient(
-        center: Alignment(math.sin(angle) * 0.3, math.cos(angle * 0.7) * 0.25),
-        colors: [
-          primary.withValues(alpha: intensity * 0.85),
-          accent.withValues(alpha: intensity * 0.40),
-          palette.scaffoldBackgroundColor.withValues(alpha: 0.0),
-        ],
-        stops: const [0.0, 0.40, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r));
-
-    canvas.drawRect(Offset.zero & size, p1);
-  }
-
-  void _drawCenterPulse(Canvas canvas, Size size, double angle, Color primary, Color accent) {
-    final pulse = 0.85 + 0.15 * math.sin(angle);
-    final cx = size.width * 0.5;
-    final cy = size.height * 0.38;
-    final r = math.min(size.width, size.height) * 0.65 * pulse;
-
-    final p = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          primary.withValues(alpha: intensity * 1.25),
-          accent.withValues(alpha: intensity * 0.50),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.45, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r));
-
-    canvas.drawCircle(Offset(cx, cy), r, p);
-  }
-
-  @override
-  bool shouldRepaint(covariant _AmbientBackgroundPainter oldDelegate) {
-    return oldDelegate.t != t ||
-        oldDelegate.palette != palette ||
-        oldDelegate.pattern != pattern ||
-        oldDelegate.intensity != intensity ||
-        oldDelegate.isOverlay != isOverlay;
+    final primaryAlpha = (0.08 + intensity * 0.35).clamp(0.0, 0.5);
+    final accentAlpha = (0.06 + intensity * 0.30).clamp(0.0, 0.45);
+    return Stack(
+      children: [
+        Positioned(
+          left: size.width * x1,
+          top: size.height * y1,
+          child: Container(
+            width: size.width * s1,
+            height: size.height * s1,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.center,
+                end: Alignment.center,
+                colors: [
+                  palette.primaryColor.withValues(alpha: primaryAlpha),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 1.0],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: size.width * x2,
+          top: size.height * y2,
+          child: Container(
+            width: size.width * s2,
+            height: size.height * s2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.center,
+                end: Alignment.center,
+                colors: [
+                  palette.accentColor.withValues(alpha: accentAlpha),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 1.0],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
