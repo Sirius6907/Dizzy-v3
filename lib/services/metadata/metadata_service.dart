@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../../models/addon/addon.dart';
 import '../../models/movie/movie.dart';
 import '../../models/movie/movie_detail.dart';
+import '../net/dizzy_net.dart';
+import '../net/retry_policy.dart';
 
 /// Generic service for any Stremio-protocol addon.
 /// All methods are static — provide the addon's base URL and they hit the
@@ -24,11 +24,18 @@ class MetadataService {
   // ── Manifest ──────────────────────────────────────────────────────────
 
   /// Fetch and parse a manifest from any Stremio addon.
+  ///
+  /// The one method here that still throws on failure, because a
+  /// manifest is the thing the user is explicitly asking to add and a
+  /// silent "added nothing" is worse than a visible error.
   static Future<AddonManifest> fetchManifest(String baseUrl) async {
     final url = '$baseUrl/manifest.json';
-    final response = await http.get(
+    final response = await DizzyNet.instance.get(
       Uri.parse(url),
       headers: {'Accept': 'application/json'},
+      policy: RetryPolicy.quick,
+      screen: 'addons',
+      code: 'addon_manifest',
     );
 
     if (response.statusCode != 200) {
@@ -70,9 +77,12 @@ class MetadataService {
       return List.from(_catalogCache[url]!);
     }
 
-    final response = await http.get(
+    final response = await DizzyNet.instance.get(
       Uri.parse(url),
       headers: {'Accept': 'application/json'},
+      policy: RetryPolicy.patient,
+      screen: 'discover',
+      code: 'addon_catalog',
     );
 
     if (response.statusCode != 200) {
@@ -112,7 +122,12 @@ class MetadataService {
       return List.from(_catalogCache[url]!);
     }
 
-    final response = await http.get(Uri.parse(url));
+    final response = await DizzyNet.instance.get(
+      Uri.parse(url),
+      policy: RetryPolicy.quick,
+      screen: 'search',
+      code: 'addon_search',
+    );
     if (response.statusCode != 200) return [];
     
     final bodyStr = response.body.trim();
@@ -153,7 +168,12 @@ class MetadataService {
       return _metaCache[url];
     }
 
-    final response = await http.get(Uri.parse(url));
+    final response = await DizzyNet.instance.get(
+      Uri.parse(url),
+      policy: RetryPolicy.patient,
+      screen: 'details',
+      code: 'addon_meta',
+    );
     if (response.statusCode != 200) return null;
     
     final bodyStr = response.body.trim();
