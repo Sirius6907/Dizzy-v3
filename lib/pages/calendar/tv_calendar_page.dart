@@ -10,6 +10,7 @@ import '../../services/calendar/tv_calendar_service.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/animated_ambient_background.dart';
 import '../details/details_page.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class TvCalendarPage extends StatefulWidget {
   const TvCalendarPage({super.key});
@@ -193,41 +194,45 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
     final isMobile = screenWidth < 650;
     final topInset = MediaQuery.paddingOf(context).top;
 
-    return Scaffold(
-      backgroundColor: palette.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // ── Ambient Background ──
-          const Positioned.fill(child: AnimatedAmbientBackground()),
+    return GuideTrigger(
+      guideKey: 'calendar',
+      steps: AppGuides.calendar,
+      child: Scaffold(
+        backgroundColor: palette.scaffoldBackgroundColor,
+        body: Stack(
+          children: [
+            // ── Ambient Background ──
+            const Positioned.fill(child: AnimatedAmbientBackground()),
 
-          Column(
-            children: [
-              // Spacer for top notch
-              SizedBox(height: topInset),
+            Column(
+              children: [
+                // Spacer for top notch
+                SizedBox(height: topInset),
 
-              // ── Top Glass App Bar ──
-              _buildTopBar(palette, isMobile),
+                // ── Top Glass App Bar ──
+                _buildTopBar(palette, isMobile),
 
-              // ── Day Timeline Selector with Left/Right Arrows ──
-              if (!_isLoadingDays && _availableDays.isNotEmpty)
-                _buildDayTimeline(palette, isMobile),
+                // ── Day Timeline Selector with Left/Right Arrows ──
+                if (!_isLoadingDays && _availableDays.isNotEmpty)
+                  _buildDayTimeline(palette, isMobile),
 
-              // ── Network Filter Bar (Netflix, HBO, Apple TV+, etc.) ──
-              if (!_isLoadingEpisodes && _allDayEpisodes.isNotEmpty)
-                _buildNetworkFilterBar(palette, isMobile),
+                // ── Network Filter Bar (Netflix, HBO, Apple TV+, etc.) ──
+                if (!_isLoadingEpisodes && _allDayEpisodes.isNotEmpty)
+                  _buildNetworkFilterBar(palette, isMobile),
 
-              // ── Main Episodes Feed ──
-              Expanded(
-                child: RefreshIndicator(
-                  color: palette.primaryColor,
-                  backgroundColor: DizzyVoid.surface1,
-                  onRefresh: () => _loadEpisodesForSelectedDay(forceRefresh: true),
-                  child: _buildEpisodesContent(palette, screenWidth, isMobile),
+                // ── Main Episodes Feed ──
+                Expanded(
+                  child: RefreshIndicator(
+                    color: palette.primaryColor,
+                    backgroundColor: DizzyVoid.surface1,
+                    onRefresh: () => _loadEpisodesForSelectedDay(forceRefresh: true),
+                    child: _buildEpisodesContent(palette, screenWidth, isMobile),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

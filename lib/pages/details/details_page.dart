@@ -21,6 +21,7 @@ import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../models/download/download_task_model.dart';
 import '../../services/download/download_service.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class DetailsPage extends StatefulWidget {
   final Movie movie;
@@ -378,13 +379,17 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    return OfflineAwareScaffold(
-      backgroundColor: DizzyColors.bg,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: DizzyColors.accent))
-          : _detail == null
-              ? _buildError()
-              : _buildContent(context),
+    return GuideTrigger(
+      guideKey: 'movie',
+      steps: AppGuides.movie,
+      child: OfflineAwareScaffold(
+        backgroundColor: DizzyColors.bg,
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: DizzyColors.accent))
+            : _detail == null
+                ? _buildError()
+                : _buildContent(context),
+      ),
     );
   }
 

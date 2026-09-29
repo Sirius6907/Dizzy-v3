@@ -3,6 +3,7 @@ import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/custom_accent_service.dart';
+import '../guide/guide_trigger.dart';
 
 /// UX6 — Dynamic Theming sheet: AMOLED true black + hex accent + blur slider.
 ///
@@ -57,175 +58,179 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
-    return Container(
-      decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 30),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Accent Studio & OLED',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Pick a glow color. Pure black saves battery on OLED screens.',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'GLOW COLOR',
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ValueListenableBuilder(
-              valueListenable: CustomAccentService.customAccent,
-              builder: (context, custom, _) {
-                final active =
-                    custom ?? palette.primaryColor;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    for (final c in _presets)
-                      _Swatch(
-                        color: c,
-                        selected: active.toARGB32() == c.toARGB32(),
-                        onTap: () =>
-                            CustomAccentService.setCustomAccent(c),
-                      ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _hexController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: '#00E5FF',
-                      hintStyle:
-                          const TextStyle(color: Colors.white30),
-                      filled: true,
-                      fillColor: DizzyVoid.surface1,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      errorText: _hexError,
-                    ),
-                    onSubmitted: _applyHex,
+    return GuideTrigger(
+      guideKey: 'accent_studio',
+      steps: AppGuides.accentStudio,
+      child: Container(
+        decoration: BoxDecoration(
+          color: DizzyVoid.surface1,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        padding: const EdgeInsets.fromLTRB(22, 16, 22, 30),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-                const SizedBox(width: 10),
-                FilledButton(
-                  onPressed: () => _applyHex(_hexController.text),
-                  child: const Text('Apply'),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Accent Studio & OLED',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
-              ],
-            ),
-            TextButton(
-              onPressed: () =>
-                  CustomAccentService.setCustomAccent(null),
-              child: const Text('Back to theme color'),
-            ),
-            const Divider(color: Color(0x14FFFFFF)),
-            ValueListenableBuilder(
-              valueListenable: CustomAccentService.amoledTrueBlack,
-              builder: (context, on, _) {
-                return Material(
-                  type: MaterialType.transparency,
-                  child: SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'AMOLED True Black',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    'Saves battery on OLED screens.',
-                    style:
-                        TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                  value: on,
-                  onChanged: CustomAccentService.setAmoled,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Pick a glow color. Pure black saves battery on OLED screens.',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'GLOW COLOR',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
                 ),
-                );
-              },
-            ),
-            ValueListenableBuilder(
-              valueListenable: CustomAccentService.backdropBlur,
-              builder: (context, blur, _) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Backdrop Blur Intensity',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+              ),
+              const SizedBox(height: 10),
+              ValueListenableBuilder(
+                valueListenable: CustomAccentService.customAccent,
+                builder: (context, custom, _) {
+                  final active =
+                      custom ?? palette.primaryColor;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      for (final c in _presets)
+                        _Swatch(
+                          color: c,
+                          selected: active.toARGB32() == c.toARGB32(),
+                          onTap: () =>
+                              CustomAccentService.setCustomAccent(c),
                         ),
-                        Text(
-                          blur.toStringAsFixed(0),
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 12),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _hexController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: '#00E5FF',
+                        hintStyle:
+                            const TextStyle(color: Colors.white30),
+                        filled: true,
+                        fillColor: DizzyVoid.surface1,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                      ],
+                        errorText: _hexError,
+                      ),
+                      onSubmitted: _applyHex,
                     ),
-                    Slider(
-                      value: blur,
-                      min: 0,
-                      max: 24,
-                      divisions: 12,
-                      onChanged: CustomAccentService.setBlur,
-                    ),
-                    const Text(
-                      'Lower blur = faster on older phones.',
+                  ),
+                  const SizedBox(width: 10),
+                  FilledButton(
+                    onPressed: () => _applyHex(_hexController.text),
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () =>
+                    CustomAccentService.setCustomAccent(null),
+                child: const Text('Back to theme color'),
+              ),
+              const Divider(color: Color(0x14FFFFFF)),
+              ValueListenableBuilder(
+                valueListenable: CustomAccentService.amoledTrueBlack,
+                builder: (context, on, _) {
+                  return Material(
+                    type: MaterialType.transparency,
+                    child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'AMOLED True Black',
                       style: TextStyle(
-                          color: Colors.white38, fontSize: 11.5),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ],
-                );
-              },
-            ),
-          ],
+                    subtitle: const Text(
+                      'Saves battery on OLED screens.',
+                      style:
+                          TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                    value: on,
+                    onChanged: CustomAccentService.setAmoled,
+                  ),
+                  );
+                },
+              ),
+              ValueListenableBuilder(
+                valueListenable: CustomAccentService.backdropBlur,
+                builder: (context, blur, _) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Backdrop Blur Intensity',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            blur.toStringAsFixed(0),
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      Slider(
+                        value: blur,
+                        min: 0,
+                        max: 24,
+                        divisions: 12,
+                        onChanged: CustomAccentService.setBlur,
+                      ),
+                      const Text(
+                        'Lower blur = faster on older phones.',
+                        style: TextStyle(
+                            color: Colors.white38, fontSize: 11.5),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

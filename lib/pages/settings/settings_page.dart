@@ -784,7 +784,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   );
                   if (ok != true || !context.mounted) return;
-                  await GuideService.resetAll(GuideService.allKeys);
+                  await GuideService.resetAll([
+                    ...GuideService.allKeys,
+                    GuideService.onboardingKey,
+                  ]);
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

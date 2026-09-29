@@ -34,6 +34,7 @@ import '../../widgets/p2p/p2p_warning_dialog.dart';
 import '../../widgets/cloud/consent_onboarding_sheet.dart';
 import '../../widgets/onboarding/onboarding_superpower_sheet.dart';
 import '../../services/cloud/cloud_auth_service.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 /// Trending row (P22 warm catalog edge feed → snapshot → hidden).
 /// Fail-soft by design: offline/empty = no row, never an error.
@@ -481,9 +482,13 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    return OfflineAwareScaffold(
-      backgroundColor: palette.scaffoldBackgroundColor,
-      body: _buildBody(backgroundContent, topPadding, context),
+    return GuideTrigger(
+      guideKey: 'home',
+      steps: AppGuides.home,
+      child: OfflineAwareScaffold(
+        backgroundColor: palette.scaffoldBackgroundColor,
+        body: _buildBody(backgroundContent, topPadding, context),
+      ),
     );
   }
 

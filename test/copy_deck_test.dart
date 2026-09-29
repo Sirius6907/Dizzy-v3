@@ -35,12 +35,32 @@ void main() {
     final lines = <String>[];
     // Guides: every card, every flow.
     for (final flow in [
+      AppGuides.home,
+      AppGuides.spotlight,
+      AppGuides.movie,
+      AppGuides.anime,
+      AppGuides.manga,
+      AppGuides.musicStudio,
+      AppGuides.eq,
+      AppGuides.books,
+      AppGuides.audiobooks,
+      AppGuides.downloads,
+      AppGuides.offline,
+      AppGuides.myList,
+      AppGuides.profilesPin,
+      AppGuides.debrid,
+      AppGuides.iptv,
+      AppGuides.calendar,
+      AppGuides.stats,
+      AppGuides.subtitles,
+      AppGuides.sourcesHealth,
+      AppGuides.cloudSync,
       AppGuides.partyV2,
       AppGuides.watchParty,
-      AppGuides.downloads,
-      AppGuides.cloudSync,
-      AppGuides.sourcesHealth,
-      AppGuides.subtitles,
+      AppGuides.dms,
+      AppGuides.socialHub,
+      AppGuides.accentStudio,
+      AppGuides.appearance,
     ]) {
       for (final s in flow) {
         lines.add(s.title);

@@ -18,6 +18,7 @@ import '../../widgets/search/magnet_files_view.dart';
 import '../ai/wewatch_quiz_page.dart';
 import '../player/player_screen.dart';
 import 'universal_spotlight_modal.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -268,212 +269,216 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return OfflineAwareScaffold(
-      backgroundColor: DizzyVoid.voidA,
-      extendBodyBehindAppBar: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight + 10),
-        child: ClipRRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-            child: Container(
-              padding: EdgeInsets.only(top: topPadding, bottom: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    DizzyVoid.voidA.withValues(alpha: 0.90),
-                    DizzyVoid.voidA.withValues(alpha: 0.60),
-                  ],
-                ),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.06),
+    return GuideTrigger(
+      guideKey: 'spotlight',
+      steps: AppGuides.spotlight,
+      child: OfflineAwareScaffold(
+        backgroundColor: DizzyVoid.voidA,
+        extendBodyBehindAppBar: true,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+          child: ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+              child: Container(
+                padding: EdgeInsets.only(top: topPadding, bottom: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      DizzyVoid.voidA.withValues(alpha: 0.90),
+                      DizzyVoid.voidA.withValues(alpha: 0.60),
+                    ],
+                  ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-                    color: Colors.white,
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: Container(
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+                      color: Colors.white,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Container(
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _focusNode,
-                          autofocus: true,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textInputAction: TextInputAction.search,
-                          onChanged: _onSearchChanged,
-                          onSubmitted: _performSearch,
-                          decoration: InputDecoration(
-                            hintText: 'Search movies, series, or paste links',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              fontSize: 14,
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _focusNode,
+                            autofocus: true,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
                             ),
-                            border: InputBorder.none,
-                            prefixIcon: const Icon(
-                              Icons.search_rounded,
-                              size: 19,
-                              color: Colors.white38,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            suffixIcon: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_searchController.text.isNotEmpty)
-                                  IconButton(
-                                    icon: const Icon(Icons.close_rounded, size: 18),
-                                    color: Colors.white60,
-                                    splashRadius: 18,
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      _onSearchChanged('');
-                                    },
-                                  )
-                                else ...[
-                                  ValueListenableBuilder<bool>(
-                                    valueListenable: HomePageSettings.enableAiQuiz,
-                                    builder: (context, aiQuizEnabled, _) {
-                                      if (!aiQuizEnabled) return const SizedBox.shrink();
-                                      return IconButton(
-                                        icon: Icon(
-                                          Icons.auto_awesome_rounded,
-                                          size: 17,
-                                          color: AppThemeService.currentPalette.value.primaryColor,
-                                        ),
-                                        tooltip: 'AI Taste Quiz',
-                                        splashRadius: 18,
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (_) => const WeWatchQuizPage()),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.travel_explore_rounded,
-                                      size: 19,
-                                      color: Color(0xFF00E5FF),
+                            textInputAction: TextInputAction.search,
+                            onChanged: _onSearchChanged,
+                            onSubmitted: _performSearch,
+                            decoration: InputDecoration(
+                              hintText: 'Search movies, series, or paste links',
+                              hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              prefixIcon: const Icon(
+                                Icons.search_rounded,
+                                size: 19,
+                                color: Colors.white38,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              suffixIcon: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_searchController.text.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.close_rounded, size: 18),
+                                      color: Colors.white60,
+                                      splashRadius: 18,
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _onSearchChanged('');
+                                      },
+                                    )
+                                  else ...[
+                                    ValueListenableBuilder<bool>(
+                                      valueListenable: HomePageSettings.enableAiQuiz,
+                                      builder: (context, aiQuizEnabled, _) {
+                                        if (!aiQuizEnabled) return const SizedBox.shrink();
+                                        return IconButton(
+                                          icon: Icon(
+                                            Icons.auto_awesome_rounded,
+                                            size: 17,
+                                            color: AppThemeService.currentPalette.value.primaryColor,
+                                          ),
+                                          tooltip: 'AI Taste Quiz',
+                                          splashRadius: 18,
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (_) => const WeWatchQuizPage()),
+                                            );
+                                          },
+                                        );
+                                      },
                                     ),
-                                    tooltip: 'Universal Spotlight (Ctrl+K)',
-                                    splashRadius: 18,
-                                    onPressed: () => UniversalSpotlightModal.show(context),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.content_paste_rounded, size: 17),
-                                    tooltip: 'Paste from clipboard',
-                                    color: Colors.white54,
-                                    splashRadius: 18,
-                                    onPressed: _pasteFromClipboard,
-                                  ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.travel_explore_rounded,
+                                        size: 19,
+                                        color: Color(0xFF00E5FF),
+                                      ),
+                                      tooltip: 'Universal Spotlight (Ctrl+K)',
+                                      splashRadius: 18,
+                                      onPressed: () => UniversalSpotlightModal.show(context),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.content_paste_rounded, size: 17),
+                                      tooltip: 'Paste from clipboard',
+                                      color: Colors.white54,
+                                      splashRadius: 18,
+                                      onPressed: _pasteFromClipboard,
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      body: Stack(
-        children: [
-          if (_isMagnetMode && _magnetQuery.isNotEmpty)
-            MagnetFilesView(
-              key: ValueKey(_magnetQuery),
-              magnet: _magnetQuery,
-            )
-          else if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
-            )
-          else if (_lastQuery.isNotEmpty && _results.isEmpty)
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.search_off_rounded,
-                    size: 64,
-                    color: Colors.white.withValues(alpha: 0.2),
-                  ),
-                  const SizedBox(height: DizzySpace.md),
-                  Text(
-                    'No results for "$_lastQuery"',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: DizzyType.subtitle,
-                      fontWeight: DizzyType.wMedium,
+        body: Stack(
+          children: [
+            if (_isMagnetMode && _magnetQuery.isNotEmpty)
+              MagnetFilesView(
+                key: ValueKey(_magnetQuery),
+                magnet: _magnetQuery,
+              )
+            else if (_isLoading)
+              const Center(
+                child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
+              )
+            else if (_lastQuery.isNotEmpty && _results.isEmpty)
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.search_off_rounded,
+                      size: 64,
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
-                  ),
-                  // Polish P6: 2nd tap = back to suggestions (Easy English).
-                  const SizedBox(height: DizzySpace.xs),
-                  const Text(
-                    'Check spelling, or try a shorter name.',
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: DizzyType.body,
+                    const SizedBox(height: DizzySpace.md),
+                    Text(
+                      'No results for "$_lastQuery"',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: DizzyType.subtitle,
+                        fontWeight: DizzyType.wMedium,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: DizzySpace.sm),
-                  TextButton(
-                    onPressed: () {
-                      _searchController.clear();
-                      _onSearchChanged('');
-                      _focusNode.requestFocus();
-                    },
-                    child: const Text('Try another search'),
-                  ),
-                ],
-              ),
-            )
-          else if (_results.isNotEmpty)
-            ListView.builder(
-              clipBehavior: Clip.none,
-              padding: EdgeInsets.only(
-                top: topPadding + kToolbarHeight + 40,
-                bottom: 40 + MediaQuery.paddingOf(context).bottom,
-              ),
-              physics: const BouncingScrollPhysics(),
-              itemCount: _results.length,
-              itemBuilder: (context, index) {
-                return MovieSliderSection(section: _results[index]);
-              },
-            )
-          else
-            _buildDiscoveryEmptyState(topPadding),
-        ],
+                    // Polish P6: 2nd tap = back to suggestions (Easy English).
+                    const SizedBox(height: DizzySpace.xs),
+                    const Text(
+                      'Check spelling, or try a shorter name.',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: DizzyType.body,
+                      ),
+                    ),
+                    const SizedBox(height: DizzySpace.sm),
+                    TextButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearchChanged('');
+                        _focusNode.requestFocus();
+                      },
+                      child: const Text('Try another search'),
+                    ),
+                  ],
+                ),
+              )
+            else if (_results.isNotEmpty)
+              ListView.builder(
+                clipBehavior: Clip.none,
+                padding: EdgeInsets.only(
+                  top: topPadding + kToolbarHeight + 40,
+                  bottom: 40 + MediaQuery.paddingOf(context).bottom,
+                ),
+                physics: const BouncingScrollPhysics(),
+                itemCount: _results.length,
+                itemBuilder: (context, index) {
+                  return MovieSliderSection(section: _results[index]);
+                },
+              )
+            else
+              _buildDiscoveryEmptyState(topPadding),
+          ],
+        ),
       ),
     );
   }

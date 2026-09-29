@@ -18,6 +18,7 @@ import '../../widgets/manga/manga_card.dart';
 import '../../widgets/manga/manga_category_dropdown.dart';
 import '../settings/appearance/manga_settings_page.dart';
 import 'manga_reader_page.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class MangaPage extends StatefulWidget {
   const MangaPage({super.key});
@@ -377,48 +378,52 @@ class _MangaPageState extends State<MangaPage> {
     final ambientEnabled = MangaSettings.enableAmbientLights.value;
     final showScrollTrack = MangaSettings.showScrollTrack.value;
 
-    return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
-      body: Stack(
-        children: [
-          // ── Moving Ambient Background ──
-          if (ambientEnabled)
-            const Positioned.fill(child: AnimatedAmbientBackground())
-          else
-            Positioned.fill(
-              child: Container(color: palette.scaffoldBackgroundColor),
-            ),
+    return GuideTrigger(
+      guideKey: 'manga',
+      steps: AppGuides.manga,
+      child: Scaffold(
+        backgroundColor: DizzyVoid.voidA,
+        body: Stack(
+          children: [
+            // ── Moving Ambient Background ──
+            if (ambientEnabled)
+              const Positioned.fill(child: AnimatedAmbientBackground())
+            else
+              Positioned.fill(
+                child: Container(color: palette.scaffoldBackgroundColor),
+              ),
 
-          LiquidGlassView(
-            pixelRatio: 0.25,
-            refreshRate: LiquidGlassRefreshRate.low,
-            backgroundWidget: _buildScrollableContent(),
-            child: Stack(
-              children: [
-                // Top App Bar / Search / Customize
-                _buildAppBar(),
+            LiquidGlassView(
+              pixelRatio: 0.25,
+              refreshRate: LiquidGlassRefreshRate.low,
+              backgroundWidget: _buildScrollableContent(),
+              child: Stack(
+                children: [
+                  // Top App Bar / Search / Customize
+                  _buildAppBar(),
                 
-                // Custom Scroll Track (Desktop only)
-                if (_screenWidth > 800 && showScrollTrack)
-                  Positioned(
-                    right: 24,
-                    bottom: 40,
-                    child: CustomScrollTrack(controller: _scrollController),
-                  ),
+                  // Custom Scroll Track (Desktop only)
+                  if (_screenWidth > 800 && showScrollTrack)
+                    Positioned(
+                      right: 24,
+                      bottom: 40,
+                      child: CustomScrollTrack(controller: _scrollController),
+                    ),
 
-                // ── Bottom Liquid Dock Navbar ──
-                Positioned(
-                  bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
-                  left: 0,
-                  right: 0,
-                  child: const Center(
-                    child: AppLiquidDock(currentDestination: DockItemKey.manga),
+                  // ── Bottom Liquid Dock Navbar ──
+                  Positioned(
+                    bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
+                    left: 0,
+                    right: 0,
+                    child: const Center(
+                      child: AppLiquidDock(currentDestination: DockItemKey.manga),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

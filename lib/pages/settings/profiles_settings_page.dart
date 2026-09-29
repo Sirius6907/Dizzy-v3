@@ -4,6 +4,7 @@ import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/profiles/dizzy_profile_service.dart';
 import '../../services/profiles/kids_mode.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 /// S3B (v1.1.9): local-first profile selector and manager.
 class ProfilesSettingsPage extends StatelessWidget {
@@ -12,42 +13,46 @@ class ProfilesSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
-    return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
-      appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
-        surfaceTintColor: Colors.transparent,
-        title: const Text('Profiles',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreate(context),
-        icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: const Text('Add profile'),
-      ),
-      body: ValueListenableBuilder(
-        valueListenable: DizzyProfileService.profiles,
-        builder: (context, profiles, _) => ValueListenableBuilder<String?>(
-          valueListenable: DizzyProfileService.activeProfileId,
-          builder: (context, activeId, _) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const Text('Choose who is watching',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              Text(
-                DizzyProfileService.isCloudUser
-                    ? 'Profiles sync privately across your devices.'
-                    : 'Local profiles work offline. Cloud sync turns on automatically.',
-                style: const TextStyle(color: Colors.white60, fontSize: 13),
-              ),
-              const SizedBox(height: 18),
-              for (final p in profiles)
-                _profileTile(context, p, activeId == p.id, palette),
-            ],
+    return GuideTrigger(
+      guideKey: 'profiles_pin',
+      steps: AppGuides.profilesPin,
+      child: Scaffold(
+        backgroundColor: DizzyVoid.voidA,
+        appBar: AppBar(
+          backgroundColor: DizzyVoid.voidB,
+          surfaceTintColor: Colors.transparent,
+          title: const Text('Profiles',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showCreate(context),
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+          label: const Text('Add profile'),
+        ),
+        body: ValueListenableBuilder(
+          valueListenable: DizzyProfileService.profiles,
+          builder: (context, profiles, _) => ValueListenableBuilder<String?>(
+            valueListenable: DizzyProfileService.activeProfileId,
+            builder: (context, activeId, _) => ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const Text('Choose who is watching',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(
+                  DizzyProfileService.isCloudUser
+                      ? 'Profiles sync privately across your devices.'
+                      : 'Local profiles work offline. Cloud sync turns on automatically.',
+                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                ),
+                const SizedBox(height: 18),
+                for (final p in profiles)
+                  _profileTile(context, p, activeId == p.id, palette),
+              ],
+            ),
           ),
         ),
       ),
