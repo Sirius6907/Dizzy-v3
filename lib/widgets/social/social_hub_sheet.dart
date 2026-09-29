@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/music/music_listen_together_service.dart';
@@ -72,7 +73,7 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F121C),
+        color: DizzyVoid.surface1,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),

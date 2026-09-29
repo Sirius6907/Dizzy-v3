@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../design/dizzy_tokens.dart';
 import '../../../services/books/reader_settings.dart';
@@ -211,7 +212,7 @@ class _ComicReaderViewState extends State<ComicReaderView> with SingleTickerProv
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141419).withValues(alpha: 0.88),
+                    color: DizzyVoid.surface1.withValues(alpha: 0.88),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: Colors.white12),
                     boxShadow: [

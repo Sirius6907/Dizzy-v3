@@ -36,7 +36,7 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
             width: isMobile ? size.width - 24 : 720,
             height: isMobile ? size.height * 0.85 : 640,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F121C),
+              color: DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),

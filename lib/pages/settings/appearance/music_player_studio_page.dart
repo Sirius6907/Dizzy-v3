@@ -74,7 +74,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
     final isDesktop = screenW >= 960;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07090E),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -126,7 +126,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
           Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF141724),
+              color: DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
@@ -374,7 +374,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
   // ═══════════════════════════════════════════════════════════════
   Widget _buildLivePlayerCanvas(AppThemePalette palette, {bool isDesktop = true}) {
     return Container(
-      color: const Color(0xFF06080D),
+      color: DizzyVoid.voidA,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -434,7 +434,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
     return Container(
       padding: EdgeInsets.all(isDesktop ? 22 : 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F121C).withValues(alpha: 0.9),
+        color: DizzyVoid.surface1.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: palette.primaryColor.withValues(alpha: 0.35),
@@ -663,7 +663,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F121C).withValues(alpha: 0.95),
+        color: DizzyVoid.surface1.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: palette.primaryColor.withValues(alpha: 0.35),
@@ -719,7 +719,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
             height: 44,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: const Color(0xFF181C2E),
+              color: DizzyVoid.surface2,
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               boxShadow: [
                 BoxShadow(
@@ -800,7 +800,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
           height: 140,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF10131E),
+            color: DizzyVoid.surface1,
             border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 3.5),
             boxShadow: [
               BoxShadow(
@@ -861,7 +861,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
             colors: [
               palette.primaryColor.withValues(alpha: 0.8),
               palette.accentColor.withValues(alpha: 0.3),
-              const Color(0xFF0F121C),
+              DizzyVoid.surface1,
             ],
           ),
           border: Border.all(color: palette.primaryColor, width: 2),
@@ -1047,7 +1047,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F121C),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
@@ -1095,7 +1095,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F121C),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
@@ -1292,7 +1292,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121622),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
@@ -1364,7 +1364,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.14) : const Color(0xFF11141F),
+                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.14) : DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
@@ -1526,7 +1526,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF11141F),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: palette.primaryColor.withValues(alpha: 0.25)),
           ),
@@ -1586,7 +1586,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.14) : const Color(0xFF11141F),
+                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.14) : DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),

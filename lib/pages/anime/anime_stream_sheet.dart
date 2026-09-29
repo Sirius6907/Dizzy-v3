@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../models/anime/anime_media.dart';
 import '../../models/stream/stream_model.dart';
@@ -166,7 +167,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0F121C),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(

@@ -20,7 +20,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -270,7 +270,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0E121B),
+                  color: DizzyVoid.voidB,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
@@ -337,7 +337,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     decoration: BoxDecoration(
                       color: isSurface
                           ? palette.primaryColor.withValues(alpha: 0.08)
-                          : const Color(0xFF0E121B),
+                          : DizzyVoid.voidB,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSurface
@@ -442,7 +442,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0E121B),
+                        color: DizzyVoid.voidB,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                             color: Colors.white.withValues(alpha: 0.08)),
@@ -785,7 +785,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? palette.primaryColor.withValues(alpha: 0.08)
-              : const Color(0xFF0E121B),
+              : DizzyVoid.voidB,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
@@ -880,7 +880,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? palette.primaryColor.withValues(alpha: 0.08)
-              : const Color(0xFF0E121B),
+              : DizzyVoid.voidB,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected

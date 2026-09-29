@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../services/music/music_smart_mix_service.dart';
@@ -77,7 +78,7 @@ class MusicSmartMixesRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF141724),
+              color: DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),

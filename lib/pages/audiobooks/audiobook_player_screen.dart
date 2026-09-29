@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -331,7 +332,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF10131C),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -381,7 +382,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                             label: Text(p.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -415,7 +416,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                             label: Text(s.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -449,7 +450,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                             label: Text(b.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -540,7 +541,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0C0F17),
+                    color: DizzyVoid.voidB,
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.2),
                     boxShadow: [
@@ -889,7 +890,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F121C).withValues(alpha: 0.88),
+                  color: DizzyVoid.surface1.withValues(alpha: 0.88),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                   boxShadow: [
@@ -986,7 +987,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF0C0F17).withValues(alpha: 0.94),
+              color: DizzyVoid.voidB.withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.5),
               boxShadow: [
@@ -1280,7 +1281,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF080A0F),
+                  color: DizzyVoid.voidA,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 3),
                 ),
@@ -1625,7 +1626,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.72,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0E111A).withValues(alpha: 0.92),
+                    color: DizzyVoid.voidB.withValues(alpha: 0.92),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                   ),
@@ -1686,7 +1687,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                         child: Container(
                           height: 40,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF141824),
+                            color: DizzyVoid.surface1,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                           ),

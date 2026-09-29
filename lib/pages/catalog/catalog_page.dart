@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/movie/movie.dart';
 import '../../models/movie/movie_section.dart';
@@ -203,7 +204,7 @@ class _CatalogPageState extends State<CatalogPage> {
     final gridTopPadding = topPadding + kToolbarHeight + (hasGenres ? 60 : 20) + 20;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       body: Stack(
         children: [
           // ── Main Content Grid ──
@@ -265,8 +266,8 @@ class _CatalogPageState extends State<CatalogPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF080A0F).withValues(alpha: 0.90),
-                        const Color(0xFF080A0F).withValues(alpha: 0.60),
+                        DizzyVoid.voidA.withValues(alpha: 0.90),
+                        DizzyVoid.voidA.withValues(alpha: 0.60),
                       ],
                     ),
                     border: Border(

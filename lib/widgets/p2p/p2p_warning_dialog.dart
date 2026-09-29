@@ -5,7 +5,7 @@ import '../../services/p2p/p2p_settings_service.dart';
 class P2pWarningDialog extends StatelessWidget {
   const P2pWarningDialog({super.key});
 
-  static const Color _surfaceColor = Color(0xFF131722);
+  static const Color _surfaceColor = DizzyVoid.surface1;
   static const Color _backgroundColor = DizzyVoid.voidB;
   static const Color _warningColor = Color(0xFFF59E0B);
 

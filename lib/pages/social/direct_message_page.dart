@@ -178,7 +178,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
           gradient: isMe
               ? DizzyGradients.emberButton
               : const LinearGradient(
-                  colors: [Color(0xFF232839), Color(0xFF161927)],
+                  colors: [DizzyVoid.surface3, Color(0xFF161927)],
                 ),
           border: Border.fromBorderSide(
             isMe ? BorderSide.none : DizzyEdge.hairline,

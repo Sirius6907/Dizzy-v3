@@ -29,7 +29,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -608,7 +608,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           colors: [
             palette.primaryColor.withValues(alpha: 0.28),
             palette.accentColor.withValues(alpha: 0.15),
-            const Color(0xFF10131E),
+            DizzyVoid.surface1,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

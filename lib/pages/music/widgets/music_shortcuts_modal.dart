@@ -30,7 +30,7 @@ class MusicShortcutsModal extends StatelessWidget {
             width: 420,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F121C),
+              color: DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),

@@ -2,6 +2,7 @@ import '../widgets/music_track_row.dart';
 import '../widgets/music_album_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -37,7 +38,7 @@ class MusicArtistDetailModal extends StatelessWidget {
             width: isMobile ? size.width - 24 : 720,
             height: isMobile ? size.height * 0.85 : 640,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F121C),
+              color: DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
@@ -64,7 +65,7 @@ class MusicArtistDetailModal extends StatelessWidget {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Color(0xFF0F121C),
+                              DizzyVoid.surface1,
                             ],
                           ),
                         ),

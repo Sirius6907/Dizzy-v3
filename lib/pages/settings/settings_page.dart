@@ -756,7 +756,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF131622),
+                      backgroundColor: DizzyVoid.surface1,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

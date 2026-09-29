@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/theme/app_theme_service.dart';
 import '../../services/updater/app_updater_service.dart';
@@ -89,7 +90,7 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
         maxHeight: MediaQuery.sizeOf(context).height * 0.85,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F121C),
+        color: DizzyVoid.surface1,
         borderRadius:
             const BorderRadius.vertical(top: Radius.circular(28)),
         border:

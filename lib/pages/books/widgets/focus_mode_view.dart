@@ -507,7 +507,7 @@ class _FocusModeViewState extends State<FocusModeView> {
                             vertical: ReaderTokens.space8,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF121217).withValues(alpha: 0.95),
+                            color: DizzyVoid.voidB.withValues(alpha: 0.95),
                             borderRadius: ReaderTokens.rounded24,
                             border: Border.all(color: DizzyGlow.violet.withValues(alpha: 0.40)),
                             boxShadow: const [ReaderTokens.shadowMd],
@@ -539,7 +539,7 @@ class _FocusModeViewState extends State<FocusModeView> {
                   top: constraints.maxHeight * 0.44,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121217).withValues(alpha: 0.92),
+                      color: DizzyVoid.voidB.withValues(alpha: 0.92),
                       borderRadius: ReaderTokens.rounded32,
                       border: Border.all(color: Colors.white12),
                       boxShadow: const [ReaderTokens.shadowMd],

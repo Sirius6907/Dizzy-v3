@@ -333,7 +333,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF10131C),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -707,7 +707,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 48),
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF10131D).withValues(alpha: 0.92),
+        color: DizzyVoid.surface1.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         boxShadow: [
@@ -848,7 +848,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
                     width: cardWidth,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131722),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isCurrent ? palette.primaryColor : Colors.white.withValues(alpha: 0.12),
@@ -873,7 +873,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
                             imageUrl: _pageUrls[index],
                             fit: BoxFit.cover,
                             memCacheWidth: 140,
-                            placeholder: (_, __) => Container(color: const Color(0xFF161A24)),
+                            placeholder: (_, __) => Container(color: DizzyVoid.surface1),
                             errorWidget: (_, __, ___) => const Center(
                               child: Icon(Icons.broken_image_rounded, color: Colors.white24, size: 18),
                             ),

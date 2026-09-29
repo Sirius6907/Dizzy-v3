@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/manga/manga.dart';
 import '../../pages/manga/manga_details_page.dart';
@@ -251,7 +252,7 @@ class _PosterFrame extends StatelessWidget {
           children: [
             // Background fill
             const ColoredBox(
-              color: Color(0xFF171A23),
+              color: DizzyVoid.surface1,
             ),
 
             // Poster image (cached) — P15: own raster boundary (see movie_card).
@@ -387,7 +388,7 @@ class _PosterFrame extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.play_arrow_rounded,
-                      color: Color(0xFF11131B),
+                      color: DizzyVoid.surface1,
                       size: 29,
                     ),
                   ),
@@ -407,7 +408,7 @@ class MissingPoster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF232533),
+      color: DizzyVoid.surface3,
       child: Center(
         child: Icon(
           Icons.broken_image_rounded,

@@ -61,7 +61,7 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
             width: isMobile ? size.width - 24 : 760,
             height: isMobile ? size.height * 0.88 : 660,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F121C),
+              color: DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
@@ -315,7 +315,7 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                                       final confirm = await showDialog<bool>(
                                         context: context,
                                         builder: (c) => AlertDialog(
-                                          backgroundColor: const Color(0xFF161924),
+                                          backgroundColor: DizzyVoid.surface1,
                                           title: const Text('Delete Downloaded Song', style: TextStyle(color: Colors.white)),
                                           content: Text('Delete "${item.title}" from offline storage?', style: const TextStyle(color: Colors.white70)),
                                           actions: [

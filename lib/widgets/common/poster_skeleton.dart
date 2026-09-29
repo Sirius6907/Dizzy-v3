@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 /// Animated shimmer skeleton shown while a poster image is loading.
 class PosterSkeleton extends StatefulWidget {
@@ -52,7 +53,7 @@ class MissingPoster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF171A23),
+      color: DizzyVoid.surface1,
       child: Center(
         child: Icon(
           Icons.movie_rounded,

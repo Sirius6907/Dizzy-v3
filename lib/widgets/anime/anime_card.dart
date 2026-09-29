@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -164,7 +165,7 @@ class _AnimePosterFrame extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const ColoredBox(color: Color(0xFF171A23)),
+            const ColoredBox(color: DizzyVoid.surface1),
 
             // Poster Image — P15: own raster boundary (see movie_card).
             if (hasPoster)

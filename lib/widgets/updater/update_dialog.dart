@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:http/http.dart' as http;
 import 'package:ota_update/ota_update.dart';
 import 'package:path/path.dart' as path;
@@ -23,8 +24,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
 
-  static const Color _surfaceColor = Color(0xFF13151B);
-  static const Color _backgroundColor = Color(0xFF090A0D);
+  static const Color _surfaceColor = DizzyVoid.surface1;
+  static const Color _backgroundColor = DizzyVoid.voidA;
   static const Color _accentColor = Color(0xFFF59E0B);
 
   @override

@@ -445,7 +445,7 @@ class MusicLibraryView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF131622),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Row(
           children: [

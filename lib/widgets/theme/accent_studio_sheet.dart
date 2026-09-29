@@ -59,7 +59,7 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
     final palette = AppThemeService.currentPalette.value;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F121C),
+        color: DizzyVoid.surface1,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),

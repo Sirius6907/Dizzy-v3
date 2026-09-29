@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/movie/video.dart';
 import '../../services/theme/app_theme_service.dart';
 
@@ -86,7 +87,7 @@ class _NextEpisodeCountdownState extends State<NextEpisodeCountdown>
               constraints: const BoxConstraints(maxWidth: 420),
               margin: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF10131B),
+                color: DizzyVoid.surface1,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: palette.primaryColor.withValues(alpha: 0.25),

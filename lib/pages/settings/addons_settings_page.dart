@@ -64,7 +64,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF151822),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -168,7 +168,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF151822),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -213,7 +213,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
     final addons = _manager.addons;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,

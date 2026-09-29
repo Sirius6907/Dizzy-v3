@@ -172,7 +172,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF10131C),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -553,7 +553,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                             label: Text(cat),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF10131D).withValues(alpha: 0.8),
+                            backgroundColor: DizzyVoid.surface1.withValues(alpha: 0.8),
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -780,13 +780,13 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                 memCacheWidth: ImageCaps.kCardW,
                                 memCacheHeight: ImageCaps.kCardH,
                                 maxWidthDiskCache: ImageCaps.kCardW,
-                                placeholder: (_, __) => Container(color: const Color(0xFF161A24)),
+                                placeholder: (_, __) => Container(color: DizzyVoid.surface1),
                                 errorWidget: (_, __, ___) => Container(
-                                  color: const Color(0xFF161A24),
+                                  color: DizzyVoid.surface1,
                                   child: const Icon(Icons.headphones_rounded, color: Colors.white38),
                                 ),
                               )
-                            : Container(color: const Color(0xFF161A24)),
+                            : Container(color: DizzyVoid.surface1),
                       ),
                     ),
                   ),
@@ -1344,7 +1344,7 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: _isHovered
-                        ? const Color(0xFF1B2030)
+                        ? DizzyVoid.surface2
                         : DizzyVoid.surface1.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
@@ -1485,7 +1485,7 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                   decoration: BoxDecoration(
                     color: _isDeleteHovered
                         ? const Color(0xFFFF4D4D)
-                        : const Color(0xFF1E2332),
+                        : DizzyVoid.surface2,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: _isDeleteHovered
@@ -1624,7 +1624,7 @@ class _AudiobookCardState extends State<_AudiobookCard> {
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              color: _isHovered ? const Color(0xFF191E2C) : DizzyVoid.surface1,
+              color: _isHovered ? DizzyVoid.surface2 : DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isHovered

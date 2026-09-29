@@ -53,7 +53,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF11141B),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
             color: DizzyGlow.violet.withValues(alpha: 0.35)),
@@ -433,7 +433,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   Future<void> _messageActions(PartyChatMessage m) async {
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: const Color(0xFF161A23),
+      backgroundColor: DizzyVoid.surface1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),

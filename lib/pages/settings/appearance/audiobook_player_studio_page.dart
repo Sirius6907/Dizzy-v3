@@ -71,7 +71,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
     final isDesktop = screenW >= 960;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF07090E),
+      backgroundColor: DizzyVoid.voidA,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
@@ -312,7 +312,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
     final artStyle = AudiobookSettings.customArtworkStyle.value;
 
     return Container(
-      color: const Color(0xFF06080D),
+      color: DizzyVoid.voidA,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -344,7 +344,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                 child: Container(
                   padding: EdgeInsets.all(isDesktop ? 22 : 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F121C).withValues(alpha: 0.9),
+                    color: DizzyVoid.surface1.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
                       color: palette.primaryColor.withValues(alpha: 0.35),
@@ -571,7 +571,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
           height: 130,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF141724),
+            color: DizzyVoid.surface1,
             border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 3),
             boxShadow: [
               BoxShadow(
@@ -586,7 +586,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF080A0F),
+                color: DizzyVoid.voidA,
                 border: Border.all(color: palette.primaryColor, width: 2),
               ),
             ),
@@ -792,7 +792,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
             child: Container(
               height: 280,
               decoration: BoxDecoration(
-                color: const Color(0xFF0F121C),
+                color: DizzyVoid.surface1,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
               ),
@@ -988,7 +988,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF121622),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
@@ -1069,7 +1069,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : const Color(0xFF121622),
+                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
@@ -1159,7 +1159,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : const Color(0xFF121622),
+                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
@@ -1216,7 +1216,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : const Color(0xFF121622),
+                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
@@ -1256,7 +1256,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
             return Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF101420),
+                color: DizzyVoid.surface1,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.2),
               ),
@@ -1359,7 +1359,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : const Color(0xFF121622),
+                    color: isSelected ? palette.primaryColor.withValues(alpha: 0.16) : DizzyVoid.surface1,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),

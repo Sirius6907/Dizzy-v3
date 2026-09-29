@@ -435,7 +435,7 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              const Color(0xFF121624).withValues(alpha: 0.95),
+                              DizzyVoid.surface1.withValues(alpha: 0.95),
                               DizzyVoid.voidB.withValues(alpha: 0.98),
                             ],
                           ),

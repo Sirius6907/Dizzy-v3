@@ -132,7 +132,7 @@ class _DotMatrixPainter extends CustomPainter {
       ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.35);
     final offPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = const Color(0xFF1A2030);
+      ..color = DizzyVoid.surface2;
 
     for (int ci = 0; ci < text.length; ci++) {
       final rows = _font5x7[text[ci]] ?? _font5x7[' ']!;

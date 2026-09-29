@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/continue_watching/continue_watching_item.dart';
 import '../../models/movie/movie.dart';
@@ -363,7 +364,7 @@ class _ContinueWatchingCardState extends State<_ContinueWatchingCard> {
           transform: _isHovered ? Matrix4.diagonal3Values(1.02, 1.02, 1.0) : Matrix4.identity(),
           transformAlignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color(0xFF13151F).withValues(alpha: 0.75),
+            color: DizzyVoid.surface1.withValues(alpha: 0.75),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _isHovered
@@ -392,7 +393,7 @@ class _ContinueWatchingCardState extends State<_ContinueWatchingCard> {
                     Container(
                       width: widget.width,
                       height: imgHeight,
-                      color: const Color(0xFF1E212E),
+                      color: DizzyVoid.surface2,
                       child: imageUrl != null && imageUrl.isNotEmpty
                           // P15: own raster boundary — progress ticks and
                           // hover animations must not re-raster the backdrop.
@@ -647,7 +648,7 @@ class _ContinueWatchingCardState extends State<_ContinueWatchingCard> {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: const Color(0xFF1A1D27),
+      color: DizzyVoid.surface2,
       child: const Center(
         child: Icon(Icons.movie_rounded, color: Colors.white24, size: 36),
       ),

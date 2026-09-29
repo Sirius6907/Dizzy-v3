@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 class SliderArrow extends StatefulWidget {
   final IconData icon;
@@ -52,7 +53,7 @@ class _SliderArrowState extends State<SliderArrow> with SingleTickerProviderStat
                   shape: BoxShape.circle,
                   color: _isHovered
                       ? Colors.white.withOpacity(0.15)
-                      : const Color(0xFF080A0F).withOpacity(0.5),
+                      : DizzyVoid.voidA.withOpacity(0.5),
                   border: Border.all(
                     color: _isHovered
                         ? Colors.white.withOpacity(0.3)

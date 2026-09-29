@@ -71,7 +71,7 @@ abstract final class DizzyDialogs {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF131622),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(borderRadius: DizzyRadius.lgAll),
         title: Text(
           title,

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_artwork_palette_service.dart';
 import '../../../utils/perf/performance_mode.dart';
@@ -103,7 +104,7 @@ class _MusicDynamicCanvasBackgroundState extends State<MusicDynamicCanvasBackgro
                     primary.withValues(alpha: 0.38),
                     secondary.withValues(alpha: 0.18),
                     bg.withValues(alpha: 0.95),
-                    const Color(0xFF07090F),
+                    DizzyVoid.voidA,
                   ],
                   stops: const [0.0, 0.45, 0.80, 1.0],
                 ),

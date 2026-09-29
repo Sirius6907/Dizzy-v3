@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
@@ -246,7 +247,7 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
   }) async {
     final picked = await showModalBottomSheet<_PickResult<T>>(
       context: context,
-      backgroundColor: const Color(0xFF10131E),
+      backgroundColor: DizzyVoid.surface1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

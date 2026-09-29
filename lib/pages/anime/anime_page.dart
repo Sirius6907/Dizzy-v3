@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../utils/perf/performance_mode.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
@@ -905,8 +906,8 @@ class _AnimeHeroSlide extends StatelessWidget {
           // P12: hero backdrop capped (was full-res decode).
           memCacheWidth: ImageCaps.kBackdrop,
           maxWidthDiskCache: ImageCaps.kBackdrop,
-          placeholder: (_, __) => const ColoredBox(color: Color(0xFF151822)),
-          errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF151822)),
+          placeholder: (_, __) => const ColoredBox(color: DizzyVoid.surface1),
+          errorWidget: (_, __, ___) => const ColoredBox(color: DizzyVoid.surface1),
         ),
 
         // Left horizontal wash for cinematic readability

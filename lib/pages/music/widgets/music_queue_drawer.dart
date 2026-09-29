@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
@@ -35,7 +36,7 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
       child: Container(
         width: isMobile ? MediaQuery.sizeOf(context).width : 400,
         decoration: BoxDecoration(
-          color: const Color(0xFF0D101A).withValues(alpha: 0.96),
+          color: DizzyVoid.voidB.withValues(alpha: 0.96),
           borderRadius: isMobile
               ? const BorderRadius.vertical(top: Radius.circular(28))
               : const BorderRadius.only(
@@ -320,7 +321,7 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
       key: key,
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF141724),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),

@@ -222,7 +222,7 @@ class _MangaPageState extends State<MangaPage> {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF10131C),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -378,7 +378,7 @@ class _MangaPageState extends State<MangaPage> {
     final showScrollTrack = MangaSettings.showScrollTrack.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.voidA,
       body: Stack(
         children: [
           // ── Moving Ambient Background ──

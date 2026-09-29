@@ -204,7 +204,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF10131C),
+          backgroundColor: DizzyVoid.surface1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -1134,7 +1134,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
       label: Text(label),
       selected: isSelected,
       selectedColor: color.withValues(alpha: 0.3),
-      backgroundColor: const Color(0xFF141722),
+      backgroundColor: DizzyVoid.surface1,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.white70,
         fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,

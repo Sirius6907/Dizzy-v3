@@ -172,7 +172,7 @@ class _RotaryDialPainter extends CustomPainter {
       Color(0xFF3A3E4A),
       Color(0xFF2A2E3A),
       Color(0xFF343845),
-      Color(0xFF23262F),
+      DizzyVoid.surface3,
       Color(0xFF2E323E),
     ];
     for (int i = 0; i < ringColors.length; i++) {

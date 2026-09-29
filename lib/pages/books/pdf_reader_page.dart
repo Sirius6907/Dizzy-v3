@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
@@ -129,7 +130,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
           autofocus: true,
           onKeyEvent: _handleKeyEvent,
           child: Scaffold(
-            backgroundColor: const Color(0xFF101014),
+            backgroundColor: DizzyVoid.voidB,
             body: Stack(
               children: [
                 // ── PDF Viewer ──
@@ -142,7 +143,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                       controller: _pdfController,
                       initialPageNumber: widget.initialPage,
                       params: PdfViewerParams(
-                        backgroundColor: const Color(0xFF141419),
+                        backgroundColor: DizzyVoid.surface1,
                         onPageChanged: (pageNumber) {
                           if (pageNumber != null) {
                             setState(() => _currentPage = pageNumber);
