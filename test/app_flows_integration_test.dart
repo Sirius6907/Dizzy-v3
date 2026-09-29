@@ -27,10 +27,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify first slide content
-      expect(find.text('SUPERPOWERS'), findsOneWidget);
+      // P7 Onboarding 2.0: five slides, one job each.
+      expect(find.text('WELCOME'), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
-      expect(find.text('Everything in One Place'), findsOneWidget);
+      expect(find.text('Everything in one place'), findsOneWidget);
 
       // Tap Next to advance
       final nextButton = find.text('Next');
@@ -39,19 +39,26 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify second slide
-      expect(find.text('Lossless Audio & Zero Ads'), findsOneWidget);
+      expect(find.text('Music that sounds right'), findsOneWidget);
 
-      // Tap Next again
-      await tester.tap(nextButton);
-      await tester.pumpAndSettle();
-
-      // Verify third slide has Explore Dizzy button
-      expect(find.text('Watch & Listen Together'), findsOneWidget);
+      // Walk the rest of the tour and land on the call to action.
+      for (final title in [
+        'Watch together',
+        'Works without internet',
+        'Yours alone',
+      ]) {
+        await tester.tap(nextButton);
+        await tester.pumpAndSettle();
+        expect(find.text(title), findsOneWidget);
+      }
       expect(find.text('Explore Dizzy'), findsOneWidget);
     });
 
     testWidgets('Flow 2: Accent Studio & OLED Engine (UX6) toggles live',
         (tester) async {
+      // P7: a first-time visitor gets the accent-studio intro card on top of
+      // the sheet. Mark it seen so this flow tests the sheet itself.
+      SharedPreferences.setMockInitialValues({'guide_seen_accent_studio': true});
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

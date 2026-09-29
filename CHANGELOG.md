@@ -2,6 +2,35 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.3.0+32] — 2026-09-29 — "Learn It, Then It Just Works"
+
+### P6 — UI/UX polish, finished
+- **Legacy hex sweep** — 931 → 871 `Color(0xFF…)` literals under `lib/pages` + `lib/widgets`. Flat dark surfaces now read from the frozen `DizzyVoid` tiers; brand identity colours, gradient stops and alpha-tinted glows stay literal with a code comment saying why.
+- **Narrow-screen contract** — 40 `AppBar` owners audited. Three hand-rolled bars really did overflow at 360px and now compact below 420px: the IPTV glass bar, the AI taste-match bar, and the direct-message title (long handles now ellipsize).
+- **Music, proven** — 22 new tests lock down four shipped features: the ambient canvas can never black-flash (a hard luminance floor on the fast HSL palette), queue reordering maps upcoming indices to absolute ones, switching audio quality keeps your listening position, and Song Radio leads with the seed track and fails soft offline. The pure queue math moved into `music_queue_ops.dart` so it is testable without booting the media backend.
+
+### P7 — Tutorial cards for every feature
+- **25 intro cards**, one per flagship area (home, spotlight, movie, anime, manga, music studio, equaliser, books, audiobooks, downloads, offline, my list, profiles, debrid, live TV, calendar, stats, subtitles, sources, cloud sync, watch together, direct messages, social hub, accent studio, appearance).
+- **Never more than 3 cards**, one Easy English line each, no tech words. Skip means never again.
+- **No re-nag on upgrade** — a card you already dismissed in an earlier version stays dismissed, and the old 3-slide welcome tour carries over to the new 5-slide one.
+- **Onboarding 2.0** — a 30-second, 5-slide tour: everything in one place, music that sounds right, watch together, works without internet, and yours alone.
+- **Settings → Help → "Show guides again"** replays any card, and the welcome tour with it.
+
+### P8 — Admin & observability
+- Realtime device-log view with per-device *and* error-category filters.
+- Tech-error feed, scraper quarantine dashboard, and live feature-flag toggles wired to remote config, so an error a user never sees is still one click from a fix.
+
+### P9 — Perf budgets, verified
+- Startup path, `ResourceGovernor` and `PerformanceMode` thresholds checked against the RAM / VRAM / CPU budgets.
+- Split-per-ABI Android builds configured (~50MB release APKs). Numbers recorded in `PHASE_P9_PERF.md`.
+
+### F-track (merged in this release)
+Discover daily feed with mood quiz and reminders, My List custom lists with PIN lock and restore, a downloads hub with offline storage sweep, watch-together queue voting and late-join sync, and cross-device merge support.
+
+### Gates
+- `flutter analyze lib/` — 0 issues.
+- Full test suite green.
+
 ## [1.2.1+31] — 2026-09-13 — "Spotify Music + 40-Phase Polish"
 
 ### Performance Foundation (Perf P0–P10)

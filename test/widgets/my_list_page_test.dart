@@ -38,6 +38,8 @@ void main() {
     });
 
     testWidgets('removes item on long press and confirm', (tester) async {
+      // P7: skip the first-visit intro card so this tests the long press.
+      SharedPreferences.setMockInitialValues({'guide_seen_my_list': true});
       MyListService.add(MyListItem(traktId: 1, title: 'Test Movie', year: 2024, type: 'movie', addedAt: DateTime(2026)));
       await tester.pumpWidget(wrap(const MyListPage()));
       await tester.pumpAndSettle();
