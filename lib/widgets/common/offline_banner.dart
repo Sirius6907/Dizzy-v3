@@ -1,10 +1,16 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 
-/// UX7 — Offline + calm error banner.
+/// Phase 31 — Universal Offline Fail-Soft Banner.
 ///
-/// Easy English only. Shows cached fallback state with one Retry action.
-/// Pure UI — caller decides when offline/cached.
-class DizzyOfflineBanner extends StatelessWidget {
+/// Shows a tactile banner at the top of every page
+/// when offline. When connectivity returns the banner slides
+/// away with an animated transition (no shaders).
+/// All user-facing copy is Easy English.
+class DizzyOfflineBanner extends StatefulWidget {
   final bool isOffline;
   final bool showingSavedCopy;
   final VoidCallback? onRetry;
@@ -17,88 +23,153 @@ class DizzyOfflineBanner extends StatelessWidget {
   });
 
   @override
+  State<DizzyOfflineBanner> createState() => _DizzyOfflineBannerState();
+}
+
+class _DizzyOfflineBannerState extends State<DizzyOfflineBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _slideCtrl;
+  late final Animation<Offset> _slideAnim;
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0.0, -1.5),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _slideCtrl, curve: Curves.easeInOutCubic),
+    );
+    if (widget.isOffline) {
+      _visible = true;
+      _slideCtrl.forward();
+    } else {
+      _slideCtrl.value = 0.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant DizzyOfflineBanner old) {
+    super.didUpdateWidget(old);
+    if (widget.isOffline && !_visible) {
+      _visible = true;
+      _slideCtrl.forward(from: 0.0);
+    } else if (!widget.isOffline && _visible) {
+      _slideCtrl.reverse().then((_) {
+        if (mounted && !widget.isOffline) {
+          setState(() => _visible = false);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _slideCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (!isOffline) return const SizedBox.shrink();
-    return Semantics(
-      liveRegion: true,
-      label: showingSavedCopy
-          ? 'You are offline. Showing your saved copy.'
-          : 'You are offline.',
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.13),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.orange.withValues(alpha: 0.35),
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.wifi_off_rounded,
-              color: Colors.orange,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                showingSavedCopy
-                    ? 'You are offline. Showing your saved copy.'
-                    : 'No internet. Waiting… your place is safe.',
-                style: const TextStyle(
-                  color: Colors.orange,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+    if (!_visible) return const SizedBox.shrink();
+    final bool saved = widget.showingSavedCopy;
+    final String mainLine = saved
+        ? 'You are offline. Showing your saved copy.'
+        : 'No internet. Waiting…';
+    return SlideTransition(
+      position: _slideAnim,
+      child: Semantics(
+        liveRegion: true,
+        label: 'No internet. Waiting for connection.',
+        child: DizzyTactileCard(
+          margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              const Icon(Icons.wifi_off_rounded, color: DizzyGlow.red, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  mainLine,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  foregroundColor: Colors.orange,
+              const SizedBox(width: 6),
+              if (saved)
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('Retry'),
+                )
+              else
+                const Text(
+                  'Your place is safe.',
+                  style: TextStyle(
+                    color: DizzyVoid.ash,
+                    fontSize: 12,
+                  ),
                 ),
-                onPressed: onRetry,
-                child: const Text(
-                  'Retry',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// UX7 — calm empty/error face copy, shared by all screens.
+/// Phase 31 — Calm-face Easy English error copy.
+///
+/// Converts raw technical errors into short, human-friendly lines.
+/// Raw details (stack traces, hex codes) are NEVER passed through.
 abstract final class CalmFaceCopy {
-  const CalmFaceCopy._();
+  static String forError(String error) {
+    final String lower = error.toLowerCase();
+    if (lower.contains('401') ||
+        lower.contains('unauthorized') ||
+        lower.contains('unauthorised')) {
+      return 'Please Login again. Then Try again.';
+    }
+    if (lower.contains('404') || lower.contains('not found')) {
+      return 'Not found. It may have moved. Ask again later.';
+    }
+    return 'Something went wrong. Try again.';
+  }
+}
 
-  static String forError(String? raw) {
-    final t = (raw ?? '').toLowerCase();
-    if (t.contains('socket') ||
-        t.contains('timeout') ||
-        t.contains('network') ||
-        t.contains('host lookup') ||
-        t.contains('no internet')) {
-      return 'Internet is slow or off. Check net, tap Try again.';
-    }
-    if (t.contains('401') ||
-        t.contains('403') ||
-        t.contains('unauthorized')) {
-      return 'Login needed for this. Try another one.';
-    }
-    if (t.contains('404') || t.contains('not found')) {
-      return 'Not found. It may be removed.';
-    }
-    return 'Something went wrong. Tap Try again.';
+/// Global connectivity stream shared by all offline-aware widgets.
+/// Extends [ValueNotifier] so it is a [ValueListenable] directly.
+class ConnectivityListener extends ValueNotifier<List<ConnectivityResult>> {
+  static final ConnectivityListener _instance = ConnectivityListener._();
+  static ConnectivityListener get instance => _instance;
+
+  ConnectivityListener._() : super([ConnectivityResult.wifi]);
+
+  StreamSubscription<List<ConnectivityResult>>? _sub;
+
+  void start() {
+    if (_sub != null) return;
+    _sub = Connectivity().onConnectivityChanged.listen((results) {
+      value = results;
+    });
+    Connectivity().checkConnectivity().then((dynamic result) {
+      if (result is List) {
+        value = result.cast<ConnectivityResult>();
+      } else {
+        value = <ConnectivityResult>[result as ConnectivityResult];
+      }
+    }).catchError((_) {});
+  }
+
+  void stop() {
+    _sub?.cancel();
+    _sub = null;
   }
 }
