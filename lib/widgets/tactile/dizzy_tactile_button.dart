@@ -8,6 +8,7 @@ import 'package:dizzy/design/dizzy_tokens.dart';
 class DizzyTactileButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double? width;
   final double? height;
   final EdgeInsetsGeometry? padding;
@@ -21,6 +22,7 @@ class DizzyTactileButton extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.width,
     this.height,
     this.padding,
@@ -62,26 +64,15 @@ class _DizzyTactileButtonState extends State<DizzyTactileButton> {
         ? DizzyGradients.carvedSurface
         : (widget.gradient ?? DizzyGradients.tactileSurface);
 
-    final effectiveShadows = _isPressed
-        ? DizzyShadow.pressed
-        : [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.55),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.08),
-              blurRadius: 0,
-              offset: const Offset(0, 1),
-            ),
-            if (widget.glowColor != null)
-              BoxShadow(
-                color: widget.glowColor!.withValues(alpha: widget.isSelected ? 0.35 : 0.20),
-                blurRadius: 16,
-                offset: Offset.zero,
-              ),
-          ];
+    final List<BoxShadow> effectiveShadows = [
+      ...(_isPressed ? DizzyShadow.pressed : DizzyShadow.card),
+      if (widget.glowColor != null)
+        BoxShadow(
+          color: widget.glowColor!.withValues(alpha: widget.isSelected ? 0.35 : 0.20),
+          blurRadius: 16,
+          offset: Offset.zero,
+        ),
+    ];
 
     final effectiveBorder = widget.border ??
         (widget.isSelected && widget.glowColor != null
@@ -93,6 +84,12 @@ class _DizzyTactileButtonState extends State<DizzyTactileButton> {
       onTapUp: isInteractive ? _handleTapUp : null,
       onTapCancel: isInteractive ? _handleTapCancel : null,
       onTap: widget.onTap,
+      onLongPress: widget.onLongPress != null
+          ? () {
+              HapticFeedback.mediumImpact();
+              widget.onLongPress!();
+            }
+          : null,
       child: AnimatedScale(
         scale: _isPressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
