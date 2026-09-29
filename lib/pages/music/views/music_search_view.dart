@@ -82,9 +82,11 @@ class MusicSearchView extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 48.0),
             child: Center(
               child: DizzyStateView(
-                icon: Icons.search_off_rounded,
-                title: 'No results for "$activeQuery"',
-                line: 'Try another song, artist or album name.',
+                icon: activeQuery.trim().isEmpty ? Icons.search_rounded : Icons.search_off_rounded,
+                title: activeQuery.trim().isEmpty ? 'Search for music' : 'No results for "$activeQuery"',
+                line: activeQuery.trim().isEmpty
+                    ? 'Find songs, artists, albums, or playlists.'
+                    : 'Try another song, artist or album name.',
               ),
             ),
           )

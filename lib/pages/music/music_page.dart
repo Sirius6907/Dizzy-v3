@@ -101,6 +101,13 @@ class _MusicPageState extends State<MusicPage> {
     _libraryService.init();
     MusicDownloadService.instance.init();
     _loadMusicData();
+
+    // P7: first-time music studio card (show once on screen enter).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        GuideCard.maybeShow(context, 'music_studio', AppGuides.musicStudio);
+      }
+    });
   }
 
   @override
@@ -883,11 +890,6 @@ class _MusicPageState extends State<MusicPage> {
     }
 
     final isDesktop = _isDesktop(context);
-
-    // P7: first-time music studio card.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      GuideCard.maybeShow(context, 'music_studio', AppGuides.musicStudio);
-    });
 
     return KeyboardListener(
       focusNode: _keyboardFocusNode,

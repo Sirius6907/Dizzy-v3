@@ -75,21 +75,29 @@ class MusicSleepTimerService {
   }
 
   Future<void> _onTimerExpired() async {
-    cancelTimer();
-    await MusicPlayerController.instance.pause();
-    // Restore saved volume for next time user plays
-    await Future.delayed(const Duration(milliseconds: 300));
-    await MusicPlayerController.instance.setVolume(_savedVolume);
-  }
-
-  void cancelTimer() {
     _ticker?.cancel();
     _ticker = null;
     isActive.value = false;
     stopAtEndOfTrack.value = false;
     remainingSeconds.value = 0;
     _targetTrackId = null;
+
+    // Pause playback first so volume restore never blasts sound into headphones/speakers
+    await MusicPlayerController.instance.pause();
+    await Future.delayed(const Duration(milliseconds: 200));
     if (_savedVolume > 0) {
+      await MusicPlayerController.instance.setVolume(_savedVolume);
+    }
+  }
+
+  void cancelTimer({bool restoreVolume = true}) {
+    _ticker?.cancel();
+    _ticker = null;
+    isActive.value = false;
+    stopAtEndOfTrack.value = false;
+    remainingSeconds.value = 0;
+    _targetTrackId = null;
+    if (restoreVolume && _savedVolume > 0) {
       MusicPlayerController.instance.setVolume(_savedVolume);
     }
   }
