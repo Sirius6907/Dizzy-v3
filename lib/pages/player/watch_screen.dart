@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -10,7 +9,6 @@ import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../models/movie/movie.dart';
 import '../../models/movie/link.dart';
 import '../../models/movie/video.dart';
 import '../../models/movie/movie_detail.dart';
@@ -23,30 +21,10 @@ import '../../services/scraper/stream_scraper.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
-import '../settings/settings_page.dart';
-import '../details/details_page.dart';
-import '../../utils/navigation/route_transitions.dart';
-
-// ---------------------------------------------------------------------------
-// Design tokens
-// ---------------------------------------------------------------------------
-class _C {
-  static const bg = Color(0xFF0A0C10);
-  static const surface = Color(0xFF13151C);
-  static const surfaceLight = Color(0xFF1A1D26);
-  static const accent = Color(0xFF7C5CFF);
-  static const textPrimary = Color(0xFFF5F5F7);
-  static const textSecondary = Color(0xFFAAAAAF);
-  static const textTertiary = Color(0xFF66666B);
-  static const gold = Color(0xFFFFC107);
-}
-
-class _S {
-  static const xs = 8.0;
-  static const sm = 12.0;
-  static const md = 16.0;
-  static const lg = 24.0;
-}
+import 'widgets/watch_source_card.dart';
+import 'widgets/watch_shimmer_card.dart';
+import 'widgets/watch_empty_sources.dart';
+import 'widgets/watch_style.dart';
 
 // ---------------------------------------------------------------------------
 // WatchScreen
@@ -367,7 +345,7 @@ class _WatchScreenState extends State<WatchScreen>
 
     final background = Stack(
       children: [
-        const Positioned.fill(child: ColoredBox(color: _C.bg)),
+        const Positioned.fill(child: ColoredBox(color: WatchColors.bg)),
         if (bgUrl != null) _buildBackdrop(bgUrl, screenSize, isDesktop),
       ],
     );
@@ -387,7 +365,7 @@ class _WatchScreenState extends State<WatchScreen>
     );
 
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: WatchColors.bg,
       body: ValueListenableBuilder<bool>(
         valueListenable: GlassSettings.enabled,
         builder: (context, enabled, _) {
@@ -422,7 +400,7 @@ class _WatchScreenState extends State<WatchScreen>
             // P12: decode-capped (was full-res).
             memCacheWidth: ImageCaps.kCardW,
             maxWidthDiskCache: ImageCaps.kCardW,
-            errorWidget: (_, __, ___) => const ColoredBox(color: _C.bg),
+            errorWidget: (_, __, ___) => const ColoredBox(color: WatchColors.bg),
           ),
           // Left-to-right dimming: dark on left (text side), lighter on right
           DecoratedBox(
@@ -431,9 +409,9 @@ class _WatchScreenState extends State<WatchScreen>
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [
-                  _C.bg.withValues(alpha: isDesktop ? 0.92 : 0.88),
-                  _C.bg.withValues(alpha: isDesktop ? 0.70 : 0.60),
-                  _C.bg.withValues(alpha: isDesktop ? 0.20 : 0.15),
+                  WatchColors.bg.withValues(alpha: isDesktop ? 0.92 : 0.88),
+                  WatchColors.bg.withValues(alpha: isDesktop ? 0.70 : 0.60),
+                  WatchColors.bg.withValues(alpha: isDesktop ? 0.20 : 0.15),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),
@@ -447,8 +425,8 @@ class _WatchScreenState extends State<WatchScreen>
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  _C.bg.withValues(alpha: 0.30),
-                  _C.bg.withValues(alpha: 0.85),
+                  WatchColors.bg.withValues(alpha: 0.30),
+                  WatchColors.bg.withValues(alpha: 0.85),
                 ],
                 stops: const [0.0, 0.6, 1.0],
               ),
@@ -526,17 +504,17 @@ class _WatchScreenState extends State<WatchScreen>
             // ── Info region (single box) ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: _S.lg),
+                padding: const EdgeInsets.symmetric(horizontal: WatchSpace.lg),
                 child: _buildInfoRegion(isDesktop: false),
               ),
             ),
 
-            const SliverPadding(padding: EdgeInsets.only(top: _S.lg)),
+            const SliverPadding(padding: EdgeInsets.only(top: WatchSpace.lg)),
 
             // ── Sources header ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: _S.lg),
+                padding: const EdgeInsets.symmetric(horizontal: WatchSpace.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -547,14 +525,14 @@ class _WatchScreenState extends State<WatchScreen>
                           children: [
                             Icon(
                               Icons.stream_rounded,
-                              color: _C.accent,
+                              color: WatchColors.accent,
                               size: 20,
                             ),
-                            SizedBox(width: _S.xs),
+                            SizedBox(width: WatchSpace.xs),
                             Text(
                               'Watch Sources',
                               style: TextStyle(
-                                color: _C.textPrimary,
+                                color: WatchColors.textPrimary,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -566,7 +544,7 @@ class _WatchScreenState extends State<WatchScreen>
                               ? 'Searching sources...'
                               : '${filtered.length} source${filtered.length == 1 ? '' : 's'} found',
                           style: const TextStyle(
-                            color: _C.textTertiary,
+                            color: WatchColors.textTertiary,
                             fontSize: 12,
                           ),
                         ),
@@ -612,7 +590,7 @@ class _WatchScreenState extends State<WatchScreen>
                         ],
                       ),
                     ],
-                    const SizedBox(height: _S.md),
+                    const SizedBox(height: WatchSpace.md),
                   ],
                 ),
               ),
@@ -621,11 +599,11 @@ class _WatchScreenState extends State<WatchScreen>
             // ── Sources list (virtualized!) ──
             if (_isLoadingSources && filtered.isEmpty)
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: _S.lg),
+                padding: const EdgeInsets.symmetric(horizontal: WatchSpace.lg),
                 sliver: SliverList.builder(
                   itemCount: 4,
                   itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: _S.xs),
+                    padding: const EdgeInsets.only(bottom: WatchSpace.xs),
                     child: _buildShimmerCard(),
                   ),
                 ),
@@ -633,25 +611,25 @@ class _WatchScreenState extends State<WatchScreen>
             else if (!_isLoadingSources && filtered.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: _S.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: WatchSpace.lg),
                   child: _buildEmptyState(),
                 ),
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: _S.lg),
+                padding: const EdgeInsets.symmetric(horizontal: WatchSpace.lg),
                 sliver: SliverList.builder(
                   itemCount: filtered.length + (_isLoadingSources ? 2 : 0),
                   itemBuilder: (context, index) {
                     if (index >= filtered.length) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: _S.xs),
+                        padding: const EdgeInsets.only(bottom: WatchSpace.xs),
                         child: _buildShimmerCard(),
                       );
                     }
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: _S.xs),
-                      child: _SourceCard(
+                      padding: const EdgeInsets.only(bottom: WatchSpace.xs),
+                      child: WatchSourceCard(
                         source: filtered[index],
                         backdropUrl:
                             widget.detail.background ?? widget.detail.poster,
@@ -693,72 +671,72 @@ class _WatchScreenState extends State<WatchScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _C.accent.withValues(alpha: 0.15),
+              color: WatchColors.accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _C.accent.withValues(alpha: 0.3)),
+              border: Border.all(color: WatchColors.accent.withValues(alpha: 0.3)),
             ),
             child: Text(
               'S${ep.season ?? '?'}E${ep.episode ?? '?'}',
               style: const TextStyle(
-                color: _C.accent,
+                color: WatchColors.accent,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
               ),
             ),
           ),
-          const SizedBox(height: _S.sm),
+          const SizedBox(height: WatchSpace.sm),
         ],
 
         // Logo or title
         _buildLogoOrTitle(meta, isDesktop),
-        const SizedBox(height: _S.sm),
+        const SizedBox(height: WatchSpace.sm),
 
         // Episode title (if applicable, different from series title)
         if (ep != null && ep.title.isNotEmpty && ep.title != meta.name)
           Padding(
-            padding: const EdgeInsets.only(bottom: _S.sm),
+            padding: const EdgeInsets.only(bottom: WatchSpace.sm),
             child: Text(
               ep.title,
               style: TextStyle(
                 fontSize: isDesktop ? 20 : 17,
                 fontWeight: FontWeight.w600,
-                color: _C.textPrimary.withValues(alpha: 0.85),
+                color: WatchColors.textPrimary.withValues(alpha: 0.85),
               ),
             ),
           ),
 
         // Meta row
         _buildMetaRow(meta),
-        const SizedBox(height: _S.md),
+        const SizedBox(height: WatchSpace.md),
 
         // Genre pills
         if (meta.genres.isNotEmpty) ...[
           _buildGenrePills(meta.genres),
-          const SizedBox(height: _S.lg),
+          const SizedBox(height: WatchSpace.lg),
         ],
 
         // Synopsis
         if (_getSynopsis() != null) ...[
           _buildSynopsis(_getSynopsis()!),
-          const SizedBox(height: _S.lg),
+          const SizedBox(height: WatchSpace.lg),
         ],
 
         // Director
         if (meta.director.isNotEmpty) ...[
           _buildLabelChips('DIRECTOR', meta.director),
-          const SizedBox(height: _S.md),
+          const SizedBox(height: WatchSpace.md),
         ],
 
         // Cast
         if (meta.cast.isNotEmpty) ...[
           _buildLabelChips('CAST', meta.cast.take(8).toList()),
-          const SizedBox(height: _S.lg),
+          const SizedBox(height: WatchSpace.lg),
         ],
 
         // Action bar
         _buildActionBar(),
-        const SizedBox(height: _S.lg),
+        const SizedBox(height: WatchSpace.lg),
       ],
     );
   }
@@ -800,7 +778,7 @@ class _WatchScreenState extends State<WatchScreen>
         fontWeight: FontWeight.w800,
         height: 1.1,
         letterSpacing: -0.5,
-        color: _C.textPrimary,
+        color: WatchColors.textPrimary,
         shadows: [
           Shadow(
             color: Colors.black.withValues(alpha: 0.7),
@@ -820,7 +798,7 @@ class _WatchScreenState extends State<WatchScreen>
         Text(
           meta.year!,
           style: const TextStyle(
-            color: _C.textPrimary,
+            color: WatchColors.textPrimary,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -832,7 +810,7 @@ class _WatchScreenState extends State<WatchScreen>
       items.add(
         Text(
           meta.runtime!,
-          style: const TextStyle(color: _C.textSecondary, fontSize: 14),
+          style: const TextStyle(color: WatchColors.textSecondary, fontSize: 14),
         ),
       );
     }
@@ -842,19 +820,19 @@ class _WatchScreenState extends State<WatchScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: _C.gold.withValues(alpha: 0.15),
+            color: WatchColors.gold.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: _C.gold.withValues(alpha: 0.4)),
+            border: Border.all(color: WatchColors.gold.withValues(alpha: 0.4)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.star_rounded, color: _C.gold, size: 14),
+              const Icon(Icons.star_rounded, color: WatchColors.gold, size: 14),
               const SizedBox(width: 3),
               Text(
                 meta.imdbRating!,
                 style: const TextStyle(
-                  color: _C.gold,
+                  color: WatchColors.gold,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -871,10 +849,10 @@ class _WatchScreenState extends State<WatchScreen>
       if (i < items.length - 1) {
         spaced.add(
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: _S.xs),
+            padding: EdgeInsets.symmetric(horizontal: WatchSpace.xs),
             child: Text(
               '·',
-              style: TextStyle(color: _C.textTertiary, fontSize: 16),
+              style: TextStyle(color: WatchColors.textTertiary, fontSize: 16),
             ),
           ),
         );
@@ -890,8 +868,8 @@ class _WatchScreenState extends State<WatchScreen>
 
   Widget _buildGenrePills(List<String> genres) {
     return Wrap(
-      spacing: _S.xs,
-      runSpacing: _S.xs,
+      spacing: WatchSpace.xs,
+      runSpacing: WatchSpace.xs,
       children: genres
           .map(
             (g) => Container(
@@ -904,7 +882,7 @@ class _WatchScreenState extends State<WatchScreen>
               child: Text(
                 g,
                 style: const TextStyle(
-                  color: _C.textSecondary,
+                  color: WatchColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -927,7 +905,7 @@ class _WatchScreenState extends State<WatchScreen>
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: _C.textSecondary,
+              color: WatchColors.textSecondary,
               fontSize: 14,
               height: 1.6,
             ),
@@ -935,7 +913,7 @@ class _WatchScreenState extends State<WatchScreen>
           secondChild: Text(
             text,
             style: const TextStyle(
-              color: _C.textSecondary,
+              color: WatchColors.textSecondary,
               fontSize: 14,
               height: 1.6,
             ),
@@ -965,7 +943,7 @@ class _WatchScreenState extends State<WatchScreen>
               child: Text(
                 _synopsisExpanded ? 'Show less' : 'Read more',
                 style: const TextStyle(
-                  color: _C.accent,
+                  color: WatchColors.accent,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -984,16 +962,16 @@ class _WatchScreenState extends State<WatchScreen>
         Text(
           label,
           style: const TextStyle(
-            color: _C.textTertiary,
+            color: WatchColors.textTertiary,
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.0,
           ),
         ),
-        const SizedBox(height: _S.xs),
+        const SizedBox(height: WatchSpace.xs),
         Wrap(
-          spacing: _S.xs,
-          runSpacing: _S.xs,
+          spacing: WatchSpace.xs,
+          runSpacing: WatchSpace.xs,
           children: items
               .map(
                 (name) => Container(
@@ -1002,13 +980,13 @@ class _WatchScreenState extends State<WatchScreen>
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: _C.surfaceLight,
+                    color: WatchColors.surfaceLight,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     name,
                     style: const TextStyle(
-                      color: _C.textSecondary,
+                      color: WatchColors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -1066,7 +1044,7 @@ class _WatchScreenState extends State<WatchScreen>
 
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(right: link == links.last ? 0 : _S.sm),
+            padding: EdgeInsets.only(right: link == links.last ? 0 : WatchSpace.sm),
             child: _buildActionButton(
               icon,
               link.name,
@@ -1094,19 +1072,19 @@ class _WatchScreenState extends State<WatchScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: _C.surface.withValues(alpha: 0.6),
+          color: WatchColors.surface.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: _C.textSecondary, size: 22),
+            Icon(icon, color: WatchColors.textSecondary, size: 22),
             const SizedBox(height: 4),
             Text(
               label,
               style: const TextStyle(
-                color: _C.textSecondary,
+                color: WatchColors.textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -1136,12 +1114,12 @@ class _WatchScreenState extends State<WatchScreen>
             const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.stream_rounded, color: _C.accent, size: 20),
-                SizedBox(width: _S.xs),
+                Icon(Icons.stream_rounded, color: WatchColors.accent, size: 20),
+                SizedBox(width: WatchSpace.xs),
                 Text(
                   'Watch Sources',
                   style: TextStyle(
-                    color: _C.textPrimary,
+                    color: WatchColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1152,7 +1130,7 @@ class _WatchScreenState extends State<WatchScreen>
               _isLoadingSources
                   ? 'Searching sources...'
                   : '${filtered.length} source${filtered.length == 1 ? '' : 's'} found',
-              style: const TextStyle(color: _C.textTertiary, fontSize: 12),
+              style: const TextStyle(color: WatchColors.textTertiary, fontSize: 12),
             ),
           ],
         ),
@@ -1211,7 +1189,7 @@ class _WatchScreenState extends State<WatchScreen>
 
   Widget _buildTypeChip(String typeKey, String label, IconData icon, Color? color) {
     final isSelected = _selectedTypeFilter == typeKey;
-    final activeColor = color ?? _C.accent;
+    final activeColor = color ?? WatchColors.accent;
 
     return ChoiceChip(
       label: Text(label),
@@ -1254,12 +1232,12 @@ class _WatchScreenState extends State<WatchScreen>
           ? const BouncingScrollPhysics()
           : const NeverScrollableScrollPhysics(),
       itemCount: sources.length + (_isLoadingSources ? 2 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: _S.xs),
+      separatorBuilder: (_, __) => const SizedBox(height: WatchSpace.xs),
       itemBuilder: (context, index) {
         if (index >= sources.length) {
           return _buildShimmerCard();
         }
-        return _SourceCard(
+        return WatchSourceCard(
           source: sources[index],
           backdropUrl: widget.detail.background ?? widget.detail.poster,
           logoUrl: widget.detail.logo,
@@ -2690,7 +2668,7 @@ class _WatchScreenState extends State<WatchScreen>
   }
 
   Widget _buildEmptyState() {
-    return const _EmptySourcesStateWidget();
+    return const WatchEmptySources();
   }
 
   Widget _buildShimmerList() {
@@ -2698,7 +2676,7 @@ class _WatchScreenState extends State<WatchScreen>
       children: List.generate(
         4,
         (_) => Padding(
-          padding: const EdgeInsets.only(bottom: _S.xs),
+          padding: const EdgeInsets.only(bottom: WatchSpace.xs),
           child: _buildShimmerCard(),
         ),
       ),
@@ -2706,7 +2684,7 @@ class _WatchScreenState extends State<WatchScreen>
   }
 
   Widget _buildShimmerCard() {
-    return const RepaintBoundary(child: _ShimmerCard());
+    return const RepaintBoundary(child: WatchShimmerCard());
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -2717,7 +2695,7 @@ class _WatchScreenState extends State<WatchScreen>
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: _C.bg.withValues(alpha: 0.7),
+        color: WatchColors.bg.withValues(alpha: 0.7),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
@@ -2725,830 +2703,11 @@ class _WatchScreenState extends State<WatchScreen>
         icon: const Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 18,
-          color: _C.textPrimary,
+          color: WatchColors.textPrimary,
         ),
         onPressed: () => Navigator.pop(context),
         padding: EdgeInsets.zero,
       ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Source Card
-// ─────────────────────────────────────────────────────────────────────────────
-class _SourceCard extends StatefulWidget {
-  final StreamSource source;
-  final String? backdropUrl;
-  final String? logoUrl;
-  final MovieDetail detail;
-  final Video? episode;
-  final Duration? initialPosition;
-  final VoidCallback? onUserPicked;
-  /// Verified backups for silent failover (from the probe race list).
-  final List<StreamSource>? failoverCandidates;
-
-  const _SourceCard({
-    required this.source,
-    this.backdropUrl,
-    this.logoUrl,
-    required this.detail,
-    this.episode,
-    this.initialPosition,
-    this.onUserPicked,
-    this.failoverCandidates,
-  });
-
-  @override
-  State<_SourceCard> createState() => _SourceCardState();
-}
-
-class _SourceCardState extends State<_SourceCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = widget.source;
-    final badges = <Widget>[];
-
-    // Quality badge
-    if (s.quality != null) {
-      Color badgeColor;
-      switch (s.quality) {
-        case '4K':
-          badgeColor = const Color(0xFFFF6B6B);
-          break;
-        case '1080p':
-          badgeColor = const Color(0xFF51CF66);
-          break;
-        case '720p':
-          badgeColor = const Color(0xFF339AF0);
-          break;
-        default:
-          badgeColor = _C.textTertiary;
-      }
-      badges.add(_badge(s.quality!, badgeColor));
-    }
-
-    if (s.isHDR) badges.add(_badge('HDR', const Color(0xFFFFD43B)));
-    if (s.codec != null) badges.add(_badge(s.codec!, _C.textTertiary));
-    if (s.fileSize != null) badges.add(_badge(s.fileSize!, _C.textTertiary));
-    if (s.seeders != null) {
-      final seederColor = s.seeders! >= 20
-          ? const Color(0xFF10B981)
-          : (s.seeders! >= 5 ? const Color(0xFFFFD43B) : const Color(0xFFFF922B));
-      badges.add(_badge('👤 ${s.seeders} Seeds', seederColor));
-    }
-
-    // Audio Language / Dub badge
-    final audioBadge = s.getAudioBadge(mediaTitle: widget.detail.name);
-    if (audioBadge != null) {
-      Color audioBadgeColor;
-      if (audioBadge.contains('MULTI')) {
-        audioBadgeColor = const Color(0xFFB197FC);
-      } else if (audioBadge.contains('HINDI') ||
-          audioBadge.contains('TELUGU') ||
-          audioBadge.contains('TAMIL') ||
-          audioBadge.contains('MALAYALAM') ||
-          audioBadge.contains('KANNADA') ||
-          audioBadge.contains('PUNJABI')) {
-        audioBadgeColor = const Color(0xFFFF922B);
-      } else if (audioBadge.contains('GER')) {
-        audioBadgeColor = const Color(0xFFFFD43B);
-      } else if (audioBadge.contains('FRE')) {
-        audioBadgeColor = const Color(0xFF4DABF7);
-      } else if (audioBadge.contains('SPA')) {
-        audioBadgeColor = const Color(0xFFFAB005);
-      } else if (audioBadge.contains('RUS')) {
-        audioBadgeColor = const Color(0xFF22B8CF);
-      } else if (audioBadge.contains('JPN')) {
-        audioBadgeColor = const Color(0xFFFF8787);
-      } else if (audioBadge.contains('ITA')) {
-        audioBadgeColor = const Color(0xFF69DB7C);
-      } else {
-        audioBadgeColor = _C.textTertiary;
-      }
-      badges.add(_badge(audioBadge, audioBadgeColor));
-    }
-
-    return RepaintBoundary(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.onUserPicked?.call(); // mark user choice — stop autoplay race
-
-              if (s.externalUrl != null && s.externalUrl!.isNotEmpty) {
-                if (s.externalUrl!.startsWith('stremio://')) {
-                  // Example: stremio:///detail/movie/tt28479262
-                  final uriStr = s.externalUrl!.replaceFirst(
-                    'stremio:///',
-                    'stremio://',
-                  );
-                  final uri = Uri.parse(uriStr);
-                  final segments = uri.pathSegments;
-                  if (uri.host == 'detail' && segments.length >= 2) {
-                    final type = segments[0];
-                    final id = segments[1];
-                    final movie = Movie(
-                      id: id,
-                      type: type,
-                      name: s.name ?? 'Unknown',
-                      addonBaseUrl: 'https://v3-cinemeta.strem.io',
-                    );
-                    Navigator.push(
-                      context,
-                      CinematicSlideRoute(page: DetailsPage(movie: movie)),
-                    );
-                    return;
-                  }
-                  return;
-                } else {
-                  // Fallback for http URLs or other schemes
-                  launchUrl(
-                    Uri.parse(s.externalUrl!),
-                    mode: LaunchMode.externalApplication,
-                  );
-                  return;
-                }
-              }
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PlayerScreen(
-                    source: s,
-                    title: s.displayTitle,
-                    backdropUrl: widget.backdropUrl,
-                    logoUrl: widget.logoUrl,
-                    detail: widget.detail,
-                    episode: widget.episode,
-                    initialPosition: widget.initialPosition,
-                    failoverSources: widget.failoverCandidates,
-                  ),
-                ),
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _hovered
-                    ? _C.surfaceLight.withValues(alpha: 0.9)
-                    : _C.surface.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _hovered
-                      ? _C.accent.withValues(alpha: 0.3)
-                      : Colors.white.withValues(alpha: 0.06),
-                ),
-                boxShadow: _hovered
-                    ? [
-                        BoxShadow(
-                          color: _C.accent.withValues(alpha: 0.08),
-                          blurRadius: 16,
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Row(
-                children: [
-                  // Addon icon
-                  _AddonSourceIcon(addonName: s.addonName),
-                  const SizedBox(width: _S.sm),
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.name != null && s.name!.isNotEmpty
-                              ? s.name!
-                              : s.addonName,
-                          style: const TextStyle(
-                            color: _C.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (s.title != null && s.title!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            s.title!,
-                            style: const TextStyle(
-                              color: _C.textTertiary,
-                              fontSize: 12,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                        if (s.description != null &&
-                            s.description!.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            s.description!,
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _C.textSecondary,
-                              fontSize: 12,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                        if (badges.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(spacing: 4, runSpacing: 4, children: badges),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: _S.xs),
-                  if (s.isMagnet && s.magnetUrl != null) ...[
-                    _CopyMagnetButton(magnetUrl: s.magnetUrl!),
-                    const SizedBox(width: 8),
-                  ],
-                  // Play chevron
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _hovered
-                          ? _C.accent.withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.06),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.play_arrow_rounded,
-                      color: _hovered ? _C.accent : _C.textTertiary,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-  Widget _badge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Addon Source Icon / App Logo
-// ─────────────────────────────────────────────────────────────────────────────
-class _AddonSourceIcon extends StatelessWidget {
-  final String addonName;
-
-  const _AddonSourceIcon({required this.addonName});
-
-  @override
-  Widget build(BuildContext context) {
-    final nameLower = addonName.trim().toLowerCase();
-    final isBuiltIn = nameLower == 'dizzy' ||
-        nameLower == 'dizzyhttp' ||
-        nameLower.startsWith('builtin');
-
-    if (isBuiltIn) {
-      return Container(
-        width: 40,
-        height: 40,
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: const Color(0xFF7C5CFF).withValues(alpha: 0.25),
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.asset(
-            'assets/icon.png',
-            width: 30,
-            height: 30,
-            fit: BoxFit.contain,
-          ),
-        ),
-      );
-    }
-
-    final logoUrl = AddonManager.instance.getAddonLogo(addonName);
-
-    if (logoUrl != null && logoUrl.isNotEmpty) {
-      if (logoUrl.startsWith('asset:')) {
-        final assetPath = logoUrl.substring('asset:'.length);
-        return Container(
-          width: 40,
-          height: 40,
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.asset(
-              assetPath,
-              width: 30,
-              height: 30,
-              fit: BoxFit.contain,
-            ),
-          ),
-        );
-      }
-
-      return Container(
-        width: 40,
-        height: 40,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: CachedNetworkImage(
-            imageUrl: logoUrl,
-            width: 32,
-            height: 32,
-            fit: BoxFit.contain,
-            // P12: decode-capped (was full-res).
-            memCacheWidth: ImageCaps.kThumb,
-            maxWidthDiskCache: ImageCaps.kThumb,
-            placeholder: (context, url) => Container(
-              color: Colors.white.withValues(alpha: 0.04),
-              child: const Center(
-                child: SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: _C.accent,
-                  ),
-                ),
-              ),
-            ),
-            errorWidget: (context, url, error) => _buildFallbackIcon(),
-          ),
-        ),
-      );
-    }
-
-    return _buildFallbackIcon();
-  }
-
-  Widget _buildFallbackIcon() {
-    final firstLetter = addonName.isNotEmpty ? addonName[0].toUpperCase() : 'A';
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: _C.accent.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _C.accent.withValues(alpha: 0.3)),
-      ),
-      child: Center(
-        child: Text(
-          firstLetter,
-          style: const TextStyle(
-            color: _C.accent,
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Copy Magnet Button
-// ─────────────────────────────────────────────────────────────────────────────
-class _CopyMagnetButton extends StatefulWidget {
-  final String magnetUrl;
-
-  const _CopyMagnetButton({required this.magnetUrl});
-
-  @override
-  State<_CopyMagnetButton> createState() => _CopyMagnetButtonState();
-}
-
-class _CopyMagnetButtonState extends State<_CopyMagnetButton> {
-  bool _copied = false;
-  bool _hovered = false;
-  Timer? _timer;
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _copy() {
-    Clipboard.setData(ClipboardData(text: widget.magnetUrl));
-    HapticFeedback.lightImpact();
-
-    setState(() => _copied = true);
-    _timer?.cancel();
-    _timer = Timer(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _copied = false);
-    });
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
-            SizedBox(width: 8),
-            Text(
-              'Magnet link copied to clipboard',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF1A1D26),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Tooltip(
-        message: _copied ? 'Copied!' : 'Copy Magnet Link',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _copy,
-            borderRadius: BorderRadius.circular(18),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _copied
-                    ? const Color(0xFF10B981).withValues(alpha: 0.2)
-                    : (_hovered
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.06)),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _copied
-                      ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                      : (_hovered
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
-                          : Colors.white.withValues(alpha: 0.08)),
-                  width: 1,
-                ),
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  _copied ? Icons.check_rounded : Icons.link_rounded,
-                  key: ValueKey(_copied),
-                  color: _copied
-                      ? const Color(0xFF10B981)
-                      : (_hovered ? const Color(0xFF00E5FF) : _C.textSecondary),
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shimmer Card
-// ─────────────────────────────────────────────────────────────────────────────
-class _ShimmerCard extends StatefulWidget {
-  const _ShimmerCard();
-
-  @override
-  State<_ShimmerCard> createState() => _ShimmerCardState();
-}
-
-class _ShimmerCardState extends State<_ShimmerCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: _C.surface.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-          ),
-          child: Row(
-            children: [
-              _shimmerBox(40, 40, 10),
-              const SizedBox(width: _S.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _shimmerBox(double.infinity, 12, 4),
-                    const SizedBox(height: 8),
-                    _shimmerBox(180, 10, 4),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _shimmerBox(40, 16, 4),
-                        const SizedBox(width: 4),
-                        _shimmerBox(50, 16, 4),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: _S.xs),
-              _shimmerBox(36, 36, 18),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _shimmerBox(double width, double height, double radius) {
-    final shimmerValue = _controller.value;
-    final gradientStart = shimmerValue - 0.3;
-    final gradientEnd = shimmerValue + 0.3;
-
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            _C.surfaceLight.withValues(alpha: 0.5),
-            _C.surfaceLight.withValues(alpha: 0.8),
-            _C.surfaceLight.withValues(alpha: 0.5),
-          ],
-          stops: [
-            (gradientStart).clamp(0.0, 1.0),
-            (shimmerValue).clamp(0.0, 1.0),
-            (gradientEnd).clamp(0.0, 1.0),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptySourcesStateWidget extends StatefulWidget {
-  const _EmptySourcesStateWidget();
-
-  @override
-  State<_EmptySourcesStateWidget> createState() =>
-      _EmptySourcesStateWidgetState();
-}
-
-class _EmptySourcesStateWidgetState extends State<_EmptySourcesStateWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _scaleAnim;
-  late Animation<double> _fadeAnim;
-  bool _isHovering = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-      ),
-    );
-    _scaleAnim = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOutBack),
-      ),
-    );
-    // Run the entrance once. A perpetual pulse kept this whole state ticking.
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Static card content — identical on every platform.
-    final cardContent = Container(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-      decoration: BoxDecoration(
-        color: const Color(0xF0141419),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF7C5CFC).withValues(alpha: 0.1),
-              border: Border.all(
-                color: const Color(0xFF7C5CFC).withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Icon(
-              Icons.radar_rounded,
-              color: Color(0xFF7C5CFC),
-              size: 40,
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'No sources found',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 280),
-            child: const Text(
-              'No streams found. Install more addons from Settings or try another title.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFF9B9BA5),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-          MouseRegion(
-            onEnter: (_) => setState(() => _isHovering = true),
-            onExit: (_) => setState(() => _isHovering = false),
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
-                );
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(32),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7C5CFC), Color(0xFF5CFCB6)],
-                  ),
-                  boxShadow: _isHovering
-                      ? [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF7C5CFC,
-                            ).withValues(alpha: 0.4),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [],
-                ),
-                child: AnimatedScale(
-                  scale: _isHovering ? 1.05 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.extension_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Install Addons',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    // The glass card — blur is static, not animated
-    final glassCard = Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: cardContent,
-    );
-
-    // Only the initial fade/scale is animated (runs once, then stops)
-    return AnimatedBuilder(
-      animation: _fadeAnim,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _fadeAnim.value.clamp(0.0, 1.0),
-          child: Transform.scale(scale: _scaleAnim.value, child: child),
-        );
-      },
-      child: glassCard,
     );
   }
 }
