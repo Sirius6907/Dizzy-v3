@@ -3,250 +3,328 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dizzy Control — Admin Dashboard</title>
+<meta name="theme-color" content="#07080c">
+<title>Dizzy Control — Admin Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
-<style>
-:root{
-  --bg:#080a0f; --card:#11141b; --card2:#0d1017; --line:rgba(255,255,255,.08);
-  --txt:#fff; --mut:#9aa0ae; --acc:#8b5cf6; --cyan:#00e5ff; --grn:#34d399;
-  --red:#f87171; --amb:#fbbf24;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
-a{color:var(--cyan)}
-/* ── login ── */
-#login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:36px;width:100%;max-width:400px;text-align:center}
-.login-card h1{font-size:26px;font-weight:900;margin-bottom:6px}
-.login-card h1 span{color:var(--acc)}
-.login-card p{color:var(--mut);font-size:13px;margin-bottom:24px}
-.login-card input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;color:#fff;padding:13px 15px;font-size:15px;margin-bottom:12px;outline:none}
-.login-card input:focus{border-color:var(--acc)}
-.btn{background:linear-gradient(135deg,var(--acc),#6d28d9);border:none;color:#fff;font-weight:800;font-size:15px;padding:13px 22px;border-radius:12px;cursor:pointer;width:100%}
-.btn:hover{filter:brightness(1.15)}
-.btn:disabled{opacity:.5;cursor:wait}
-.btn-sm{width:auto;padding:8px 16px;font-size:13px}
-.btn-ghost{background:#ffffff14;border:1px solid var(--line)}
-.btn-danger{background:linear-gradient(135deg,#ef4444,#b91c1c)}
-.btn-warn{background:linear-gradient(135deg,#f59e0b,#b45309)}
-.btn-ok{background:linear-gradient(135deg,#10b981,#047857)}
-#loginErr{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
-/* ── shell ── */
-#app{display:none}
-header{position:sticky;top:0;z-index:10;background:#0d1017ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-header .logo{font-weight:900;font-size:18px}
-header .logo span{color:var(--acc)}
-header .ver{font-size:11px;color:var(--mut);background:#ffffff10;padding:3px 10px;border-radius:20px}
-header .sp{flex:1}
-header .me{font-size:13px;color:var(--mut)}
-nav{display:flex;gap:6px;background:var(--card2);padding:10px 22px;border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:61px;z-index:9}
-nav button{background:none;border:none;color:var(--mut);font-weight:700;font-size:14px;padding:10px 16px;border-radius:10px;cursor:pointer;white-space:nowrap}
-nav button.on{background:#8b5cf622;color:#fff}
-nav button:hover{color:#fff}
-main{padding:22px;max-width:1200px;margin:0 auto}
-section{display:none}
-section.on{display:block;animation:fade .2s}
-@keyframes fade{from{opacity:0}to{opacity:1}}
-/* ── cards/grid ── */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-.stat .n{font-size:28px;font-weight:900}
-.stat .l{font-size:12px;color:var(--mut);margin-top:2px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
-.card h3{font-size:15px;font-weight:800;margin-bottom:12px}
-.card h3 .sub{color:var(--mut);font-weight:400;font-size:12px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:800px){.grid2{grid-template-columns:1fr}}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;color:var(--mut);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line)}
-td{padding:10px;border-bottom:1px solid #ffffff08;vertical-align:top}
-tr:hover td{background:#ffffff04}
-.pill{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px}
-.p-live{background:#10b98122;color:var(--grn)}
-.p-lobby{background:#00e5ff22;color:var(--cyan)}
-.p-closed{background:#ffffff14;color:var(--mut)}
-.p-pub{background:#8b5cf622;color:#c4b5fd}
-.p-priv{background:#f59e0b22;color:var(--amb)}
-.p-adult{background:#ef444422;color:var(--red)}
-.p-lock{background:#f59e0b22;color:var(--amb)}
-.rowbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.rowbtns button{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:#ffffff0d;color:#fff;cursor:pointer;font-weight:700}
-.rowbtns button:hover{background:#ffffff1c}
-.rowbtns button.danger{border-color:#ef444466;color:var(--red)}
-.rowbtns button.ok{border-color:#10b98166;color:var(--grn)}
-textarea,input[type=text],input[type=number],select{background:var(--card2);border:1px solid var(--line);border-radius:10px;color:#fff;padding:10px 12px;font-size:13px;width:100%;outline:none;font-family:inherit}
-textarea:focus,input:focus{border-color:var(--acc)}
-label.fl{display:block;font-size:12px;color:var(--mut);margin:10px 0 5px;font-weight:700}
-canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
-.mono{font-family:Consolas,monospace;font-size:12px;color:var(--cyan)}
-.mut{color:var(--mut);font-size:12px}
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1f2b;border:1px solid var(--acc);padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;display:none;z-index:99;max-width:90vw}
-/* modal */
-#modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;z-index:50;overflow-y:auto}
-#modal.open{display:flex}
-.sheet{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;width:100%;max-width:720px}
-.sheet h2{font-size:18px;margin-bottom:14px}
-.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px;margin-bottom:14px}
-.kv b{color:var(--mut);font-weight:600}
-.chatbox{background:var(--card2);border-radius:12px;padding:12px;max-height:220px;overflow-y:auto;font-size:13px;margin-bottom:14px}
-.chatbox div{padding:5px 0;border-bottom:1px solid #ffffff06}
-.chatbox .who{color:var(--cyan);font-weight:700;font-size:11px}
-</style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login">
-  <div class="login-card">
-    <h1>🍿 Dizzy <span>Control</span></h1>
-    <p>Admin dashboard · email + password</p>
-    <input id="email" type="text" placeholder="Admin email" autocomplete="username">
-    <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
-    <button class="btn" id="loginBtn" onclick="doLogin()">Sign in</button>
-    <div id="loginErr"></div>
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login" class="login">
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <form class="login-card" id="loginForm" onsubmit="event.preventDefault();doLogin()" novalidate>
+    <div class="brand">
+      <div class="brand-mark">🍿</div>
+      <div class="brand-txt">
+        <div class="brand-name">Dizzy <span>Control</span></div>
+        <div class="brand-tag">Admin console</div>
+      </div>
+    </div>
+    <p class="login-sub">Sign in with an allow-listed admin account to manage rooms, scrapers, releases and telemetry.</p>
+
+    <label class="fl" for="email">Email</label>
+    <input id="email" type="email" placeholder="admin@dizzy.app" autocomplete="username" spellcheck="false">
+
+    <label class="fl" for="pass">Password</label>
+    <div class="pw">
+      <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <button type="button" class="pw-eye" id="pwEye" onclick="togglePw()" aria-label="Show password">Show</button>
+    </div>
+
+    <button class="btn btn-lg" id="loginBtn" type="submit">Sign in <span class="arr">→</span></button>
+    <div id="loginErr" role="alert" aria-live="polite"></div>
+
+    <div class="login-foot"><span class="dot dot-grn"></span> Supabase RLS · admins allowlist enforced</div>
+  </form>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app" class="app">
+
+  <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+    <div class="side-brand">
+      <div class="brand-mark sm">🍿</div>
+      <div>
+        <div class="side-name">Dizzy <span>Control</span></div>
+        <div class="side-tag">Admin console</div>
+      </div>
+    </div>
+
+    <nav class="nav" role="tablist" aria-label="Sections">
+      <button class="nav-btn on" role="tab" data-s="overview" aria-selected="true" onclick="show('overview')"><span class="ni">📊</span><span class="nl">Overview</span></button>
+      <button class="nav-btn" role="tab" data-s="rooms" aria-selected="false" onclick="show('rooms')"><span class="ni">🏠</span><span class="nl">Rooms</span></button>
+      <button class="nav-btn" role="tab" data-s="moderation" aria-selected="false" onclick="show('moderation')"><span class="ni">🚩</span><span class="nl">Moderation</span><span class="nav-badge" id="navReports" hidden>0</span></button>
+      <button class="nav-btn" role="tab" data-s="scrapers" aria-selected="false" onclick="show('scrapers')"><span class="ni">🎬</span><span class="nl">Scrapers</span></button>
+      <button class="nav-btn" role="tab" data-s="users" aria-selected="false" onclick="show('users')"><span class="ni">📱</span><span class="nl">Installs</span></button>
+      <button class="nav-btn" role="tab" data-s="push" aria-selected="false" onclick="show('push')"><span class="ni">📣</span><span class="nl">Announcements</span></button>
+      <button class="nav-btn" role="tab" data-s="config" aria-selected="false" onclick="show('config')"><span class="ni">⚙️</span><span class="nl">Config</span></button>
+      <button class="nav-btn" role="tab" data-s="audit" aria-selected="false" onclick="show('audit')"><span class="ni">🧾</span><span class="nl">Audit</span></button>
+      <button class="nav-btn" role="tab" data-s="devicelogs" aria-selected="false" onclick="show('devicelogs')"><span class="ni">🐞</span><span class="nl">Device logs</span></button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="who">
+        <div class="avatar" id="meAvatar">A</div>
+        <div class="who-txt">
+          <div class="who-em" id="meEmail">—</div>
+          <div class="who-role">Administrator</div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="doLogout()" title="Sign out" aria-label="Sign out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" onclick="closeNav()"></div>
+
+  <div class="shell">
+    <header class="topbar">
+      <button class="icon-btn burger" id="menuBtn" onclick="toggleNav()" aria-label="Open menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="tt">
+        <h1 id="pageTitle">Overview</h1>
+        <p id="pageSub">Live health of the Dizzy fleet</p>
+      </div>
+      <div class="sp"></div>
+      <button class="cmdk" onclick="openPalette()" title="Quick navigation" aria-label="Quick navigation">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <span class="cmdk-t">Quick switch</span><kbd>Ctrl K</kbd>
+      </button>
+      <span class="chip chip-live" id="cloudDot">● live</span>
+    </header>
+
+    <main id="main">
+
+      <!-- ── OVERVIEW ── -->
+      <section id="s-overview" class="on" role="tabpanel" aria-label="Overview">
+        <div class="stats" id="statCards"></div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h">
+              <div class="card-t"><h3>New installs</h3><p class="sub">Daily signups · last 30 days</p></div>
+              <span class="chip" id="chInstallsPeak" title="Best day in the window">—</span>
+            </div>
+            <div class="chart-box"><canvas class="chart" id="chInstalls"></canvas></div>
+            <div class="chart-x"><span id="chX1">30d ago</span><span id="chX2">today</span></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-t"><h3>Fleet breakdown</h3><p class="sub">Platforms · versions · consents</p></div></div>
+            <div id="breakdown" class="bd">loading…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>System health</h3><p class="sub">Snapshot of right now</p></div>
+            <div class="card-a"><span class="mut" id="ovUpdated"></span><button class="btn btn-ghost btn-sm" onclick="loadOverview()">↻ Refresh</button></div>
+          </div>
+          <div id="health">loading…</div>
+        </div>
+      </section>
+
+      <!-- ── ROOMS ── -->
+      <section id="s-rooms" role="tabpanel" aria-label="Rooms">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Rooms</h3><p class="sub">Newest first · click a row for full detail</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="roomSearch" placeholder="Filter rooms…" oninput="filterRooms()"></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadRooms()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="chips" id="roomFilters" role="group" aria-label="Filter by status">
+            <button class="chip-btn on" data-st="" onclick="setRoomFilter('')">All</button>
+            <button class="chip-btn" data-st="live" onclick="setRoomFilter('live')">● Live</button>
+            <button class="chip-btn" data-st="lobby" onclick="setRoomFilter('lobby')">● Lobby</button>
+            <button class="chip-btn" data-st="closed" onclick="setRoomFilter('closed')">● Closed</button>
+          </div>
+          <div class="tbl-wrap"><table id="roomsTbl">
+            <thead><tr><th>Room</th><th>Title</th><th>Status</th><th>Visibility</th><th class="num">👥</th><th class="num">🚩</th><th>Created</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- ── MODERATION ── -->
+      <section id="s-moderation" role="tabpanel" aria-label="Moderation">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Reported rooms</h3><p class="sub">3+ reports auto-hide from the app lobby</p></div>
+            <div class="card-a"><span class="mut" id="modCount"></span><button class="btn btn-ghost btn-sm" onclick="loadRooms(true)">↻ Refresh</button></div>
+          </div>
+          <div id="repList">loading…</div>
+        </div>
+      </section>
+
+      <!-- ── SCRAPERS ── -->
+      <section id="s-scrapers" role="tabpanel" aria-label="Scrapers">
+        <div class="stats" id="scraperStats"></div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h"><div class="card-t"><h3>Crowd votes</h3><p class="sub">Last 7 days · 5+ reporters ≈ dead source</p></div></div>
+            <div id="votes">loading…</div>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-t"><h3>Kill map</h3><p class="sub">remote_config.scraper_kill — the app skips these</p></div></div>
+            <label class="fl" for="killJson">JSON — {"scraper": "reason"}</label>
+            <textarea id="killJson" rows="8" class="mono" spellcheck="false"></textarea>
+            <div class="rowbtns"><button class="btn btn-ok btn-sm" onclick="saveKill()">💾 Save kill map</button></div>
+            <label class="fl" for="cooldownDays">Retry cooldown (days)</label>
+            <div class="inline-row">
+              <input type="text" id="cooldownDays" inputmode="numeric" style="max-width:120px">
+              <button class="btn btn-ok btn-sm" onclick="saveCooldown()">💾 Save cooldown</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── INSTALLS ── -->
+      <section id="s-users" role="tabpanel" aria-label="Installs">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Installs</h3><p class="sub">No PII — anonymous device IDs only</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="uSearch" placeholder="Platform / version / region…" onkeydown="if(event.key==='Enter')loadUsers()"></div>
+              <button class="btn btn-primary btn-sm" onclick="loadUsers()">Search</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table id="usersTbl">
+            <thead><tr><th>Anon ID</th><th>Platform</th><th>Ver</th><th>Region</th><th>First seen</th><th>Last seen</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- ── ANNOUNCEMENTS ── -->
+      <section id="s-push" role="tabpanel" aria-label="Announcements">
+        <div class="grid2 cols-32">
+          <div class="card">
+            <div class="card-h"><div class="card-t"><h3>Live announcements</h3><p class="sub">In-app banners · the app polls this table</p></div>
+              <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadAnn()">↻ Refresh</button></div>
+            </div>
+            <div id="annList">loading…</div>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-t"><h3 id="annFormTitle">New announcement</h3><p class="sub">Ships to every install that matches the version range</p></div></div>
+            <input type="hidden" id="annId">
+            <label class="fl" for="annTitle">Title</label>
+            <input type="text" id="annTitle" maxlength="80" placeholder="e.g. v1.3.0 is live 🎉">
+            <label class="fl" for="annBody">Body</label>
+            <textarea id="annBody" rows="3" maxlength="400" placeholder="Short, friendly message shown in the app…"></textarea>
+            <div class="grid2">
+              <div><label class="fl" for="annUrl">Link URL <span class="opt">optional</span></label><input type="text" id="annUrl" placeholder="https://…"></div>
+              <div><label class="fl" for="annActive">Status</label>
+                <select id="annActive"><option value="true">✅ Active</option><option value="false">⏸ Paused</option></select></div>
+            </div>
+            <div class="grid2">
+              <div><label class="fl" for="annMin">Min app version <span class="opt">blank = all</span></label><input type="text" id="annMin" placeholder="1.3.0"></div>
+              <div><label class="fl" for="annMax">Max app version <span class="opt">blank = all</span></label><input type="text" id="annMax" placeholder="1.9.9"></div>
+            </div>
+            <div class="rowbtns" style="margin-top:14px">
+              <button class="btn btn-primary btn-sm" onclick="saveAnn(event)">💾 Save announcement</button>
+              <button class="btn btn-ghost btn-sm" onclick="resetAnn()">Clear form</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CONFIG ── -->
+      <section id="s-config" role="tabpanel" aria-label="Config">
+        <div class="card">
+          <div class="card-h"><div class="card-t"><h3>Remote config</h3><p class="sub">Read by the app at startup · changes go live in ~1h (client cache)</p></div></div>
+
+          <div class="cfg-row">
+            <div class="cfg-l"><label class="fl" for="cfgMinVer">min_app_version</label><p class="hint">Below this the app shows the force-update banner.</p></div>
+            <div class="cfg-r"><input type="text" id="cfgMinVer" placeholder="1.3.0" style="max-width:160px"><button class="btn btn-primary btn-sm" onclick="saveCfg('min_app_version',document.getElementById('cfgMinVer').value)">Save</button></div>
+          </div>
+
+          <div class="rule"></div>
+          <div class="cfg-row col">
+            <div class="cfg-l"><label class="fl">Feature flags</label><p class="hint">One tap flips the flag and pushes it live immediately.</p></div>
+            <div id="featureToggles" class="flags"></div>
+          </div>
+
+          <div class="rule"></div>
+          <div class="cfg-row col">
+            <div class="cfg-l"><label class="fl" for="cfgFeatures">features (JSON)</label><p class="hint">e.g. {"watch_party": true, "voice": true}</p></div>
+            <textarea id="cfgFeatures" rows="5" class="mono" spellcheck="false" oninput="onFeaturesJsonEdited()"></textarea>
+            <div class="rowbtns"><button class="btn btn-ok btn-sm" onclick="saveCfg('features',document.getElementById('cfgFeatures').value)">💾 Save features</button></div>
+          </div>
+
+          <div class="rule"></div>
+          <div class="cfg-row col">
+            <div class="cfg-l"><label class="fl" for="cfgNotice">notice (JSON)</label><p class="hint">e.g. {"text": "Server maintenance tonight", "until": "2026-10-01"}</p></div>
+            <textarea id="cfgNotice" rows="3" class="mono" spellcheck="false"></textarea>
+            <div class="rowbtns"><button class="btn btn-ok btn-sm" onclick="saveCfg('notice',document.getElementById('cfgNotice').value)">💾 Save notice</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── AUDIT ── -->
+      <section id="s-audit" role="tabpanel" aria-label="Audit log">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Audit log</h3><p class="sub">Every admin write, newest first</p></div>
+            <div class="card-a">
+              <label class="switch" title="Auto-refresh every 15s"><input type="checkbox" id="auditLive" onchange="toggleAuditLive()"><span class="track"></span><span class="sw-l">Live</span></label>
+              <button class="btn btn-ghost btn-sm" onclick="loadAudit()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table id="auditTbl">
+            <thead><tr><th>When</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- ── DEVICE LOGS ── -->
+      <section id="s-devicelogs" role="tabpanel" aria-label="Device logs">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Device logs</h3><p class="sub">Enum codes only — no titles, no URLs, no stack traces</p></div>
+            <div class="card-a">
+              <label class="switch" title="Auto-refresh every 10s"><input type="checkbox" id="dlLive" onchange="toggleDeviceLogsLive()"><span class="track"></span><span class="sw-l">Live</span></label>
+              <button class="btn btn-ghost btn-sm" onclick="loadDeviceLogs()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="card-a wrap">
+            <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="dlDevice" placeholder="Device code — DIZ-1234567" onkeydown="if(event.key==='Enter')loadDeviceLogs()"></div>
+            <button class="btn btn-primary btn-sm" onclick="loadDeviceLogs()">Filter</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearDeviceLogFilter()">Clear</button>
+          </div>
+          <div class="chips" id="dlChips" role="group" aria-label="Filter by error category">
+            <span class="chips-l">Category</span>
+            <button class="chip-btn on" data-pre="" onclick="setDeviceErrorCodeFilter('')">All</button>
+            <button class="chip-btn" data-pre="E_NET_" onclick="setDeviceErrorCodeFilter('E_NET_')">Network</button>
+            <button class="chip-btn" data-pre="E_HTTP_" onclick="setDeviceErrorCodeFilter('E_HTTP_')">HTTP</button>
+            <button class="chip-btn" data-pre="E_DEBRID_" onclick="setDeviceErrorCodeFilter('E_DEBRID_')">Debrid</button>
+            <button class="chip-btn" data-pre="E_SPACE_" onclick="setDeviceErrorCodeFilter('E_SPACE_')">Storage</button>
+            <button class="chip-btn" data-pre="E_P2P_" onclick="setDeviceErrorCodeFilter('E_P2P_')">P2P</button>
+          </div>
+          <div class="mut summary" id="dlSummary"></div>
+          <div class="tbl-wrap"><table id="dlTbl">
+            <thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th class="num">Hits</th><th>Platform</th><th>Ver</th><th>Last seen</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </section>
+
+    </main>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <header>
-    <div class="logo">🍿 Dizzy <span>Control</span></div>
-    <div class="ver" id="cloudDot">● checking…</div>
-    <div class="sp"></div>
-    <div class="me" id="meEmail"></div>
-    <button class="btn btn-sm btn-ghost" onclick="doLogout()">Logout</button>
-  </header>
-  <nav>
-    <button data-s="overview" class="on" onclick="show('overview')">📊 Overview</button>
-    <button data-s="rooms" onclick="show('rooms')">🏠 Rooms</button>
-    <button data-s="moderation" onclick="show('moderation')">🚩 Moderation</button>
-    <button data-s="scrapers" onclick="show('scrapers')">🎬 Scrapers</button>
-    <button data-s="users" onclick="show('users')">📱 Installs</button>
-    <button data-s="push" onclick="show('push')">📣 Announcements</button>
-    <button data-s="config" onclick="show('config')">⚙️ Config</button>
-    <button data-s="audit" onclick="show('audit')">🧾 Audit</button>
-    <button data-s="devicelogs" onclick="show('devicelogs')">🐞 Device logs</button>
-  </nav>
-  <main>
-    <section id="s-overview" class="on">
-      <div class="stats" id="statCards"></div>
-      <div class="grid2">
-        <div class="card"><h3>📈 New installs · last 30 days</h3><canvas class="chart" id="chInstalls" width="600" height="220"></canvas></div>
-        <div class="card"><h3>📊 Breakdown</h3><div id="breakdown">loading…</div></div>
-      </div>
-      <div class="card"><h3>💓 Health <span class="sub">live right now</span></h3><div id="health">loading…</div></div>
-    </section>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Detail"><div class="sheet" id="sheet"></div></div>
+<div id="toasts" aria-live="polite" aria-atomic="false"></div>
 
-    <section id="s-rooms">
-      <div class="card"><h3>🏠 Rooms <span class="sub">newest first · click row for detail</span>
-        <button class="btn btn-sm btn-ghost" style="float:right" onclick="loadRooms()">↻ Refresh</button></h3>
-        <div style="overflow-x:auto"><table id="roomsTbl"><thead><tr><th>Room</th><th>Title</th><th>Status</th><th>👥</th><th>🚩</th><th>Created</th></tr></thead><tbody></tbody></table></div>
-      </div>
-    </section>
-
-    <section id="s-moderation">
-      <div class="card"><h3>🚩 Reported rooms <span class="sub">3+ reports auto-hide from app lobby</span>
-        <button class="btn btn-sm btn-ghost" style="float:right" onclick="loadRooms()">↻ Refresh</button></h3>
-        <div id="repList">loading…</div>
-      </div>
-    </section>
-
-    <section id="s-scrapers">
-      <div class="stats" id="scraperStats"></div>
-      <div class="grid2">
-        <div class="card"><h3>🗳️ Crowd votes · last 7 days <span class="sub">5+ reporters = likely dead</span></h3><div id="votes">loading…</div></div>
-        <div class="card"><h3>⛔ Kill map <span class="sub">remote_config.scraper_kill — app skips these</span></h3>
-          <label class="fl">JSON: {"scraper": "reason"}</label>
-          <textarea id="killJson" rows="8" class="mono"></textarea>
-          <div class="rowbtns"><button class="ok" onclick="saveKill()">💾 Save kill map</button></div>
-          <label class="fl">Retry cooldown (days)</label>
-          <input type="text" id="cooldownDays" style="max-width:120px">
-          <div class="rowbtns"><button class="ok" onclick="saveCooldown()">💾 Save cooldown</button></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="s-users">
-      <div class="card"><h3>📱 Installs <span class="sub">no PII — anon ids only</span></h3>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input type="text" id="uSearch" placeholder="Search platform / version / region…" onkeydown="if(event.key==='Enter')loadUsers()">
-          <button class="btn btn-sm" style="width:auto" onclick="loadUsers()">Search</button>
-        </div>
-        <div style="overflow-x:auto"><table id="usersTbl"><thead><tr><th>Anon ID</th><th>Platform</th><th>Ver</th><th>Region</th><th>First seen</th><th>Last seen</th></tr></thead><tbody></tbody></table></div>
-      </div>
-    </section>
-
-    <section id="s-push">
-      <div class="card"><h3>📣 Announcements <span class="sub">in-app banners (app polls this table)</span></h3>
-        <div id="annList">loading…</div>
-      </div>
-      <div class="card"><h3 id="annFormTitle">➕ New announcement</h3>
-        <input type="hidden" id="annId">
-        <label class="fl">Title</label><input type="text" id="annTitle">
-        <label class="fl">Body</label><textarea id="annBody" rows="3"></textarea>
-        <div class="grid2">
-          <div><label class="fl">Link URL (optional)</label><input type="text" id="annUrl"></div>
-          <div><label class="fl">Active</label><select id="annActive"><option value="true">✅ active</option><option value="false">⏸ paused</option></select></div>
-        </div>
-        <div class="grid2">
-          <div><label class="fl">Min app version (blank = all)</label><input type="text" id="annMin" placeholder="1.2.0"></div>
-          <div><label class="fl">Max app version (blank = all)</label><input type="text" id="annMax"></div>
-        </div>
-        <div class="rowbtns" style="margin-top:12px"><button class="ok" onclick="saveAnn()">💾 Save</button><button onclick="resetAnn()">Clear</button></div>
-      </div>
-    </section>
-
-    <section id="s-config">
-      <div class="card"><h3>⚙️ Remote config <span class="sub">app reads on startup — changes go live in ~1h (client cache)</span></h3>
-        <label class="fl">min_app_version — below this the app shows force-update banner</label>
-        <div style="display:flex;gap:8px"><input type="text" id="cfgMinVer" style="max-width:160px"><button class="btn btn-sm" style="width:auto" onclick="saveCfg('min_app_version',document.getElementById('cfgMinVer').value)">Save</button></div>
-        <label class="fl">Feature Flag Quick Toggles</label>
-        <div id="featureToggles" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
-        <label class="fl">features (JSON) — e.g. {"watch_party": true, "voice": true}</label>
-        <textarea id="cfgFeatures" rows="4" class="mono" oninput="onFeaturesJsonEdited()"></textarea>
-        <div class="rowbtns"><button class="ok" onclick="saveCfg('features',document.getElementById('cfgFeatures').value)">💾 Save features</button></div>
-        <label class="fl">notice (JSON) — e.g. {"text": "…", "until": "2026-10-01"}</label>
-        <textarea id="cfgNotice" rows="3" class="mono"></textarea>
-        <div class="rowbtns"><button class="ok" onclick="saveCfg('notice',document.getElementById('cfgNotice').value)">💾 Save notice</button></div>
-      </div>
-    </section>
-
-    <section id="s-audit">
-      <div class="card"><h3>🧾 Audit log <span class="sub">every admin write</span>
-        <span style="float:right"><label class="mut" style="font-weight:400"><input type="checkbox" id="auditLive" onchange="toggleAuditLive()" style="width:auto;accent-color:#10b981"> live</label>
-        <button class="btn btn-sm btn-ghost" onclick="loadAudit()">↻ Refresh</button></span></h3>
-        <div style="overflow-x:auto"><table id="auditTbl"><thead><tr><th>When</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
-      </div>
-    </section>
-
-    <section id="s-devicelogs">
-      <div class="card"><h3>🐞 Device logs <span class="sub">enum codes only — no titles, no URLs, no stack traces</span>
-        <span style="float:right"><label class="mut" style="font-weight:400"><input type="checkbox" id="dlLive" onchange="toggleDeviceLogsLive()" style="width:auto;accent-color:#10b981"> live</label>
-        <button class="btn btn-sm btn-ghost" onclick="loadDeviceLogs()">↻ Refresh</button></span></h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input type="text" id="dlDevice" placeholder="Filter by device code — DIZ-1234567 or 1234567" onkeydown="if(event.key==='Enter')loadDeviceLogs()">
-          <button class="btn btn-sm" style="width:auto" onclick="loadDeviceLogs()">Filter</button>
-          <button class="btn btn-sm btn-ghost" style="width:auto" onclick="clearDeviceLogFilter()">Clear</button>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-          <span class="mut" style="font-size:12px;align-self:center">Filter category:</span>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('')">All</button>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_NET_')">Network (E_NET_*)</button>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_HTTP_')">HTTP (E_HTTP_*)</button>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_DEBRID_')">Debrid</button>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_SPACE_')">Storage</button>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_P2P_')">P2P</button>
-        </div>
-        <div class="mut" id="dlSummary" style="margin-bottom:8px"></div>
-        <div style="overflow-x:auto"><table id="dlTbl"><thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th>Hits</th><th>Platform</th><th>Ver</th><th>Last seen</th></tr></thead><tbody></tbody></table></div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<div id="modal"><div class="sheet" id="sheet"></div></div>
-<div id="toast"></div>
+<script src="./ui.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
