@@ -15,6 +15,7 @@ import '../../widgets/common/custom_scroll_track.dart';
 import 'book_detail_sheet.dart';
 import 'widgets/continue_reading_slider.dart';
 import 'widgets/reader_design_tokens.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class BooksPage extends StatefulWidget {
   const BooksPage({super.key});
@@ -137,194 +138,198 @@ class _BooksPageState extends State<BooksPage> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isMobile = screenWidth < 600;
 
-    return Scaffold(
-      backgroundColor: DizzyColors.bg,
-      body: Stack(
-        children: [
-          // ── Ambient Animated Background ──
-          const Positioned.fill(
-            child: AnimatedAmbientBackground(),
-          ),
+    return GuideTrigger(
+      guideKey: 'books',
+      steps: AppGuides.books,
+      child: Scaffold(
+        backgroundColor: DizzyColors.bg,
+        body: Stack(
+          children: [
+            // ── Ambient Animated Background ──
+            const Positioned.fill(
+              child: AnimatedAmbientBackground(),
+            ),
 
-          // ── Main Content ──
-          SafeArea(
-            bottom: false,
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Top App Bar & Search Header
-                SliverToBoxAdapter(
-                  child: _buildHeader(isMobile),
-                ),
+            // ── Main Content ──
+            SafeArea(
+              bottom: false,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // Top App Bar & Search Header
+                  SliverToBoxAdapter(
+                    child: _buildHeader(isMobile),
+                  ),
 
-                // Filters (Language & Formats)
-                SliverToBoxAdapter(
-                  child: _buildFilters(),
-                ),
+                  // Filters (Language & Formats)
+                  SliverToBoxAdapter(
+                    child: _buildFilters(),
+                  ),
 
-                // Continue Reading Horizontal Slider
-                const SliverToBoxAdapter(
-                  child: ContinueReadingSlider(),
-                ),
+                  // Continue Reading Horizontal Slider
+                  const SliverToBoxAdapter(
+                    child: ContinueReadingSlider(),
+                  ),
 
-                // Catalog Title
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7C3AED),
-                            borderRadius: BorderRadius.circular(2),
+                  // Catalog Title
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF7C3AED),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _searchController.text.trim().isNotEmpty
-                              ? 'Results for "${_searchController.text.trim()}"'
-                              : 'Discover Books',
-                          style: const TextStyle(
-                            fontFamily: ReaderTokens.uiFont,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (!_loading && _books.isNotEmpty)
+                          const SizedBox(width: 10),
                           Text(
-                            '${_books.length} Books',
+                            _searchController.text.trim().isNotEmpty
+                                ? 'Results for "${_searchController.text.trim()}"'
+                                : 'Discover Books',
                             style: const TextStyle(
                               fontFamily: ReaderTokens.uiFont,
-                              fontSize: 13,
-                              color: Colors.white38,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Grid / Loading / Error
-                if (_loading)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
-                    ),
-                  )
-                else if (_error != null)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
-                          const SizedBox(height: 12),
-                          Text(_error!, style: const TextStyle(color: Colors.white70)),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => _loadBooks(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else if (_books.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.search_off_rounded, color: Colors.white38, size: 56),
-                          SizedBox(height: 14),
-                          Text(
-                            'No books found',
-                            style: TextStyle(
-                              fontFamily: ReaderTokens.uiFont,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white70,
+                          const Spacer(),
+                          if (!_loading && _books.isNotEmpty)
+                            Text(
+                              '${_books.length} Books',
+                              style: const TextStyle(
+                                fontFamily: ReaderTokens.uiFont,
+                                fontSize: 13,
+                                color: Colors.white38,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            'Try searching for another title, author, or language',
-                            style: TextStyle(color: Colors.white38, fontSize: 13),
-                          ),
                         ],
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: isMobile ? 160 : 190,
-                        mainAxisSpacing: 22,
-                        crossAxisSpacing: 18,
-                        childAspectRatio: 0.56,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final book = _books[index];
-                          return _BookCard(
-                            book: book,
-                            onTap: () => BookDetailSheet.show(context, book),
-                          );
-                        },
-                        childCount: _books.length,
                       ),
                     ),
                   ),
 
-                // Loading More Indicator
-                if (_loadingMore)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 28),
+                  // Grid / Loading / Error
+                  if (_loading)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
                       child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Color(0xFF7C3AED),
+                        child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                      ),
+                    )
+                  else if (_error != null)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+                            const SizedBox(height: 12),
+                            Text(_error!, style: const TextStyle(color: Colors.white70)),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _loadBooks(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (_books.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.search_off_rounded, color: Colors.white38, size: 56),
+                            SizedBox(height: 14),
+                            Text(
+                              'No books found',
+                              style: TextStyle(
+                                fontFamily: ReaderTokens.uiFont,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Try searching for another title, author, or language',
+                              style: TextStyle(color: Colors.white38, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: isMobile ? 160 : 190,
+                          mainAxisSpacing: 22,
+                          crossAxisSpacing: 18,
+                          childAspectRatio: 0.56,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final book = _books[index];
+                            return _BookCard(
+                              book: book,
+                              onTap: () => BookDetailSheet.show(context, book),
+                            );
+                          },
+                          childCount: _books.length,
                         ),
                       ),
                     ),
+
+                  // Loading More Indicator
+                  if (_loadingMore)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 28),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Color(0xFF7C3AED),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 60),
                   ),
-
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 60),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // ── Custom Scroll Track (Desktop Only) ──
-          if (MediaQuery.sizeOf(context).width > 800)
+            // ── Custom Scroll Track (Desktop Only) ──
+            if (MediaQuery.sizeOf(context).width > 800)
+              Positioned(
+                right: 24,
+                bottom: 40,
+                child: CustomScrollTrack(controller: _scrollController),
+              ),
+
+            // ── Bottom Liquid Dock Navbar ──
             Positioned(
-              right: 24,
-              bottom: 40,
-              child: CustomScrollTrack(controller: _scrollController),
+              bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
+              left: 0,
+              right: 0,
+              child: const Center(
+                child: AppLiquidDock(currentDestination: DockItemKey.books),
+              ),
             ),
-
-          // ── Bottom Liquid Dock Navbar ──
-          Positioned(
-            bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
-            left: 0,
-            right: 0,
-            child: const Center(
-              child: AppLiquidDock(currentDestination: DockItemKey.books),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

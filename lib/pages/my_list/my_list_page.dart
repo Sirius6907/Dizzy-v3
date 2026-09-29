@@ -10,6 +10,7 @@ import '../../widgets/common/offline_aware_scaffold.dart';
 import '../details/details_page.dart';
 import '../../models/movie/movie.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class MyListPage extends StatefulWidget {
   const MyListPage({super.key});
@@ -131,101 +132,105 @@ class _MyListPageState extends State<MyListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return OfflineAwareScaffold(
-      backgroundColor: DizzyVoid.obsidian,
-      body: Stack(
-        children: [
-          // ── Ambient Background Glows ──
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF7C5CFF).withValues(alpha: 0.15),
-                    blurRadius: 120,
-                    spreadRadius: 40,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -150,
-            right: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
-                    blurRadius: 140,
-                    spreadRadius: 50,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Main Content ──
-          SafeArea(
-            child: ValueListenableBuilder<List<MyListItem>>(
-              valueListenable: MyListService.items,
-              builder: (context, allItems, _) {
-                final movieCount = allItems.where((i) => i.type == 'movie').length;
-                final seriesCount = allItems.where((i) => i.type == 'series' || i.type == 'anime').length;
-                final displayedItems = _getFilteredAndSortedItems(allItems);
-
-                return Column(
-                  children: [
-                    // ── Header Bar ──
-                    _buildHeader(context, allItems.length),
-
-                    // ── Filter Pills & Search Bar ──
-                    _buildFilterToolbar(allItems.length, movieCount, seriesCount),
-
-                    const SizedBox(height: 12),
-
-                    // ── Grid of Items ──
-                    Expanded(
-                      child: displayedItems.isEmpty
-                          ? _buildEmptyState(allItems.isEmpty)
-                          : GridView.builder(
-                              padding: EdgeInsets.fromLTRB(
-                                16,
-                                12,
-                                16,
-                                24 + MediaQuery.paddingOf(context).bottom,
-                              ),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: _getCrossAxisCount(context),
-                                childAspectRatio: 0.65,
-                                crossAxisSpacing: 14,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: displayedItems.length,
-                              itemBuilder: (context, index) {
-                                final item = displayedItems[index];
-                                return _MyListCard(
-                                  item: item,
-                                  onTap: () => _navigateToDetail(item),
-                                  onRemove: () => _confirmRemove(item),
-                                );
-                              },
-                            ),
+    return GuideTrigger(
+      guideKey: 'my_list',
+      steps: AppGuides.myList,
+      child: OfflineAwareScaffold(
+        backgroundColor: DizzyVoid.obsidian,
+        body: Stack(
+          children: [
+            // ── Ambient Background Glows ──
+            Positioned(
+              top: -100,
+              left: -100,
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7C5CFF).withValues(alpha: 0.15),
+                      blurRadius: 120,
+                      spreadRadius: 40,
                     ),
                   ],
-                );
-              },
+                ),
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: -150,
+              right: -100,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
+                      blurRadius: 140,
+                      spreadRadius: 50,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Main Content ──
+            SafeArea(
+              child: ValueListenableBuilder<List<MyListItem>>(
+                valueListenable: MyListService.items,
+                builder: (context, allItems, _) {
+                  final movieCount = allItems.where((i) => i.type == 'movie').length;
+                  final seriesCount = allItems.where((i) => i.type == 'series' || i.type == 'anime').length;
+                  final displayedItems = _getFilteredAndSortedItems(allItems);
+
+                  return Column(
+                    children: [
+                      // ── Header Bar ──
+                      _buildHeader(context, allItems.length),
+
+                      // ── Filter Pills & Search Bar ──
+                      _buildFilterToolbar(allItems.length, movieCount, seriesCount),
+
+                      const SizedBox(height: 12),
+
+                      // ── Grid of Items ──
+                      Expanded(
+                        child: displayedItems.isEmpty
+                            ? _buildEmptyState(allItems.isEmpty)
+                            : GridView.builder(
+                                padding: EdgeInsets.fromLTRB(
+                                  16,
+                                  12,
+                                  16,
+                                  24 + MediaQuery.paddingOf(context).bottom,
+                                ),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: _getCrossAxisCount(context),
+                                  childAspectRatio: 0.65,
+                                  crossAxisSpacing: 14,
+                                  mainAxisSpacing: 16,
+                                ),
+                                itemCount: displayedItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = displayedItems[index];
+                                  return _MyListCard(
+                                    item: item,
+                                    onTap: () => _navigateToDetail(item),
+                                    onRemove: () => _confirmRemove(item),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

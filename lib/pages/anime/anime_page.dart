@@ -24,6 +24,7 @@ import 'anime_stream_sheet.dart';
 import 'anime_search_page.dart';
 import '../anime_arabic/anime_arabic_details_page.dart';
 import '../anime_arabic/anime_arabic_stream_sheet.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class AnimePage extends StatefulWidget {
   const AnimePage({super.key});
@@ -525,14 +526,18 @@ class _AnimePageState extends State<AnimePage> {
           ),
         ];
 
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Stack(
-            fit: StackFit.expand,
-            children: [
-              RepaintBoundary(child: backgroundContent),
-              ...overlayChildren,
-            ],
+        return GuideTrigger(
+          guideKey: 'anime',
+          steps: AppGuides.anime,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                RepaintBoundary(child: backgroundContent),
+                ...overlayChildren,
+              ],
+            ),
           ),
         );
       },

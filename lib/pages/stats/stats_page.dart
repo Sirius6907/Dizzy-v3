@@ -7,6 +7,7 @@ import '../../services/home/genre_preference_service.dart';
 import '../../services/stats/watch_stats.dart';
 import '../../services/stats/wrap_copy.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 /// F5 (v1.1.9): "My Dizzy Wrap" — Spotify-Wrapped style stats page.
 /// Entry: Settings + profile avatar tap. All local data, no network.
@@ -22,53 +23,57 @@ class StatsPage extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
     final topGenres = genres.take(3).toList();
 
-    return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
-      appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+    return GuideTrigger(
+      guideKey: 'stats',
+      steps: AppGuides.stats,
+      child: Scaffold(
+        backgroundColor: DizzyVoid.voidA,
+        appBar: AppBar(
+          backgroundColor: DizzyVoid.voidB,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'My Dizzy Wrap',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+          ),
         ),
-        title: const Text(
-          'My Dizzy Wrap',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
-        ),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            children: [
-              _heroCard(palette, stats),
-              const SizedBox(height: 12),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.6,
-                children: [
-                  _statTile(palette, Icons.movie_rounded, '${stats.titlesCount}',
-                      'Titles watching'),
-                  _statTile(palette, Icons.check_circle_rounded,
-                      '${stats.episodesFinished}', 'Finished (90%+)'),
-                  _statTile(palette, Icons.local_fire_department_rounded,
-                      '${stats.currentStreakDays}d',
-                      WrapCopy.streakLine(stats.currentStreakDays)),
-                  _statTile(
-                      palette,
-                      Icons.tv_rounded,
-                      '${stats.typeCounts['series'] ?? 0} / ${stats.typeCounts['movie'] ?? 0}',
-                      'Series / Movies'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _genreCard(palette, topGenres),
-            ],
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              children: [
+                _heroCard(palette, stats),
+                const SizedBox(height: 12),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 1.6,
+                  children: [
+                    _statTile(palette, Icons.movie_rounded, '${stats.titlesCount}',
+                        'Titles watching'),
+                    _statTile(palette, Icons.check_circle_rounded,
+                        '${stats.episodesFinished}', 'Finished (90%+)'),
+                    _statTile(palette, Icons.local_fire_department_rounded,
+                        '${stats.currentStreakDays}d',
+                        WrapCopy.streakLine(stats.currentStreakDays)),
+                    _statTile(
+                        palette,
+                        Icons.tv_rounded,
+                        '${stats.typeCounts['series'] ?? 0} / ${stats.typeCounts['movie'] ?? 0}',
+                        'Series / Movies'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _genreCard(palette, topGenres),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,33 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../services/guide/guide_service.dart';
 import '../../services/theme/app_theme_service.dart';
 
-/// Phase UX4 — First-Time Guided Onboarding & Superpower Cards
-/// Interactive 3-slide carousel highlighting Dizzy's core capabilities.
+/// P7 — Onboarding 2.0: a 30-second welcome tour, shown once.
+///
+/// Five slides, one job each, Easy English only. The "seen" flag lives in
+/// [GuideService] so Settings → Help → "Show guides again" can replay it
+/// alongside the feature cards, and so the v1 flag migrates without a
+/// second re-tour.
 class OnboardingSuperpowerSheet extends StatefulWidget {
   const OnboardingSuperpowerSheet({super.key});
 
-  static const String _prefKey = 'has_seen_superpower_onboarding_v1_2';
+  static Future<bool> shouldShow() => GuideService.shouldShow(GuideService.onboardingKey);
 
-  static Future<bool> shouldShow() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return !(prefs.getBool(_prefKey) ?? false);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<void> markSeen() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_prefKey, true);
-    } catch (_) {}
-  }
+  static Future<void> markSeen() => GuideService.markSeen(GuideService.onboardingKey);
 
   static Future<void> maybeShow(BuildContext context) async {
+    if (!context.mounted) return;
+    await GuideService.migrateLegacyKeys();
     if (!context.mounted) return;
     final needShow = await shouldShow();
     if (!needShow || !context.mounted) return;
@@ -35,6 +27,8 @@ class OnboardingSuperpowerSheet extends StatefulWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (context) => const OnboardingSuperpowerSheet(),
@@ -49,33 +43,42 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<_SuperpowerSlide> _slides = const [
-    _SuperpowerSlide(
-      emoji: '🎬',
-      title: 'Everything in One Place',
-      subtitle: 'Unlimited entertainment without boundaries',
-      description:
-          'Stream top movies, trending series, seasonal anime, and Spotify-level music — all in one clean, ad-free app.',
-      badges: ['4K & HD Movies', 'Anime with AniList', '30M+ Songs'],
+  /// Five slides, five promises, thirty seconds.
+  static const List<_TourSlide> _slides = [
+    _TourSlide(
+      emoji: '🗂️',
+      title: 'Everything in one place',
+      line: 'Movies, shows, music, books and live TV.',
+      badges: ['Movies', 'Shows', 'Music', 'Books'],
       gradientColors: [Color(0xFF7C5CFF), Color(0xFF00E5FF)],
     ),
-    _SuperpowerSlide(
+    _TourSlide(
       emoji: '🎧',
-      title: 'Lossless Audio & Zero Ads',
-      subtitle: 'Studio sound quality made simple',
-      description:
-          'Enjoy Hi-Res FLAC music, offline downloads, synced karaoke lyrics, and a custom 5-band studio equalizer.',
-      badges: ['Studio FLAC', 'Karaoke Lyrics', 'Offline Downloads'],
+      title: 'Music that sounds right',
+      line: 'Studio sound, equaliser and words that sing along.',
+      badges: ['Studio sound', 'Sing along'],
       gradientColors: [Color(0xFF00E5FF), Color(0xFF10B981)],
     ),
-    _SuperpowerSlide(
-      emoji: '👥',
-      title: 'Watch & Listen Together',
-      subtitle: 'Real-time sync rooms with friends',
-      description:
-          'Create private rooms in one tap. Play movies or songs together with friends in perfect sync, anytime, anywhere.',
-      badges: ['1-Tap Room Code', 'Zero Drift Sync', 'Voice & Chat'],
+    _TourSlide(
+      emoji: '👯',
+      title: 'Watch together',
+      line: 'Share a code, friends join, everyone follows you.',
+      badges: ['One code', 'Chat and talk'],
       gradientColors: [Color(0xFFFF2A85), Color(0xFFF59E0B)],
+    ),
+    _TourSlide(
+      emoji: '✈️',
+      title: 'Works without internet',
+      line: 'Save what you like, watch it on a plane.',
+      badges: ['Save for later', 'Ready offline'],
+      gradientColors: [Color(0xFF7C3AED), Color(0xFF3B82F6)],
+    ),
+    _TourSlide(
+      emoji: '🔒',
+      title: 'Yours alone',
+      line: 'No account needed. Nothing leaves your phone.',
+      badges: ['No sign-up', 'Just for you'],
+      gradientColors: [Color(0xFF10B981), Color(0xFF7C5CFF)],
     ),
   ];
 
@@ -140,7 +143,7 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
             const Padding(
               padding: EdgeInsets.only(top: 20),
               child: Text(
-                'SUPERPOWERS',
+                'WELCOME',
                 style: TextStyle(
                   color: Colors.white38,
                   fontSize: 11,
@@ -157,8 +160,7 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
                 itemCount: _slides.length,
                 onPageChanged: (idx) => setState(() => _currentPage = idx),
                 itemBuilder: (context, index) {
-                  final slide = _slides[index];
-                  return _buildSlide(slide, theme);
+                  return _buildSlide(_slides[index]);
                 },
               ),
             ),
@@ -223,7 +225,7 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
     );
   }
 
-  Widget _buildSlide(_SuperpowerSlide slide, AppThemePalette theme) {
+  Widget _buildSlide(_TourSlide slide) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(28, 32, 28, 16),
       child: Column(
@@ -267,33 +269,21 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
-
-          // Subtitle
-          Text(
-            slide.subtitle,
-            style: TextStyle(
-              color: theme.primaryColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
           const SizedBox(height: 12),
 
-          // Description
+          // One line, one job.
           Text(
-            slide.description,
+            slide.line,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 13.5,
+              color: Colors.white.withValues(alpha: 0.75),
+              fontSize: 14.5,
               height: 1.45,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 18),
 
-          // Highlight Chips
+          // Highlight chips
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -323,19 +313,17 @@ class _OnboardingSuperpowerSheetState extends State<OnboardingSuperpowerSheet> {
   }
 }
 
-class _SuperpowerSlide {
+class _TourSlide {
   final String emoji;
   final String title;
-  final String subtitle;
-  final String description;
+  final String line;
   final List<String> badges;
   final List<Color> gradientColors;
 
-  const _SuperpowerSlide({
+  const _TourSlide({
     required this.emoji,
     required this.title,
-    required this.subtitle,
-    required this.description,
+    required this.line,
     required this.badges,
     required this.gradientColors,
   });

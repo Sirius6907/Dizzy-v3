@@ -42,8 +42,10 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     MusicDownloadService.instance.addListener(_onMusicChanged);
     _loadStorageSpace();
     // v1.2.0-T2.6: first-time Downloads guide (skipable, never nags).
+    // P7: the offline guide rides along — the queue in GuideCard stacks them.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       GuideCard.maybeShow(context, 'downloads', AppGuides.downloads);
+      GuideCard.maybeShow(context, 'offline', AppGuides.offline);
     });
   }
 

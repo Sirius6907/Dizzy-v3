@@ -20,6 +20,7 @@ import 'audiobook_detail_page.dart';
 import 'audiobook_player_screen.dart';
 import 'audiobook_route_transitions.dart';
 import 'generate_audiobook_screen.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class AudiobooksPage extends StatefulWidget {
   const AudiobooksPage({super.key});
@@ -335,370 +336,374 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
 
     final spotlightBook = _searchResults.isNotEmpty ? _searchResults.first : null;
 
-    return Scaffold(
-      backgroundColor: palette.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // ── Ambient Background Glows ──
-          if (ambientEnabled)
-            const Positioned.fill(child: AnimatedAmbientBackground())
-          else
-            Positioned.fill(
-              child: Container(color: palette.scaffoldBackgroundColor),
-            ),
-
-          // ── Main Content Scroll ──
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // Top Header Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    isMobile ? 16 : 24,
-                    topInset + 12,
-                    isMobile ? 16 : 24,
-                    12,
-                  ),
-                  child: Row(
-                    children: [
-                      // Back Button
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                            ),
-                            child: IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Glowing Headphones Icon
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [palette.primaryColor, palette.accentColor],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: palette.primaryColor.withValues(alpha: 0.5),
-                              blurRadius: 16,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.headphones_rounded, color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 14),
-
-                      // Title
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Audiobook Hub',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            Text(
-                              'Explore, stream & listen to thousands of stories',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: 12,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // AI Generator & Studio Button
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  palette.primaryColor.withValues(alpha: 0.25),
-                                  const Color(0xFF7C5CFF).withValues(alpha: 0.25),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: palette.primaryColor.withValues(alpha: 0.35)),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
-                              tooltip: 'Audiobook Generator & Studio',
-                              onPressed: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
-                                );
-                                _loadContinueListening();
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Quick Customize Button
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.tune_rounded, color: Colors.white70, size: 20),
-                              tooltip: 'Audiobook Customizer',
-                              onPressed: () => _showAudiobookCustomizer(context),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    return GuideTrigger(
+      guideKey: 'audiobooks',
+      steps: AppGuides.audiobooks,
+      child: Scaffold(
+        backgroundColor: palette.scaffoldBackgroundColor,
+        body: Stack(
+          children: [
+            // ── Ambient Background Glows ──
+            if (ambientEnabled)
+              const Positioned.fill(child: AnimatedAmbientBackground())
+            else
+              Positioned.fill(
+                child: Container(color: palette.scaffoldBackgroundColor),
               ),
 
-              // Search Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 6),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: DizzyVoid.surface1.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: _searchController.text.isNotEmpty ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          style: const TextStyle(color: Colors.white, fontSize: 15),
-                          textInputAction: TextInputAction.search,
-                          onChanged: _onSearchChanged,
-                          onSubmitted: _performSearch,
-                          decoration: InputDecoration(
-                            hintText: 'Search audiobooks by title, author, or genre...',
-                            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14),
-                            prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 18),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() {});
-                                    },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                          ),
-                        ),
-                      ),
+            // ── Main Content Scroll ──
+            CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Top Header Bar
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      topInset + 12,
+                      isMobile ? 16 : 24,
+                      12,
                     ),
-                  ),
-                ),
-              ),
-
-              // Genre / Category Filter Pills
-              if (showCategoryPills)
-                SliverToBoxAdapter(
-                  child: Container(
-                    height: 48,
-                    margin: const EdgeInsets.only(top: 8, bottom: 6),
-                    child: ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: _categories.length,
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = cat == _selectedCategory;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(cat),
-                            selected: isSelected,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: DizzyVoid.surface1.withValues(alpha: 0.8),
-                            labelStyle: TextStyle(
-                              color: isSelected ? palette.primaryColor : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                            side: BorderSide(
-                              color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
-                            ),
-                            onSelected: (selected) {
-                              if (selected) _selectCategory(cat);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-              // Hero Spotlight Carousel (Home-style Featured Card)
-              if (showSpotlight && spotlightBook != null && !_isSearching)
-                SliverToBoxAdapter(
-                  child: _buildHeroSpotlight(spotlightBook, isMobile, palette),
-                ),
-
-              // Continue Listening Section (If available)
-              if (showContinue && _continueListeningList.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: _buildContinueListeningSection(palette),
-                ),
-
-              // Generated & Personal Audiobooks Studio Shelf
-              if (!_isSearching)
-                SliverToBoxAdapter(
-                  child: _buildGeneratedAndUploadedSection(palette),
-                ),
-
-              // Discovery Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    isMobile ? 16 : 24,
-                    16,
-                    isMobile ? 16 : 24,
-                    8,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        _searchController.text.isNotEmpty ? 'Search Results' : 'Featured Audiobooks',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: palette.primaryColor.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${_searchResults.length} TITLES',
-                          style: TextStyle(color: palette.primaryColor, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Search Status / Loading / Grid
-              if (_isSearching)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Row(
                       children: [
-                        CircularProgressIndicator(color: palette.primaryColor),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Scraping high-quality audiobook sources...',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        // Back Button
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                              ),
+                              child: IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // Glowing Headphones Icon
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [palette.primaryColor, palette.accentColor],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: palette.primaryColor.withValues(alpha: 0.5),
+                                blurRadius: 16,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.headphones_rounded, color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // Title
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Audiobook Hub',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.4,
+                                ),
+                              ),
+                              Text(
+                                'Explore, stream & listen to thousands of stories',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // AI Generator & Studio Button
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    palette.primaryColor.withValues(alpha: 0.25),
+                                    const Color(0xFF7C5CFF).withValues(alpha: 0.25),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: palette.primaryColor.withValues(alpha: 0.35)),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
+                                tooltip: 'Audiobook Generator & Studio',
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
+                                  );
+                                  _loadContinueListening();
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Quick Customize Button
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.tune_rounded, color: Colors.white70, size: 20),
+                                tooltip: 'Audiobook Customizer',
+                                onPressed: () => _showAudiobookCustomizer(context),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                )
-              else if (_errorMessage != null)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 15),
-                    ),
-                  ),
-                )
-              else if (_searchResults.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Text(
-                      'No audiobooks found. Try another search query.',
-                      style: TextStyle(color: Colors.white54, fontSize: 16),
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    isMobile ? 16 : 24,
-                    8,
-                    isMobile ? 16 : 24,
-                    32 + bottomInset,
-                  ),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: (isMobile ? 150 : 180) * cardDensity.scale,
-                      childAspectRatio: 0.60,
-                      crossAxisSpacing: isMobile ? 12 : 16,
-                      mainAxisSpacing: isMobile ? 12 : 16,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final book = _searchResults[index];
-                        final heroTag = 'audiobook-cover-$index-${book.uuid.isNotEmpty ? book.uuid : book.title}';
-                        return _AudiobookCard(
-                          key: ValueKey('book-$index-${book.uuid}'),
-                          book: book,
-                          heroTag: heroTag,
-                          palette: palette,
-                          onReturn: _loadContinueListening,
-                        );
-                      },
-                      childCount: _searchResults.length,
+                ),
+
+                // Search Bar
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 6),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: DizzyVoid.surface1.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: _searchController.text.isNotEmpty ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            style: const TextStyle(color: Colors.white, fontSize: 15),
+                            textInputAction: TextInputAction.search,
+                            onChanged: _onSearchChanged,
+                            onSubmitted: _performSearch,
+                            decoration: InputDecoration(
+                              hintText: 'Search audiobooks by title, author, or genre...',
+                              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14),
+                              prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 18),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() {});
+                                      },
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-            ],
-          ),
-        ],
+
+                // Genre / Category Filter Pills
+                if (showCategoryPills)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      height: 48,
+                      margin: const EdgeInsets.only(top: 8, bottom: 6),
+                      child: ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _categories.length,
+                        itemBuilder: (context, index) {
+                          final cat = _categories[index];
+                          final isSelected = cat == _selectedCategory;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(cat),
+                              selected: isSelected,
+                              selectedColor: palette.primaryColor.withValues(alpha: 0.25),
+                              backgroundColor: DizzyVoid.surface1.withValues(alpha: 0.8),
+                              labelStyle: TextStyle(
+                                color: isSelected ? palette.primaryColor : Colors.white70,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                              side: BorderSide(
+                                color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                              ),
+                              onSelected: (selected) {
+                                if (selected) _selectCategory(cat);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                // Hero Spotlight Carousel (Home-style Featured Card)
+                if (showSpotlight && spotlightBook != null && !_isSearching)
+                  SliverToBoxAdapter(
+                    child: _buildHeroSpotlight(spotlightBook, isMobile, palette),
+                  ),
+
+                // Continue Listening Section (If available)
+                if (showContinue && _continueListeningList.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _buildContinueListeningSection(palette),
+                  ),
+
+                // Generated & Personal Audiobooks Studio Shelf
+                if (!_isSearching)
+                  SliverToBoxAdapter(
+                    child: _buildGeneratedAndUploadedSection(palette),
+                  ),
+
+                // Discovery Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      16,
+                      isMobile ? 16 : 24,
+                      8,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _searchController.text.isNotEmpty ? 'Search Results' : 'Featured Audiobooks',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: palette.primaryColor.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${_searchResults.length} TITLES',
+                            style: TextStyle(color: palette.primaryColor, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Search Status / Loading / Grid
+                if (_isSearching)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: palette.primaryColor),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Scraping high-quality audiobook sources...',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_errorMessage != null)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.redAccent, fontSize: 15),
+                      ),
+                    ),
+                  )
+                else if (_searchResults.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text(
+                        'No audiobooks found. Try another search query.',
+                        style: TextStyle(color: Colors.white54, fontSize: 16),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      8,
+                      isMobile ? 16 : 24,
+                      32 + bottomInset,
+                    ),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: (isMobile ? 150 : 180) * cardDensity.scale,
+                        childAspectRatio: 0.60,
+                        crossAxisSpacing: isMobile ? 12 : 16,
+                        mainAxisSpacing: isMobile ? 12 : 16,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final book = _searchResults[index];
+                          final heroTag = 'audiobook-cover-$index-${book.uuid.isNotEmpty ? book.uuid : book.title}';
+                          return _AudiobookCard(
+                            key: ValueKey('book-$index-${book.uuid}'),
+                            book: book,
+                            heroTag: heroTag,
+                            palette: palette,
+                            onReturn: _loadContinueListening,
+                          );
+                        },
+                        childCount: _searchResults.length,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

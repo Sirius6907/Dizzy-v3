@@ -19,6 +19,7 @@ import 'iptv_channel_sheet.dart';
 import 'iptv_player_page.dart';
 import 'iptv_portals_modal.dart';
 import 'iptv_search_page.dart';
+import '../../widgets/guide/guide_trigger.dart';
 
 class IptvPage extends StatefulWidget {
   const IptvPage({super.key});
@@ -293,34 +294,38 @@ class _IptvPageState extends State<IptvPage> {
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: palette.scaffoldBackgroundColor,
-      body: ValueListenableBuilder<bool>(
-        valueListenable: GlassSettings.enabled,
-        builder: (context, enabled, _) {
-          final overlays = Stack(children: overlayChildren);
-          if (enabled) {
-            return LiquidGlassView(
-              realTimeCapture: true,
-              useSync: true,
-              pixelRatio: 0.85,
-              refreshRate: LiquidGlassRefreshRate.deviceRefreshRate,
-              regionCapture: true,
-              backgroundWidget: backgroundContent,
-              child: overlays,
-            );
-          }
+    return GuideTrigger(
+      guideKey: 'iptv',
+      steps: AppGuides.iptv,
+      child: Scaffold(
+        backgroundColor: palette.scaffoldBackgroundColor,
+        body: ValueListenableBuilder<bool>(
+          valueListenable: GlassSettings.enabled,
+          builder: (context, enabled, _) {
+            final overlays = Stack(children: overlayChildren);
+            if (enabled) {
+              return LiquidGlassView(
+                realTimeCapture: true,
+                useSync: true,
+                pixelRatio: 0.85,
+                refreshRate: LiquidGlassRefreshRate.deviceRefreshRate,
+                regionCapture: true,
+                backgroundWidget: backgroundContent,
+                child: overlays,
+              );
+            }
 
-          return Container(
-            color: palette.scaffoldBackgroundColor,
-            child: Stack(
-              children: [
-                RepaintBoundary(child: backgroundContent),
-                ...overlayChildren,
-              ],
-            ),
-          );
-        },
+            return Container(
+              color: palette.scaffoldBackgroundColor,
+              child: Stack(
+                children: [
+                  RepaintBoundary(child: backgroundContent),
+                  ...overlayChildren,
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
