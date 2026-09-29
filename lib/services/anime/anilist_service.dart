@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../../models/anime/anime_media.dart';
+import '../net/dizzy_net.dart';
+import '../net/retry_policy.dart';
 
 class AnilistService {
   static final AnilistService instance = AnilistService._internal();
@@ -50,7 +51,12 @@ class AnilistService {
     }
 
     try {
-      final res = await http.post(
+      // P3: GraphQL-over-POST is safe to retry — it is a read wearing
+      // a POST costume (AniList's own SDKs cache on it). The old
+      // `.timeout(15s)` threw, and because every caller here awaits the
+      // result with no retry, a single slow response left the whole
+      // anime tab permanently empty with nothing logged.
+      final res = await DizzyNet.instance.post(
         Uri.parse(_endpoint),
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +70,11 @@ class AnilistService {
           'query': query,
           'variables': variables,
         }),
-      ).timeout(const Duration(seconds: 15));
+        timeout: const Duration(seconds: 15),
+        policy: RetryPolicy.quick,
+        screen: 'anime',
+        code: 'anilist_query',
+      );
 
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body) as Map<String, dynamic>;
