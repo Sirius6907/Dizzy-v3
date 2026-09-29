@@ -201,8 +201,10 @@ canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
       <div class="card"><h3>⚙️ Remote config <span class="sub">app reads on startup — changes go live in ~1h (client cache)</span></h3>
         <label class="fl">min_app_version — below this the app shows force-update banner</label>
         <div style="display:flex;gap:8px"><input type="text" id="cfgMinVer" style="max-width:160px"><button class="btn btn-sm" style="width:auto" onclick="saveCfg('min_app_version',document.getElementById('cfgMinVer').value)">Save</button></div>
+        <label class="fl">Feature Flag Quick Toggles</label>
+        <div id="featureToggles" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <label class="fl">features (JSON) — e.g. {"watch_party": true, "voice": true}</label>
-        <textarea id="cfgFeatures" rows="4" class="mono"></textarea>
+        <textarea id="cfgFeatures" rows="4" class="mono" oninput="onFeaturesJsonEdited()"></textarea>
         <div class="rowbtns"><button class="ok" onclick="saveCfg('features',document.getElementById('cfgFeatures').value)">💾 Save features</button></div>
         <label class="fl">notice (JSON) — e.g. {"text": "…", "until": "2026-10-01"}</label>
         <textarea id="cfgNotice" rows="3" class="mono"></textarea>
@@ -222,10 +224,19 @@ canvas.chart{width:100%;height:220px;background:var(--card2);border-radius:12px}
       <div class="card"><h3>🐞 Device logs <span class="sub">enum codes only — no titles, no URLs, no stack traces</span>
         <span style="float:right"><label class="mut" style="font-weight:400"><input type="checkbox" id="dlLive" onchange="toggleDeviceLogsLive()" style="width:auto;accent-color:#10b981"> live</label>
         <button class="btn btn-sm btn-ghost" onclick="loadDeviceLogs()">↻ Refresh</button></span></h3>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
           <input type="text" id="dlDevice" placeholder="Filter by device code — DIZ-1234567 or 1234567" onkeydown="if(event.key==='Enter')loadDeviceLogs()">
           <button class="btn btn-sm" style="width:auto" onclick="loadDeviceLogs()">Filter</button>
           <button class="btn btn-sm btn-ghost" style="width:auto" onclick="clearDeviceLogFilter()">Clear</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          <span class="mut" style="font-size:12px;align-self:center">Filter category:</span>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('')">All</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_NET_')">Network (E_NET_*)</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_HTTP_')">HTTP (E_HTTP_*)</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_DEBRID_')">Debrid</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_SPACE_')">Storage</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="setDeviceErrorCodeFilter('E_P2P_')">P2P</button>
         </div>
         <div class="mut" id="dlSummary" style="margin-bottom:8px"></div>
         <div style="overflow-x:auto"><table id="dlTbl"><thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th>Hits</th><th>Platform</th><th>Ver</th><th>Last seen</th></tr></thead><tbody></tbody></table></div>

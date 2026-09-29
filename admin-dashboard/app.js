@@ -339,6 +339,50 @@ async function delAnn(id) {
 }
 
 // ── config ──
+const KNOWN_FEATURE_FLAGS = [
+  { key: 'watch_party', label: 'Watch Together Cinema' },
+  { key: 'voice', label: 'Voice Audio Chat' },
+  { key: 'lossless_audio', label: 'Lossless FLAC Studio' },
+  { key: 'offline_downloads', label: 'Smart Offline Hub' },
+  { key: 'discover_daily', label: 'Discover Daily Rails' },
+  { key: 'scraper_quarantine', label: 'Auto Quarantine Scrapers' },
+  { key: 'new_episode_alerts', label: 'New Episode Alerts' },
+  { key: 'yearly_wrap', label: 'Yearly Wrapped' },
+];
+
+function renderFeatureToggles(featuresObj) {
+  const container = $('featureToggles');
+  if (!container) return;
+  const flags = { ...(featuresObj || {}) };
+  const allKeys = Array.from(new Set([...KNOWN_FEATURE_FLAGS.map((f) => f.key), ...Object.keys(flags)]));
+  container.innerHTML = allKeys.map((k) => {
+    const isKnown = KNOWN_FEATURE_FLAGS.find((f) => f.key === k);
+    const label = isKnown ? isKnown.label : k;
+    const active = Boolean(flags[k]);
+    return `<button type="button" class="btn btn-sm ${active ? 'ok' : 'btn-ghost'}" onclick="toggleFeatureFlag('${esc(k)}')">
+      ${active ? '✅' : '⚪'} ${esc(label)} <span class="mono mut" style="font-size:11px">(${esc(k)})</span>
+    </button>`;
+  }).join('');
+}
+
+function onFeaturesJsonEdited() {
+  try {
+    const parsed = JSON.parse($('cfgFeatures').value || '{}');
+    renderFeatureToggles(parsed);
+  } catch (_) {}
+}
+
+async function toggleFeatureFlag(key) {
+  try {
+    let current = {};
+    try { current = JSON.parse($('cfgFeatures').value || '{}'); } catch (_) {}
+    current[key] = !Boolean(current[key]);
+    $('cfgFeatures').value = JSON.stringify(current, null, 2);
+    renderFeatureToggles(current);
+    await saveCfg('features', JSON.stringify(current));
+  } catch (e) { toast('Toggle failed: ' + e.message); }
+}
+
 async function loadCfg() {
   try {
     const { data } = await sb.from('remote_config').select('key,value');
@@ -346,6 +390,9 @@ async function loadCfg() {
     $('cfgMinVer').value = m.min_app_version || '';
     $('cfgFeatures').value = pretty(m.features);
     $('cfgNotice').value = pretty(m.notice);
+    let feat = {};
+    try { feat = JSON.parse(m.features || '{}'); } catch (_) {}
+    renderFeatureToggles(feat);
   } catch (e) { toast('Config failed: ' + e.message); }
 }
 function pretty(v) {
@@ -397,6 +444,7 @@ async function loadAudit() {
 // readable by the anon key used by sb.
 const DEVICE_LOG_LIMIT = 100;
 let _dlTimer = null;
+let _dlCodePrefix = '';
 
 function deviceCodeFilter() {
   const raw = String(document.getElementById('dlDevice')?.value || '').trim();
@@ -405,6 +453,11 @@ function deviceCodeFilter() {
 function clearDeviceLogFilter() {
   const box = document.getElementById('dlDevice');
   if (box) box.value = '';
+  _dlCodePrefix = '';
+  loadDeviceLogs();
+}
+function setDeviceErrorCodeFilter(prefix) {
+  _dlCodePrefix = prefix;
   loadDeviceLogs();
 }
 function toggleDeviceLogsLive() {
@@ -424,12 +477,17 @@ async function loadDeviceLogs() {
       .order('last_at', { ascending: false })
       .limit(DEVICE_LOG_LIMIT);
     if (filter) q = q.eq('device_code', filter);
+    if (_dlCodePrefix) q = q.like('code', `${_dlCodePrefix}%`);
     const { data, error } = await q;
     if (error) throw error;
     const rows = data || [];
+    const filterDesc = [
+      filter ? `device DIZ-${filter}` : '',
+      _dlCodePrefix ? `code ${_dlCodePrefix}*` : '',
+    ].filter(Boolean).join(', ');
     $('dlSummary').textContent = rows.length
-      ? `${rows.length} of the last ${DEVICE_LOG_LIMIT} · ${rows.reduce((n, r) => n + (r.count || 0), 0)} hits`
-      : (filter ? `No logs for device ${esc(filter)}.` : 'No error reports yet.');
+      ? `${rows.length} of the last ${DEVICE_LOG_LIMIT} · ${rows.reduce((n, r) => n + (r.count || 0), 0)} hits${filterDesc ? ` (${filterDesc})` : ''}`
+      : (filterDesc ? `No logs matching ${esc(filterDesc)}.` : 'No error reports yet.');
     document.querySelector('#dlTbl tbody').innerHTML = rows.map((r) =>
       `<tr>
         <td class="mono">${r.device_code === 'unknown' ? 'unknown' : esc('DIZ-' + r.device_code)}</td>
