@@ -45,6 +45,11 @@ abstract final class PerformanceMode {
   static final ValueNotifier<bool> lowEndDeviceMode =
       ValueNotifier<bool>(false);
 
+  /// P33: Target frame rate (60, 90, or 120 FPS).
+  /// Set by ResourceGovernor based on device tier and resource level.
+  static final ValueNotifier<int> targetFrameRate =
+      ValueNotifier<int>(120);
+
   /// True on phones with ≤3GB total RAM (set once at startup from
   /// DeviceInfo / /proc/meminfo; defaults to false on unknown).
   static bool isLowRamDevice = false;
@@ -53,14 +58,18 @@ abstract final class PerformanceMode {
   static void detectDeviceTier({required bool isMobile, int? totalRamMb}) {
     if (!isMobile) {
       deviceTier.value = DeviceTier.flagship;
+      targetFrameRate.value = 120;
       return;
     }
     if ((totalRamMb != null && totalRamMb <= 3072) || isLowRamDevice) {
       deviceTier.value = DeviceTier.budget;
+      targetFrameRate.value = 60;
     } else if (totalRamMb != null && totalRamMb <= 6144) {
       deviceTier.value = DeviceTier.midTier;
+      targetFrameRate.value = 90;
     } else {
       deviceTier.value = DeviceTier.flagship;
+      targetFrameRate.value = 120;
     }
   }
 
@@ -74,7 +83,6 @@ abstract final class PerformanceMode {
         glassAllowed.value = !forceOff;
         break;
       case PerfLevel.caution:
-        // Freeze ambient (static gradient frame stays), glass → fallback.
         ambientAllowed.value = false;
         glassAllowed.value = !forceOff;
         break;
@@ -83,6 +91,7 @@ abstract final class PerformanceMode {
         glassAllowed.value = false;
         break;
     }
+    _applyFrameRateGovernance();
   }
 
   /// Called once when Smooth Mode toggles — re-applies current level.
@@ -105,6 +114,33 @@ abstract final class PerformanceMode {
     applyLevel(level.value);
   }
 
+  /// P33: Override target frame rate (60, 90, 120).
+  static void setTargetFrameRate(int fps) {
+    final clamped = [60, 90, 120].contains(fps) ? fps : 60;
+    targetFrameRate.value = clamped;
+  }
+
+  /// P33: Internal frame-rate governance — adjusts target FPS based on
+  /// device tier, Smooth Mode, and resource level.
+  static void _applyFrameRateGovernance() {
+    final tier = deviceTier.value;
+    final lowEnd = lowEndDeviceMode.value;
+    final smooth = smoothMode.value;
+    final lvl = level.value;
+
+    if (lowEnd) {
+      targetFrameRate.value = 60;
+    } else if (tier == DeviceTier.budget) {
+      targetFrameRate.value = 60;
+    } else if (lvl == PerfLevel.critical || smooth) {
+      targetFrameRate.value = 60;
+    } else if (lvl == PerfLevel.caution || tier == DeviceTier.midTier) {
+      targetFrameRate.value = 90;
+    } else {
+      targetFrameRate.value = 120;
+    }
+  }
+
   @visibleForTesting
   static void resetForTest() {
     level.value = PerfLevel.normal;
@@ -113,6 +149,7 @@ abstract final class PerformanceMode {
     smoothMode.value = false;
     lowEndDeviceMode.value = false;
     deviceTier.value = DeviceTier.flagship;
+    targetFrameRate.value = 120;
     isLowRamDevice = false;
   }
 }
