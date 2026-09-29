@@ -409,7 +409,7 @@ void main() {
     });
 
     test('a guest already in the room is not re-announced', () {
-      final m = WatchSyncMessage(
+      const m = WatchSyncMessage(
         version: 2,
         mediaRef: 'imdb:tt1',
         positionMs: 0,

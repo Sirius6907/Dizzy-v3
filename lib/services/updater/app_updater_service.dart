@@ -3,6 +3,7 @@ import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,31 @@ class AppUpdaterService {
   static const String githubApiUrl =
       'https://api.github.com/repos/$githubRepo/releases/latest';
   static const String _keyDismissedVersion = 'dismissed_update_version';
+
+  /// Channel to read THIS install's own signing-cert fingerprint (MainActivity).
+  static const MethodChannel _signingChannel =
+      MethodChannel('com.sirius6907.dizzyv3/signing');
+
+  /// Release-key fingerprint (CN=Sirius) — every release since v1.1.7.
+  static const String releaseCertSha256 =
+      'c513faef1906c5d67f01f7ff27946d52fe727773e72324e294c58de5711a1974';
+
+  /// Debug-key fingerprint of the machine that built v1.1.3/v1.1.4.
+  /// Installs from those releases must fetch legacy-signed assets to stay
+  /// updatable IN PLACE (Android rejects updates signed with another key).
+  static const String legacyCertSha256 =
+      '5e70235900d8a44c350bae08d8949e6491f3724e572d3c9b021a85376ccf1548';
+
+  /// SHA-256 of this install's signing cert, or null when unavailable
+  /// (non-Android platforms, channel errors).
+  static Future<String?> installedCertSha256() async {
+    try {
+      return await _signingChannel.invokeMethod<String>('getCertSha256');
+    } catch (e) {
+      debugPrint('[AppUpdaterService] cert lookup failed: $e');
+      return null;
+    }
+  }
 
   static Future<void> dismissVersion(String version) async {
     try {
@@ -69,12 +95,46 @@ class AppUpdaterService {
           }
 
           final assets = data['assets'] as List;
-          final downloadUrl = _findAssetForPlatform(assets);
+
+          // In-place update channel: read this install's own signing cert so
+          // debug-key installs (v1.1.3/v1.1.4) fetch legacy-signed assets —
+          // Android only accepts updates signed with the SAME key, so serving
+          // the matching variant is what lets every old install keep updating.
+          String? cert;
+          if (!kIsWeb && Platform.isAndroid) {
+            cert = await installedCertSha256();
+          }
+          final legacyChannel = cert == legacyCertSha256;
+          if (legacyChannel) {
+            debugPrint('[AppUpdaterService] Legacy-signed install ($cert) — using legacy asset channel.');
+          }
+
+          final downloadUrl = _findAssetForPlatform(
+            assets,
+            legacyChannel: legacyChannel,
+          );
+
+          // sha256 of the chosen asset (GitHub asset "digest") — handed to
+          // OtaUpdate so a truncated/corrupt download is caught BEFORE the
+          // Android installer ever sees the file.
+          String? sha256;
+          if (downloadUrl != null) {
+            for (final a in assets) {
+              if (a['browser_download_url'] == downloadUrl) {
+                final digest = a['digest'];
+                if (digest is String && digest.startsWith('sha256:')) {
+                  sha256 = digest.substring('sha256:'.length);
+                }
+                break;
+              }
+            }
+          }
 
           return UpdateInfo(
             currentVersion: currentVersion,
             latestVersion: latestVersion,
             downloadUrl: downloadUrl ?? data['html_url'],
+            sha256: sha256,
             releaseNotes: releaseNotes,
             publishedAt: publishedAt,
             isMacOS: kIsWeb ? false : Platform.isMacOS,
@@ -90,7 +150,7 @@ class AppUpdaterService {
   }
 
   /// Detects the current CPU architecture and finds the matching release asset.
-  String? _findAssetForPlatform(List assets) {
+  String? _findAssetForPlatform(List assets, {bool legacyChannel = false}) {
     if (kIsWeb) return null;
 
     Abi? abi;
@@ -102,7 +162,7 @@ class AppUpdaterService {
     }
 
     if (Platform.isAndroid) {
-      return _findAndroidAsset(assets, abi);
+      return _findAndroidAsset(assets, abi, legacyChannel: legacyChannel);
     } else if (Platform.isWindows) {
       return _findWindowsAsset(assets, abi);
     } else if (Platform.isLinux) {
@@ -113,14 +173,74 @@ class AppUpdaterService {
     return null;
   }
 
-  /// Android: match arm64-v8a, armeabi-v7a, x86_64, or fall back to universal
-  String? _findAndroidAsset(List assets, Abi? abi) {
-    final apks = assets
-        .where((a) => (a['name'] as String).toLowerCase().endsWith('.apk'))
+  /// Picks the Android release asset matching [archKeywords].
+  ///
+  /// [legacyChannel]=true keeps ONLY `legacy`-named assets (installs whose own
+  /// cert is the pre-v1.1.7 debug key), falling back to normal assets while a
+  /// release has no legacy variant yet. The normal channel EXCLUDES legacy
+  /// assets so release-key installs never fetch them. Static for testability.
+  static Map<dynamic, dynamic>? pickAndroidAsset(
+    List<dynamic> assets, {
+    required List<String> archKeywords,
+    required bool legacyChannel,
+  }) {
+    var apks = assets
+        .where((a) => ((a['name'] as String?) ?? '').toLowerCase().endsWith('.apk'))
         .toList();
+
+    if (legacyChannel) {
+      final legacy = apks
+          .where((a) => (a['name'] as String).toLowerCase().contains('legacy'))
+          .toList();
+      if (legacy.isNotEmpty) {
+        apks = legacy;
+      } else {
+        debugPrint('[AppUpdaterService] No legacy assets in this release yet — falling back to normal channel.');
+      }
+    } else {
+      apks = apks
+          .where((a) => !(a['name'] as String).toLowerCase().contains('legacy'))
+          .toList();
+    }
 
     if (apks.isEmpty) return null;
 
+    // 1. Try exact architecture match
+    for (final keyword in archKeywords) {
+      final match = apks
+          .where((a) => (a['name'] as String).toLowerCase().contains(keyword))
+          .firstOrNull;
+      if (match != null) {
+        debugPrint('Matched APK ($keyword): ${match['name']}');
+        return match;
+      }
+    }
+
+    // 2. Fall back to a "universal" APK if available
+    final universal = apks
+        .where((a) => (a['name'] as String).toLowerCase().contains('universal'))
+        .firstOrNull;
+    if (universal != null) {
+      debugPrint('Falling back to universal APK: ${universal['name']}');
+      return universal;
+    }
+
+    // 3. Fall back to standard release APK name
+    final standardRelease = apks
+        .where((a) => (a['name'] as String).toLowerCase().contains('release'))
+        .firstOrNull;
+    if (standardRelease != null) {
+      debugPrint('Using standard release APK: ${standardRelease['name']}');
+      return standardRelease;
+    }
+
+    // 4. Last resort: first available APK
+    debugPrint('Using first available APK: ${apks.first['name']}');
+    return apks.first;
+  }
+
+  /// Android: match arm64-v8a, armeabi-v7a, x86_64, or fall back to universal
+  String? _findAndroidAsset(List assets, Abi? abi, {bool legacyChannel = false}) {
     // Determine architecture keywords to search for
     List<String> archKeywords = [];
     if (abi == Abi.androidArm64) {
@@ -136,38 +256,12 @@ class AppUpdaterService {
       archKeywords = ['arm64-v8a', 'arm64', 'v8a'];
     }
 
-    // 1. Try exact architecture match
-    for (final keyword in archKeywords) {
-      final match = apks
-          .where((a) => (a['name'] as String).toLowerCase().contains(keyword))
-          .firstOrNull;
-      if (match != null) {
-        debugPrint('Matched specific APK for $abi ($keyword): ${match['name']}');
-        return match['browser_download_url'];
-      }
-    }
-
-    // 2. Fall back to a "universal" APK if available
-    final universal = apks
-        .where((a) => (a['name'] as String).toLowerCase().contains('universal'))
-        .firstOrNull;
-    if (universal != null) {
-      debugPrint('Falling back to universal APK: ${universal['name']}');
-      return universal['browser_download_url'];
-    }
-
-    // 3. Fall back to standard release APK name
-    final standardRelease = apks
-        .where((a) => (a['name'] as String).toLowerCase().contains('release'))
-        .firstOrNull;
-    if (standardRelease != null) {
-      debugPrint('Using standard release APK: ${standardRelease['name']}');
-      return standardRelease['browser_download_url'];
-    }
-
-    // 4. Last resort: first available APK
-    debugPrint('Using first available APK: ${apks.first['name']}');
-    return apks.first['browser_download_url'];
+    final match = pickAndroidAsset(
+      assets,
+      archKeywords: archKeywords,
+      legacyChannel: legacyChannel,
+    );
+    return match?['browser_download_url'];
   }
 
   /// Windows: match x64 or arm64 installer (.exe prioritized over .zip)
@@ -217,7 +311,7 @@ class AppUpdaterService {
     return windowsAssets.first['browser_download_url'];
   }
 
-  /// Linux: match x64 or arm64 AppImage/deb
+  /// Linux: match arm64 or x64 AppImage/deb
   String? _findLinuxAsset(List assets, Abi? abi) {
     final linuxAssets = assets.where((a) {
       final name = (a['name'] as String).toLowerCase();
@@ -237,9 +331,8 @@ class AppUpdaterService {
     if (abi == Abi.linuxArm64) {
       archKeywords = ['arm64', 'aarch64'];
     } else {
-      archKeywords = ['x86_64', 'x64', 'amd64'];
+      archKeywords = ['x64', 'x86_64', 'amd64'];
     }
-
     for (final keyword in archKeywords) {
       final match = linuxAssets
           .where((a) => (a['name'] as String).toLowerCase().contains(keyword))
@@ -267,7 +360,6 @@ class AppUpdaterService {
     // Strip any suffix like "-test" or "-beta" for comparison
     final currentClean = current.split('-').first;
     final latestClean = latest.split('-').first;
-
     final currentParts = currentClean
         .split('.')
         .map((p) => int.tryParse(p) ?? 0)
@@ -299,6 +391,10 @@ class UpdateInfo {
   final String currentVersion;
   final String latestVersion;
   final String downloadUrl;
+
+  /// sha256 of the chosen asset (GitHub asset digest), verified by the OTA
+  /// plugin before install. Null when the release provides no digest.
+  final String? sha256;
   final String releaseNotes;
   final DateTime publishedAt;
   final bool isMacOS;
@@ -308,6 +404,7 @@ class UpdateInfo {
     required this.currentVersion,
     required this.latestVersion,
     required this.downloadUrl,
+    this.sha256,
     required this.releaseNotes,
     required this.publishedAt,
     required this.isMacOS,

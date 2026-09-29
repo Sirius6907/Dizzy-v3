@@ -2,12 +2,14 @@ package com.sirius6907.dizzyv3
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.PowerManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.security.MessageDigest
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.playtorrio/power"
@@ -88,6 +90,36 @@ class MainActivity : FlutterActivity() {
                         }
                     } catch (e: Exception) {
                         result.error("SHARE_ERROR", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Signing-cert channel: the updater reads this install's own cert fingerprint
+        // and picks the matching GitHub asset (release-key vs legacy-key), so every
+        // old install can update IN PLACE — no uninstall ever needed.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/signing").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getCertSha256" -> {
+                    try {
+                        val pm = applicationContext.packageManager
+                        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            pm.getPackageInfo(applicationContext.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                                .signingInfo?.apkContentsSigners
+                        } else {
+                            @Suppress("DEPRECATION")
+                            pm.getPackageInfo(applicationContext.packageName, PackageManager.GET_SIGNATURES).signatures
+                        }
+                        val sig = signatures?.firstOrNull()
+                        if (sig == null) {
+                            result.success(null)
+                        } else {
+                            val digest = MessageDigest.getInstance("SHA-256").digest(sig.toByteArray())
+                            result.success(digest.joinToString("") { "%02x".format(it) })
+                        }
+                    } catch (e: Exception) {
+                        result.error("SIGN_ERROR", e.message, null)
                     }
                 }
                 else -> result.notImplemented()

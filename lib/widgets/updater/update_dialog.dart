@@ -402,6 +402,18 @@ class _UpdateDialogState extends State<UpdateDialog> {
     }
   }
 
+  /// Shared failure path for the Android OTA flow: clear state, release the
+  /// wakelock, tell the user in Easy English (no tech words), close the dialog.
+  void _failUpdate(String message) {
+    if (!mounted) return;
+    setState(() => _isDownloading = false);
+    WakelockPlus.disable();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+    Navigator.of(context).pop();
+  }
+
   Future<void> _downloadAndInstallAndroid() async {
     WakelockPlus.enable();
     setState(() {
@@ -415,6 +427,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
             widget.updateInfo.downloadUrl,
             destinationFilename:
                 'Dizzy_${widget.updateInfo.latestVersion}.apk',
+            // GitHub asset digest — plugin aborts with CHECKSUM_ERROR on a
+            // truncated/corrupt download instead of launching the installer.
+            sha256checksum: widget.updateInfo.sha256,
           )
           .listen(
             (OtaEvent event) {
@@ -447,18 +462,24 @@ class _UpdateDialogState extends State<UpdateDialog> {
                       Navigator.of(context).pop();
                       break;
                     case OtaStatus.ALREADY_RUNNING_ERROR:
-                    case OtaStatus.INTERNAL_ERROR:
-                    case OtaStatus.DOWNLOAD_ERROR:
-                    case OtaStatus.CHECKSUM_ERROR:
-                      _isDownloading = false;
-                      WakelockPlus.disable();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Update failed: ${event.status}'),
-                          backgroundColor: Colors.redAccent,
-                        ),
+                      _failUpdate(
+                        'Another update is already running. Please wait a moment and try again.',
                       );
-                      Navigator.of(context).pop();
+                      break;
+                    case OtaStatus.INTERNAL_ERROR:
+                      _failUpdate(
+                        'Something went wrong while updating. Please try again.',
+                      );
+                      break;
+                    case OtaStatus.DOWNLOAD_ERROR:
+                      _failUpdate(
+                        'Download failed. Please check your internet connection and try again.',
+                      );
+                      break;
+                    case OtaStatus.CHECKSUM_ERROR:
+                      _failUpdate(
+                        'The download came out damaged. Please try updating again.',
+                      );
                       break;
                     default:
                       break;
@@ -467,29 +488,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
               }
             },
             onError: (error) {
-              WakelockPlus.disable();
-              if (mounted) {
-                setState(() => _isDownloading = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Download failed: $error'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-              }
+              debugPrint('[UpdateDialog] OTA stream error: $error');
+              _failUpdate(
+                'Download failed. Please check your internet connection and try again.',
+              );
             },
           );
     } catch (e) {
-      WakelockPlus.disable();
-      if (mounted) {
-        setState(() => _isDownloading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Update failed: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      debugPrint('[UpdateDialog] OTA execute error: $e');
+      _failUpdate('Something went wrong while updating. Please try again.');
     }
   }
 
