@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../models/book/book_result.dart';
 import '../../../models/book/reading_progress.dart';
 import '../../../services/books/continue_reading_service.dart';
+import '../../../design/dizzy_tokens.dart';
 import '../epub_reader_page.dart';
 import '../pdf_reader_page.dart';
 
@@ -147,7 +148,7 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
                     Text(
                       widget.title,
                       style: const TextStyle(
-                        fontFamily: 'Poppins',
+                        fontFamily: DizzyType.fontFamily,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -158,7 +159,7 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
                     Text(
                       '${items.length} ${items.length == 1 ? 'Book' : 'Books'}',
                       style: const TextStyle(
-                        fontFamily: 'Poppins',
+                        fontFamily: DizzyType.fontFamily,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: Colors.white38,
@@ -365,7 +366,7 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                       child: Text(
                         item.fileType.toUpperCase(),
                         style: const TextStyle(
-                          fontFamily: 'Poppins',
+                          fontFamily: DizzyType.fontFamily,
                           fontSize: 9.5,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -423,7 +424,7 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
               Text(
                 item.title,
                 style: const TextStyle(
-                  fontFamily: 'Poppins',
+                  fontFamily: DizzyType.fontFamily,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -438,7 +439,7 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                     ? 'Page ${item.currentPage} • $percent%'
                     : 'Ch. ${item.chapterIndex + 1} • $percent%',
                 style: const TextStyle(
-                  fontFamily: 'Poppins',
+                  fontFamily: DizzyType.fontFamily,
                   fontSize: 11,
                   color: Colors.white54,
                 ),

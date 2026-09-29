@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
+import '../../../widgets/common/state_view.dart';
 import '../widgets/music_card_sizing.dart';
 import '../widgets/music_hoverable.dart';
 import '../widgets/music_track_row.dart';
@@ -80,23 +81,10 @@ class MusicSearchView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 48.0),
             child: Center(
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.search_off_rounded,
-                    color: Colors.white38,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No results for "$activeQuery"',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              child: DizzyStateView(
+                icon: Icons.search_off_rounded,
+                title: 'No results for "$activeQuery"',
+                line: 'Try another song, artist or album name.',
               ),
             ),
           )

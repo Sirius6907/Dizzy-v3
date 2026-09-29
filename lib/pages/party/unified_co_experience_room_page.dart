@@ -117,14 +117,16 @@ class _UnifiedCoExperienceRoomPageState
 
   @override
   Widget build(BuildContext context) {
+    // P6 narrow compact: 360px pe long title + room-code pill tight hote hain.
+    final narrow = MediaQuery.sizeOf(context).width < 420;
     return OfflineAwareScaffold(
       backgroundColor: DizzyVoid.obsidian,
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         foregroundColor: DizzyVoid.bone,
-        title: const Text(
-          'Co-Experience Room',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        title: Text(
+          narrow ? 'Co-Room' : 'Co-Experience Room',
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
         ),
         actions: [
           ListenableBuilder(

@@ -12,6 +12,7 @@ import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
+import '../common/horizontal_wheel_scroll.dart';
 import '../common/slider_arrow.dart';
 
 class ContinueWatchingSlider extends StatefulWidget {
@@ -189,24 +190,27 @@ class _ContinueWatchingSliderState extends State<ContinueWatchingSlider> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      ListView.separated(
-                        clipBehavior: Clip.none,
+                      HorizontalWheelScroll(
                         controller: _scrollController,
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: items.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _ContinueWatchingCard(
-                            item: item,
-                            width: cardWidth,
-                            palette: palette,
-                            onTap: () => ContinueWatchingService.resumePlayback(context, item),
-                            onRemove: () => ContinueWatchingService.removeItem(item),
-                          );
-                        },
+                        child: ListView.separated(
+                          clipBehavior: Clip.none,
+                          controller: _scrollController,
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: items.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 14),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return _ContinueWatchingCard(
+                              item: item,
+                              width: cardWidth,
+                              palette: palette,
+                              onTap: () => ContinueWatchingService.resumePlayback(context, item),
+                              onRemove: () => ContinueWatchingService.removeItem(item),
+                            );
+                          },
+                        ),
                       ),
 
                       // Desktop Floating Scroll Arrows (Matching Anime/Movie Sections)

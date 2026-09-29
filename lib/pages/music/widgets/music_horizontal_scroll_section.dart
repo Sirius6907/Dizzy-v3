@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../widgets/common/horizontal_wheel_scroll.dart';
 import '../../../widgets/common/slider_arrow.dart';
 
 class MusicHorizontalScrollSection extends StatefulWidget {
@@ -105,14 +106,17 @@ class _MusicHorizontalScrollSectionState extends State<MusicHorizontalScrollSect
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                ListView.separated(
+                HorizontalWheelScroll(
                   controller: _controller,
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: widget.itemCount,
-                  separatorBuilder: (_, __) => const SizedBox(width: 16),
-                  itemBuilder: widget.itemBuilder,
+                  child: ListView.separated(
+                    controller: _controller,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: widget.itemCount,
+                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    itemBuilder: widget.itemBuilder,
+                  ),
                 ),
 
                 // Desktop Left & Right Floating Arrows
