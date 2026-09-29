@@ -18,6 +18,7 @@ import '../../services/continue_watching/continue_watching_service.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/error_view.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/common/poster_skeleton.dart';
 import '../../design/dizzy_tokens.dart';
 import '../../utils/perf/image_caps.dart';
@@ -485,7 +486,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: palette.scaffoldBackgroundColor,
       body: _buildBody(backgroundContent, topPadding, context),
     );

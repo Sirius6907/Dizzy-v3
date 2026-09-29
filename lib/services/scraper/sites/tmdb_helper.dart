@@ -5,6 +5,7 @@ import '../../config/env_service.dart';
 import '../../cloud/cloud_client.dart';
 import '../../cloud/cloud_resolve_service.dart';
 import '../../errors/app_error_log.dart';
+import '../../net/timeout_race.dart';
 
 /// P14 — keyless-first TMDB chain:
 ///
@@ -69,12 +70,19 @@ class TmdbHelper {
         'path': path,
         ...query,
       });
-      final res = await http.get(uri, headers: {
-        ..._headers,
-        'apikey': CloudClient.anonKey,
-      }).timeout(const Duration(seconds: 6));
-      if (res.statusCode != 200) return null;
-      return jsonDecode(res.body) as Map<String, dynamic>?;
+      final res = await raceTimeout<Map<String, dynamic>?>(
+        Future.sync(() async {
+          final r = await http.get(uri, headers: {
+            ..._headers,
+            'apikey': CloudClient.anonKey,
+          });
+          if (r.statusCode != 200) return null;
+          return jsonDecode(r.body) as Map<String, dynamic>?;
+        }),
+        const Duration(seconds: 6),
+        () => null,
+      );
+      return res;
     } catch (_) {
       // P15: silent-but-logged network (throttled 24h/code server-side).
       unawaited(AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'edge'));
@@ -85,11 +93,16 @@ class TmdbHelper {
   static Future<Map<String, dynamic>?> _directGet(Uri uri,
       {int seconds = 7}) async {
     try {
-      final res = await http
-          .get(uri, headers: _headers)
-          .timeout(Duration(seconds: seconds));
-      if (res.statusCode != 200) return null;
-      return jsonDecode(res.body) as Map<String, dynamic>?;
+      final res = await raceTimeout<Map<String, dynamic>?>(
+        Future.sync(() async {
+          final r = await http.get(uri, headers: _headers);
+          if (r.statusCode != 200) return null;
+          return jsonDecode(r.body) as Map<String, dynamic>?;
+        }),
+        Duration(seconds: seconds),
+        () => null,
+      );
+      return res;
     } catch (_) {
       unawaited(AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'direct'));
       return null;

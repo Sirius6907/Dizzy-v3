@@ -9,6 +9,7 @@ import '../errors/app_error_log.dart';
 import 'circuit_breaker.dart';
 import 'offline_queue.dart';
 import 'retry_policy.dart';
+import 'timeout_race.dart';
 
 /// The one seam tests replace. Production uses a shared [http.Client];
 /// a test supplies a function that fails N times and then succeeds.
@@ -377,25 +378,8 @@ class DizzyNet {
   static Future<http.Response> _raceTimeout(
     Future<http.Response> pending,
     Duration timeout,
-  ) {
-    final completer = Completer<http.Response>();
-    final timer = Timer(timeout, () {
-      if (!completer.isCompleted) {
-        completer.complete(syntheticTimeoutResponse());
-      }
-    });
-    pending.then<void>(
-      (res) {
-        timer.cancel();
-        if (!completer.isCompleted) completer.complete(res);
-      },
-      onError: (Object error, StackTrace stack) {
-        timer.cancel();
-        if (!completer.isCompleted) completer.completeError(error, stack);
-      },
-    );
-    return completer.future;
-  }
+  ) =>
+      raceTimeout(pending, timeout, syntheticTimeoutResponse);
 
   void _log({required String code, required String screen, String detail = ''}) {
     unawaited(AppErrorLog.log(code: code, screen: screen, detail: detail));

@@ -31,6 +31,7 @@ import '../../services/player/bandwidth_meter.dart';
 import '../../services/player/hls_rendition_parser.dart';
 import '../../services/errors/app_error_log.dart';
 import '../../services/discord/discord_rpc_service.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
 
 import '../../widgets/player/player_glass.dart';
 import '../../widgets/player/player_top_bar.dart';
@@ -2122,7 +2123,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       onPopInvokedWithResult: (didPop, _) {
         WindowService.instance.exitFullscreen();
       },
-      child: Scaffold(
+      child: OfflineAwareScaffold(
         backgroundColor: Colors.black,
         body: Focus(
           autofocus: true,
