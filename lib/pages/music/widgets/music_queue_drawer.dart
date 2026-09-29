@@ -24,6 +24,22 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
   bool _showHistory = false;
 
   @override
+  void initState() {
+    super.initState();
+    MusicPlayerController.instance.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    MusicPlayerController.instance.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final controller = MusicPlayerController.instance;
     final currentTrack = controller.currentTrack;

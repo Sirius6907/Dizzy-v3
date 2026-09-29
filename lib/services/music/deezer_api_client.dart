@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -11,6 +12,7 @@ class DeezerApiClient {
   static const String proxyUrl = 'https://wave-proxy.aymanisthedude1.workers.dev/proxy?url=';
   static bool useProxy = false;
   static bool _hasCheckedGeo = false;
+  static Completer<void>? _geoCompleter;
 
   static const Map<String, String> _headers = {
     'Accept': 'application/json',
@@ -20,7 +22,10 @@ class DeezerApiClient {
 
   Future<void> checkGeoRestriction() async {
     if (_hasCheckedGeo) return;
-    _hasCheckedGeo = true;
+    if (_geoCompleter != null) {
+      return _geoCompleter!.future;
+    }
+    _geoCompleter = Completer<void>();
     try {
       final res = await http
           .get(Uri.parse('$_defaultBaseUrl/search?q=believer'), headers: _headers)
@@ -38,6 +43,9 @@ class DeezerApiClient {
       }
     } catch (_) {
       useProxy = true;
+    } finally {
+      _hasCheckedGeo = true;
+      _geoCompleter?.complete();
     }
   }
 
@@ -60,7 +68,19 @@ class DeezerApiClient {
     try {
       final res = await http.get(Uri.parse(requestUrl), headers: _headers).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        final decoded = jsonDecode(res.body);
+        // If not using proxy, verify we didn't get empty data due to a geo-restriction block
+        if (!useProxy &&
+            decoded is Map &&
+            (decoded['error'] != null || (decoded['data'] is List && (decoded['data'] as List).isEmpty))) {
+          useProxy = true;
+          final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
+          final proxyRes = await http.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+          if (proxyRes.statusCode == 200) {
+            return jsonDecode(proxyRes.body);
+          }
+        }
+        return decoded;
       } else if (!useProxy) {
         // Retry with proxy
         useProxy = true;

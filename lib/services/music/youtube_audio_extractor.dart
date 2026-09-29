@@ -249,10 +249,10 @@ class YoutubeAudioExtractor {
       targetDuration: targetDuration,
       titleVersion: titleVersion,
     );
-    for (final id in ids.take(1)) {
+    for (final id in ids.take(3)) {
       try {
         final res = await getAudioUrl(id, verifyStream: verifyStream).timeout(
-          const Duration(seconds: 4),
+          const Duration(seconds: 7),
           onTimeout: () {
             _log('candidate $id timed out');
             return null;

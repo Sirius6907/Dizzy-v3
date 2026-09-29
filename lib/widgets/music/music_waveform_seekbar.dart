@@ -85,10 +85,20 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
     return '$mins:$secs';
   }
 
-  void _handleSeek(double localX, double totalWidth) {
+  void _updateDrag(double localX, double totalWidth) {
     if (totalWidth <= 0) return;
     final progress = (localX / totalWidth).clamp(0.0, 1.0);
     setState(() {
+      _isDragging = true;
+      _dragProgress = progress;
+    });
+  }
+
+  void _commitSeek(double localX, double totalWidth) {
+    if (totalWidth <= 0) return;
+    final progress = (localX / totalWidth).clamp(0.0, 1.0);
+    setState(() {
+      _isDragging = false;
       _dragProgress = progress;
     });
     final targetMs = (progress * widget.duration.inMilliseconds).round();
@@ -139,10 +149,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
             if (widget.style == MusicSeekbarStyle.neonGradient) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (d) => setState(() => _isDragging = true),
-                onHorizontalDragUpdate: (d) => _handleSeek(d.localPosition.dx, width),
-                onHorizontalDragEnd: (d) => setState(() => _isDragging = false),
-                onTapDown: (d) => _handleSeek(d.localPosition.dx, width),
+                onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
+                onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
+                onTapCancel: () => setState(() => _isDragging = false),
                 child: Container(
                   height: widget.compact ? 20 : 32,
                   alignment: Alignment.center,
@@ -202,10 +214,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
             if (widget.style == MusicSeekbarStyle.liquidGlassSlider) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (d) => setState(() => _isDragging = true),
-                onHorizontalDragUpdate: (d) => _handleSeek(d.localPosition.dx, width),
-                onHorizontalDragEnd: (d) => setState(() => _isDragging = false),
-                onTapDown: (d) => _handleSeek(d.localPosition.dx, width),
+                onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
+                onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
+                onTapCancel: () => setState(() => _isDragging = false),
                 child: Container(
                   height: widget.compact ? 24 : 36,
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -258,10 +272,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
             if (widget.style == MusicSeekbarStyle.radialDial) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (d) => setState(() => _isDragging = true),
-                onHorizontalDragUpdate: (d) => _handleSeek(d.localPosition.dx, width),
-                onHorizontalDragEnd: (d) => setState(() => _isDragging = false),
-                onTapDown: (d) => _handleSeek(d.localPosition.dx, width),
+                onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
+                onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
+                onTapCancel: () => setState(() => _isDragging = false),
                 child: Container(
                   height: 56,
                   alignment: Alignment.center,
@@ -284,10 +300,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                 final animPhase = _waveAnimController.value * 2 * math.pi;
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onHorizontalDragStart: (d) => setState(() => _isDragging = true),
-                  onHorizontalDragUpdate: (d) => _handleSeek(d.localPosition.dx, width),
-                  onHorizontalDragEnd: (d) => setState(() => _isDragging = false),
-                  onTapDown: (d) => _handleSeek(d.localPosition.dx, width),
+                  onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
+                  onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
+                  onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                  onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
+                  onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
+                  onTapCancel: () => setState(() => _isDragging = false),
                   child: Container(
                     height: widget.compact ? 32 : 48,
                     alignment: Alignment.center,

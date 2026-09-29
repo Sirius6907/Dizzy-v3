@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
@@ -34,6 +35,16 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
   void initState() {
     super.initState();
     widget.playerController.addListener(_onPlayerTick);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final idx = widget.playerController.activeLyricIndex;
+        if (idx >= 0) {
+          _lastActiveIndex = idx;
+          _scrollToIndex(idx);
+          setState(() {});
+        }
+      }
+    });
   }
 
   @override
@@ -200,8 +211,10 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
               Expanded(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    if (notification is ScrollStartNotification &&
-                        notification.dragDetails != null) {
+                    if ((notification is ScrollStartNotification &&
+                            notification.dragDetails != null) ||
+                        (notification is UserScrollNotification &&
+                            notification.direction != ScrollDirection.idle)) {
                       _onUserScrollStart();
                     }
                     return false;

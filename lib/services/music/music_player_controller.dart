@@ -64,7 +64,7 @@ class MusicPlayerController extends ChangeNotifier {
   bool get isShuffle => _isShuffle;
   MusicRepeatMode get repeatMode => _repeatMode;
   bool get hasTrack => _currentTrack != null;
-  bool get hasNext => _playlist.isNotEmpty && (_repeatMode != MusicRepeatMode.off || _currentIndex < _playlist.length - 1);
+  bool get hasNext => _playlist.isNotEmpty && (_repeatMode == MusicRepeatMode.all || _currentIndex < _playlist.length - 1);
   bool get hasPrevious => _playlist.isNotEmpty && (_currentIndex > 0 || _position.inSeconds > 3);
   LyricsData get currentLyrics => _currentLyrics;
   bool get isLoadingLyrics => _isLoadingLyrics;
@@ -139,7 +139,10 @@ class MusicPlayerController extends ChangeNotifier {
     await _loadAndPlayTrack(track);
   }
 
+  int _loadGeneration = 0;
+
   Future<void> _loadAndPlayTrack(MusicTrack track, {Duration? startPosition}) async {
+    final currentGen = ++_loadGeneration;
     _currentTrack = track;
     _isLoading = true;
     _errorMessage = null;
@@ -156,8 +159,8 @@ class MusicPlayerController extends ChangeNotifier {
     MusicLibraryService.instance.addToRecent(track);
     MusicStatsService.instance.recordTrackPlay(track);
 
-    // Fetch lyrics asynchronously
-    _fetchLyricsForTrack(track);
+    // Fetch lyrics asynchronously with generation check
+    _fetchLyricsForTrack(track, currentGen);
 
     // Dispose previous controller
     for (final s in _subscriptions) {
@@ -170,12 +173,13 @@ class MusicPlayerController extends ChangeNotifier {
       _player = null;
     }
 
+    if (currentGen != _loadGeneration) return;
+
     try {
       final downloadedTrack = MusicDownloadService.instance.getDownloadedTrack(track.id);
       final downloadedFile = downloadedTrack != null ? File(downloadedTrack.localAudioPath) : null;
       final isOffline = downloadedFile != null && downloadedFile.existsSync() && downloadedFile.lengthSync() > 100;
 
-      final player = Player();
       final Media media;
 
       if (isOffline && downloadedTrack != null) {
@@ -183,12 +187,13 @@ class MusicPlayerController extends ChangeNotifier {
             ? 'FLAC Lossless (Offline)'
             : 'HQ Audio (Offline)';
         _isCurrentTrackLossless = downloadedTrack.format.toLowerCase() == 'flac';
-        media = Media(downloadedFile.uri.toString());
+        media = Media(downloadedFile.path);
       } else {
         final streamResult = await MusicService.instance.getAudioStream(
           track,
           source: _audioSource,
         );
+        if (currentGen != _loadGeneration) return;
         if (streamResult == null || streamResult.url.isEmpty) {
           throw Exception('Failed to extract audio stream');
         }
@@ -209,6 +214,10 @@ class MusicPlayerController extends ChangeNotifier {
           httpHeaders: headers,
         );
       }
+
+      if (currentGen != _loadGeneration) return;
+
+      final player = Player();
 
       _subscriptions.addAll([
         player.stream.playing.listen((playing) {
@@ -251,6 +260,11 @@ class MusicPlayerController extends ChangeNotifier {
       ]);
 
       await player.open(media);
+      if (currentGen != _loadGeneration) {
+        await player.dispose();
+        return;
+      }
+
       await player.setVolume(_volume * 100.0);
 
       if (startPosition != null && startPosition > Duration.zero) {
@@ -263,6 +277,7 @@ class MusicPlayerController extends ChangeNotifier {
       MusicEqualizerService.instance.applyFilters();
       notifyListeners();
     } catch (e) {
+      if (currentGen != _loadGeneration) return;
       _isLoading = false;
       _isPlaying = false;
       _errorMessage = 'Could not load audio: ${e.toString()}';
@@ -271,11 +286,12 @@ class MusicPlayerController extends ChangeNotifier {
     }
   }
 
-  Future<void> _fetchLyricsForTrack(MusicTrack track) async {
+  Future<void> _fetchLyricsForTrack(MusicTrack track, [int? requestGen]) async {
     _isLoadingLyrics = true;
     notifyListeners();
     try {
       final lyrics = await MusicService.instance.fetchLyrics(track);
+      if (requestGen != null && requestGen != _loadGeneration) return;
       if (_currentTrack?.id == track.id) {
         _currentLyrics = lyrics;
         _isLoadingLyrics = false;
@@ -283,6 +299,7 @@ class MusicPlayerController extends ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {
+      if (requestGen != null && requestGen != _loadGeneration) return;
       if (_currentTrack?.id == track.id) {
         _isLoadingLyrics = false;
         notifyListeners();
@@ -301,6 +318,7 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   void _onTrackEnded() {
+    if (_isAutoAdvancing) return;
     if (_repeatMode == MusicRepeatMode.one && _currentTrack != null) {
       seekTo(Duration.zero);
       play();
@@ -407,12 +425,18 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> seekTo(Duration position) async {
+    _isAutoAdvancing = false;
+    final target = position < Duration.zero
+        ? Duration.zero
+        : (_duration > Duration.zero && position > _duration
+            ? _duration
+            : position);
+    _position = target;
     if (_player != null) {
-      await _player!.seek(position);
-      _position = position;
-      _updateActiveLyricIndex();
-      notifyListeners();
+      await _player!.seek(target);
     }
+    _updateActiveLyricIndex();
+    notifyListeners();
   }
 
   Future<void> setVolume(double volume) async {
@@ -530,12 +554,17 @@ class MusicPlayerController extends ChangeNotifier {
     required MusicTrack track,
     required List<MusicTrack> queue,
     Duration position = Duration.zero,
+    Duration? duration,
   }) {
     _playlist = List<MusicTrack>.from(queue);
     _originalPlaylist = List<MusicTrack>.from(queue);
     _currentTrack = track;
     _currentIndex = _playlist.indexOf(track);
     _position = position;
+    _duration = duration ??
+        (track.durationSeconds > 0
+            ? Duration(seconds: track.durationSeconds)
+            : Duration.zero);
     notifyListeners();
   }
 

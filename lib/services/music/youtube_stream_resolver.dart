@@ -64,7 +64,23 @@ class YoutubeStreamResolver {
     }
 
     // 4. Convertytmp3 fallback
-    final vidId = _cache[track.id];
+    var vidId = _cache[track.id];
+    if (vidId == null) {
+      try {
+        final ids = await YoutubeAudioExtractor.instance.searchVideoIds(
+          track.title,
+          track.artist,
+          targetDuration: track.durationSeconds > 0
+              ? Duration(seconds: track.durationSeconds)
+              : null,
+        );
+        if (ids.isNotEmpty) {
+          vidId = ids.first;
+          _cache[track.id] = vidId;
+        }
+      } catch (_) {}
+    }
+
     if (vidId != null) {
       try {
         final streamUrl = await Convertytmp3Client.getStreamUrl(vidId);
