@@ -22,6 +22,25 @@ import '../music/music_smart_mix_service.dart';
 import 'discover_copy.dart';
 import 'history_rail_policy.dart';
 
+/// One Smart Mix, named but not generated here.
+class DiscoverMix {
+  final String id;
+  final String title;
+  final String subtitle;
+
+  /// How many songs are in it. Real count from the music service — never a
+  /// guess, because "12 songs" that turns out to be zero is worse than
+  /// saying nothing.
+  final int trackCount;
+
+  const DiscoverMix({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.trackCount,
+  });
+}
+
 /// One row on Discover Daily, ready to render.
 class DiscoverSection {
   final String id;
@@ -31,18 +50,18 @@ class DiscoverSection {
   /// Movie picks. Empty for the music row, which carries its own cards.
   final List<Movie> movies;
 
-  /// Smart-mix ids for the music row. Empty for every other row.
-  final List<String> mixIds;
+  /// Smart mixes for the music row. Empty for every other row.
+  final List<DiscoverMix> mixes;
 
   const DiscoverSection({
     required this.id,
     required this.title,
     required this.subtitle,
     this.movies = const [],
-    this.mixIds = const [],
+    this.mixes = const [],
   });
 
-  bool get isMusic => mixIds.isNotEmpty;
+  bool get isMusic => mixes.isNotEmpty;
 }
 
 /// Builds and caches the Discover Daily rows.
@@ -100,7 +119,7 @@ class DiscoverService {
           id: musicSectionId,
           title: DiscoverCopy.musicRailTitle,
           subtitle: DiscoverCopy.musicRailSubtitle,
-          mixIds: mixes,
+          mixes: mixes,
         ));
       }
 
@@ -205,11 +224,9 @@ class DiscoverService {
     return candidates;
   }
 
-  /// Smart-mix ids for the music row.
-  ///
   /// The mixes themselves stay in the music service — Discover only names
   /// them, so there is exactly one generator of mixes in the app.
-  Future<List<String>> _musicMixes() async {
+  Future<List<DiscoverMix>> _musicMixes() async {
     try {
       final library = MusicLibraryService.instance;
       if (library.likedTracks.isEmpty && library.recentTracks.isEmpty) {
@@ -218,7 +235,12 @@ class DiscoverService {
       final mixes = await MusicSmartMixService.instance.getOrGenerateMixes();
       return mixes
           .where((m) => m.tracks.isNotEmpty)
-          .map((m) => m.id)
+          .map((m) => DiscoverMix(
+                id: m.id,
+                title: m.title,
+                subtitle: m.description,
+                trackCount: m.tracks.length,
+              ))
           .toList();
     } catch (e) {
       debugPrint('[DiscoverService] mixes unavailable: $e');
