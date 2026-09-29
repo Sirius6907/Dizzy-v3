@@ -7,6 +7,8 @@ import '../../services/theme/app_theme_service.dart';
 import '../../services/home/home_page_settings.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../common/poster_skeleton.dart';
+import '../../design/dizzy_tactile.dart';
+import '../../design/dizzy_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Card sizing — responsive breakpoints that mimic Stremio poster sizes.
@@ -241,30 +243,31 @@ class _PosterFrame extends StatelessWidget {
       duration: const Duration(milliseconds: 170),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(hovered ? 0.60 : 0.34),
-            blurRadius: hovered ? 32 : 20,
-            offset: Offset(0, hovered ? 18 : 10),
-          ),
-          if (hovered)
-            BoxShadow(
-              color: palette.primaryColor.withOpacity(0.35),
-              blurRadius: 34,
-              spreadRadius: 1,
-              offset: const Offset(0, 8),
-            ),
-        ],
+        borderRadius: BorderRadius.circular(DizzyRadius.xl),
+        boxShadow: hovered
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.60),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+                BoxShadow(
+                  color: palette.primaryColor.withValues(alpha: 0.35),
+                  blurRadius: 34,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : DizzyShadow.card,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(DizzyRadius.xl),
         child: Stack(
           fit: StackFit.expand,
           children: [
             // Background fill
             const ColoredBox(
-              color: Color(0xFF171A23),
+              color: DizzyVoid.surface1,
             ),
 
             // Poster image (cached) — P15: own raster boundary so row
@@ -293,9 +296,9 @@ class _PosterFrame extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.00),
-                      Colors.black.withOpacity(0.00),
-                      Colors.black.withOpacity(0.20),
+                      Colors.transparent,
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.20),
                     ],
                   ),
                 ),
@@ -313,9 +316,9 @@ class _PosterFrame extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.white.withOpacity(0.11),
+                        Colors.white.withValues(alpha: 0.11),
                         Colors.transparent,
-                        Colors.black.withOpacity(0.40),
+                        Colors.black.withValues(alpha: 0.40),
                       ],
                     ),
                   ),
@@ -334,12 +337,12 @@ class _PosterFrame extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: (contentType == 'series' || contentType == 'anime')
-                        ? palette.accentColor.withOpacity(0.90)
-                        : palette.primaryColor.withOpacity(0.90),
-                    borderRadius: BorderRadius.circular(8),
+                        ? palette.accentColor.withValues(alpha: 0.90)
+                        : palette.primaryColor.withValues(alpha: 0.90),
+                    borderRadius: BorderRadius.circular(DizzyRadius.sm),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.40),
+                        color: Colors.black.withValues(alpha: 0.40),
                         blurRadius: 8,
                       ),
                     ],
@@ -371,21 +374,21 @@ class _PosterFrame extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xE6080A0F),
-                        borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: Colors.white.withOpacity(0.15)),
+                        color: DizzyVoid.obsidian.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(DizzyRadius.sm),
+                        border: Border.all(color: DizzyEdge.hairline.color),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFFFB800), size: 12),
+                          const Icon(Icons.star_rounded, color: DizzyGlow.gold, size: 12),
                           const SizedBox(width: 3),
                           Text(
                             displayRating,
                             style: const TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: DizzyVoid.bone,
                             ),
                           ),
                         ],
@@ -401,11 +404,11 @@ class _PosterFrame extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 170),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(DizzyRadius.xl),
                     border: Border.all(
                       color: hovered
-                          ? Colors.white.withOpacity(0.28)
-                          : Colors.white.withOpacity(0.08),
+                          ? Colors.white.withValues(alpha: 0.28)
+                          : Colors.white.withValues(alpha: 0.08),
                       width: hovered ? 1.35 : 1,
                     ),
                   ),
@@ -429,10 +432,10 @@ class _PosterFrame extends StatelessWidget {
                     height: 39,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.40),
+                          color: Colors.black.withValues(alpha: 0.40),
                           blurRadius: 16,
                           offset: const Offset(0, 7),
                         ),
@@ -440,7 +443,7 @@ class _PosterFrame extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.play_arrow_rounded,
-                      color: Color(0xFF11131B),
+                      color: DizzyVoid.obsidian,
                       size: 29,
                     ),
                   ),

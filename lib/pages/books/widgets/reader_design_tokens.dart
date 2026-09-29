@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../design/dizzy_tokens.dart';
+
 /// Design tokens for the Dizzy Reader.
 /// Enforces consistent 4pt-based spacing, standard radii, custom soft shadows,
 /// named motion curves/durations, and typography scales across all reader components.
@@ -94,7 +96,7 @@ class ReaderTokens {
   // ──────────────────────────────────────────────────────────────────────────
   // 5. TYPOGRAPHY CONSTANTS & UI SCALES
   // ──────────────────────────────────────────────────────────────────────────
-  static const String uiFont = 'Poppins';
+  static const String uiFont = DizzyType.fontFamily;
   static const String defaultSerifFont = 'Georgia';
 
   static const TextStyle caption = TextStyle(
