@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/books/epub_parser_service.dart';
 import '../../../services/books/reader_settings.dart';
 import 'reader_design_tokens.dart';
@@ -346,19 +346,19 @@ class _FocusModeViewState extends State<FocusModeView> {
                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                                       decoration: BoxDecoration(
                                         color: isActive
-                                            ? const Color(0xFF14141C)
+                                            ? DizzyVoid.surface1
                                             : Colors.transparent,
                                         borderRadius: ReaderTokens.rounded12,
                                         border: Border.all(
                                           color: isActive
-                                              ? const Color(0xFF8B5CF6).withValues(alpha: 0.65)
+                                              ? DizzyGlow.violet.withValues(alpha: 0.65)
                                               : Colors.transparent,
                                           width: 1.4,
                                         ),
                                         boxShadow: isActive
                                             ? [
                                                 BoxShadow(
-                                                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.28),
+                                                  color: DizzyGlow.violet.withValues(alpha: 0.28),
                                                   blurRadius: 20,
                                                   spreadRadius: 0,
                                                   offset: Offset.zero,
@@ -509,7 +509,7 @@ class _FocusModeViewState extends State<FocusModeView> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF121217).withValues(alpha: 0.95),
                             borderRadius: ReaderTokens.rounded24,
-                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.40)),
+                            border: Border.all(color: DizzyGlow.violet.withValues(alpha: 0.40)),
                             boxShadow: const [ReaderTokens.shadowMd],
                           ),
                           child: const Row(
@@ -574,7 +574,7 @@ class _FocusModeViewState extends State<FocusModeView> {
                       value: _lines.isNotEmpty ? (_activeLineIndex + 1) / _lines.length : 0.0,
                       minHeight: 2.0,
                       backgroundColor: Colors.transparent,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+                      valueColor: const AlwaysStoppedAnimation<Color>(DizzyGlow.violet),
                     ),
                   ),
                 ),

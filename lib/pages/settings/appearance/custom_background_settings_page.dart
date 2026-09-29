@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/theme/custom_background_service.dart';
 import '../../../widgets/common/animated_ambient_background.dart';
@@ -70,7 +71,7 @@ class _CustomBackgroundSettingsPageState extends State<CustomBackgroundSettingsP
             return Scaffold(
               backgroundColor: const Color(0xFF080A0F),
               appBar: AppBar(
-                backgroundColor: const Color(0xFF0D1017),
+                backgroundColor: DizzyVoid.voidB,
                 surfaceTintColor: Colors.transparent,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -243,7 +244,7 @@ class _CustomBackgroundSettingsPageState extends State<CustomBackgroundSettingsP
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF12151E),
+                          color: DizzyVoid.surface1,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                         ),
@@ -420,7 +421,7 @@ class _CustomBackgroundSettingsPageState extends State<CustomBackgroundSettingsP
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF12151E),
+                          color: DizzyVoid.surface1,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                         ),

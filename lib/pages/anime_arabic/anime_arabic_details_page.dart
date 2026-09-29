@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -18,7 +19,7 @@ class _Palette {
   static Color get bg => AppThemeService.currentPalette.value.scaffoldBackgroundColor;
   static Color get surface => AppThemeService.currentPalette.value.cardBackgroundColor;
   static Color get accent => AppThemeService.currentPalette.value.primaryColor;
-  static const gold = Color(0xFFFFC107);
+  static const gold = DizzyGlow.gold;
 }
 
 class AnimeArabicDetailsPage extends StatefulWidget {

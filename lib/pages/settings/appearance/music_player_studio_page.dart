@@ -2,6 +2,8 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/music/music_settings.dart';
@@ -74,7 +76,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
     return Scaffold(
       backgroundColor: const Color(0xFF07090E),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -220,7 +222,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0C0F17),
+                    color: DizzyVoid.voidB,
                     border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
                   ),
                   child: Row(
@@ -1154,7 +1156,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
   // ═══════════════════════════════════════════════════════════════
   Widget _buildStudioControlsPanel(AppThemePalette palette) {
     return Container(
-      color: const Color(0xFF090B10),
+      color: DizzyColors.bg,
       child: Column(
         children: [
           // Studio Sub-Tabs
@@ -1162,7 +1164,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
             height: 52,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF0C0F17),
+              color: DizzyVoid.voidB,
               border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
             ),
             child: ListView(
@@ -1204,7 +1206,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
         label: Text(label),
         selected: isSelected,
         selectedColor: palette.primaryColor,
-        backgroundColor: const Color(0xFF121520),
+        backgroundColor: DizzyVoid.surface1,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : Colors.white70,
           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -1453,7 +1455,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                   label: Text(b.label),
                   selected: isSelected,
                   selectedColor: palette.primaryColor,
-                  backgroundColor: const Color(0xFF121520),
+                  backgroundColor: DizzyVoid.surface1,
                   labelStyle: TextStyle(
                     color: isSelected ? Colors.white : Colors.white70,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -1501,7 +1503,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                   label: Text(h.label),
                   selected: isSelected,
                   selectedColor: palette.primaryColor,
-                  backgroundColor: const Color(0xFF121520),
+                  backgroundColor: DizzyVoid.surface1,
                   labelStyle: TextStyle(
                     color: isSelected ? Colors.white : Colors.white70,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,

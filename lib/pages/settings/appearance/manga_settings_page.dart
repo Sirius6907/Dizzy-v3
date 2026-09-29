@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/home/home_page_settings.dart';
 import '../../../services/manga/manga_settings.dart';
@@ -19,7 +20,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -116,7 +117,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12151E),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
@@ -180,7 +181,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -229,7 +230,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                     label: Text(p.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -364,7 +365,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -403,7 +404,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                     label: Text(d.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -484,7 +485,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -506,7 +507,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                     label: Text(m.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -541,7 +542,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                     label: Text(w.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -585,7 +586,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                     label: Text(b.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -620,7 +621,7 @@ class _MangaSettingsPageState extends State<MangaSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,

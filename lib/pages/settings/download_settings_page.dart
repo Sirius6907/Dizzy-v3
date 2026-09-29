@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 
 /// Download Settings — pause, resume, and location management.
@@ -11,7 +12,7 @@ class DownloadSettingsPage extends StatelessWidget {
     return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -49,7 +50,7 @@ class DownloadSettingsPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildSettingRow(
                       Icons.storage_rounded,
-                      const Color(0xFF00C2FF),
+                      DizzyGlow.beam,
                       'Save location',
                       'Your device storage',
                       Icons.chevron_right_rounded,

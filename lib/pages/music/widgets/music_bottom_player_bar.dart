@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../services/music/music_settings.dart';
@@ -113,7 +114,7 @@ class MusicBottomPlayerBar extends StatelessWidget {
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF0B0D14).withValues(alpha: 0.98),
+          color: DizzyVoid.voidB.withValues(alpha: 0.98),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),

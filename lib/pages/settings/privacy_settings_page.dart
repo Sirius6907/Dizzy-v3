@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/tactile/dizzy_tactile_card.dart';
 
@@ -24,7 +25,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/theme/glass_settings.dart';
 import '../../utils/perf/performance_mode.dart';
@@ -32,7 +33,7 @@ class PerformanceLiquidLens extends StatelessWidget {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF181A22), Color(0xFF0E1015)],
+        colors: [Color(0xFF181A22), DizzyVoid.voidB],
       ),
       border: Border.all(
         color: const Color(0x1CE2E8F0),

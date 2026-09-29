@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../models/book/book_result.dart';
 import '../../models/book/reading_progress.dart';
 import '../../services/books/continue_reading_service.dart';
-import '../../design/dizzy_tokens.dart';
 import '../../services/books/reader_settings.dart';
 import '../../services/window/window_service.dart';
 import '../../services/discord/discord_rpc_service.dart';
@@ -171,7 +171,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                     height: 64,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1E26).withValues(alpha: 0.94),
+                      color: DizzyColors.scrim.withValues(alpha: 0.94),
                       border: Border(
                         bottom: BorderSide(
                           color: Colors.white.withValues(alpha: 0.08),
@@ -253,7 +253,7 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                     height: 72,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1E26).withValues(alpha: 0.94),
+                      color: DizzyColors.scrim.withValues(alpha: 0.94),
                       border: Border(
                         top: BorderSide(
                           color: Colors.white.withValues(alpha: 0.08),

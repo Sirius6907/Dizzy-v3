@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/iptv/iptv_models.dart';
 import '../../models/iptv/m3u_models.dart';
@@ -190,7 +191,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                             label: Text(l.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -655,7 +656,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
             return Container(
               height: MediaQuery.sizeOf(context).height * 0.75,
               decoration: const BoxDecoration(
-                color: Color(0xFF0C0F17),
+                color: DizzyVoid.voidB,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 border: Border(top: BorderSide(color: Color(0xFF22283A), width: 1.2)),
               ),
@@ -779,7 +780,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF0C0F17),
+                  color: DizzyVoid.voidB,
                   border: Border(
                     bottom: BorderSide(color: Color(0xFF1B2030), width: 1.2),
                   ),
@@ -943,7 +944,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
               Container(
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF0C0F17),
+                  color: DizzyVoid.voidB,
                   border: Border(
                     bottom: BorderSide(color: Color(0xFF1B2030), width: 1.2),
                   ),
@@ -1130,7 +1131,7 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
                                   width: IptvSettings.sidebarWidth.value,
                                   child: Container(
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFF0A0D14),
+                                      color: DizzyVoid.voidB,
                                       border: Border(
                                         right: BorderSide(color: Color(0xFF1B2030), width: 1.2),
                                       ),
@@ -1338,10 +1339,10 @@ class _IptvPortalBrowserPageState extends State<IptvPortalBrowserPage> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFC107).withValues(alpha: 0.1),
+                  color: DizzyGlow.gold.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.star_outline_rounded, color: Color(0xFFFFC107), size: 48),
+                child: const Icon(Icons.star_outline_rounded, color: DizzyGlow.gold, size: 48),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -1578,12 +1579,12 @@ class _CategoryListRowState extends State<_CategoryListRow> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: widget.isSelected
-                  ? (isFavCategory ? const Color(0xFFFFC107).withValues(alpha: 0.15) : palette.primaryColor.withValues(alpha: 0.15))
+                  ? (isFavCategory ? DizzyGlow.gold.withValues(alpha: 0.15) : palette.primaryColor.withValues(alpha: 0.15))
                   : (_hovered ? const Color(0xFF141724) : Colors.transparent),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: widget.isSelected
-                    ? (isFavCategory ? const Color(0xFFFFC107).withValues(alpha: 0.6) : palette.primaryColor.withValues(alpha: 0.6))
+                    ? (isFavCategory ? DizzyGlow.gold.withValues(alpha: 0.6) : palette.primaryColor.withValues(alpha: 0.6))
                     : Colors.transparent,
               ),
             ),
@@ -1594,14 +1595,14 @@ class _CategoryListRowState extends State<_CategoryListRow> {
                   height: 16,
                   decoration: BoxDecoration(
                     color: widget.isSelected
-                        ? (isFavCategory ? const Color(0xFFFFC107) : palette.primaryColor)
+                        ? (isFavCategory ? DizzyGlow.gold : palette.primaryColor)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(width: 8),
                 if (isFavCategory) ...[
-                  const Icon(Icons.star_rounded, color: Color(0xFFFFC107), size: 16),
+                  const Icon(Icons.star_rounded, color: DizzyGlow.gold, size: 16),
                   const SizedBox(width: 6),
                 ],
                 Expanded(
@@ -1612,7 +1613,7 @@ class _CategoryListRowState extends State<_CategoryListRow> {
                     style: TextStyle(
                       color: widget.isSelected
                           ? (isFavCategory ? const Color(0xFFFFD54F) : Colors.white)
-                          : (_hovered ? Colors.white : (isFavCategory ? const Color(0xFFFFC107) : Colors.white70)),
+                          : (_hovered ? Colors.white : (isFavCategory ? DizzyGlow.gold : Colors.white70)),
                       fontSize: 12.5,
                       fontWeight: widget.isSelected ? FontWeight.w800 : (isFavCategory ? FontWeight.w700 : FontWeight.w600),
                     ),
@@ -1624,15 +1625,15 @@ class _CategoryListRowState extends State<_CategoryListRow> {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                     decoration: BoxDecoration(
                       color: widget.isSelected
-                          ? (isFavCategory ? const Color(0xFFFFC107).withValues(alpha: 0.3) : palette.primaryColor.withValues(alpha: 0.3))
-                          : (isFavCategory ? const Color(0xFFFFC107).withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.06)),
+                          ? (isFavCategory ? DizzyGlow.gold.withValues(alpha: 0.3) : palette.primaryColor.withValues(alpha: 0.3))
+                          : (isFavCategory ? DizzyGlow.gold.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.06)),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${widget.count}',
                       style: TextStyle(
                         color: isFavCategory
-                            ? const Color(0xFFFFC107)
+                            ? DizzyGlow.gold
                             : (widget.isSelected ? palette.primaryColor : Colors.white38),
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
@@ -1869,7 +1870,7 @@ class _LiveChannelListRowState extends State<_LiveChannelListRow> {
                 IconButton(
                   icon: Icon(
                     widget.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: widget.isFavorite ? const Color(0xFFFFC107) : Colors.white38,
+                    color: widget.isFavorite ? DizzyGlow.gold : Colors.white38,
                     size: 21,
                   ),
                   tooltip: widget.isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
@@ -2019,7 +2020,7 @@ class _LiveChannelGridCardState extends State<_LiveChannelGridCard> {
                       onTap: widget.onToggleFavorite,
                       child: Icon(
                         widget.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                        color: widget.isFavorite ? const Color(0xFFFFC107) : Colors.white30,
+                        color: widget.isFavorite ? DizzyGlow.gold : Colors.white30,
                         size: 19,
                       ),
                     ),
@@ -2183,7 +2184,7 @@ class _LiveChannelCompactListRowState extends State<_LiveChannelCompactListRow> 
                   onTap: widget.onToggleFavorite,
                   child: Icon(
                     widget.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: widget.isFavorite ? const Color(0xFFFFC107) : Colors.white30,
+                    color: widget.isFavorite ? DizzyGlow.gold : Colors.white30,
                     size: 18,
                   ),
                 ),
@@ -2302,13 +2303,13 @@ class _VodSeriesCardState extends State<_VodSeriesCard> {
                                     color: Colors.black.withValues(alpha: 0.75),
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: widget.isFavorite ? const Color(0xFFFFC107) : Colors.white24,
+                                      color: widget.isFavorite ? DizzyGlow.gold : Colors.white24,
                                       width: 1.2,
                                     ),
                                   ),
                                   child: Icon(
                                     widget.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                                    color: widget.isFavorite ? const Color(0xFFFFC107) : Colors.white70,
+                                    color: widget.isFavorite ? DizzyGlow.gold : Colors.white70,
                                     size: 16,
                                   ),
                                 ),
@@ -2450,7 +2451,7 @@ class _SeriesEpisodesSheetState extends State<_SeriesEpisodesSheet> {
         maxHeight: MediaQuery.sizeOf(context).height * 0.8,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFF0C0E15),
+        color: DizzyVoid.voidB,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(

@@ -211,7 +211,7 @@ class _RotaryDialPainter extends CustomPainter {
     final capR = r * 0.62;
     final capPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = const Color(0xFF1C202C);
+      ..color = DizzyVoid.surface2;
     canvas.drawCircle(center, capR, capPaint);
     final capEdge = Paint()
       ..style = PaintingStyle.stroke
@@ -238,7 +238,7 @@ class _RotaryDialPainter extends CustomPainter {
       3.0,
       Paint()
         ..style = PaintingStyle.fill
-        ..color = const Color(0xFF9AA0B4),
+        ..color = DizzyVoid.ash,
     );
   }
 

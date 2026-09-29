@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_download_service.dart';
 import '../../../utils/perf/image_caps.dart';
@@ -30,7 +31,7 @@ class MusicTrackRow extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         tileColor: isCurrent
             ? const Color(0xFF7C5CFF).withValues(alpha: 0.15)
-            : const Color(0xFF13151F),
+            : DizzyVoid.surface1,
         leading: Stack(
           alignment: Alignment.center,
           children: [

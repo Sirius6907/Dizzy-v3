@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/movie/movie.dart';
 
@@ -423,7 +425,7 @@ class _HomePageState extends State<HomePage> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF0B0D12), Color(0xFF05060A)],
+          colors: [DizzyColors.bg, DizzyVoid.voidA],
         ),
       ),
       child: Stack(

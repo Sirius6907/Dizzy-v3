@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../design/dizzy_tokens.dart';
 import '../../services/settings/settings_search_helper.dart';
@@ -126,7 +127,7 @@ class SettingsSearchDelegate extends SearchDelegate<WidgetBuilder?> {
     final base = Theme.of(context);
     return base.copyWith(
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
       ),
       inputDecorationTheme: const InputDecorationTheme(
@@ -193,7 +194,7 @@ class SettingsSearchDelegate extends SearchDelegate<WidgetBuilder?> {
                 color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
-            tileColor: const Color(0xFF12151E),
+            tileColor: DizzyVoid.surface1,
             onTap: () => _open(context, e),
           ),
         );

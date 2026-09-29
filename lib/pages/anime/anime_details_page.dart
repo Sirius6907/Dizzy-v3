@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
@@ -28,7 +29,7 @@ class _Palette {
   static Color get surface => AppThemeService.currentPalette.value.cardBackgroundColor;
   static Color get accent => AppThemeService.currentPalette.value.primaryColor;
   static Color get accentDim => AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.7);
-  static const gold = Color(0xFFFFC107);
+  static const gold = DizzyGlow.gold;
 }
 
 class AnimeDetailsPage extends StatefulWidget {

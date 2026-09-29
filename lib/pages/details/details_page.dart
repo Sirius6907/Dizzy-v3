@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/movie/movie.dart';
 import '../../models/movie/video.dart';
@@ -16,7 +17,6 @@ import '../../widgets/party/watch_together_button.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../discover/discover_page.dart';
 import '../player/watch_screen.dart';
-import '../../design/dizzy_tokens.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../models/download/download_task_model.dart';
@@ -1992,10 +1992,10 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                             // Polish P14: uncapped decode = OOM risk on 3GB.
                             memCacheWidth: ImageCaps.kCardW,
                             maxWidthDiskCache: ImageCaps.kCardW,
-                            errorWidget: (context, url, error) => const ColoredBox(color: Color(0xFF1B1E27)),
+                            errorWidget: (context, url, error) => const ColoredBox(color: DizzyColors.scrim),
                           )
                         else
-                          const ColoredBox(color: Color(0xFF1B1E27)),
+                          const ColoredBox(color: DizzyColors.scrim),
                         DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(

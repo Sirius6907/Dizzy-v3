@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
 import '../../services/audiobook/custom_audiobook_service.dart';
@@ -122,7 +124,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF13151F),
+            backgroundColor: DizzyVoid.surface1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             title: const Row(
               children: [
@@ -242,7 +244,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF13151F),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Remove Generation Job?'),
         content: Text('Remove "${job.fileName}" from the generation list?'),
@@ -293,7 +295,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) {
           return AlertDialog(
-            backgroundColor: const Color(0xFF13151F),
+            backgroundColor: DizzyVoid.surface1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Row(
               children: [
@@ -451,7 +453,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF090C14),
+      backgroundColor: DizzyColors.bg,
       appBar: AppBar(
         backgroundColor: const Color(0xFF0E131F).withValues(alpha: 0.9),
         elevation: 0,
@@ -1158,7 +1160,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF13151F),
+                  backgroundColor: DizzyVoid.surface1,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   title: const Text('Delete Audiobook?'),
                   content: Text('Delete "${book.title}" from your library?'),

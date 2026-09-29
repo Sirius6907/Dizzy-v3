@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/theme/dock_settings.dart';
 import '../../../widgets/common/app_liquid_dock.dart';
 
@@ -15,7 +16,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -61,7 +62,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF12151E),
+                        color: DizzyVoid.surface1,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: const Color(0xFF7C5CFF).withValues(alpha: 0.3),
@@ -168,7 +169,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.only(top: 12, bottom: 20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D1017),
+                  color: DizzyVoid.voidB,
                   border: Border(
                     top: BorderSide(
                       color: Colors.white.withValues(alpha: 0.08),
@@ -210,7 +211,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isEnabled

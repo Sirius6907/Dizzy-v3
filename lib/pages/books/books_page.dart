@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../models/book/book_result.dart';
 import '../../services/books/bookracy_service.dart';
 import '../../services/books/continue_reading_service.dart';
@@ -136,7 +138,7 @@ class _BooksPageState extends State<BooksPage> {
     final isMobile = screenWidth < 600;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D12),
+      backgroundColor: DizzyColors.bg,
       body: Stack(
         children: [
           // ── Ambient Animated Background ──
@@ -372,7 +374,7 @@ class _BooksPageState extends State<BooksPage> {
             child: Container(
               height: 46,
               decoration: BoxDecoration(
-                color: const Color(0xFF1B1C26).withValues(alpha: 0.8),
+                color: DizzyColors.scrim.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white12),
               ),
@@ -425,7 +427,7 @@ class _BooksPageState extends State<BooksPage> {
             const SizedBox(width: 8),
             _buildFormatChip('FB2', 'fb2', accentColor: const Color(0xFF10B981)),
             const SizedBox(width: 8),
-            _buildFormatChip('TXT', 'txt', accentColor: const Color(0xFF8B5CF6)),
+            _buildFormatChip('TXT', 'txt', accentColor: DizzyGlow.violet),
             const SizedBox(width: 8),
             _buildFormatChip('CBZ', 'cbz', accentColor: const Color(0xFFEC4899)),
           ],
@@ -444,7 +446,7 @@ class _BooksPageState extends State<BooksPage> {
         _loadBooks();
       },
       selectedColor: accentColor ?? const Color(0xFF7C3AED),
-      backgroundColor: const Color(0xFF1B1C26),
+      backgroundColor: DizzyColors.scrim,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
@@ -528,20 +530,20 @@ class _BookCardState extends State<_BookCard> {
                                   memCacheHeight: ImageCaps.kCardH,
                                   maxWidthDiskCache: ImageCaps.kCardW,
                                   placeholder: (_, __) => Container(
-                                    color: const Color(0xFF1E202B),
+                                    color: DizzyVoid.surface2,
                                     child: const Center(
                                       child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
                                     ),
                                   ),
                                   errorWidget: (_, __, ___) => Container(
-                                    color: const Color(0xFF1E202B),
+                                    color: DizzyVoid.surface2,
                                     child: const Center(
                                       child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
                                     ),
                                   ),
                                 )
                               : Container(
-                                  color: const Color(0xFF1E202B),
+                                  color: DizzyVoid.surface2,
                                   child: const Center(
                                     child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
                                   ),

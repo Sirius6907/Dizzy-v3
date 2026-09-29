@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:dizzy/design/dizzy_tokens.dart';
 import 'package:dizzy/services/watchparty/party_session.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 
 /// Unified tactile OLED co-experience room for the 3 modes:
@@ -700,7 +700,7 @@ class _ListenTogetherBody extends StatelessWidget {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF262B3A), Color(0xFF0B0D13)],
+                        colors: [Color(0xFF262B3A), DizzyColors.bg],
                       ),
                       border: Border.fromBorderSide(DizzyEdge.hairline),
                     ),

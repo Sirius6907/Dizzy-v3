@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/audiobook/audiobook_settings.dart';
 import '../../../services/home/home_page_settings.dart';
@@ -29,7 +31,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -138,7 +140,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12151E),
+                      color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
@@ -202,7 +204,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -250,7 +252,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(p.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -385,7 +387,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -438,7 +440,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(d.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -512,7 +514,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: isSelected ? palette.primaryColor.withValues(alpha: 0.12) : const Color(0xFF12151E),
+                color: isSelected ? palette.primaryColor.withValues(alpha: 0.12) : DizzyVoid.surface1,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
@@ -719,7 +721,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -730,7 +732,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF090B10),
+              color: DizzyColors.bg,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: palette.primaryColor.withValues(alpha: 0.3)),
               boxShadow: [
@@ -929,7 +931,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -964,7 +966,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -999,7 +1001,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -1034,7 +1036,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(e.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0C0F17),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? palette.primaryColor : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -1094,7 +1096,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     key: ValueKey(key),
                     margin: const EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0C0F17),
+                      color: DizzyVoid.voidB,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                     ),

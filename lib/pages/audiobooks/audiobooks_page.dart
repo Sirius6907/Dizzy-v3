@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -224,7 +225,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                             label: Text(d.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -496,7 +497,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                       filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF12151E).withValues(alpha: 0.75),
+                          color: DizzyVoid.surface1.withValues(alpha: 0.75),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: _searchController.text.isNotEmpty ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
@@ -1107,7 +1108,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12151E).withValues(alpha: 0.85),
+                      color: DizzyVoid.surface1.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                     ),
@@ -1205,7 +1206,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12151E).withValues(alpha: 0.85),
+                      color: DizzyVoid.surface1.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                     ),
@@ -1344,7 +1345,7 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                   decoration: BoxDecoration(
                     color: _isHovered
                         ? const Color(0xFF1B2030)
-                        : const Color(0xFF12151E).withValues(alpha: 0.85),
+                        : DizzyVoid.surface1.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _isHovered
@@ -1380,14 +1381,14 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                                     memCacheWidth: ImageCaps.kCardW,
                                     memCacheHeight: ImageCaps.kCardH,
                                     maxWidthDiskCache: ImageCaps.kCardW,
-                                    placeholder: (_, __) => Container(color: const Color(0xFF1A1F2C)),
+                                    placeholder: (_, __) => Container(color: DizzyVoid.surface2),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: const Color(0xFF1A1F2C),
+                                      color: DizzyVoid.surface2,
                                       child: const Icon(Icons.headphones_rounded, color: Colors.white38),
                                     ),
                                   )
                                 : Container(
-                                    color: const Color(0xFF1A1F2C),
+                                    color: DizzyVoid.surface2,
                                     child: const Icon(Icons.headphones_rounded, color: Colors.white38),
                                   ),
                           ),
@@ -1623,7 +1624,7 @@ class _AudiobookCardState extends State<_AudiobookCard> {
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              color: _isHovered ? const Color(0xFF191E2C) : const Color(0xFF12151E),
+              color: _isHovered ? const Color(0xFF191E2C) : DizzyVoid.surface1,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isHovered
@@ -1658,14 +1659,14 @@ class _AudiobookCardState extends State<_AudiobookCard> {
                               // P12: full-width banner capped.
                               memCacheWidth: ImageCaps.kBackdrop,
                               maxWidthDiskCache: ImageCaps.kBackdrop,
-                              placeholder: (_, __) => Container(color: const Color(0xFF1A1F2C)),
+                              placeholder: (_, __) => Container(color: DizzyVoid.surface2),
                               errorWidget: (_, __, ___) => Container(
-                                color: const Color(0xFF1A1F2C),
+                                color: DizzyVoid.surface2,
                                 child: const Icon(Icons.headphones_rounded, size: 40, color: Colors.white38),
                               ),
                             )
                           : Container(
-                              color: const Color(0xFF1A1F2C),
+                              color: DizzyVoid.surface2,
                               child: const Center(
                                 child: Icon(Icons.headphones_rounded, size: 40, color: Colors.white38),
                               ),

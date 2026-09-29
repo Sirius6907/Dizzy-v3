@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/widgets/tactile/dizzy_eq_fader.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
-import 'package:dizzy/widgets/tactile/dizzy_eq_fader.dart';
 
 /// Phase 4 — 7-band (default 5-band) hardware EQ strip.
 ///
@@ -146,7 +146,7 @@ class _LedDot extends StatelessWidget {
         shape: BoxShape.circle,
         color: color,
         border: Border.all(
-          color: const Color(0xFF000000).withValues(alpha: 0.4),
+          color: DizzyVoid.obsidian.withValues(alpha: 0.4),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../models/iptv/iptv_models.dart';
 import '../../services/iptv/hardcoded_channels.dart';
 import '../../services/player/player_settings.dart';
@@ -674,7 +675,7 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: isLive ? const Color(0xFFFF3B30) : const Color(0xFF7C5CFF),
+                                              color: isLive ? DizzyGlow.ember : const Color(0xFF7C5CFF),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Text(
@@ -1385,7 +1386,7 @@ class _IptvCustomProgressBarState extends State<_IptvCustomProgressBar> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0C0E15),
+                                  color: DizzyVoid.voidB,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: Colors.white24, width: 1),
                                   boxShadow: const [

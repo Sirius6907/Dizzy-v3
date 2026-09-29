@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_download_service.dart';
 import '../../../services/music/music_library_service.dart';
@@ -250,7 +251,7 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                             return ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              tileColor: const Color(0xFF13151F),
+                              tileColor: DizzyVoid.surface1,
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: item.localCoverPath.isNotEmpty && File(item.localCoverPath).existsSync()
@@ -367,7 +368,7 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
         errorWidget: (_, __, ___) => Container(
           width: 46,
           height: 46,
-          color: const Color(0xFF1B1E2B),
+          color: DizzyVoid.surface2,
           child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 24),
         ),
       );
@@ -375,7 +376,7 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
     return Container(
       width: 46,
       height: 46,
-      color: const Color(0xFF1B1E2B),
+      color: DizzyVoid.surface2,
       child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 24),
     );
   }

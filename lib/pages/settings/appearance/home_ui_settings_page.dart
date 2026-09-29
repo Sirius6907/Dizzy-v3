@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/theme/custom_background_service.dart';
 import '../../../services/home/home_page_settings.dart';
@@ -24,7 +25,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1017),
+        backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -101,7 +102,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF12151E),
+                        color: DizzyVoid.surface1,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: hasWallpaper
@@ -351,7 +352,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
         return Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF12151E),
+            color: DizzyVoid.surface1,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: enabled
@@ -483,7 +484,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                           label: Text(pat.label),
                           selected: isSelected,
                           selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                          backgroundColor: const Color(0xFF0D1017),
+                          backgroundColor: DizzyVoid.voidB,
                           labelStyle: TextStyle(
                             color: isSelected ? palette.primaryColor : Colors.white70,
                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -622,7 +623,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFF7C5CFF).withValues(alpha: 0.25),
@@ -794,7 +795,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                 dropdownColor: const Color(0xFF151822),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF0D1017),
+                  fillColor: DizzyVoid.voidB,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -887,7 +888,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -982,7 +983,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                             label: Text(style.label),
                             selected: isSelected,
                             selectedColor: const Color(0xFF7C5CFF).withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? const Color(0xFF7C5CFF) : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -1137,7 +1138,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -1165,7 +1166,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
                     label: Text(density.label),
                     selected: isSelected,
                     selectedColor: const Color(0xFF7C5CFF).withValues(alpha: 0.25),
-                    backgroundColor: const Color(0xFF0D1017),
+                    backgroundColor: DizzyVoid.voidB,
                     labelStyle: TextStyle(
                       color: isSelected ? const Color(0xFF7C5CFF) : Colors.white70,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -1293,7 +1294,7 @@ class _HomeUiSettingsPageState extends State<HomeUiSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),

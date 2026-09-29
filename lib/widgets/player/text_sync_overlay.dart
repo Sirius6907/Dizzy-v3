@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/subtitles/subtitle_parser.dart';
 import '../../services/subtitles/subtitle_sync_helper.dart';
@@ -435,7 +436,7 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
                         color: _searchQuery.isNotEmpty && _matchedIndices.isNotEmpty
-                            ? const Color(0xFFFFC107).withValues(alpha: 0.45)
+                            ? DizzyGlow.gold.withValues(alpha: 0.45)
                             : PlayerTheme.edge,
                       ),
                     ),
@@ -445,7 +446,7 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                         Icon(
                           Icons.search_rounded,
                           color: _searchQuery.isNotEmpty && _matchedIndices.isNotEmpty
-                              ? const Color(0xFFFFC107)
+                              ? DizzyGlow.gold
                               : PlayerTheme.inkSubtle,
                           size: 15,
                         ),
@@ -482,7 +483,7 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                       : '0/0'),
                               style: TextStyle(
                                 color: _searchQuery.length >= 3 && _matchedIndices.isNotEmpty
-                                    ? const Color(0xFFFFC107)
+                                    ? DizzyGlow.gold
                                     : PlayerTheme.inkSubtle,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -627,7 +628,7 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                           ),
                                           left: isCurrentFocusedMatch
                                               ? const BorderSide(
-                                                  color: Color(0xFFFFC107),
+                                                  color: DizzyGlow.gold,
                                                   width: 3,
                                                 )
                                               : isActive
@@ -798,7 +799,7 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
   Widget _buildBottomControlDock(bool isLandscapeMobile, double currentDelta) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0A0E16),
+        color: DizzyVoid.voidB,
         border: Border(top: BorderSide(color: PlayerTheme.edgeSoft)),
       ),
       padding: EdgeInsets.fromLTRB(
@@ -977,8 +978,8 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
         TextSpan(
           text: text.substring(index, index + query.length),
           style: const TextStyle(
-            backgroundColor: Color(0xFFFFC107),
-            color: Color(0xFF000000),
+            backgroundColor: DizzyGlow.gold,
+            color: DizzyVoid.obsidian,
             fontWeight: FontWeight.w900,
           ),
         ),

@@ -1,5 +1,6 @@
 import '../../../services/music/music_service.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../services/music/music_player_controller.dart';
 import 'music_hoverable.dart';
 
@@ -20,7 +21,7 @@ class MusicSidebar extends StatelessWidget {
     return Container(
       width: 240,
       decoration: BoxDecoration(
-        color: const Color(0xFF0C0E17),
+        color: DizzyVoid.voidB,
         border: Border(
           right: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),

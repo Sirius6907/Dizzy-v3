@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/manga/manga.dart';
 import '../../models/manga/manga_chapter.dart';
@@ -274,7 +275,7 @@ class _MangaPageState extends State<MangaPage> {
                             label: Text(d.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,

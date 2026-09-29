@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/manga/manga.dart';
 import '../../utils/perf/image_caps.dart';
@@ -378,7 +380,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
                         label: Text(m.label),
                         selected: isSelected,
                         selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                        backgroundColor: const Color(0xFF0D1017),
+                        backgroundColor: DizzyVoid.voidB,
                         labelStyle: TextStyle(
                           color: isSelected ? palette.primaryColor : Colors.white70,
                           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -414,7 +416,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
                             label: Text(w.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -457,7 +459,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
                             label: Text(b.label),
                             selected: isSelected,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: isSelected ? palette.primaryColor : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -790,7 +792,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
         vertical: 8,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C0F17).withValues(alpha: 0.85),
+        color: DizzyVoid.voidB.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
@@ -1009,7 +1011,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
             12 + bottomInset,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF090B10).withValues(alpha: 0.90),
+            color: DizzyColors.bg.withValues(alpha: 0.90),
             border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
             boxShadow: [
               BoxShadow(

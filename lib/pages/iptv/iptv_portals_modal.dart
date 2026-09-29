@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../models/iptv/iptv_models.dart';
 import '../../services/iptv/iptv_controller.dart';
@@ -256,7 +257,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                               label: Text(s.label),
                               selected: isSelected,
                               selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                              backgroundColor: const Color(0xFF0D1017),
+                              backgroundColor: DizzyVoid.voidB,
                               labelStyle: TextStyle(
                                 color: isSelected ? palette.primaryColor : Colors.white70,
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
@@ -321,7 +322,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                             label: const Text('Xtream Panels'),
                             selected: tabIdx == 0,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: tabIdx == 0 ? palette.primaryColor : Colors.white70,
                               fontWeight: tabIdx == 0 ? FontWeight.w800 : FontWeight.w500,
@@ -341,7 +342,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                             label: const Text('M3U Playlists'),
                             selected: tabIdx == 1,
                             selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: const Color(0xFF0D1017),
+                            backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
                               color: tabIdx == 1 ? palette.primaryColor : Colors.white70,
                               fontWeight: tabIdx == 1 ? FontWeight.w800 : FontWeight.w500,
@@ -377,7 +378,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
       animation: _ctrl,
       builder: (context, _) {
         return Dialog(
-          backgroundColor: const Color(0xFF0C0E15),
+          backgroundColor: DizzyVoid.voidB,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -901,7 +902,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                     'Favorites ⭐ (${_ctrl.verified.where((p) => _ctrl.isFavoritePortal(p.key)).length})',
                     Icons.star_rounded,
                     palette,
-                    activeColor: const Color(0xFFFFC107),
+                    activeColor: DizzyGlow.gold,
                   ),
                 ],
               ),
@@ -1100,7 +1101,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                                 IconButton(
                                   icon: Icon(
                                     isFav ? Icons.star_rounded : Icons.star_outline_rounded,
-                                    color: isFav ? const Color(0xFFFFC107) : Colors.white38,
+                                    color: isFav ? DizzyGlow.gold : Colors.white38,
                                     size: 20,
                                   ),
                                   onPressed: () => _ctrl.toggleFavoritePortal(p.key),

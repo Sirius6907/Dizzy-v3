@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../models/movie/movie_detail.dart';
 import '../../models/movie/video.dart';
 import '../../models/stream/stream_model.dart';
@@ -730,7 +732,7 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                                 ),
                               ],
                             ),
-                            backgroundColor: const Color(0xFF1A1D26),
+                            backgroundColor: DizzyColors.scrim,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             duration: const Duration(seconds: 2),
@@ -787,7 +789,7 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
   Color _getResolutionColor(String res) {
     switch (res) {
       case '4K':
-        return const Color(0xFF8B5CF6);
+        return DizzyGlow.violet;
       case '1080P':
         return const Color(0xFF10B981);
       case '720P':
