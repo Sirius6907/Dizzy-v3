@@ -45,8 +45,13 @@ enum TimeBudget {
 
   static TimeBudget? fromId(String? id) {
     if (id == null) return null;
+    // Compare lowercased on BOTH sides: the option id is the camelCase enum
+    // name ('oneNight'), and lowercasing only the input made every
+    // 'oneNight' answer unrecognisable — so the middle option could never
+    // complete the quiz.
+    final wanted = id.trim().toLowerCase();
     for (final b in TimeBudget.values) {
-      if (b.name == id.trim().toLowerCase()) return b;
+      if (b.name.toLowerCase() == wanted) return b;
     }
     return null;
   }
@@ -296,4 +301,12 @@ abstract final class MoodQuizPolicy {
   /// One line under the result headline.
   static String resultLine(MoodProfile p) =>
       '${p.budget.label}, ${p.company.label.toLowerCase()}.';
+
+  /// The exact line a person reads for one pick. Built here rather than in
+  /// the widget so "what does the card say" is one tested function.
+  static String pickLine(MoodPick p) => '${p.title} — ${p.reason}';
+
+  /// Every pick, as lines.
+  static List<String> pickLines(List<MoodPick> picks) =>
+      picks.map(pickLine).toList();
 }
