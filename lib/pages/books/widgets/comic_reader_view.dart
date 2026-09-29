@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../design/dizzy_tokens.dart';
 import '../../../services/books/reader_settings.dart';
 
 class ComicReaderView extends StatefulWidget {
@@ -239,7 +240,7 @@ class _ComicReaderViewState extends State<ComicReaderView> with SingleTickerProv
                           child: Text(
                             '${(_currentScale * 100).round()}%',
                             style: const TextStyle(
-                              fontFamily: 'Poppins',
+                              fontFamily: DizzyType.fontFamily,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

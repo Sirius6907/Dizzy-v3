@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -172,6 +173,20 @@ class _PerfLifecycleObserver with WidgetsBindingObserver {
 
 final _perfLifecycleObserver = _PerfLifecycleObserver();
 
+/// P6 — desktop drag: mouse + trackpad se rails drag ho (touch jaisa).
+/// Bina iske desktop pe horizontal ListView sirf wheel/arrows se chalta.
+class DesktopCustomScrollBehavior extends MaterialScrollBehavior {
+  const DesktopCustomScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+}
+
 class DizzyApp extends StatefulWidget {
   const DizzyApp({super.key});
 
@@ -249,7 +264,7 @@ class _DizzyAppState extends State<DizzyApp>
           title: 'Dizzy',
           debugShowCheckedModeBanner: false,
           theme: AppThemeService.createThemeData(palette),
-          scrollBehavior: const MaterialScrollBehavior().copyWith(
+          scrollBehavior: const DesktopCustomScrollBehavior().copyWith(
             overscroll: false,
           ),
           // Polish P12: 200% font safety rail — layouts never break,
