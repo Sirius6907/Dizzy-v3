@@ -120,7 +120,7 @@ class _NextEpisodeCountdownState extends State<NextEpisodeCountdown>
                             maxWidthDiskCache: 600,
                             errorWidget: (_, __, ___) => Container(
                               height: 170,
-                              color: const Color(0xFF171B26),
+                              color: DizzyVoid.surface1,
                               child: const Icon(
                                 Icons.smart_display_rounded,
                                 color: Colors.white24,
@@ -131,7 +131,7 @@ class _NextEpisodeCountdownState extends State<NextEpisodeCountdown>
                         else
                           Container(
                             height: 170,
-                            color: const Color(0xFF171B26),
+                            color: DizzyVoid.surface1,
                             child: const Icon(
                               Icons.smart_display_rounded,
                               color: Colors.white24,

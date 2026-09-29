@@ -613,7 +613,7 @@ class _HomePageState extends State<HomePage> {
                     ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
                         colors: [
-                          const Color(0xFFFFFFFF),
+                          Colors.white,
                           palette.silverAccent,
                           const Color(0xFFCBD5E1),
                           palette.primaryColor.withValues(alpha: 0.85),

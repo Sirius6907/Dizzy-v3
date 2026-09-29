@@ -1003,7 +1003,7 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
                     child: Container(
                       decoration: const BoxDecoration(
                         color: Color(0xF2080A10),
-                        border: Border(left: BorderSide(color: Color(0xFF1E2336), width: 1.2)),
+                        border: Border(left: BorderSide(color: DizzyVoid.surface2, width: 1.2)),
                         boxShadow: [
                           BoxShadow(color: Colors.black87, blurRadius: 24, offset: Offset(-6, 0)),
                         ],
@@ -1109,7 +1109,7 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
                                             decoration: BoxDecoration(
                                               color: DizzyVoid.voidB,
                                               borderRadius: BorderRadius.circular(4),
-                                              border: Border.all(color: const Color(0xFF1E2336)),
+                                              border: Border.all(color: DizzyVoid.surface2),
                                             ),
                                             child: hit.stream.icon.isNotEmpty
                                                 ? ClipRRect(

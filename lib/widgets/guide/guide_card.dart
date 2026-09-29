@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../design/dizzy_tokens.dart';
 import '../../services/guide/guide_service.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 /// v1.2.0-T2.6: reusable swipeable guide card (Easy English only).
 /// Big icon + 1-line easy text + Next/Skip. Skip = never show again.
@@ -30,7 +31,7 @@ class GuideCard extends StatefulWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
-        backgroundColor: const Color(0xFF141A26),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(borderRadius: DizzyRadius.lgAll),
         child: GuideCard(guideKey: guideKey, steps: steps),
       ),

@@ -134,7 +134,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
         SnackBar(
           content: Text('Removed $count portal${count == 1 ? "" : "s"}'),
           duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF1E2235),
+          backgroundColor: DizzyVoid.surface2,
         ),
       );
     }
@@ -152,7 +152,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
         SnackBar(
           content: Text('Removed all $count portals'),
           duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF1E2235),
+          backgroundColor: DizzyVoid.surface2,
         ),
       );
     }
@@ -174,7 +174,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
         SnackBar(
           content: Text('Removed $count playlist${count == 1 ? "" : "s"}'),
           duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF1E2235),
+          backgroundColor: DizzyVoid.surface2,
         ),
       );
     }
@@ -192,7 +192,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
         SnackBar(
           content: Text('Removed all $count playlists'),
           duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF1E2235),
+          backgroundColor: DizzyVoid.surface2,
         ),
       );
     }
@@ -528,7 +528,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                   borderRadius: BorderRadius.circular(14),
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                 ),
-                color: const Color(0xFF161A26),
+                color: DizzyVoid.surface1,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9.5),
                   decoration: BoxDecoration(
@@ -1093,7 +1093,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                                       SnackBar(
                                         content: Text('Copied: $text'),
                                         duration: const Duration(seconds: 2),
-                                        backgroundColor: const Color(0xFF1E2235),
+                                        backgroundColor: DizzyVoid.surface2,
                                       ),
                                     );
                                   },
@@ -1459,7 +1459,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                                         SnackBar(
                                           content: Text('Copied: $text'),
                                           duration: const Duration(seconds: 2),
-                                          backgroundColor: const Color(0xFF1E2235),
+                                          backgroundColor: DizzyVoid.surface2,
                                         ),
                                       );
                                     }

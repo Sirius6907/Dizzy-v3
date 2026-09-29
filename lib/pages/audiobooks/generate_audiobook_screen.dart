@@ -640,7 +640,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
               child: DropdownButton<String>(
                 value: _selectedVoiceId,
                 isExpanded: true,
-                dropdownColor: const Color(0xFF131826),
+                dropdownColor: DizzyVoid.voidB,
                 icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white70),
                 items: kPaper2AudioVoices.map((voice) {
                   return DropdownMenuItem<String>(

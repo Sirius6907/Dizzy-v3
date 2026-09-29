@@ -1722,7 +1722,7 @@ class _LiveChannelListRowState extends State<_LiveChannelListRow> {
             duration: const Duration(milliseconds: 120),
             padding: EdgeInsets.symmetric(horizontal: isVerySmall ? 8 : 14, vertical: 8),
             decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFF161A28) : DizzyVoid.voidB,
+              color: _hovered ? DizzyVoid.surface1 : DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: _hovered ? palette.primaryColor.withValues(alpha: 0.7) : DizzyVoid.surface2,
@@ -1766,7 +1766,7 @@ class _LiveChannelListRowState extends State<_LiveChannelListRow> {
                     decoration: BoxDecoration(
                       color: DizzyVoid.voidB,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFF1E2336)),
+                      border: Border.all(color: DizzyVoid.surface2),
                     ),
                     child: s.icon.isNotEmpty
                         ? ClipRRect(
@@ -1947,7 +1947,7 @@ class _LiveChannelGridCardState extends State<_LiveChannelGridCard> {
             duration: const Duration(milliseconds: 140),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFF161A28) : DizzyVoid.voidB,
+              color: _hovered ? DizzyVoid.surface1 : DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: _hovered ? palette.primaryColor.withValues(alpha: 0.8) : DizzyVoid.surface2,
@@ -1977,7 +1977,7 @@ class _LiveChannelGridCardState extends State<_LiveChannelGridCard> {
                         decoration: BoxDecoration(
                           color: DizzyVoid.voidB,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFF1E2336)),
+                          border: Border.all(color: DizzyVoid.surface2),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
@@ -2129,7 +2129,7 @@ class _LiveChannelCompactListRowState extends State<_LiveChannelCompactListRow> 
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFF161A28) : DizzyVoid.voidB,
+              color: _hovered ? DizzyVoid.surface1 : DizzyVoid.voidB,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: _hovered ? palette.primaryColor.withValues(alpha: 0.7) : DizzyVoid.surface2,

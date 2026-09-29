@@ -9,6 +9,7 @@ import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../details/details_page.dart';
 import '../../models/movie/movie.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 class MyListPage extends StatefulWidget {
   const MyListPage({super.key});
@@ -95,7 +96,7 @@ class _MyListPageState extends State<MyListPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF151822),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Remove from My List?',
             style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
@@ -112,7 +113,7 @@ class _MyListPageState extends State<MyListPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE50914),
+              backgroundColor: DizzyGlow.red,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Remove', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -131,7 +132,7 @@ class _MyListPageState extends State<MyListPage> {
   @override
   Widget build(BuildContext context) {
     return OfflineAwareScaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor: DizzyVoid.obsidian,
       body: Stack(
         children: [
           // ── Ambient Background Glows ──
@@ -235,7 +236,7 @@ class _MyListPageState extends State<MyListPage> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1017).withValues(alpha: 0.8),
+        color: DizzyVoid.voidB.withValues(alpha: 0.8),
         border: Border(
           bottom: BorderSide(
             color: Colors.white.withValues(alpha: 0.06),
@@ -366,7 +367,7 @@ class _MyListPageState extends State<MyListPage> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _sortBy,
-                      dropdownColor: const Color(0xFF151822),
+                      dropdownColor: DizzyVoid.surface1,
                       style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                       icon: const Icon(Icons.sort_rounded, color: Color(0xFF7C5CFF), size: 16),
                       items: const [
@@ -746,7 +747,7 @@ class _MyListCardState extends State<_MyListCard> {
                                   height: 38,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: const Color(0xFFE50914).withValues(alpha: 0.9),
+                                    color: DizzyGlow.red.withValues(alpha: 0.9),
                                   ),
                                   child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
                                 ),
@@ -767,7 +768,7 @@ class _MyListCardState extends State<_MyListCard> {
 
   Widget _buildFallbackPoster() {
     return Container(
-      color: const Color(0xFF151822),
+      color: DizzyVoid.surface1,
       child: Center(
         child: Icon(
           widget.item.type == 'movie' ? Icons.movie_rounded : Icons.tv_rounded,

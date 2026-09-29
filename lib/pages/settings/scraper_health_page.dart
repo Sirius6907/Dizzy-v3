@@ -154,7 +154,7 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [
           const Color(0xFF10B981).withValues(alpha: 0.22),
-          const Color(0xFF8B5CF6).withValues(alpha: 0.10),
+          DizzyGlow.violet.withValues(alpha: 0.10),
         ]),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(

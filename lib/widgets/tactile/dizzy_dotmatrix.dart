@@ -39,7 +39,7 @@ class DizzyDotMatrix extends StatelessWidget {
         color: DizzyVoid.obsidian,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFFFFFFF).withValues(alpha: 0.10),
+          color: Colors.white.withValues(alpha: 0.10),
         ),
       ),
       child: RepaintBoundary(
@@ -129,7 +129,7 @@ class _DotMatrixPainter extends CustomPainter {
       ..color = lit;
     final litCore = Paint()
       ..style = PaintingStyle.fill
-      ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.35);
+      ..color = Colors.white.withValues(alpha: 0.35);
     final offPaint = Paint()
       ..style = PaintingStyle.fill
       ..color = DizzyVoid.surface2;

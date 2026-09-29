@@ -1215,14 +1215,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 // P12: decode-capped (was full-res).
                 memCacheWidth: ImageCaps.kCardW,
                 maxWidthDiskCache: ImageCaps.kCardW,
-                placeholder: (_, __) => Container(color: const Color(0xFF161A26)),
+                placeholder: (_, __) => Container(color: DizzyVoid.surface1),
                 errorWidget: (_, __, ___) => Container(
-                  color: const Color(0xFF161A26),
+                  color: DizzyVoid.surface1,
                   child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
                 ),
               )
             : Container(
-                color: const Color(0xFF161A26),
+                color: DizzyVoid.surface1,
                 child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
               ),
       ),
@@ -1267,13 +1267,13 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                   memCacheWidth: ImageCaps.kCardW,
                   maxWidthDiskCache: ImageCaps.kCardW,
                   errorWidget: (_, __, ___) => Container(
-                    color: const Color(0xFF161A26),
+                    color: DizzyVoid.surface1,
                     child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
                   ),
                 )
               else
                 Container(
-                  color: const Color(0xFF161A26),
+                  color: DizzyVoid.surface1,
                   child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
                 ),
               // Center Vinyl Ring Hole

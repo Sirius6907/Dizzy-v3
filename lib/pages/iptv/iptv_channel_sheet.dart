@@ -87,7 +87,7 @@ class _IptvChannelSheetState extends State<IptvChannelSheet> {
         SnackBar(
           content: Text('Removed $count stream feed${count == 1 ? "" : "s"}'),
           duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF1E2235),
+          backgroundColor: DizzyVoid.surface2,
         ),
       );
     }
@@ -96,6 +96,9 @@ class _IptvChannelSheetState extends State<IptvChannelSheet> {
   @override
   Widget build(BuildContext context) {
     final ch = widget.channel;
+    // P6 hex sweep: these two stay literal on purpose. They are the IPTV brand
+    // gradient pair (amethyst + cyan) and are also the gradient stops of the
+    // hero wash below, so a surface token swap would change the artwork.
     final primaryColor = ch.gradient.isNotEmpty ? ch.gradient.first : const Color(0xFF7C5CFF);
     final secondaryColor = ch.gradient.length > 1 ? ch.gradient.last : const Color(0xFF00D2EF);
 

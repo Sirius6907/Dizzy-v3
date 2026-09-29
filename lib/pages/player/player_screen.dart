@@ -69,6 +69,7 @@ import '../../widgets/player/next_episode_countdown.dart';
 import '../../services/errors/app_log.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../design/dizzy_tokens.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 class PlayerScreen extends StatefulWidget {
   final StreamSource source;
@@ -3012,7 +3013,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F1117).withValues(alpha: 0.88),
+          color: DizzyVoid.voidA.withValues(alpha: 0.88),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isBoosting
@@ -3131,7 +3132,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F1117).withValues(alpha: 0.90),
+          color: DizzyVoid.voidA.withValues(alpha: 0.90),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: const Color(0xFF7C5CFF).withValues(alpha: 0.5),

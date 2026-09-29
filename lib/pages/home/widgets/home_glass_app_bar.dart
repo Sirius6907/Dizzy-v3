@@ -64,7 +64,7 @@ class HomeGlassAppBar extends StatelessWidget {
             ShaderMask(
               shaderCallback: (bounds) => LinearGradient(
                 colors: [
-                  const Color(0xFFFFFFFF),
+                  Colors.white,
                   palette.silverAccent,
                   const Color(0xFFCBD5E1),
                 ],

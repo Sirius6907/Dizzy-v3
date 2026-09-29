@@ -66,6 +66,8 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
     final isCompact = screenWidth < 640;
 
     final isCredits = widget.segment.type == 'credits';
+    // P6 hex sweep: these stay literal on purpose — the skip-segment identity
+    // colors (intro violet / credits green) and their alpha-tinted glow below.
     final accentColor = isCredits ? const Color(0xFF10B981) : const Color(0xFF7C5CFF);
     final accentGlow = isCredits ? const Color(0xFF34D399) : const Color(0xFF9D84FF);
 
