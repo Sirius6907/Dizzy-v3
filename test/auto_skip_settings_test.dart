@@ -1,12 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dizzy/services/player/auto_skip_policy.dart';
 import 'package:dizzy/services/player/player_settings.dart';
 
+/// F1 moved the auto-skip rule out of the player widget and into
+/// `AutoSkipPolicy`, so it can be tested without a BuildContext. The real
+/// policy is covered in `test/player/instant_play_test.dart`; this file
+/// keeps the settings-surface half (notifiers + setter signatures).
 void main() {
-  group('F2 Auto-Skip Settings (v1.1.9)', () {
-    test('defaults are OFF (opt-in)', () {
+  group('F1 Auto-Skip settings', () {
+    test('defaults are ON (press once, watch the whole thing)', () {
       // Fresh defaults before load: constructor values.
-      expect(PlayerSettings.autoSkipIntro, isNotNull);
-      expect(PlayerSettings.autoSkipRecap, isNotNull);
+      expect(PlayerSettings.autoSkipIntro.value, isTrue);
+      expect(PlayerSettings.autoSkipRecap.value, isTrue);
+      // Credits ride the existing user-facing "Skip Intro (Smart)" switch.
+      expect(PlayerSettings.skipIntroHeuristics.value, isTrue);
     });
 
     test('setters exist with correct signatures', () {
@@ -17,19 +24,31 @@ void main() {
       expect(PlayerSettings.setAutoSkipRecap, isA<Function>());
     });
 
-    test('auto-skip gate logic: only intro/recap, never credits/preview', () {
+    test('auto-skip gate: intro/recap/credits yes, preview never', () {
       bool shouldAutoSkip(String type,
-          {required bool introOn, required bool recapOn}) {
-        final t = type.toLowerCase();
-        return (t == 'intro' && introOn) || (t == 'recap' && recapOn);
-      }
+          {required bool introOn,
+          required bool recapOn,
+          required bool creditsOn}) =>
+          AutoSkipPolicy.shouldAutoSkip(type,
+              autoSkipIntro: introOn,
+              autoSkipRecap: recapOn,
+              autoSkipCredits: creditsOn);
 
-      expect(shouldAutoSkip('intro', introOn: true, recapOn: false), isTrue);
-      expect(shouldAutoSkip('intro', introOn: false, recapOn: false), isFalse);
-      expect(shouldAutoSkip('recap', introOn: false, recapOn: true), isTrue);
-      expect(shouldAutoSkip('recap', introOn: true, recapOn: false), isFalse);
-      expect(shouldAutoSkip('credits', introOn: true, recapOn: true), isFalse);
-      expect(shouldAutoSkip('preview', introOn: true, recapOn: true), isFalse);
+      expect(shouldAutoSkip('intro',
+          introOn: true, recapOn: false, creditsOn: false), isTrue);
+      expect(shouldAutoSkip('intro',
+          introOn: false, recapOn: false, creditsOn: false), isFalse);
+      expect(shouldAutoSkip('recap',
+          introOn: false, recapOn: true, creditsOn: false), isTrue);
+      expect(shouldAutoSkip('recap',
+          introOn: true, recapOn: false, creditsOn: false), isFalse);
+      expect(shouldAutoSkip('credits',
+          introOn: false, recapOn: false, creditsOn: true), isTrue);
+      expect(shouldAutoSkip('credits',
+          introOn: true, recapOn: true, creditsOn: false), isFalse);
+      // A preview is the tail of a movie — never yanked automatically.
+      expect(shouldAutoSkip('preview',
+          introOn: true, recapOn: true, creditsOn: true), isFalse);
     });
   });
 }
