@@ -36,7 +36,7 @@ class Dizzy7Segment extends StatelessWidget {
         color: DizzyVoid.obsidian,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFFFFFFF).withValues(alpha: 0.10),
+          color: Colors.white.withValues(alpha: 0.10),
         ),
       ),
       child: Row(

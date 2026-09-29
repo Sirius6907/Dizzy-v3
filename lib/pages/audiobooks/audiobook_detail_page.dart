@@ -293,14 +293,14 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                 // P12: decode-capped (was full-res).
                 memCacheWidth: ImageCaps.kCardW,
                 maxWidthDiskCache: ImageCaps.kCardW,
-                placeholder: (_, __) => Container(color: const Color(0xFF161A26)),
+                placeholder: (_, __) => Container(color: DizzyVoid.surface1),
                 errorWidget: (_, __, ___) => Container(
-                  color: const Color(0xFF161A26),
+                  color: DizzyVoid.surface1,
                   child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white38),
                 ),
               )
             : Container(
-                color: const Color(0xFF161A26),
+                color: DizzyVoid.surface1,
                 child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white38),
               ),
       ),

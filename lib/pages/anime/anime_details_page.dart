@@ -751,7 +751,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
         library.setWatchlistStatus(_anime, status);
         setState(() {});
       },
-      color: const Color(0xFF161A26),
+      color: DizzyVoid.surface1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),

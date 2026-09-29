@@ -287,7 +287,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
                               left: 16,
                               child: FloatingActionButton.extended(
                                 onPressed: () => setState(() => _mobileViewMode = 0),
-                                backgroundColor: const Color(0xFF161A28),
+                                backgroundColor: DizzyVoid.surface1,
                                 icon: Icon(Icons.arrow_back_rounded, color: palette.primaryColor, size: 18),
                                 label: const Text(
                                   'Back to Customizer',
@@ -624,7 +624,7 @@ class _AudiobookPlayerStudioPageState extends State<AudiobookPlayerStudioPage> w
       width: 130,
       height: 130,
       decoration: BoxDecoration(
-        color: const Color(0xFF161A28),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.2),
         boxShadow: [

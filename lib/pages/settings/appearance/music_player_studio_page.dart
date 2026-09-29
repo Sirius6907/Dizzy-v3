@@ -330,7 +330,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
                               left: 16,
                               child: FloatingActionButton.extended(
                                 onPressed: () => setState(() => _mobileViewMode = 0),
-                                backgroundColor: const Color(0xFF161A28),
+                                backgroundColor: DizzyVoid.surface1,
                                 icon: Icon(Icons.arrow_back_rounded, color: palette.primaryColor, size: 18),
                                 label: const Text(
                                   'Back to Customizer',
@@ -881,7 +881,7 @@ class _MusicPlayerStudioPageState extends State<MusicPlayerStudioPage> with Sing
       width: 140,
       height: 140,
       decoration: BoxDecoration(
-        color: const Color(0xFF161A28),
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: palette.primaryColor.withValues(alpha: 0.45), width: 1.5),
         boxShadow: [

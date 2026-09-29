@@ -371,7 +371,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     final ids = PartyVoiceService.remoteIds;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF141A26),
+      backgroundColor: DizzyVoid.surface1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -850,7 +850,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     showDialog<void>(
       context: context,
       builder: (c) => AlertDialog(
-        backgroundColor: const Color(0xFF141A26),
+        backgroundColor: DizzyVoid.surface1,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
         title: const Text('Room ready 🎉',

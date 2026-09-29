@@ -430,7 +430,7 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                   ? PlayerSettings.subFont.value
                   : 'subfont',
               isExpanded: true,
-              dropdownColor: const Color(0xFF131826),
+              dropdownColor: DizzyVoid.voidB,
               icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white70),
               items: PlayerSettings.popularFonts.map((f) {
                 final label = f == 'subfont' ? 'Default (Dizzy Subfont)' : f;

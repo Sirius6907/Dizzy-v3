@@ -563,7 +563,7 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
             curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF141926)
+                  ? DizzyVoid.surface1
                   : (isHovered
                       ? const Color(0x331E2435)
                       : const Color(0x1F121722)),
@@ -841,7 +841,7 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
 
   Widget _buildThumbPlaceholder(int epNum) {
     return Container(
-      color: const Color(0xFF141926),
+      color: DizzyVoid.surface1,
       alignment: Alignment.center,
       child: Icon(
         Icons.tv_rounded,

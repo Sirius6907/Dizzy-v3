@@ -66,7 +66,7 @@ class AboutSettingsPage extends StatelessWidget {
                     ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
                         colors: [
-                          const Color(0xFFFFFFFF),
+                          Colors.white,
                           palette.silverAccent,
                           const Color(0xFFCBD5E1),
                           palette.primaryColor.withValues(alpha: 0.9),

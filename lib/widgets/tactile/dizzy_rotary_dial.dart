@@ -215,7 +215,7 @@ class _RotaryDialPainter extends CustomPainter {
     canvas.drawCircle(center, capR, capPaint);
     final capEdge = Paint()
       ..style = PaintingStyle.stroke
-      ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.14)
+      ..color = Colors.white.withValues(alpha: 0.14)
       ..strokeWidth = 1.0;
     canvas.drawCircle(center, capR, capEdge);
 

@@ -137,7 +137,7 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
                       hintStyle:
                           const TextStyle(color: Colors.white30),
                       filled: true,
-                      fillColor: const Color(0xFF161A26),
+                      fillColor: DizzyVoid.surface1,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,

@@ -6,6 +6,7 @@ import '../../services/cloud/watch_party_service.dart';
 import '../../services/share/native_share.dart';
 import '../../services/watchparty/party_session.dart';
 import '../common/notify.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 /// v1.2.0-T2.8: one-tap Watch Together entry (non-tech flagship).
 /// Movie/TV page pe bada button → room auto-create with media prefilled →
@@ -77,7 +78,7 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
     final code = room.roomId;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF141A26),
+      backgroundColor: DizzyVoid.surface1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

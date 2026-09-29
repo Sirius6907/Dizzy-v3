@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/watchparty/party_voice_service.dart';
+import 'package:dizzy/design/dizzy_tactile.dart';
 
 /// v1.2.0-T2.8: one-tap voice consent + join (no Settings maze).
 /// First voice tap per room → sheet: "Talk while you watch? [Allow] [No thanks]".
@@ -20,7 +21,7 @@ class VoiceConsentSheet {
     if (!context.mounted) return;
     final allow = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: const Color(0xFF141A26),
+      backgroundColor: DizzyVoid.surface1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
