@@ -205,6 +205,25 @@ create policy "Users see their own friendships"
   on public.friendships for select
   using (auth.uid() = requester_id or auth.uid() = addressee_id);
 
+-- INSERT: requester must be auth.uid(), cannot friend self,
+-- status must be pending or blocked (enforced by table CHECK).
+create policy "Users send friend requests as requester"
+  on public.friendships for insert
+  with check (auth.uid() = requester_id
+              and requester_id <> addressee_id
+              and status in ('pending', 'blocked'));
+
+-- UPDATE: user is either requester or addressee.
+create policy "Users update their own friendship rows"
+  on public.friendships for update
+  using (auth.uid() = requester_id or auth.uid() = addressee_id)
+  with check (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+-- DELETE: user is either requester or addressee.
+create policy "Users delete their own friendship rows"
+  on public.friendships for delete
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
 -- ── 5. Durable DMs & Group Chats with Idempotency ──────────────────────────────
 create table if not exists public.dm_threads (
   thread_id text primary key, -- 'dm:sha256(min_uid:max_uid)'
