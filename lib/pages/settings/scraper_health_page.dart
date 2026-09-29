@@ -4,6 +4,7 @@ import '../../services/cloud/remote_config_service.dart';
 import '../../services/scraper/scraper_quarantine_service.dart';
 import '../../services/scraper/stream_scraper.dart';
 import '../../widgets/guide/guide_card.dart';
+import '../../design/dizzy_tactile.dart';
 
 /// v1.2.0-P2 (T2.1): Sources health dashboard.
 ///
@@ -58,6 +59,18 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
     );
   }
 
+  void _restoreAll() {
+    ScraperQuarantineService.restoreAll();
+    _reload();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All sources restored.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var working = 0;
@@ -94,6 +107,8 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
                   padding: const EdgeInsets.all(20),
                   children: [
                     _introCard(working, resting, off),
+                    const SizedBox(height: 16),
+                    _restoreAllButton(),
                     const SizedBox(height: 16),
                     for (final s in _sources) _sourceTile(s),
                   ],
@@ -191,24 +206,22 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
     final String label;
     final String sub;
     Color? labelColor;
-    if (killed) {
-      dot = Colors.white24;
-      label = 'Off';
-      sub = 'Off for now. It will return soon.';
-      labelColor = Colors.white38;
-    } else if (resting) {
-      dot = Colors.amber;
-      label = 'Resting';
-      sub = 'This Source is taking a break. Tap Retry to try now.';
-      labelColor = Colors.amber;
-    } else {
-      dot = const Color(0xFF10B981);
-      label = 'Working';
-      sub = s.isTorrentScraper
-          ? 'Needs extra sharing turned on in Settings.'
-          : 'Ready to find videos.';
-      labelColor = const Color(0xFF10B981);
-    }
+      if (killed) {
+        dot = DizzyGlow.red;
+        label = 'Off';
+        sub = 'Off for now. It will return soon.';
+        labelColor = DizzyGlow.red;
+      } else if (resting) {
+        dot = DizzyGlow.beam;
+        label = 'Resting';
+        sub = 'Taking a short break. Tap Retry to try now.';
+        labelColor = DizzyGlow.beam;
+      } else {
+        dot = DizzyGlow.volt;
+        label = 'Working';
+        sub = 'Ready to find videos.';
+        labelColor = DizzyGlow.volt;
+      }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -267,6 +280,29 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _restoreAllButton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: DizzyGlow.volt.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: DizzyGlow.volt.withValues(alpha: 0.30)),
+      ),
+      child: TextButton(
+        onPressed: _restoreAll,
+        child: const Text(
+          'Restore All',
+          style: TextStyle(
+            color: DizzyGlow.volt,
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }

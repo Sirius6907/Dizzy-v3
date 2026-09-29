@@ -6,7 +6,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/debrid/debrid_service.dart';
-import '../../services/theme/glass_settings.dart';
 import '../../services/trakt/trakt_service.dart';
 import '../../services/simkl/simkl_service.dart';
 
@@ -34,7 +33,9 @@ import '../../services/guide/guide_service.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../../services/home/home_page_settings.dart';
 
-import '../../widgets/common/animated_ambient_background.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
+import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'download_settings_page.dart';
 import 'settings_search_delegate.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -327,7 +328,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final palette = AppThemeService.currentPalette.value;
 
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: palette.appBarBackgroundColor.withValues(alpha: 0.85),
@@ -356,8 +357,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
-      body: AnimatedAmbientBackground(
-        child: Center(
+      body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: ListView(
@@ -442,22 +442,17 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 12),
 
               // 1. Appearance & Interface
-              ValueListenableBuilder<bool>(
-                valueListenable: GlassSettings.enabled,
-                builder: (context, glassEnabled, _) {
-                  return ValueListenableBuilder<AppThemePalette>(
-                    valueListenable: AppThemeService.currentPalette,
-                    builder: (context, currentPalette, _) {
-                      return _SettingsCategoryTile(
-                        icon: Icons.palette_rounded,
-                        iconColor: currentPalette.primaryColor,
-                        title: 'Appearance & Interface',
-                        subtitle: 'Liquid Glass setup, color themes, and Home Page UI',
-                        badgeText: glassEnabled ? '${currentPalette.name} · Glass ON' : currentPalette.name,
-                        badgeColor: currentPalette.primaryColor,
-                        onTap: () => _navigateTo(const AppearanceSettingsPage()),
-                      );
-                    },
+              ValueListenableBuilder<AppThemePalette>(
+                valueListenable: AppThemeService.currentPalette,
+                builder: (context, currentPalette, _) {
+                  return _SettingsCategoryTile(
+                    icon: Icons.palette_rounded,
+                    iconColor: currentPalette.primaryColor,
+                    title: 'Appearance & Interface',
+                    subtitle: 'Theme palettes, elevation, edges, and Home Page UI',
+                    badgeText: currentPalette.name,
+                    badgeColor: currentPalette.primaryColor,
+                    onTap: () => _navigateTo(const AppearanceSettingsPage()),
                   );
                 },
               ),
@@ -798,6 +793,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
+              // Download Settings
+              _SettingsCategoryTile(
+                icon: Icons.download_rounded,
+                iconColor: const Color(0xFF00C2FF),
+                title: 'Downloads',
+                subtitle: 'Pause, resume, and manage download locations',
+                badgeText: 'NEW',
+                badgeColor: const Color(0xFF00C2FF),
+                onTap: () => _showDownloadSettings(),
+              ),
+
               const SizedBox(height: 12),
 
               // 9. About Dizzy
@@ -812,7 +818,13 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ),
-      ),
+    );
+  }
+
+  void _showDownloadSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DownloadSettingsPage()),
     );
   }
 }
@@ -842,104 +854,101 @@ class _SettingsCategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF12151E),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+    return DizzyTactileCard(
+      onTap: onTap,
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
           ),
-          child: Row(
-            children: [
-              // Icon Container with subtle tinted background
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 22,
-                ),
+        ),
+        child: Row(
+          children: [
+            // Icon Container with subtle tinted background
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 12),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
 
-              // Title and Subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
+            // Title and Subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (badgeText != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (badgeColor ?? iconColor).withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 15,
+                            badgeText!,
+                            style: TextStyle(
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: badgeColor ?? iconColor,
                             ),
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (badgeText != null) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: (badgeColor ?? iconColor).withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              badgeText!,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: badgeColor ?? iconColor,
-                              ),
-                              maxLines: 1,
-                            ),
-                          ),
-                        ],
                       ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.45),
+                      height: 1.25,
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.45),
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-              // Chevron right
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.25),
-              ),
-            ],
-          ),
+            // Chevron right
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: Colors.white.withValues(alpha: 0.25),
+            ),
+          ],
         ),
       ),
     );
@@ -975,116 +984,121 @@ class _SettingsSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF12151E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: value
-              ? iconColor.withValues(alpha: 0.20)
-              : Colors.white.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Icon Container
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 22,
+    return GestureDetector(
+      onTapDown: (_) => HapticFeedback.selectionClick(),
+      child: DizzyTactileCard(
+        margin: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF12151E),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
             ),
           ),
-          const SizedBox(width: 12),
+          child: Row(
+            children: [
+              // Icon Container
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
 
-          // Title and Subtitle
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+              // Title and Subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (onInfoTap != null) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(Icons.info_outline_rounded, size: 16, color: Colors.white54),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'P2P Advisory Details',
-                        onPressed: onInfoTap,
-                      ),
-                    ],
-                    if (badgeText != null) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: (badgeColor ?? iconColor).withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          badgeText!,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            color: badgeColor ?? iconColor,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
                         ),
+                        if (onInfoTap != null) ...[
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(Icons.info_outline_rounded, size: 16, color: Colors.white54),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'P2P Advisory Details',
+                            onPressed: onInfoTap,
+                          ),
+                        ],
+                        if (badgeText != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (badgeColor ?? iconColor).withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              badgeText!,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: badgeColor ?? iconColor,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.white.withValues(alpha: 0.45),
+                        height: 1.25,
                       ),
-                    ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Colors.white.withValues(alpha: 0.45),
-                    height: 1.25,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(width: 8),
+
+              // Switch
+              Transform.scale(
+                scale: 0.9,
+                child: Switch.adaptive(
+                  value: value,
+                  activeColor: const Color(0xFFF59E0B),
+                  activeTrackColor: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                  inactiveThumbColor: Colors.white60,
+                  inactiveTrackColor: Colors.white10,
+                  onChanged: onChanged,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          const SizedBox(width: 8),
-
-          // Switch
-          Transform.scale(
-            scale: 0.9,
-            child: Switch.adaptive(
-              value: value,
-              activeColor: const Color(0xFFF59E0B),
-              activeTrackColor: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-              inactiveThumbColor: Colors.white60,
-              inactiveTrackColor: Colors.white10,
-              onChanged: onChanged,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
