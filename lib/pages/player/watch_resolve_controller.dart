@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../models/stream/stream_model.dart';
 import '../../../services/player/dub_mode_service.dart';
 import '../../../services/stream/dub_filter.dart';
+import '../../../services/stream/instant_play_gate.dart';
 import '../../../services/stream/stream_probe_race.dart';
 import '../../../services/stream/stream_service.dart';
 
@@ -62,6 +63,15 @@ class WatchResolveController {
   Timer? _batchTimer;
   StreamProbeRace? _race;
 
+  /// F1: "first valid source wins" lives here, not in the race. The race
+  /// answers "which source is alive?"; the gate answers "should this
+  /// source open playback right now, or is the race already won?" — so a
+  /// second verified source can never interrupt the first.
+  late final InstantPlayGate _autoplayGate = InstantPlayGate(
+    autoplayEnabled: shouldAutoOpen,
+    autoFailover: () => true, // failover is the player's business
+  );
+
   /// Moved verbatim: old `_WatchScreenState._loadStreams`.
   Future<void> start() async {
     // ── Instant autoplay race (Phase 1) ─────────────────────────────
@@ -78,6 +88,9 @@ class WatchResolveController {
       race.winner.then((src) {
         if (!isMounted() || src == null) return;
         if (!shouldAutoOpen()) return;
+        // F1: the gate takes the first valid source; later winners are
+        // ignored so a slow-but-alive source can never cut in.
+        if (_autoplayGate.offer(src) != InstantPlayDecision.playNow) return;
         onInstantOpen(src);
       });
     }

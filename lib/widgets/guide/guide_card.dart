@@ -27,33 +27,22 @@ class GuideCard extends StatefulWidget {
   /// Show on first open only. Call from `initState` (post-frame).
   ///
   /// Runs the legacy-flag migration first so a user who dismissed an older
-  /// card is never shown its replacement. Dialogs are serialised, so two
-  /// screens that both trigger a guide in the same frame stack their cards
-  /// instead of racing each other.
+  /// card is never shown its replacement. Two triggers in the same frame
+  /// simply stack — the top card is answered first, the one below it second.
   static Future<void> maybeShow(
     BuildContext context,
     String guideKey,
     List<GuideStep> steps,
-  ) {
-    _queue = _queue.then((_) => _show(context, guideKey, steps));
-    return _queue;
-  }
-
-  static Future<void> _queue = Future<void>.value();
-
-  static Future<void> _show(
-    BuildContext context,
-    String guideKey,
-    List<GuideStep> steps,
   ) async {
-    if (!context.mounted) return;
     if (steps.isEmpty) return;
+    // Grab the navigator now — the card opens after an await, by which time
+    // the caller's context may be gone.
+    final navigator = Navigator.of(context, rootNavigator: true);
     await GuideService.migrateLegacyKeys();
-    if (!context.mounted) return;
     if (!await GuideService.shouldShow(guideKey)) return;
-    if (!context.mounted) return;
-    await showDialog(
-      context: context,
+    if (!navigator.mounted) return;
+    await showDialog<void>(
+      context: navigator.context,
       barrierDismissible: false,
       builder: (_) => Dialog(
         backgroundColor: DizzyVoid.surface1,
