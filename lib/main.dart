@@ -237,9 +237,13 @@ class _DizzyAppState extends State<DizzyApp>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppThemePalette>(
-      valueListenable: AppThemeService.currentPalette,
-      builder: (context, palette, _) {
+    return ValueListenableBuilder<String>(
+      valueListenable: AppThemeService.currentThemeId,
+      builder: (context, themeId, _) {
+        final palette = AppThemeService.palettes.firstWhere(
+          (candidate) => candidate.id == themeId,
+          orElse: () => AppThemeService.currentPalette.value,
+        );
         return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'Dizzy',

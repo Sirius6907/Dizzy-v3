@@ -13,7 +13,7 @@ import '../../pages/settings/addons_settings_page.dart';
 import '../../pages/settings/settings_page.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../utils/navigation/route_transitions.dart';
-import 'liquid_dock.dart';
+import 'dock_item.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_dock.dart';
 
 /// Reusable global Liquid Glass Dock Navbar connected to [DockSettings].
@@ -268,7 +268,19 @@ class AppLiquidDock extends StatelessWidget {
           }
         }
 
-        return DizzyTactileDock(items: items);
+        // selectedIndex: current page ka glow sahi icon pe (v1.2.1 compare
+        // fix — pehle hamesha 0 rehta tha, glow galat icon pe dikhta tha).
+        final dest = currentDestination;
+        final selectedIdx = dest == null
+            ? 0
+            : items.indexWhere(
+                (item) =>
+                    item.label.toLowerCase() == dest.label.toLowerCase(),
+              );
+        return DizzyTactileDock(
+          items: items,
+          selectedIndex: selectedIdx < 0 ? 0 : selectedIdx,
+        );
       },
     );
   }

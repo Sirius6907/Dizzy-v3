@@ -49,6 +49,9 @@ class AppThemePalette {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
+
+  /// Whether this palette is intended for a light anodized-metal surface.
+  bool get isLight => scaffoldBackgroundColor.computeLuminance() > 0.5;
 }
 
 abstract final class AppThemeService {
@@ -154,42 +157,143 @@ abstract final class AppThemeService {
       cardBackgroundColor: Color(0xFF220A18),
       appBarBackgroundColor: Color(0xFF1A0713),
     ),
+    AppThemePalette(
+      id: 'light_aluminum',
+      name: 'Light Anodized Aluminum',
+      primaryColor: Color(0xFFB0B8C8),
+      accentColor: Color(0xFFE50914),
+      scaffoldBackgroundColor: Color(0xFFE8EAED),
+      cardBackgroundColor: Color(0xFFFFFFFF),
+      appBarBackgroundColor: Color(0xFFD8DADF),
+      silverAccent: Color(0xFF1A1D26),
+      amberAccent: Color(0xFFFFC107),
+      isMetallic: true,
+    ),
+    AppThemePalette(
+      id: 'light_silver',
+      name: 'Light Polished Silver',
+      primaryColor: Color(0xFF8A93A3),
+      accentColor: Color(0xFFE50914),
+      scaffoldBackgroundColor: Color(0xFFF5F5F7),
+      cardBackgroundColor: Color(0xFFFFFFFF),
+      appBarBackgroundColor: Color(0xFFE0E2E6),
+      silverAccent: Color(0xFF0A0C10),
+      amberAccent: Color(0xFFFFC107),
+      isMetallic: true,
+    ),
   ];
+
+  static final ValueNotifier<String> currentThemeId =
+      ValueNotifier<String>(palettes[0].id);
 
   static final ValueNotifier<AppThemePalette> currentPalette =
       ValueNotifier<AppThemePalette>(palettes[0]);
 
+  static bool _syncingTheme = false;
+
+  static bool _themeWatchersInstalled = false;
+
+  static void ensureThemeWatchers() {
+    if (_themeWatchersInstalled) return;
+    _themeWatchersInstalled = true;
+    currentPalette.addListener(_syncThemeIdFromPalette);
+    currentThemeId.addListener(_syncPaletteFromThemeId);
+  }
+
+  static void _syncThemeIdFromPalette() {
+    if (_syncingTheme) return;
+    _syncingTheme = true;
+    try {
+      final id = currentPalette.value.id;
+      if (currentThemeId.value != id) currentThemeId.value = id;
+    } finally {
+      _syncingTheme = false;
+    }
+  }
+
+  static void _syncPaletteFromThemeId() {
+    if (_syncingTheme) return;
+    _syncingTheme = true;
+    try {
+      final palette = palettes.firstWhere(
+        (p) => p.id == currentThemeId.value,
+        orElse: () => currentPalette.value,
+      );
+      if (currentPalette.value.id != palette.id) {
+        currentPalette.value = palette;
+      }
+    } finally {
+      _syncingTheme = false;
+    }
+  }
+
+  static void _applyPalette(AppThemePalette palette) {
+    if (currentPalette.value != palette) currentPalette.value = palette;
+    if (currentThemeId.value != palette.id) currentThemeId.value = palette.id;
+  }
+
   static Future<void> initialize() async {
+    ensureThemeWatchers();
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getString(_storageKey);
-    if (id != null && id != 'amethyst') {
-      final found = palettes.firstWhere(
-        (p) => p.id == id,
-        orElse: () => palettes[0],
-      );
-      currentPalette.value = found;
-    } else {
-      currentPalette.value = palettes[0];
-      if (id == 'amethyst') {
-        await prefs.setString(_storageKey, palettes[0].id);
-      }
+    final palette = id == null
+        ? palettes[0]
+        : palettes.firstWhere(
+            (p) => p.id == id,
+            orElse: () => palettes[0],
+          );
+    _applyPalette(palette);
+    if (id == 'amethyst' ||
+        (id != null && !palettes.any((p) => p.id == id))) {
+      await prefs.setString(_storageKey, palette.id);
     }
   }
 
   static Future<void> setPalette(AppThemePalette palette) async {
-    currentPalette.value = palette;
+    _applyPalette(palette);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, palette.id);
   }
 
+  /// Switch by palette id and persist it after the reactive notifiers update.
+  static Future<void> switchTheme(String id) async {
+    final palette = palettes.firstWhere(
+      (p) => p.id == id,
+      orElse: () => currentPalette.value,
+    );
+    await setPalette(palette);
+  }
+
+  /// Toggle between the default obsidian palette and light aluminum.
+  static Future<void> toggleTheme() {
+    return switchTheme(
+      currentPalette.value.isLight ? palettes[0].id : 'light_aluminum',
+    );
+  }
+
   static ThemeData createThemeData(AppThemePalette palette) {
+    final brightness = palette.isLight ? Brightness.light : Brightness.dark;
+    final hairline = palette.isLight
+        ? const Color(0xFFB8BEC8)
+        : const Color(0x1CE2E8F0);
+    final divider = palette.isLight
+        ? const Color(0xFFC7CCD4)
+        : const Color(0x1AE2E8F0);
+
     return ThemeData(
-      brightness: Brightness.dark,
+      brightness: brightness,
       scaffoldBackgroundColor: palette.scaffoldBackgroundColor,
       useMaterial3: true,
       colorSchemeSeed: palette.primaryColor,
+      // Global UI font — poora app Poppins pe. Har Text() / AppBar /
+      // Button / Dialog automatically isi ko use karta hai jab tak
+      // call-site pe explicit fontFamily override na ho.
+      fontFamily: DizzyType.fontFamily,
       appBarTheme: AppBarTheme(
         backgroundColor: palette.appBarBackgroundColor,
+        foregroundColor: palette.isLight
+            ? palette.silverAccent
+            : palette.silverAccent,
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
@@ -197,39 +301,61 @@ abstract final class AppThemeService {
         elevation: 0,
         shape: RoundedRectangleBorder(
           side: BorderSide(
-            color: palette.isMetallic
-                ? const Color(0x1CE2E8F0)
-                : const Color(0x14FFFFFF),
+            color: palette.isMetallic ? hairline : divider,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(16),
         ),
       ),
       dividerTheme: DividerThemeData(
-        color: palette.isMetallic
-            ? const Color(0x1AE2E8F0)
-            : const Color(0x12FFFFFF),
+        color: divider,
         thickness: 1,
       ),
       // Frozen type scale (Polish P1) — har screen yahi sizes use kare.
+      // Sab styles Poppins pe lock: display/headline tight tracking (premium
+      // feel), body comfortable line-height (Easy English readability).
       textTheme: const TextTheme(
         displayLarge: TextStyle(
+            fontFamily: DizzyType.fontFamily,
             fontSize: DizzyType.display,
             fontWeight: DizzyType.wBold,
-            letterSpacing: -0.5),
+            letterSpacing: -0.5,
+            height: 1.15),
         headlineMedium: TextStyle(
+            fontFamily: DizzyType.fontFamily,
             fontSize: DizzyType.headline,
             fontWeight: DizzyType.wBold,
-            letterSpacing: -0.3),
+            letterSpacing: -0.3,
+            height: 1.2),
         titleLarge: TextStyle(
-            fontSize: DizzyType.title, fontWeight: DizzyType.wSemiBold),
+            fontFamily: DizzyType.fontFamily,
+            fontSize: DizzyType.title,
+            fontWeight: DizzyType.wSemiBold,
+            letterSpacing: -0.1,
+            height: 1.25),
         titleMedium: TextStyle(
-            fontSize: DizzyType.subtitle, fontWeight: DizzyType.wMedium),
-        bodyLarge: TextStyle(fontSize: DizzyType.body),
-        bodyMedium: TextStyle(fontSize: DizzyType.body),
-        bodySmall: TextStyle(fontSize: DizzyType.caption),
-        labelSmall:
-            TextStyle(fontSize: DizzyType.micro, fontWeight: DizzyType.wMedium),
+            fontFamily: DizzyType.fontFamily,
+            fontSize: DizzyType.subtitle,
+            fontWeight: DizzyType.wMedium,
+            letterSpacing: 0.0,
+            height: 1.35),
+        bodyLarge: TextStyle(
+            fontFamily: DizzyType.fontFamily,
+            fontSize: DizzyType.body,
+            height: 1.5),
+        bodyMedium: TextStyle(
+            fontFamily: DizzyType.fontFamily,
+            fontSize: DizzyType.body,
+            height: 1.5),
+        bodySmall: TextStyle(
+            fontFamily: DizzyType.fontFamily,
+            fontSize: DizzyType.caption,
+            height: 1.45),
+        labelSmall: TextStyle(
+            fontFamily: DizzyType.fontFamily,
+            fontSize: DizzyType.micro,
+            fontWeight: DizzyType.wMedium,
+            letterSpacing: 0.4),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
