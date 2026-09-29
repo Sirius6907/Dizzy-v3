@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../utils/perf/performance_mode.dart';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
@@ -13,10 +12,8 @@ import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/config/feature_flags.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/dock_settings.dart';
-import '../../services/theme/glass_settings.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/anime/anime_slider_section.dart';
-import '../../widgets/common/animated_ambient_background.dart';
 import '../../widgets/common/app_liquid_dock.dart';
 import '../../widgets/common/custom_scroll_track.dart';
 import '../../widgets/home/continue_watching_slider.dart';
@@ -275,7 +272,17 @@ class _AnimePageState extends State<AnimePage> {
     return ValueListenableBuilder<AppThemePalette>(
       valueListenable: AppThemeService.currentPalette,
       builder: (context, palette, _) {
-        final backgroundContent = AnimatedAmbientBackground(
+        final backgroundContent = Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                palette.appBarBackgroundColor,
+                palette.scaffoldBackgroundColor,
+              ],
+            ),
+          ),
           child: Stack(
             children: [
               // Main scrollable content
@@ -519,30 +526,12 @@ class _AnimePageState extends State<AnimePage> {
 
         return Scaffold(
           backgroundColor: Colors.transparent,
-          body: ValueListenableBuilder<bool>(
-            valueListenable: GlassSettings.enabled,
-            builder: (context, enabled, _) {
-              final overlays = Stack(children: overlayChildren);
-              if (enabled) {
-                return LiquidGlassView(
-                  realTimeCapture: true,
-                  useSync: true,
-                  pixelRatio: 0.85,
-                  refreshRate: LiquidGlassRefreshRate.deviceRefreshRate,
-                  regionCapture: true,
-                  backgroundWidget: backgroundContent,
-                  child: overlays,
-                );
-              }
-
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  RepaintBoundary(child: backgroundContent),
-                  ...overlayChildren,
-                ],
-              );
-            },
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              RepaintBoundary(child: backgroundContent),
+              ...overlayChildren,
+            ],
           ),
         );
       },

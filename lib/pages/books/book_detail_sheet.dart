@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../design/dizzy_tactile.dart';
+import '../../design/dizzy_tokens.dart';
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import '../../models/book/book_result.dart';
@@ -141,16 +143,10 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF16161E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black87,
-            blurRadius: 36,
-            offset: Offset(0, -10),
-          ),
-        ],
+      decoration: BoxDecoration(
+        color: DizzyVoid.surface1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(DizzyRadius.xl)),
+        boxShadow: DizzyShadow.dock,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -163,7 +159,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
               width: 44,
               height: 4.5,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: DizzyVoid.ash.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -187,17 +183,11 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                           width: 124,
                           height: 180,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                            borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                            boxShadow: DizzyShadow.card,
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(DizzyRadius.lg),
                             child: book.coverUrl.isNotEmpty
                                 ? CachedNetworkImage(
                                     imageUrl: book.coverUrl,
@@ -206,22 +196,22 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                     memCacheWidth: ImageCaps.kCardW,
                                     maxWidthDiskCache: ImageCaps.kCardW,
                                     placeholder: (_, __) => Container(
-                                      color: const Color(0xFF22232E),
+                                      color: DizzyVoid.surface2,
                                       child: const Center(
-                                        child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
+                                        child: Icon(Icons.menu_book_rounded, color: DizzyVoid.ash, size: 36),
                                       ),
                                     ),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: const Color(0xFF22232E),
+                                      color: DizzyVoid.surface2,
                                       child: const Center(
-                                        child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
+                                        child: Icon(Icons.menu_book_rounded, color: DizzyVoid.ash, size: 36),
                                       ),
                                     ),
                                   )
                                 : Container(
-                                    color: const Color(0xFF22232E),
+                                    color: DizzyVoid.surface2,
                                     child: const Center(
-                                      child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
+                                      child: Icon(Icons.menu_book_rounded, color: DizzyVoid.ash, size: 36),
                                     ),
                                   ),
                           ),
@@ -240,7 +230,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                 fontFamily: 'Poppins',
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: DizzyVoid.bone,
                                 height: 1.25,
                               ),
                               maxLines: 3,
@@ -252,7 +242,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 13,
-                                color: Color(0xFF9E9EA8),
+                                color: DizzyVoid.ash,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -267,22 +257,22 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                 _buildBadge(
                                   book.bookFiletype.toUpperCase(),
                                   bgColor: book.isEpub
-                                      ? const Color(0xFF7C3AED).withValues(alpha: 0.25)
+                                      ? DizzyGlow.violet.withValues(alpha: 0.25)
                                       : book.isPdf
-                                          ? const Color(0xFFEF4444).withValues(alpha: 0.25)
-                                          : Colors.white10,
+                                          ? DizzyGlow.red.withValues(alpha: 0.25)
+                                          : DizzyVoid.surface3,
                                   textColor: book.isEpub
-                                      ? const Color(0xFFA78BFA)
+                                      ? DizzyGlow.violet
                                       : book.isPdf
-                                          ? const Color(0xFFFCA5A5)
-                                          : Colors.white70,
+                                          ? DizzyGlow.red
+                                          : DizzyVoid.ash,
                                 ),
                                 if (book.bookSize.isNotEmpty)
-                                  _buildBadge(book.bookSize, textColor: Colors.white70),
+                                  _buildBadge(book.bookSize, textColor: DizzyVoid.ash),
                                 if (book.year.isNotEmpty)
-                                  _buildBadge(book.year, textColor: Colors.white70),
+                                  _buildBadge(book.year, textColor: DizzyVoid.ash),
                                 if (book.bookLang.isNotEmpty)
-                                  _buildBadge(book.bookLang, textColor: const Color(0xFF60A5FA)),
+                                  _buildBadge(book.bookLang, textColor: DizzyGlow.beam),
                               ],
                             ),
                           ],
@@ -297,9 +287,9 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF20212C),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white10),
+                        color: DizzyVoid.surface2,
+                        borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                        border: Border.all(color: DizzyEdge.hairline.color),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +305,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white70,
+                                  color: DizzyVoid.ash,
                                 ),
                               ),
                               Text(
@@ -324,7 +314,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFFA78BFA),
+                                  color: DizzyGlow.violet,
                                 ),
                               ),
                             ],
@@ -334,8 +324,8 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: progress.progressPercent,
-                              backgroundColor: Colors.white12,
-                              color: const Color(0xFF7C3AED),
+                              backgroundColor: DizzyVoid.surface3,
+                              color: DizzyGlow.violet,
                               minHeight: 5,
                             ),
                           ),
@@ -360,7 +350,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                   child: CircularProgressIndicator(
                                     value: _downloadProgress > 0.05 ? _downloadProgress : null,
                                     strokeWidth: 2.5,
-                                    color: Colors.white,
+                                    color: DizzyVoid.bone,
                                   ),
                                 )
                               : Icon(
@@ -380,14 +370,14 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C3AED),
-                            foregroundColor: Colors.white,
+                            backgroundColor: DizzyGlow.violet,
+                            foregroundColor: DizzyVoid.bone,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(DizzyRadius.lg),
                             ),
-                            elevation: 8,
-                            shadowColor: const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
                           ),
                         ),
                       ),
@@ -395,7 +385,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                       if (book.isEpub) ...[
                         const SizedBox(width: 10),
                         IconButton.filledTonal(
-                          icon: const Icon(Icons.record_voice_over_rounded, color: Color(0xFFA78BFA)),
+                          icon: const Icon(Icons.record_voice_over_rounded, color: DizzyGlow.violet),
                           tooltip: 'Generate AI Audiobook (TTS)',
                           onPressed: () async {
                             Navigator.pop(context);
@@ -405,10 +395,10 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             );
                           },
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C3AED).withValues(alpha: 0.2),
+                            backgroundColor: DizzyGlow.violet.withValues(alpha: 0.2),
                             padding: const EdgeInsets.all(14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(DizzyRadius.lg),
                             ),
                           ),
                         ),
@@ -417,7 +407,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                       if (_isDownloaded) ...[
                         const SizedBox(width: 10),
                         IconButton.filledTonal(
-                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                          icon: const Icon(Icons.delete_outline_rounded, color: DizzyGlow.red),
                           tooltip: 'Delete downloaded file',
                           onPressed: () async {
                             await BookDownloadService.instance.deleteBook(
@@ -427,10 +417,10 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             _checkDownloadStatus();
                           },
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white10,
+                            backgroundColor: DizzyVoid.surface3,
                             padding: const EdgeInsets.all(14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(DizzyRadius.lg),
                             ),
                           ),
                         ),
@@ -447,16 +437,16 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                         fontFamily: 'Poppins',
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: DizzyVoid.bone,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF20212C),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white10),
+                        color: DizzyVoid.surface2,
+                        borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                        border: Border.all(color: DizzyEdge.hairline.color),
                       ),
                       child: Column(
                         children: [
@@ -485,7 +475,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                         fontFamily: 'Poppins',
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: DizzyVoid.bone,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -494,7 +484,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13,
-                        color: Colors.white70,
+                        color: DizzyVoid.ash,
                         height: 1.5,
                       ),
                     ),
@@ -512,8 +502,8 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor ?? Colors.white10,
-        borderRadius: BorderRadius.circular(8),
+        color: bgColor ?? DizzyVoid.surface3,
+        borderRadius: BorderRadius.circular(DizzyRadius.md),
       ),
       child: Text(
         text,
@@ -538,7 +528,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
             style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 12,
-              color: Colors.white54,
+              color: DizzyVoid.ash,
             ),
           ),
           Flexible(
@@ -548,7 +538,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                 fontFamily: 'Poppins',
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: DizzyVoid.bone,
               ),
               textAlign: TextAlign.right,
               maxLines: 1,

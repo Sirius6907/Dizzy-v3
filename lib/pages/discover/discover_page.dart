@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/movie/movie.dart';
@@ -91,27 +90,40 @@ class _DiscoverPageState extends State<DiscoverPage> {
           else
             _buildSectionsList(topPadding + kToolbarHeight + 20),
 
-          // ── Glass App Bar ──
+          // ── Tactile App Bar (no GPU blur shaders) ──
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  height: kToolbarHeight + topPadding,
-                  padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A0C16).withValues(alpha: 0.6),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        width: 1,
-                      ),
-                    ),
+            child: Container(
+              height: kToolbarHeight + topPadding,
+              padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF14161E), Color(0xFF0C0E15)],
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    width: 1,
                   ),
-                  child: Row(
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    blurRadius: 0,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -135,10 +147,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
     );
   }
 

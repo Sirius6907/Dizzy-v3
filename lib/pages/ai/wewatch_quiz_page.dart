@@ -1,9 +1,11 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
-
-import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+
+import '../../design/dizzy_tactile.dart';
+import '../../design/dizzy_tokens.dart';
+import '../../utils/perf/image_caps.dart';
+import '../../widgets/tactile/dizzy_tactile_card.dart';
 
 import '../../models/movie/movie.dart';
 import '../../services/addon/addon_manager.dart';
@@ -396,82 +398,71 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 20, vertical: 16),
       children: [
         // Taste Profile Header Card
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: palette.cardBackgroundColor.withValues(alpha: 0.75),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        DizzyTactileCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'What do you like to watch?',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _canSubmit
-                              ? const Color(0xFF10B981).withValues(alpha: 0.18)
-                              : Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _canSubmit
-                                ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                                : Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: Text(
-                          '$rated/3 rated',
-                          style: TextStyle(
-                            color: _canSubmit ? const Color(0xFF10B981) : Colors.white70,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Rate 3 or more movies or TV shows. Choose what you liked or disliked, and select key elements to generate pinpoint AI recommendations.',
+                  const Text(
+                    'What do you like to watch?',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      fontSize: 13,
-                      height: 1.4,
+                      color: DizzyVoid.bone,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 14),
-
-                  // Segmented Progress Bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 5,
-                      backgroundColor: Colors.white.withValues(alpha: 0.08),
-                      valueColor: AlwaysStoppedAnimation(
-                        _canSubmit ? const Color(0xFF10B981) : palette.primaryColor,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _canSubmit
+                          ? DizzyGlow.volt.withValues(alpha: 0.18)
+                          : DizzyVoid.surface3,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _canSubmit
+                            ? DizzyGlow.volt.withValues(alpha: 0.4)
+                            : DizzyEdge.hairline.color,
+                      ),
+                    ),
+                    child: Text(
+                      '$rated/3 rated',
+                      style: TextStyle(
+                        color: _canSubmit ? DizzyGlow.volt : DizzyVoid.ash,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 6),
+              const Text(
+                'Rate 3 or more movies or TV shows. Choose what you liked or disliked, and select key elements to generate pinpoint AI recommendations.',
+                style: TextStyle(
+                  color: DizzyVoid.ash,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Segmented Progress Bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(DizzyRadius.md),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 5,
+                  backgroundColor: DizzyVoid.surface3,
+                  valueColor: AlwaysStoppedAnimation(
+                    _canSubmit ? DizzyGlow.volt : palette.primaryColor,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
 
@@ -553,108 +544,96 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: palette.cardBackgroundColor.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: pick.isValid
-                    ? palette.primaryColor.withValues(alpha: 0.4)
-                    : Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: DizzyTactileCard(
+        padding: const EdgeInsets.all(16),
+        borderColor: pick.isValid ? palette.primaryColor.withValues(alpha: 0.4) : DizzyEdge.hairline.color,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Number badge + Title + Delete
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Top Row: Number badge + Title + Delete
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: pick.isValid
-                                ? palette.primaryColor
-                                : Colors.white.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: pick.isValid
-                                ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
-                                : Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          hasSelectedMedia ? pick.title : 'Title #${index + 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (pick.year != null && pick.year!.isNotEmpty) ...[
-                          const SizedBox(width: 6),
-                          Text('(${pick.year})', style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                        ],
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white38),
-                      splashRadius: 18,
-                      onPressed: () => _removeTitle(index),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // 1. Search Box & Starter Picks
-                if (!hasSelectedMedia) ...[
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0D1017).withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                    child: TextField(
-                      controller: _searchControllers[index],
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      onChanged: (q) => _onSearchChanged(index, q),
-                      decoration: InputDecoration(
-                        hintText: 'Search movie or TV series...',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
-                        prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor, size: 18),
-                        suffixIcon: (_isSearching[index] ?? false)
-                            ? Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: palette.primaryColor),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: pick.isValid
+                            ? palette.primaryColor
+                            : DizzyVoid.surface3,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: pick.isValid
+                            ? const Icon(Icons.check_rounded, size: 13, color: DizzyVoid.bone)
+                            : Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  color: DizzyVoid.ash,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              ),
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    Text(
+                      hasSelectedMedia ? pick.title : 'Title #${index + 1}',
+                      style: const TextStyle(
+                        color: DizzyVoid.bone,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (pick.year != null && pick.year!.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text('(${pick.year})', style: const TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+                    ],
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18, color: DizzyVoid.ash),
+                  splashRadius: 18,
+                  onPressed: () => _removeTitle(index),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // 1. Search Box & Starter Picks
+            if (!hasSelectedMedia) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: DizzyVoid.voidB.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(DizzyRadius.md),
+                  border: Border.all(color: DizzyEdge.hairline.color),
+                ),
+                child: TextField(
+                  controller: _searchControllers[index],
+                  style: const TextStyle(color: DizzyVoid.bone, fontSize: 14),
+                  onChanged: (q) => _onSearchChanged(index, q),
+                  decoration: InputDecoration(
+                    hintText: 'Search movie or TV series...',
+                    hintStyle: TextStyle(color: DizzyVoid.ash.withValues(alpha: 0.35), fontSize: 13),
+                    prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor, size: 18),
+                    suffixIcon: (_isSearching[index] ?? false)
+                        ? Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: palette.primaryColor),
+                            ),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
+                ),
+              ),
 
                   // Search Auto-Suggestions Dropdown
                   if ((_searchResults[index] ?? []).isNotEmpty) ...[
@@ -926,15 +905,13 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                         contentPadding: const EdgeInsets.all(10),
                       ),
                     ),
-                  ],
+],
                 ],
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }
 
   Widget _buildSentimentButton(int index, String value, String label, AppThemePalette palette) {
     final isSelected = _picks[index].sentiment == value;
@@ -968,42 +945,32 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-              decoration: BoxDecoration(
-                color: palette.cardBackgroundColor.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: palette.primaryColor.withValues(alpha: 0.3)),
+        child: DizzyTactileCard(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          borderColor: palette.primaryColor.withValues(alpha: 0.3),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation(palette.primaryColor),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation(palette.primaryColor),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _generationStep,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Synthesizing taste vectors with multi-signal AI...',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12.5),
-                  ),
-                ],
+              const SizedBox(height: 24),
+              Text(
+                _generationStep,
+                style: const TextStyle(color: DizzyVoid.bone, fontSize: 16, fontWeight: FontWeight.w800),
+                textAlign: TextAlign.center,
               ),
-            ),
+              const SizedBox(height: 8),
+              const Text(
+                'Synthesizing taste vectors with multi-signal AI...',
+                style: TextStyle(color: DizzyVoid.ash, fontSize: 12.5),
+              ),
+            ],
           ),
         ),
       ),
@@ -1025,12 +992,12 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
               children: [
                 const Text(
                   'Your Personalized Matches',
-                  style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: -0.3),
+                  style: TextStyle(color: DizzyVoid.bone, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: -0.3),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${recs.length} cinema picks tailored to your taste profile',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12.5),
+                  style: const TextStyle(color: DizzyVoid.ash, fontSize: 12.5),
                 ),
               ],
             ),
@@ -1043,42 +1010,33 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
         ...recs.map((rec) {
           return Container(
             margin: const EdgeInsets.only(bottom: 14),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: palette.cardBackgroundColor.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                  ),
-                  child: InkWell(
-                    onTap: () => _openDetails(rec),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Poster
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: rec.posterUrl != null
-                              ? CachedNetworkImage(
-                                  imageUrl: rec.posterUrl!,
-                                  width: isMobile ? 80 : 96,
-                                  height: isMobile ? 120 : 144,
-                                  fit: BoxFit.cover,
-                                  // P12: capped thumb (display ≤144px).
-                                  memCacheWidth: ImageCaps.kThumb,
-                                  memCacheHeight: ImageCaps.kThumb,
-                                  maxWidthDiskCache: ImageCaps.kThumb,
-                                )
-                              : Container(
-                                  width: isMobile ? 80 : 96,
-                                  height: isMobile ? 120 : 144,
-                                  color: Colors.white10,
-                                ),
+            child: DizzyTactileCard(
+              padding: const EdgeInsets.all(14),
+              child: InkWell(
+                onTap: () => _openDetails(rec),
+                borderRadius: BorderRadius.circular(DizzyRadius.md),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Poster
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(DizzyRadius.sm),
+                      child: rec.posterUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: rec.posterUrl!,
+                              width: isMobile ? 80 : 96,
+                              height: isMobile ? 120 : 144,
+                              fit: BoxFit.cover,
+                              // P12: capped thumb (display ≤144px).
+                              memCacheWidth: ImageCaps.kThumb,
+                              memCacheHeight: ImageCaps.kThumb,
+                              maxWidthDiskCache: ImageCaps.kThumb,
+                            )
+                          : Container(
+                              width: isMobile ? 80 : 96,
+                              height: isMobile ? 120 : 144,
+                              color: DizzyVoid.surface2,
+                            ),
                         ),
                         const SizedBox(width: 14),
 
@@ -1175,17 +1133,15 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                             ],
                           ),
                         ),
-                      ],
+                        ],
                     ),
                   ),
-                ),
               ),
-            ),
-          );
-        }),
-
-        const SizedBox(height: 30),
-      ],
-    );
+            );
+          }),
+          const SizedBox(height: 30),
+        ],
+      );
+    }
   }
-}
+

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../design/dizzy_tactile.dart';
 import '../../../services/books/epub_parser_service.dart';
 import '../../../services/books/reader_settings.dart';
 import 'reader_design_tokens.dart';
@@ -425,10 +426,10 @@ class _FocusModeViewState extends State<FocusModeView> {
                             vertical: ReaderTokens.space4 + 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF111116).withValues(alpha: 0.90),
+                            color: DizzyVoid.obsidian.withValues(alpha: 0.90),
                             borderRadius: ReaderTokens.rounded24,
-                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.40)),
-                            boxShadow: const [ReaderTokens.shadowSm],
+                            border: Border.all(color: DizzyGlow.violet.withValues(alpha: 0.40)),
+                            boxShadow: DizzyShadow.card,
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -461,10 +462,10 @@ class _FocusModeViewState extends State<FocusModeView> {
                                 vertical: ReaderTokens.space8,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF14141A).withValues(alpha: 0.95),
+                                color: DizzyVoid.voidB.withValues(alpha: 0.95),
                                 borderRadius: ReaderTokens.rounded24,
-                                border: Border.all(color: Colors.white12),
-                                boxShadow: const [ReaderTokens.shadowSm],
+                                border: Border.all(color: DizzyEdge.hairline.color),
+                                boxShadow: DizzyShadow.card,
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,

@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../design/dizzy_tactile.dart';
+import '../../../design/dizzy_tokens.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import 'music_hoverable.dart';
@@ -30,7 +32,7 @@ class MusicTrackCard extends StatelessWidget {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(DizzyRadius.xl),
                     child: CachedNetworkImage(
                       imageUrl: track.coverUrl,
                       width: 145,
@@ -47,12 +49,12 @@ class MusicTrackCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: const BoxDecoration(
-                        color: Color(0xFF7C5CFF),
+                        color: DizzyGlow.violet,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.play_arrow_rounded,
-                        color: Colors.white,
+                        color: DizzyVoid.bone,
                         size: 20,
                       ),
                     ),
@@ -63,7 +65,7 @@ class MusicTrackCard extends StatelessWidget {
               Text(
                 track.title,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: DizzyVoid.bone,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -74,7 +76,7 @@ class MusicTrackCard extends StatelessWidget {
               Text(
                 track.artist,
                 style: const TextStyle(
-                  color: Colors.white54,
+                  color: DizzyVoid.ash,
                   fontSize: 11,
                 ),
                 maxLines: 1,

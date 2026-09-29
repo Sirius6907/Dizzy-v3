@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../design/dizzy_tactile.dart';
+import '../../../design/dizzy_tokens.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import 'music_hoverable.dart';
@@ -29,17 +31,17 @@ class MusicHeroBillboard extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
       height: isMobile ? 190 : 240,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(DizzyRadius.xl),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7C5CFF).withValues(alpha: 0.25),
+            color: DizzyGlow.violet.withValues(alpha: 0.25),
             blurRadius: 32,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(DizzyRadius.xl),
         child: Stack(
           children: [
             Positioned.fill(
@@ -58,8 +60,8 @@ class MusicHeroBillboard extends StatelessWidget {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      Colors.black.withValues(alpha: 0.94),
-                      Colors.black.withValues(alpha: 0.65),
+                      DizzyVoid.obsidian.withValues(alpha: 0.94),
+                      DizzyVoid.obsidian.withValues(alpha: 0.65),
                       Colors.transparent,
                     ],
                   ),
@@ -75,13 +77,13 @@ class MusicHeroBillboard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C5CFF),
-                      borderRadius: BorderRadius.circular(12),
+                      color: DizzyGlow.violet,
+                      borderRadius: BorderRadius.circular(DizzyRadius.md),
                     ),
                     child: const Text(
                       'TOP CHART HIT',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: DizzyVoid.bone,
                         fontWeight: FontWeight.w900,
                         fontSize: 10,
                         letterSpacing: 1.0,
@@ -92,7 +94,7 @@ class MusicHeroBillboard extends StatelessWidget {
                   Text(
                     track.title,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: DizzyVoid.bone,
                       fontSize: isMobile ? 20 : 26,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
@@ -104,7 +106,7 @@ class MusicHeroBillboard extends StatelessWidget {
                   Text(
                     track.artist,
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: DizzyVoid.ash,
                       fontSize: isMobile ? 13 : 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -118,9 +120,9 @@ class MusicHeroBillboard extends StatelessWidget {
                         scaleFactor: 1.06,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C5CFF),
+                            backgroundColor: DizzyGlow.violet,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(DizzyRadius.xl),
                             ),
                             padding: EdgeInsets.symmetric(
                               horizontal: isMobile ? 16 : 20,
@@ -128,10 +130,10 @@ class MusicHeroBillboard extends StatelessWidget {
                             ),
                           ),
                           onPressed: onPlayTap,
-                          icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                          icon: const Icon(Icons.play_arrow_rounded, color: DizzyVoid.bone),
                           label: const Text(
                             'Play Now',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: DizzyVoid.bone, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -140,11 +142,11 @@ class MusicHeroBillboard extends StatelessWidget {
                         scaleFactor: 1.1,
                         child: IconButton(
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                            backgroundColor: DizzyVoid.surface2,
                           ),
                           icon: Icon(
                             isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: isSaved ? const Color(0xFFFF4B72) : Colors.white,
+                            color: isSaved ? DizzyGlow.ember : DizzyVoid.bone,
                           ),
                           onPressed: onSaveTap,
                         ),
@@ -154,9 +156,9 @@ class MusicHeroBillboard extends StatelessWidget {
                         scaleFactor: 1.1,
                         child: IconButton(
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                            backgroundColor: DizzyVoid.surface2,
                           ),
-                          icon: const Icon(Icons.playlist_add_rounded, color: Colors.white),
+                          icon: const Icon(Icons.playlist_add_rounded, color: DizzyVoid.bone),
                           onPressed: onAddToPlaylistTap,
                         ),
                       ),
