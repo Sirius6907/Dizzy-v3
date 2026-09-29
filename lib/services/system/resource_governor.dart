@@ -56,7 +56,7 @@ class ResourceGovernor {
   /// Anime4K currently enabled (VRAM mitigation knows what to shed).
   bool anime4kActive = false;
 
-  // ── Budgets ────────────────────────────────────────────────────────────
+  // ── Budgets ────────────────────────────────────────────────────
   // P9: Android phones share RAM with the radio/camera/system — hard 1.8GB
   // ceiling (was a nested ternary that always resolved to 1800 on Android
   // anyway; now explicit). Desktop keeps 2.8GB.
@@ -64,7 +64,7 @@ class ResourceGovernor {
   static const double cpuBudgetPercent = 20.0;
   static const int gpuBudgetMb = 2560; // 2.5 GB total GPU
 
-  // ── Sampling state ────────────────────────────────────────────────────
+  // ── Sampling state ────────────────────────────────────────────
   Timer? _sampleTimer;
   Timer? _gpuTimer;
   double _lastCpuSeconds = 0;
@@ -116,7 +116,7 @@ class ResourceGovernor {
     } catch (_) {}
   }
 
-  // ── Measurement (per platform) ─────────────────────────────────────────
+  // ── Measurement (per platform) ─────────────────────────────────
 
   Future<ResourceSample> _measure() async {
     if (Platform.isWindows) {
@@ -216,7 +216,7 @@ class ResourceGovernor {
     }
   }
 
-  // ── Policy: escalation ladder with hysteresis ──────────────────────────
+  // ── Policy: escalation ladder with hysteresis ──────────────────
 
   void _evaluate(ResourceSample s) {
     final ram = s.rssMb > 0.75 * ramBudgetMb;
@@ -240,6 +240,7 @@ class ResourceGovernor {
       level.value = ResourceLevel.critical;
       // P9: critical = ambient OFF + glass OFF + eco buffers (player
       // listens via _onResourceLevelChanged; visuals via PerformanceMode).
+      // P33: applyLevel owns the 60 FPS cap via _applyFrameRateGovernance.
       PerformanceMode.applyLevel(PerfLevel.critical);
       // P18: opt-in, throttled (24h/code) perf telemetry for the admin
       // dashboard — enums only, never URLs/titles/raw text.
@@ -254,6 +255,7 @@ class ResourceGovernor {
         _overStreak >= 2) {
       level.value = ResourceLevel.caution;
       // P9: caution = ambient frozen, glass → flat fallback.
+      // P33: applyLevel owns the 90 FPS step via _applyFrameRateGovernance.
       PerformanceMode.applyLevel(PerfLevel.caution);
       // P18: caution telemetry (same opt-in contract as critical).
       unawaited(AppErrorLog.log(
@@ -268,6 +270,8 @@ class ResourceGovernor {
         s.rssMb < 0.6 * ramBudgetMb &&
         s.cpuPercent < cpuBudgetPercent * 0.7) {
       level.value = ResourceLevel.normal;
+      // P33: applyLevel re-runs _applyFrameRateGovernance, which restores
+      // the device-tier frame rate (60/90/120) — no manual restore needed.
       PerformanceMode.applyLevel(PerfLevel.normal);
       debugPrint('[ResourceGovernor] back to NORMAL ram=${s.rssMb}MB');
     }

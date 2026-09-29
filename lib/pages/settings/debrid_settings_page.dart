@@ -346,14 +346,14 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                               final service = _selectedService;
                               if (service == 'None') {
                                 _showSnack(
-                                  'Select an active Debrid provider and save your API key below.',
+                                  'Select an active Debrid provider and save your access key below.',
                                   isError: true,
                                 );
                               } else {
                                 final hasKey = await _debrid.hasKeyForService(service);
                                 if (!hasKey) {
                                   _showSnack(
-                                    '$service has no API key saved. Please enter and save your key below.',
+                                    '$service has no access key saved. Please enter and save your key below.',
                                     isError: true,
                                   );
                                 } else {
@@ -468,7 +468,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                             final hasKey = await _debrid.hasKeyForService(val);
                             if (!hasKey) {
                               _showSnack(
-                                '$val selected, but has no API key saved yet. Please enter and save your key below.',
+                                '$val selected, but has no access key saved yet. Please enter and save your key below.',
                               );
                               return;
                             }
@@ -500,7 +500,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                 name: 'Real-Debrid',
                 subtitle: _statusMap['Real-Debrid'] != null
                     ? 'Logged in as ${_statusMap['Real-Debrid']}'
-                    : 'Get token from real-debrid.com/apitoken',
+                    : 'Get your key from real-debrid.com/apitoken',
                 statusBadge: _statusMap['Real-Debrid'],
                 badgeColor: const Color(0xFF10B981),
                 controller: _rdKeyCtrl,
@@ -670,7 +670,7 @@ class _DebridSettingsPageState extends State<DebridSettingsPage> {
                   obscureText: isObscured,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Paste API Key / Token',
+                    hintText: 'Paste access key',
                     hintStyle: TextStyle(
                       color: Colors.white.withValues(alpha: 0.25),
                       fontSize: 12,

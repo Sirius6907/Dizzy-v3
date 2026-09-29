@@ -81,7 +81,7 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Make it yours',
+              'Accent Studio & OLED',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -162,10 +162,12 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
             ValueListenableBuilder(
               valueListenable: CustomAccentService.amoledTrueBlack,
               builder: (context, on, _) {
-                return SwitchListTile(
+                return Material(
+                  type: MaterialType.transparency,
+                  child: SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text(
-                    'Pure black mode',
+                    'AMOLED True Black',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -178,6 +180,7 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
                   ),
                   value: on,
                   onChanged: CustomAccentService.setAmoled,
+                ),
                 );
               },
             ),
@@ -192,7 +195,7 @@ class _AccentStudioSheetState extends State<AccentStudioSheet> {
                           MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Background blur',
+                          'Backdrop Blur Intensity',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,

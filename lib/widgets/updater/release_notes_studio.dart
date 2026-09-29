@@ -136,9 +136,9 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'What’s New',
-                          style: TextStyle(
+                        Text(
+                          "What's New in v${info.latestVersion}",
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.w800,

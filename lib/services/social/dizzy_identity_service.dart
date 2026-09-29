@@ -3,7 +3,6 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 import '../cloud/cloud_client.dart';
 import '../device/device_id_service.dart';
@@ -24,6 +23,13 @@ class DizzyIdentityService {
 
   static bool get isLinked => linkedKind.value != null;
 
+  /// Friendly display code (e.g. DIZ-4820193).
+  static String get deviceDisplayCode {
+    final code = DeviceIdService.deviceCode.value;
+    if (code == null) return 'DIZ-0000000';
+    return DeviceIdService.displayCode(code);
+  }
+
   static Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     deviceSid.value = prefs.getString(_keyDeviceSid);
@@ -31,7 +37,9 @@ class DizzyIdentityService {
     linkedIdentifier.value = prefs.getString(_keyLinkedIdentifier);
 
     if (deviceSid.value == null) {
-      final freshSid = 'sid_${const Uuid().v4().replaceAll('-', '')}';
+      // Anonymous-first: friendly 7-digit device code as the session ID.
+      final code = await DeviceIdService.initialize();
+      final freshSid = DeviceIdService.displayCode(code);
       await prefs.setString(_keyDeviceSid, freshSid);
       deviceSid.value = freshSid;
     }

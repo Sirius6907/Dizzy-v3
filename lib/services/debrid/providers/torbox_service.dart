@@ -59,7 +59,7 @@ class TorBoxService {
   }) async {
     final apiKey = await getKey();
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('TorBox API Key is missing. Please configure it in Settings.');
+      throw Exception('TorBox access key is missing. Please add it in Settings.');
     }
 
     final headers = {'Authorization': 'Bearer $apiKey'};

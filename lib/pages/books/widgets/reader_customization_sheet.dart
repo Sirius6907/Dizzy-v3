@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../design/dizzy_tactile.dart';
 import '../../../services/books/reader_settings.dart';
 import 'reader_design_tokens.dart';
 
@@ -280,7 +281,7 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
         color: settings.backgroundColor,
         borderRadius: ReaderTokens.rounded16,
         border: Border.all(color: settings.borderColor),
-        boxShadow: const [ReaderTokens.shadowSm],
+        boxShadow: DizzyShadow.card,
       ),
       child: Text(
         previewText,

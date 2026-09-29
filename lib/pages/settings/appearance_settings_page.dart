@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
+import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/audiobook/audiobook_settings.dart';
 import '../../services/theme/custom_background_service.dart';
 import '../../services/theme/custom_accent_service.dart';
 import '../../widgets/theme/accent_studio_sheet.dart';
 import '../../services/theme/dock_settings.dart';
-import '../../services/theme/glass_settings.dart';
 import '../../services/iptv/iptv_settings.dart';
 import '../../services/manga/manga_settings.dart';
 import '../../services/music/music_settings.dart';
@@ -13,7 +15,7 @@ import 'appearance/audiobook_settings_page.dart';
 import 'appearance/custom_background_settings_page.dart';
 import 'appearance/dock_settings_page.dart';
 import 'appearance/home_ui_settings_page.dart';
-import 'appearance/liquid_glass_settings_page.dart';
+import 'appearance/tactile_theme_settings_page.dart';
 import 'appearance/live_tv_settings_page.dart';
 import 'appearance/manga_settings_page.dart';
 import 'appearance/music_settings_page.dart';
@@ -28,7 +30,7 @@ class AppearanceSettingsPage extends StatefulWidget {
 class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return OfflineAwareScaffold(
       backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D1017),
@@ -115,31 +117,25 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
 
               const SizedBox(height: 14),
 
-              // Button 1: Liquid Glass Setup
-              ValueListenableBuilder<bool>(
-                valueListenable: GlassSettings.enabled,
-                builder: (context, glassEnabled, _) {
-                  return ValueListenableBuilder<GlassPreset>(
-                    valueListenable: GlassSettings.preset,
-                    builder: (context, preset, _) {
-                      final palette = AppThemeService.currentPalette.value;
-                      return _buildSectionButton(
-                        icon: Icons.blur_on_rounded,
-                        iconColor: palette.primaryColor,
-                        title: 'Liquid Glass Setup',
-                        subtitle: 'Adjust hover impact, wobble spring physics, lens refraction, and chromatic aberration',
-                        badgeText: glassEnabled ? preset.label : 'Disabled',
-                        badgeColor: glassEnabled ? palette.primaryColor : Colors.white38,
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LiquidGlassSettingsPage(),
-                            ),
-                          );
-                          setState(() {});
-                        },
+              // Button 1: Tactile Theme Settings
+              ValueListenableBuilder<AppThemePalette>(
+                valueListenable: AppThemeService.currentPalette,
+                builder: (context, currentPalette, _) {
+                  return _buildSectionButton(
+                    icon: Icons.palette_rounded,
+                    iconColor: currentPalette.primaryColor,
+                    title: 'Tactile Theme',
+                    subtitle: 'Theme palette, elevation levels, edge sharpness, and shadow style',
+                    badgeText: currentPalette.name,
+                    badgeColor: currentPalette.primaryColor,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TactileThemeSettingsPage(),
+                        ),
                       );
+                      setState(() {});
                     },
                   );
                 },
@@ -370,13 +366,15 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     required Color badgeColor,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    return DizzyTactileCard(
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: const Color(0xFF12151E),
             borderRadius: BorderRadius.circular(16),
@@ -457,7 +455,6 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
             ],
           ),
         ),
-      ),
     );
   }
 

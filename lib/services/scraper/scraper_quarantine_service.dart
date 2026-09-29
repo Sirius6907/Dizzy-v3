@@ -143,6 +143,12 @@ class ScraperQuarantineService {
     _persist();
   }
 
+  /// Restore all quarantined sources to healthy state.
+  static void restoreAll() {
+    _quarantineMap.clear();
+    _persist();
+  }
+
   static Future<void> _persist() async {
     try {
       final prefs = await SharedPreferences.getInstance();

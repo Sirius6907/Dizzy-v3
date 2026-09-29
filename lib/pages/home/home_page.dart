@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import '../../models/movie/movie.dart';
 
@@ -13,13 +12,11 @@ import '../details/details_page.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/catalog/catalog_service.dart';
 import '../../services/metadata/metadata_service.dart';
-import '../../services/theme/glass_settings.dart';
-import '../../services/home/home_page_settings.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../../services/home/home_page_settings.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../utils/navigation/route_transitions.dart';
-import '../../widgets/common/animated_ambient_background.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/poster_skeleton.dart';
 import '../../design/dizzy_tokens.dart';
@@ -427,7 +424,14 @@ class _HomePageState extends State<HomePage> {
     final topPadding = MediaQuery.of(context).padding.top;
     final palette = AppThemeService.currentPalette.value;
 
-    final backgroundContent = AnimatedAmbientBackground(
+    final backgroundContent = Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0B0D12), Color(0xFF05060A)],
+        ),
+      ),
       child: Stack(
         children: [
           // ── Main scrollable content ──
@@ -534,32 +538,15 @@ class _HomePageState extends State<HomePage> {
       Positioned.fill(child: _buildIntroOverlay(context)),
     ];
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: GlassSettings.enabled,
-      builder: (context, enabled, _) {
-        final overlays = Stack(children: overlayChildren);
-        if (enabled) {
-          return LiquidGlassView(
-            realTimeCapture: true,
-            useSync: true,
-            pixelRatio: 0.85,
-            refreshRate: LiquidGlassRefreshRate.deviceRefreshRate,
-            regionCapture: true,
-            backgroundWidget: backgroundContent,
-            child: overlays,
-          );
-        }
-
-        return Container(
-          color: const Color(0xFF080A0F),
-          child: Stack(
-            children: [
-              RepaintBoundary(child: backgroundContent),
-              ...overlayChildren,
-            ],
-          ),
-        );
-      },
+    return Container(
+      color: const Color(0xFF080A0F),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          RepaintBoundary(child: backgroundContent),
+          ...overlayChildren,
+        ],
+      ),
     );
   }
 
@@ -725,14 +712,18 @@ class _GlassAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    // Narrow phones (emulator 383px, small devices) pe saare icons +
+    // dub pill ek line me fit nahi hote → 223px overflow crash.
+    // Compact mode: chhota logo/title, dub me sirf flag, tight buttons.
+    final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return RepaintBoundary(
       child: Container(
         padding: EdgeInsets.only(
           top: topPadding + 10,
           bottom: 14,
-          left: 20,
-          right: 8,
+          left: narrow ? 12 : 20,
+          right: narrow ? 4 : 8,
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -756,11 +747,11 @@ class _GlassAppBar extends StatelessWidget {
             // Logo
             Image.asset(
               'assets/icon.png',
-              width: 34,
-              height: 34,
+              width: narrow ? 28 : 34,
+              height: narrow ? 28 : 34,
               fit: BoxFit.contain,
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: narrow ? 6 : 10),
             ShaderMask(
               shaderCallback: (bounds) => LinearGradient(
                 colors: [
@@ -771,10 +762,10 @@ class _GlassAppBar extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
-              child: const Text(
+              child: Text(
                 'Dizzy',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: narrow ? 17 : 20,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
                   color: Colors.white,
@@ -786,7 +777,8 @@ class _GlassAppBar extends StatelessWidget {
             ValueListenableBuilder<bool>(
               valueListenable: HomePageSettings.enableAiQuiz,
               builder: (context, aiQuizEnabled, _) {
-                if (!aiQuizEnabled) return const SizedBox.shrink();
+                // Narrow pe ⋮ menu me hai — inline button hatao (overflow fix).
+                if (!aiQuizEnabled || narrow) return const SizedBox.shrink();
                 final palette = AppThemeService.currentPalette.value;
                 return IconButton(
                   icon: Icon(
@@ -810,7 +802,8 @@ class _GlassAppBar extends StatelessWidget {
             ValueListenableBuilder<bool>(
               valueListenable: HomePageSettings.enableCalendar,
               builder: (context, calEnabled, _) {
-                if (!calEnabled) return const SizedBox.shrink();
+                // Narrow pe ⋮ menu me hai — inline button hatao (overflow fix).
+                if (!calEnabled || narrow) return const SizedBox.shrink();
                 return IconButton(
                   icon: Icon(
                     Icons.calendar_month_rounded,
@@ -831,6 +824,8 @@ class _GlassAppBar extends StatelessWidget {
             ValueListenableBuilder<AudioDubMode>(
               valueListenable: DubModeService.mode,
               builder: (context, dubMode, _) {
+                // Narrow pe ⋮ menu me hai — inline pill hatao (overflow fix).
+                if (narrow) return const SizedBox.shrink();
                 final isHindi = dubMode == AudioDubMode.hindi;
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),
@@ -843,12 +838,12 @@ class _GlassAppBar extends StatelessWidget {
                           ? 'Hindi Dub mode ON — English pe switch karo'
                           : 'Hindi Dub mode enable karo (Movies & Series)',
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: narrow ? 7 : 10,
+                        vertical: 6,
+                      ),
                         decoration: BoxDecoration(
                           color: isHindi
                               ? const Color(0xFFFF9933).withValues(alpha: 0.18)
@@ -870,18 +865,21 @@ class _GlassAppBar extends StatelessWidget {
                               isHindi ? '🇮🇳' : '🌐',
                               style: const TextStyle(fontSize: 12),
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              isHindi ? 'HINDI DUB' : 'ENGLISH',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: isHindi
-                                    ? const Color(0xFFFFB366)
-                                    : Colors.white.withValues(alpha: 0.72),
+                            // Narrow pe sirf flag — text hatao, warna overflow.
+                            if (!narrow) ...[
+                              const SizedBox(width: 5),
+                              Text(
+                                isHindi ? 'HINDI DUB' : 'ENGLISH',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                  color: isHindi
+                                      ? const Color(0xFFFFB366)
+                                      : Colors.white.withValues(alpha: 0.72),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -890,14 +888,106 @@ class _GlassAppBar extends StatelessWidget {
                 );
               },
             ),
+            // Narrow screens: extra actions ⋮ menu me — Row kabhi overflow
+            // nahi karega (no yellow/black stripes). Wide pe sab inline.
+            if (narrow)
+              PopupMenuButton<int>(
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: Colors.white.withValues(alpha: 0.65),
+                  size: 21,
+                ),
+                tooltip: 'More',
+                itemBuilder: (menuCtx) {
+                  final items = <PopupMenuEntry<int>>[];
+                  if (HomePageSettings.enableAiQuiz.value) {
+                    items.add(
+                      const PopupMenuItem<int>(
+                        value: 0,
+                        child: Row(
+                          children: [
+                            Icon(Icons.auto_awesome_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('AI Taste Quiz'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  if (HomePageSettings.enableCalendar.value) {
+                    items.add(
+                      const PopupMenuItem<int>(
+                        value: 1,
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_month_rounded, size: 20),
+                            SizedBox(width: 12),
+                            Text('TV Airing Calendar'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  final isHindi =
+                      DubModeService.mode.value == AudioDubMode.hindi;
+                  items.add(
+                    PopupMenuItem<int>(
+                      value: 2,
+                      child: Row(
+                        children: [
+                          Text(
+                            isHindi ? '🇮🇳' : '🌐',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(isHindi ? 'Hindi Dub: ON' : 'Hindi Dub: OFF'),
+                        ],
+                      ),
+                    ),
+                  );
+                  return items;
+                },
+                onSelected: (value) {
+                  if (value == 0) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const WeWatchQuizPage(),
+                      ),
+                    );
+                  } else if (value == 1) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TvCalendarPage(),
+                      ),
+                    );
+                  } else {
+                    final isHindi =
+                        DubModeService.mode.value == AudioDubMode.hindi;
+                    DubModeService.setMode(
+                      isHindi ? AudioDubMode.english : AudioDubMode.hindi,
+                    );
+                  }
+                },
+              ),
             // Search
             Builder(
               builder: (context) {
                 return IconButton(
+                  visualDensity:
+                      narrow ? VisualDensity.compact : VisualDensity.standard,
+                  padding: narrow ? EdgeInsets.zero : null,
+                  constraints: narrow
+                      ? const BoxConstraints(minWidth: 36, minHeight: 36)
+                      : null,
                   icon: Icon(
                     Icons.search_rounded,
                     color: Colors.white.withValues(alpha: 0.65),
-                    size: 25,
+                    size: narrow ? 22 : 25,
                   ),
                   onPressed: () {
                     final box = context.findRenderObject() as RenderBox?;
@@ -913,10 +1003,16 @@ class _GlassAppBar extends StatelessWidget {
             Builder(
               builder: (context) {
                 return IconButton(
+                  visualDensity:
+                      narrow ? VisualDensity.compact : VisualDensity.standard,
+                  padding: narrow ? EdgeInsets.zero : null,
+                  constraints: narrow
+                      ? const BoxConstraints(minWidth: 36, minHeight: 36)
+                      : null,
                   icon: Icon(
                     Icons.settings_rounded,
                     color: Colors.white.withValues(alpha: 0.65),
-                    size: 24,
+                    size: narrow ? 21 : 24,
                   ),
                   onPressed: () {
                     final box = context.findRenderObject() as RenderBox?;
@@ -930,10 +1026,16 @@ class _GlassAppBar extends StatelessWidget {
             ),
             // Profile
             IconButton(
+              visualDensity:
+                  narrow ? VisualDensity.compact : VisualDensity.standard,
+              padding: narrow ? EdgeInsets.zero : null,
+              constraints: narrow
+                  ? const BoxConstraints(minWidth: 36, minHeight: 36)
+                  : null,
               icon: Icon(
                 Icons.person_rounded,
                 color: Colors.white.withValues(alpha: 0.65),
-                size: 24,
+                size: narrow ? 21 : 24,
               ),
               tooltip: 'Profile',
               onPressed: () {

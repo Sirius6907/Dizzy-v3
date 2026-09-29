@@ -36,6 +36,10 @@ abstract final class DizzyRadius {
 
 /// Type scale (sizes only — color/weight call-site pe).
 abstract final class DizzyType {
+  /// Global UI font — poora app isi pe chalta hai (ThemeData default).
+  /// Single family = consistent look, zero extra APK weight (already bundled).
+  static const String fontFamily = 'Poppins';
+
   static const double display = 32.0;
   static const double headline = 24.0;
   static const double title = 20.0;
@@ -97,4 +101,30 @@ abstract final class DizzyColors {
 abstract final class DizzyBreakpoints {
   static const double mobile = 600.0;
   static const double tablet = 1100.0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Light OLED contrast tokens — for Anodized Aluminum / Polished Silver modes.
+// High-contrast surfaces + bone-on-charcoal text ensure WCAG AA+ on light.
+// ─────────────────────────────────────────────────────────────────────────────
+abstract final class DizzyLight {
+  // Light OLED surfaces — pure bright whites and soft grays.
+  static const obsidian = Color(0xFF000000);   // Pixel-off reference
+  static const voidA = Color(0xFFF8F9FA);      // Brushed aluminum base
+  static const voidB = Color(0xFFECEEF2);      // Secondary light surface
+  static const surface1 = Color(0xFFFAFBFD);   // Base card
+  static const surface2 = Color(0xFFE2E5EB);   // Raised surface
+  static const surface3 = Color(0xFFC6CBD4);   // Most raised
+
+  // Light theme bone — near-black for text on light surfaces
+  static const bone = Color(0xFF111216);       // Razor-sharp text
+  static const ash = Color(0xFF5A6070);        // Metadata on light
+
+  // Hairline borders for light hardware panels
+  static const hairlineBorder = Color(0xFFB8BEC8);
+  static const hairlineStrongBorder = Color(0xFF8A93A3);
+
+  // Light OLED shadows — soft gray, not black
+  static const lightShadow = Color(0x331A1D26);
+  static const lightShadowDeep = Color(0x241A1D26);
 }
