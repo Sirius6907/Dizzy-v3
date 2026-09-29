@@ -159,6 +159,9 @@ written to the same shape as the six sibling edge functions — but no request
 has crossed a network. Deploying requires: apply the migration, then
 `supabase functions deploy report-error`. Until then the client behaves exactly
 as it did before, which is the correct failure mode.
+> **RESOLVED 2026-09-30:** migration applied via `supabase db query --linked`,
+> `report-error` (+ `merge_devices`) deployed, RLS + fold path runtime-verified
+> (`report_error` → true, count=2 fold row, anon SELECT correctly 401).
 
 **5. The migration is unverified SQL (Medium — same as P1's dirty migration).**
 It is 164 lines of hand-written plpgsql and has never been executed. Two spots
@@ -171,6 +174,10 @@ deserve a second pair of eyes before it is run:
   is an approximation — a row folded 40 times over 3 days counts as 40. It
   over-counts, which is the safe direction for an abuse control, and the
   comment in the file says so.
+
+> **RESOLVED 2026-09-30:** executed live. Both flagged spots runtime-verified —
+> ON CONFLICT inference matched the partial index (2 calls → 1 row, count=2)
+> and the rate-cap window behaved as documented.
 
 **6. R6 wider than P1 measured (carry-forward, untouched).** P1 recorded 12
 user-facing "Liquid Glass" strings. Out of P2 scope; P6.
