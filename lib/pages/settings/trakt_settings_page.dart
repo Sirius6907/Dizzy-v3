@@ -359,7 +359,7 @@ class _TraktSettingsPageState extends State<TraktSettingsPage> {
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
-                                        'Waiting for authorization on trakt.tv...',
+                                        'Waiting for permission on trakt.tv...',
                                         style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
                                       ),
                                     ],

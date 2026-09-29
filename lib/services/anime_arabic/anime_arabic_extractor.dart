@@ -89,7 +89,7 @@ class AnimeArabicExtractor {
       onProgress: onProgress,
     );
     if (servers.isEmpty) {
-      onProgress?.call('error', 'No servers exposed by API');
+      onProgress?.call('error', 'No servers found right now');
       return const [];
     }
 
