@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../cloud/cloud_client.dart';
+import '../device/device_identity_v2.dart';
 import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
 
@@ -21,6 +22,10 @@ class DizzyIdentityService {
   static final ValueNotifier<String?> deviceSid = ValueNotifier<String?>(null);
   static final ValueNotifier<String?> linkedKind = ValueNotifier<String?>(null);
   static final ValueNotifier<String?> linkedIdentifier = ValueNotifier<String?>(null);
+
+  /// Phase H/C: true when the server says THIS device was revoked.
+  /// Fail-soft: only flipped by a confirmed device_boot response.
+  static final ValueNotifier<bool> deviceRevoked = ValueNotifier<bool>(false);
 
   static bool get isLinked => linkedKind.value != null;
 
@@ -59,17 +64,29 @@ class DizzyIdentityService {
 
     try {
       final code = await DeviceIdService.initialize();
-      final hwidHash = sha256.convert(utf8.encode('dizzy_hwid_${code}_salt')).toString();
+      // Phase H: stable identity v2 — hwid_hash = salted ANDROID_ID (survives
+      // reinstall); hwid_legacy = old random-code hash (dedupe helper for
+      // pre-H rows); hwid_stable tells the server when the anchor is weak.
+      // Server-side device_boot does the upsert + reinstall auto-merge and
+      // returns whether THIS device was revoked (Phase C notice screen).
+      final identity = await DeviceIdentityV2.stableHwid();
+      final legacyHash =
+          sha256.convert(utf8.encode('dizzy_hwid_${code}_salt')).toString();
 
-      await CloudClient.db.from('devices').upsert({
-        'user_id': uid,
-        'device_code': code,
-        'hwid_hash': hwidHash,
-        'sid': deviceSid.value,
-        'platform': defaultTargetPlatform.name,
-        'app_version': await _appVersion(),
-        'last_seen_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,hwid_hash');
+      final res = await CloudClient.db.rpc('device_boot', params: {
+        'p_hwid_hash': identity.hash,
+        'p_hwid_legacy': legacyHash,
+        'p_hwid_stable': identity.stable,
+        'p_device_code': code,
+        'p_sid': deviceSid.value ?? '',
+        'p_platform': defaultTargetPlatform.name,
+        'p_app_version': await _appVersion(),
+      });
+      if (res is Map && res['revoked'] == true) {
+        deviceRevoked.value = true;
+      } else if (res is Map && res['success'] == true) {
+        deviceRevoked.value = false;
+      }
     } catch (e) {
       AppLog.d('[DizzyIdentityService] bootDevice: $e');
     }
