@@ -2,10 +2,13 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
-## [1.3.1+33] — 2026-09-30 — "Update Anything, From Anything"
+## [1.3.1+1032] — 2026-09-30 — "Update Anything, From Anything"
 
 ### Fix — in-place updates for every install, no uninstall ever
-- **Root cause of "package not valid"** — releases v1.1.3–v1.1.5 shipped debug-signed (the release keystore was added only at v1.1.7), and some phones carry locally-built test installs; Android only accepts an update signed with the *exact same key*, so those installs could never move to a v1.1.7+ build. Several downloads also failed and the old plugin handed the error body straight to the installer.
+- **Root cause of "package not valid" on v1.2.1 installs** — v1.2.1 shipped *split* APKs with Flutter's abiCode×1000 versionCode override (arm64 = 2031), while the v1.3.0 release accidentally packed *base-code copies* into the per-ABI filenames (arm64 = 32): the universal build step regenerates the whole output dir and the organize step copied the overwritten files. Android treats new-code < old-code as INSTALL_FAILED_VERSION_DOWNGRADE even when the signing key matches (and it did — both c513faef) — so every v1.2.1 phone hard-blocked.
+- **Build order fixed** — split outputs are parked to `split-out/` *before* the universal build touches the directory; per-ABI assets rename from the parked copies, Universal from the fresh build. Never again the mixed set.
+- **versionCode floor guard in CI** — every release APK must carry versionCode > 2031 (pubspec build number ≥ 1032 keeps arm64 at 3032+ even if the ABI override ever stops applying); a violation blocks the release with an explicit bump instruction.
+- **Also fixed alongside** — releases v1.1.3–v1.1.5 shipped debug-signed (release keystore added only at v1.1.7) and some phones carry locally-built test installs; those installs get `Dizzy-v3-legacy-*` mirrors signed with the original key. The app reads its own signing-cert fingerprint (new `getCertSha256` channel) and fetches the matching asset.
 - **Dual-signing update channels** — the app now reads its own signing-cert fingerprint (new `getCertSha256` method channel) and fetches the matching GitHub asset: normal installs get the normal APK, legacy-key installs get `Dizzy-v3-legacy-*` mirrors signed with the original key. Legacy asset names drop the arch token (`legacy-arm64`, not `legacy-arm64-v8a`) so older pickers deterministically land on the normal APK.
 - **Download integrity** — OTA verifies the GitHub asset's sha256 digest before the installer ever opens a file; failed/corrupt downloads now abort with a friendly retry message instead of a system invalid-package error.
 - **Easy-English failures** — raw OTA status codes no longer reach users.
