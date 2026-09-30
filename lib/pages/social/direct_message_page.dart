@@ -4,6 +4,8 @@ import 'package:dizzy/design/dizzy_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
+import 'package:dizzy/services/cloud/watch_party_service.dart';
+import '../settings/watch_party_page.dart';
 import '../../widgets/common/notify.dart';
 import '../../widgets/guide/guide_trigger.dart';
 
@@ -29,6 +31,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   final TextEditingController _textController = TextEditingController();
   final List<DizzyDirectMessage> _messages = [];
   bool _isSending = false;
+  bool _partyBusy = false;
 
   @override
   void initState() {
@@ -78,6 +81,53 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
     _textController.text = text;
     DizzyNotify.show(context, "Couldn't send — check net, then try again.",
         tone: NotifyTone.warn);
+  }
+
+  /// DM media card → real Watch Together: create a room, send the invite
+  /// as a DM (kind 'media_card', mediaRef carries the room), then open
+  /// the party lobby. Fail-soft, Easy English only.
+  Future<void> _watchTogetherFromCard(DizzyDirectMessage msg) async {
+    if (_partyBusy) return;
+    if (!WatchPartyService.isAvailable) {
+      if (!mounted) return;
+      DizzyNotify.show(
+          context, 'Watch Together needs net + sign-in. Then try again.',
+          tone: NotifyTone.warn);
+      return;
+    }
+    setState(() => _partyBusy = true);
+    try {
+      final ref = (msg.mediaRef != null && msg.mediaRef!.isNotEmpty)
+          ? msg.mediaRef!
+          : 'dm:${widget.recipientUsername}';
+      final room = await WatchPartyService.createRoom(
+        title: 'Watching with @${widget.recipientUsername}',
+        isPrivate: false,
+      );
+      if (room == null) {
+        if (!mounted) return;
+        DizzyNotify.show(
+            context, "Couldn't start the room — check net, then try again.",
+            tone: NotifyTone.warn);
+        return;
+      }
+      await WatchPartyService.updateCurrentMedia(
+          roomId: room.roomId, ref: ref, title: msg.body);
+      await DizzySocialService.sendDirectMessage(
+        recipientUid: widget.recipientUid,
+        body: 'Join my Watch Together room: ${room.roomId}',
+        kind: 'media_card',
+        mediaRef: 'party:${room.roomId}',
+      );
+      if (!mounted) return;
+      DizzyNotify.show(context, 'Room ${room.roomId} is live — invite sent!',
+          tone: NotifyTone.success);
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const WatchPartyPage()),
+      );
+    } finally {
+      if (mounted) setState(() => _partyBusy = false);
+    }
   }
 
   Widget _buildMediaCardBubble(DizzyDirectMessage msg, bool isMe) {
@@ -134,21 +184,23 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
               height: 38,
               gradient: DizzyGradients.emberButton,
               glowColor: DizzyGlow.red,
-              onTap: () {
-                DizzyNotify.show(
-                  context,
-                  'Joining Watch Together room...',
-                  tone: NotifyTone.success,
-                );
-              },
-              child: const Row(
+              onTap: _partyBusy ? null : () => _watchTogetherFromCard(msg),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 6),
+                  _partyBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.play_arrow_rounded,
+                          color: Colors.white, size: 20),
+                  const SizedBox(width: 6),
                   Text(
-                    'Watch Together',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    _partyBusy ? 'Starting...' : 'Watch Together',
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

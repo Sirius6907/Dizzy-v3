@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -86,11 +87,21 @@ class CloudAuthService {
         'anon_id': _anonId!,
         'device_code': DeviceIdService.deviceCode.value,
         'platform': platform,
-        'app_version': '1.1.9',
+        'app_version': await _appVersion(),
         'last_seen_at': DateTime.now().toIso8601String(),
       }, onConflict: 'owner_user_id');
     } catch (e) {
       AppLog.d('[CloudAuth] install upsert failed (soft): $e');
+    }
+  }
+
+  /// Real app version from the installed package (never a hardcoded guess).
+  static Future<String> _appVersion() async {
+    try {
+      final pkg = await PackageInfo.fromPlatform();
+      return pkg.version;
+    } catch (_) {
+      return 'unknown';
     }
   }
 
