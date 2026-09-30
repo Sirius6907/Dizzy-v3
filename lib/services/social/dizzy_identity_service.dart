@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -66,11 +67,21 @@ class DizzyIdentityService {
         'hwid_hash': hwidHash,
         'sid': deviceSid.value,
         'platform': defaultTargetPlatform.name,
-        'app_version': '1.3.1',
+        'app_version': await _appVersion(),
         'last_seen_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,hwid_hash');
     } catch (e) {
       AppLog.d('[DizzyIdentityService] bootDevice: $e');
+    }
+  }
+
+  /// Real app version from the installed package (never a hardcoded guess).
+  static Future<String> _appVersion() async {
+    try {
+      final pkg = await PackageInfo.fromPlatform();
+      return pkg.version;
+    } catch (_) {
+      return 'unknown';
     }
   }
 

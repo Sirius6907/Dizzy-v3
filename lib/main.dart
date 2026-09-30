@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:media_kit/media_kit.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:window_manager/window_manager.dart';
@@ -26,6 +27,7 @@ import './services/cloud/cloud_client.dart';
 import './services/cloud/cloud_auth_service.dart';
 import './services/cloud/remote_config_service.dart';
 import './services/device/device_id_service.dart';
+import './services/social/dizzy_identity_service.dart';
 import './services/profiles/dizzy_profile_service.dart';
 import './services/scraper/scraper_quarantine_service.dart';
 import './services/audiobook/audiobook_settings.dart';
@@ -91,10 +93,18 @@ void main() async {
   await DeviceIdService.initialize();
   // S2 (v1.1.9): cloud LAST + non-blocking — never delays startup.
   // v1.2.0-ADMIN: after auth, pull remote config + announcements (cached, soft).
+  // Phase 3: identity boot registers this device (devices table was 0 rows
+  // because init() was never called). All cloud writes stay fail-soft.
   // ignore: unawaited_futures
-  CloudClient.init().then((_) => CloudAuthService.init()).then((_) {
+  CloudClient.init().then((_) => CloudAuthService.init()).then((_) async {
+    // ignore: unawaited_futures
+    DizzyIdentityService.init();
+    var appVersion = 'unknown';
+    try {
+      appVersion = (await PackageInfo.fromPlatform()).version;
+    } catch (_) {}
     RemoteConfigService.initialize();
-    AnnouncementService.initialize(appVersion: '1.3.1');
+    AnnouncementService.initialize(appVersion: appVersion);
     // v1.2.0-T2.2: opted-in error queue flush (no-op when consent OFF).
     AppErrorLog.schedulePeriodicFlush();
     AppErrorLog.flushOnStart();
