@@ -48,6 +48,7 @@ import './services/window/window_service.dart';
 import './services/p2p/p2p_settings_service.dart';
 import './services/discord/discord_rpc_service.dart';
 import './widgets/updater/update_dialog.dart';
+import './pages/common/device_revoked_screen.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
 import './pages/search/universal_spotlight_modal.dart';
@@ -208,6 +209,7 @@ class _DizzyAppState extends State<DizzyApp>
     with WidgetsBindingObserver {
   static bool _hasCheckedInitialUpdate = false;
   static bool _isShowingUpdateDialog = false;
+  bool _revokedShown = false;
 
   @override
   void initState() {
@@ -215,6 +217,8 @@ class _DizzyAppState extends State<DizzyApp>
     WidgetsBinding.instance.addObserver(this);
     // P8: background-suspend observer (never touches voice).
     WidgetsBinding.instance.addObserver(_perfLifecycleObserver);
+    // Phase C: revoked device → notice screen (once, when boot reports it).
+    DizzyIdentityService.deviceRevoked.addListener(_onDeviceRevoked);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
@@ -222,11 +226,25 @@ class _DizzyAppState extends State<DizzyApp>
           if (mounted) _checkForUpdates();
         });
       }
+      // Boot may have finished before this listener attached.
+      _onDeviceRevoked();
     });
+  }
+
+  void _onDeviceRevoked() {
+    if (!DizzyIdentityService.deviceRevoked.value) return;
+    if (_revokedShown) return;
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    _revokedShown = true;
+    Navigator.of(ctx).pushReplacement(
+      MaterialPageRoute(builder: (_) => const DeviceRevokedScreen()),
+    );
   }
 
   @override
   void dispose() {
+    DizzyIdentityService.deviceRevoked.removeListener(_onDeviceRevoked);
     WidgetsBinding.instance.removeObserver(this);
     WidgetsBinding.instance.removeObserver(_perfLifecycleObserver);
     super.dispose();

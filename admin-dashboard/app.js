@@ -101,7 +101,7 @@ function show(name) {
   if (name === 'rooms') loadRooms();
   if (name === 'moderation') loadRooms(true);
   if (name === 'scrapers') loadScrapers();
-  if (name === 'users') loadUsers();
+  if (name === 'users') { loadUsers(); loadDevices(); }
   if (name === 'push') loadAnn();
   if (name === 'config') loadCfg();
   if (name === 'audit') loadAudit(); else stopAuditLive();
@@ -541,6 +541,42 @@ async function loadUsers() {
        <td class="mut" title="${esc(fmtAbs(u.last_seen_at))}">${ago(u.last_seen_at)}</td></tr>`).join('')
       || `<tr><td colspan="6">${emptyState('📭', 'No installs found', 'Try another search term.')}</td></tr>`;
   } catch (e) { toast('Installs failed: ' + e.message, 'err'); }
+}
+
+// ── devices (Phase C) ──
+async function loadDevices() {
+  const tb = document.querySelector('#devicesTbl tbody');
+  if (tb) tb.innerHTML = skRows(8, 6);
+  try {
+    const rows = await rpc('admin_devices', { p_limit: 100, p_search: ($('devSearch') || {}).value || '' });
+    if (tb) tb.innerHTML = rows.map((d) => {
+      const dot = d.online ? '<span class="pill p-live">● online</span>' : '<span class="mut">offline</span>';
+      const badges = [
+        d.revoked_at ? '<span class="pill p-closed">revoked</span>' : '',
+        d.banned ? `<span class="pill p-closed" title="level ${esc(d.ban_level || 'social')}">banned</span>` : '',
+        d.hwid_stable === false ? '<span class="pill" title="weak identity anchor">new</span>' : '',
+      ].filter(Boolean).join(' ');
+      const action = d.revoked_at
+        ? `<button class="btn btn-ok btn-sm" onclick="revokeDevice('${d.device_id}',false)">Restore</button>`
+        : `<button class="btn btn-danger btn-sm" onclick="revokeDevice('${d.device_id}',true)">Revoke</button>`;
+      return `<tr><td class="mono">${esc(d.device_code)}</td>
+       <td>${esc(d.platform)}</td><td>${esc(d.app_version)}</td>
+       <td>${dot} ${badges}</td>
+       <td class="mut" title="${esc(fmtAbs(d.last_seen_at))}">${ago(d.last_seen_at)}</td>
+       <td>${action}</td></tr>`;
+    }).join('')
+      || `<tr><td colspan="6">${emptyState('📭', 'No devices yet', 'Devices register on app boot.')}</td></tr>`;
+  } catch (e) { toast('Devices failed: ' + e.message, 'err'); }
+}
+
+async function revokeDevice(deviceId, revoke) {
+  const verb = revoke ? 'Revoke' : 'Restore';
+  if (revoke && !confirm('Revoke this device? It will see a "removed" screen until restored.')) return;
+  try {
+    await rpc('admin_device_revoke', { p_device_id: deviceId, p_revoke: revoke });
+    toast(revoke ? 'Device revoked 🔒' : 'Device restored 🔓', 'ok');
+    loadDevices();
+  } catch (e) { toast(verb + ' failed: ' + e.message, 'err'); }
 }
 
 // ── announcements ──
