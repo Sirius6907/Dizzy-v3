@@ -20,6 +20,7 @@ import 'package:dizzy/pages/details/details_page.dart';
 import 'package:dizzy/services/stats/watch_stats.dart';
 import 'package:dizzy/widgets/common/dizzy_image.dart';
 import 'friends_page.dart';
+import 'profile_hub_sections.dart';
 import '../../widgets/common/notify.dart';
 
 /// Instagram-Grade Tactile Neo-Skeuomorphic Profile & Binge Hub.
@@ -508,12 +509,15 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      '@$_username',
-                                      style: const TextStyle(
-                                        color: DizzyVoid.bone,
-                                        fontSize: DizzyType.title,
-                                        fontWeight: DizzyType.wBold,
+                                    Flexible(
+                                      child: Text(
+                                        '@$_username',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: DizzyVoid.bone,
+                                          fontSize: DizzyType.title,
+                                          fontWeight: DizzyType.wBold,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 6),
@@ -528,25 +532,32 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: DizzyVoid.surface2,
-                                    border: Border.fromBorderSide(DizzyEdge.hairline),
-                                  ),
-                                  child: Text(
-                                    'DEVICE: $_deviceCode',
-                                    style: const TextStyle(
-                                      color: DizzyGlow.beam,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(6),
+                                        color: DizzyVoid.surface2,
+                                        border:
+                                            Border.fromBorderSide(DizzyEdge.hairline),
+                                      ),
+                                      child: Text(
+                                        'DEVICE: $_deviceCode',
+                                        style: const TextStyle(
+                                          color: DizzyGlow.beam,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 6),
+                                    const ProfileHubAdminBadge(),
+                                  ],
                                 ),
                               ],
                             ),
@@ -700,6 +711,9 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                           ),
                         ],
                       ),
+                      const SizedBox(height: DizzySpace.md),
+                      // Phase B — Account Hub sections (plan §2b).
+                      const ProfileHubSections(),
                       const SizedBox(height: DizzySpace.md),
                     ],
                   ),
