@@ -84,8 +84,9 @@ class OfflineHubService {
   /// The current link. Seeded to [DownloadNetwork.unknown] rather than
   /// [DownloadNetwork.wifi]: before the first probe we have no idea, and
   /// "unknown" is the answer that asks instead of spending.
-  final ValueNotifier<DownloadNetwork> network =
-      ValueNotifier<DownloadNetwork>(DownloadNetwork.unknown);
+  final ValueNotifier<DownloadNetwork> network = ValueNotifier<DownloadNetwork>(
+    DownloadNetwork.unknown,
+  );
 
   // ── Interruptions ──────────────────────────────────────────────────────
 
@@ -95,7 +96,9 @@ class OfflineHubService {
 
   /// Live storage-cleanup suggestions. Empty means "leave the user alone".
   final ValueNotifier<List<StorageSweepSuggestion>> storageSuggestions =
-      ValueNotifier<List<StorageSweepSuggestion>>(const <StorageSweepSuggestion>[]);
+      ValueNotifier<List<StorageSweepSuggestion>>(
+        const <StorageSweepSuggestion>[],
+      );
 
   /// Free bytes on the downloads partition, or null when unknown. Real
   /// number, refreshed with every [refreshStorageSuggestions].
@@ -116,7 +119,8 @@ class OfflineHubService {
       qualityOverride.value = DownloadQualityOverride.fromName(
         prefs.getString(_kQualityOverride),
       );
-      meteredAutoNextAllowed.value = prefs.getBool(_kMeteredAutoNextAllowed) ?? false;
+      meteredAutoNextAllowed.value =
+          prefs.getBool(_kMeteredAutoNextAllowed) ?? false;
     } catch (_) {
       // Defaults already hold. An unreadable store must not disable the
       // feature; it must only lose the user's customisation.
@@ -149,9 +153,13 @@ class OfflineHubService {
   void _startNetworkWatch() {
     if (_connectivitySub != null) return;
     try {
-      _connectivitySub =
-          Connectivity().onConnectivityChanged.listen(_onConnectivity);
-      Connectivity().checkConnectivity().then(_onConnectivity).catchError((_) {});
+      _connectivitySub = Connectivity().onConnectivityChanged.listen(
+        _onConnectivity,
+      );
+      Connectivity()
+          .checkConnectivity()
+          .then(_onConnectivity)
+          .catchError((_) {});
     } catch (_) {
       // Best-effort. Without the watcher the link stays `unknown`, which
       // asks instead of spending — the safe direction for a failed probe.
@@ -169,9 +177,9 @@ class OfflineHubService {
 
   /// The quality profile that applies right now, honouring the override.
   DownloadQualityProfile activeProfile() => DownloadQualityPolicy.pick(
-        network: network.value,
-        override: qualityOverride.value,
-      );
+    network: network.value,
+    override: qualityOverride.value,
+  );
 
   // ── Auto-next ──────────────────────────────────────────────────────────
 
@@ -276,13 +284,17 @@ class OfflineHubService {
 
   /// Real file sizes for the completed tasks, falling back to the recorded
   /// total when the file has already gone. Never estimates.
-  static Future<Map<String, int>> measureTaskSizes(List<DownloadTask> tasks) async {
+  static Future<Map<String, int>> measureTaskSizes(
+    List<DownloadTask> tasks,
+  ) async {
     final sizes = <String, int>{};
     for (final task in tasks) {
       if (task.status != DownloadStatus.completed) continue;
       try {
         final file = File(task.targetFilePath);
-        sizes[task.id] = await file.exists() ? await file.length() : task.totalBytes;
+        sizes[task.id] = await file.exists()
+            ? await file.length()
+            : task.totalBytes;
       } catch (_) {
         sizes[task.id] = task.totalBytes;
       }

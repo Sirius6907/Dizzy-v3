@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
+import 'package:dizzy/services/download/download_prefs.dart';
 
 /// Download Settings — pause, resume, and location management.
 class DownloadSettingsPage extends StatelessWidget {
@@ -37,15 +38,15 @@ class DownloadSettingsPage extends StatelessWidget {
                     const Text(
                       'Download Settings',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800),
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
                       'Manage where files are saved and how downloads behave.',
-                      style: TextStyle(
-                          color: Colors.white60, fontSize: 13),
+                      style: TextStyle(color: Colors.white60, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     _buildSettingRow(
@@ -74,6 +75,8 @@ class DownloadSettingsPage extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
+              const _WifiOnlyCard(),
             ],
           ),
         ),
@@ -116,21 +119,89 @@ class DownloadSettingsPage extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700),
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                  style: const TextStyle(
-                      color: Colors.white60, fontSize: 12),
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
                   ),
                 ],
               ),
             ),
             Icon(trailing, color: Colors.white54, size: 16),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Phase K2 — Wi-Fi-only downloads (default ON so mobile data is never
+/// surprised by a multi-GB episode).
+class _WifiOnlyCard extends StatefulWidget {
+  const _WifiOnlyCard();
+
+  @override
+  State<_WifiOnlyCard> createState() => _WifiOnlyCardState();
+}
+
+class _WifiOnlyCardState extends State<_WifiOnlyCard> {
+  bool _wifiOnly = true;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    DownloadPrefs.wifiOnly.then((value) {
+      if (!mounted) return;
+      setState(() {
+        _wifiOnly = value;
+        _loaded = true;
+      });
+    });
+  }
+
+  Future<void> _set(bool value) async {
+    setState(() => _wifiOnly = value);
+    await DownloadPrefs.setWifiOnly(value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          value
+              ? 'Downloads will wait for Wi-Fi.'
+              : 'Downloads can now use mobile data.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DizzyTactileCard(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: SwitchListTile.adaptive(
+        value: _wifiOnly,
+        onChanged: _loaded ? _set : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        title: const Text(
+          'Wi-Fi only downloads',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: const Text(
+          'Big files wait until you are on Wi-Fi',
+          style: TextStyle(color: Colors.white60, fontSize: 12),
         ),
       ),
     );

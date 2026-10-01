@@ -98,6 +98,9 @@ class MainActivity : FlutterActivity() {
 
         // Phase K3: microphone foreground service — start/stop the ongoing
         // call notification that keeps LiveKit alive with the screen off.
+        // Phase K2/K3: background services need the engine to talk back.
+        DownloadForegroundService.engine = flutterEngine
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/voice").setMethodCallHandler { call, result ->
             when (call.method) {
                 "start" -> {

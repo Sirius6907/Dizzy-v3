@@ -16,6 +16,10 @@ import '../debrid/debrid_service.dart';
 import '../errors/app_error_log.dart';
 import '../stream/torrent_stream_service.dart';
 import 'download_error_text.dart';
+import 'download_fg_bridge.dart';
+import 'download_prefs.dart';
+import 'download_resume_policy.dart';
+import 'download_retry_ledger.dart';
 import 'hls_download_engine.dart';
 
 /// Comprehensive Background & In-App Download Manager.
@@ -33,7 +37,8 @@ class DownloadService {
   DownloadService._internal();
 
   // ── State & Notifiers ─────────────────────────────────────────────────────
-  final ValueNotifier<List<DownloadTask>> tasksNotifier = ValueNotifier<List<DownloadTask>>([]);
+  final ValueNotifier<List<DownloadTask>> tasksNotifier =
+      ValueNotifier<List<DownloadTask>>([]);
   bool _isInitialized = false;
 
   // Active HTTP download clients/subscriptions keyed by taskId
@@ -50,12 +55,23 @@ class DownloadService {
   /// True while device is offline. UI shows "No internet. Waiting…" banner.
   final ValueNotifier<bool> offlineNotifier = ValueNotifier<bool>(false);
 
+  // Phase K2: aggregate progress notification, throttled — pushing an intent
+  // on every byte tick would be pure IPC churn for no user-visible gain.
+  DateTime _lastFgPush = DateTime.fromMillisecondsSinceEpoch(0);
+  int _lastFgActive = -1;
+  int _lastFgPercent = -1;
+
   // ── Initialization ────────────────────────────────────────────────────────
   Future<void> initialize() async {
     if (_isInitialized) return;
     await _loadPersistedTasks();
     _isInitialized = true;
     _startConnectivityWatcher();
+    // Phase K2: notification buttons come back through the bridge, and every
+    // progress tick refreshes the one aggregate notification.
+    DownloadFgBridge.attach();
+    DownloadFgBridge.onPause = _fgPauseAll;
+    DownloadFgBridge.onClearAll = _fgCancelAll;
     // P11: probe disk headroom + purge stale .part/.tmp files (fire-and-
     // forget — startup must never wait on `df`). Refreshes at most /5min.
     unawaited(_refreshStorageGuard());
@@ -75,23 +91,58 @@ class DownloadService {
   void _startConnectivityWatcher() {
     if (_connectivitySub != null) return;
     try {
-      _connectivitySub =
-          Connectivity().onConnectivityChanged.listen(_onConnectivityChanged);
+      _connectivitySub = Connectivity().onConnectivityChanged.listen(
+        _onConnectivityChanged,
+      );
       // One initial check: resume net-paused tasks if we launch online.
-      Connectivity().checkConnectivity().then(_onConnectivityChanged).catchError((_) {});
+      Connectivity()
+          .checkConnectivity()
+          .then(_onConnectivityChanged)
+          .catchError((_) {});
     } catch (_) {
       // Watcher is best-effort — downloads still work without it.
     }
   }
 
   Future<void> _onConnectivityChanged(List<ConnectivityResult> results) async {
-    final offline = results.isEmpty ||
-        (results.length == 1 && results.first == ConnectivityResult.none);
+    final offline =
+        DownloadResumePolicy.isOffline(results) ||
+        results.every((r) => r == ConnectivityResult.none);
+    final wasOffline = offlineNotifier.value;
     offlineNotifier.value = offline;
-    if (offline) {
+
+    final wifiOnly = await DownloadPrefs.wifiOnly;
+    final blocked = DownloadResumePolicy.blockOn(
+      wifiOnly: wifiOnly,
+      results: results,
+    );
+
+    if (offline || blocked) {
+      // Same netPaused lane as a drop — the task is waiting for a network
+      // it can legally use, and it resumes the moment one appears.
       await pauseForNetworkLoss();
-    } else {
-      await resumeAfterNetworkReturn();
+      return;
+    }
+    await resumeAfterNetworkReturn();
+    // Phase K2: "retry for failed/incomplete when back online". The first
+    // reconnect may retry immediately; anything that fails again goes back
+    // to its backoff window, so a flapping connection cannot storm.
+    if (!wasOffline) await _retryFailedAfterReconnect();
+  }
+
+  /// Phase K2: re-run the tasks that gave up, subject to the ledger's
+  /// backoff and attempt budget.
+  Future<void> _retryFailedAfterReconnect({int? nowMs}) async {
+    await DownloadRetryLedger.load();
+    final now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final ids = DownloadRetryLedger.eligible(nowMs: now).toSet();
+    if (ids.isEmpty) return;
+
+    for (final task in List.of(tasksNotifier.value)) {
+      if (task.status != DownloadStatus.failed) continue;
+      if (!ids.contains(task.id)) continue;
+      if (_canceledOrPausedTaskIds.contains(task.id)) continue;
+      unawaited(_executeDownload(task));
     }
   }
 
@@ -105,8 +156,7 @@ class DownloadService {
   @visibleForTesting
   static List<DownloadTask> tasksToAutoResume(List<DownloadTask> tasks) {
     return tasks
-        .where((t) =>
-            t.status == DownloadStatus.paused && t.netPaused == true)
+        .where((t) => t.status == DownloadStatus.paused && t.netPaused == true)
         .toList();
   }
 
@@ -124,23 +174,40 @@ class DownloadService {
     _cleanupHttpTask(taskId);
     final task = tasksNotifier.value.where((t) => t.id == taskId).firstOrNull;
     if (task == null) return;
-    _updateTask(task.copyWith(
-      status: DownloadStatus.paused,
-      netPaused: true,
-      speedBytesPerSec: 0.0,
-      etaSeconds: null,
-      error: null,
-    ));
+    _updateTask(
+      task.copyWith(
+        status: DownloadStatus.paused,
+        netPaused: true,
+        speedBytesPerSec: 0.0,
+        etaSeconds: null,
+        error: null,
+      ),
+    );
   }
 
   /// Resume tasks that were auto-paused by network loss.
   Future<void> resumeAfterNetworkReturn() async {
+    // Phase K2: on cellular with Wi-Fi-only on, "network returned" is not
+    // enough — the net-paused tasks stay parked until a usable link shows up.
+    try {
+      final results = await Connectivity().checkConnectivity();
+      final wifiOnly = await DownloadPrefs.wifiOnly;
+      if (DownloadResumePolicy.blockOn(wifiOnly: wifiOnly, results: results)) {
+        return;
+      }
+    } catch (_) {
+      // If we cannot tell, resume: blocking a download forever on a probe
+      // failure is worse than the data it might cost.
+    }
     final toResume = tasksToAutoResume(tasksNotifier.value);
     for (final task in toResume) {
       _canceledOrPausedTaskIds.remove(task.id);
       _updateTask(task.copyWith(netPaused: false));
-      unawaited(_executeDownload(
-          tasksNotifier.value.firstWhere((t) => t.id == task.id)));
+      unawaited(
+        _executeDownload(
+          tasksNotifier.value.firstWhere((t) => t.id == task.id),
+        ),
+      );
     }
   }
 
@@ -157,15 +224,15 @@ class DownloadService {
     final code = DownloadErrorText.classify(raw);
     final latest =
         tasksNotifier.value.where((t) => t.id == task.id).firstOrNull ?? task;
-    _updateTask(latest.copyWith(
-      status: DownloadStatus.failed,
-      error: DownloadErrorText.easyText(code),
-    ));
-    unawaited(AppErrorLog.log(
-      code: code,
-      screen: screen,
-      detail: task.sourceType.name,
-    ));
+    _updateTask(
+      latest.copyWith(
+        status: DownloadStatus.failed,
+        error: DownloadErrorText.easyText(code),
+      ),
+    );
+    unawaited(
+      AppErrorLog.log(code: code, screen: screen, detail: task.sourceType.name),
+    );
   }
 
   // ── Task Persistence ───────────────────────────────────────────────────────
@@ -191,7 +258,8 @@ class DownloadService {
         if (item is Map<String, dynamic>) {
           var task = DownloadTask.fromJson(item);
           // If app was terminated while downloading, set state to paused
-          if (task.status == DownloadStatus.downloading || task.status == DownloadStatus.queued) {
+          if (task.status == DownloadStatus.downloading ||
+              task.status == DownloadStatus.queued) {
             task = task.copyWith(
               status: DownloadStatus.paused,
               netPaused: task.status == DownloadStatus.downloading,
@@ -255,19 +323,103 @@ class DownloadService {
       tasksNotifier.value = current;
       // Terminal states flush immediately (crash-safety); progress ticks
       // ride the trailing-edge debounce.
-      final terminal = updated.status == DownloadStatus.completed ||
+      final terminal =
+          updated.status == DownloadStatus.completed ||
           updated.status == DownloadStatus.failed ||
           updated.status == DownloadStatus.canceled ||
           updated.status == DownloadStatus.paused;
       _schedulePersist(immediate: terminal);
+      _pushFgProgress();
+
+      // Phase K2: the retry ledger only ever hears about terminal outcomes.
+      // Success and a user cancel wipe the history so a later failure starts
+      // fresh; a real failure adds an attempt, which is what puts the task
+      // inside a backoff window. A network pause is not a failure and never
+      // comes through here (it goes via pauseSingleTaskForNetwork).
+      if (updated.status == DownloadStatus.completed ||
+          updated.status == DownloadStatus.canceled) {
+        unawaited(DownloadRetryLedger.clear(updated.id));
+      } else if (updated.status == DownloadStatus.failed) {
+        unawaited(DownloadRetryLedger.recordFailure(updated.id));
+      }
     }
     _updateWakelockState();
     // P6: a freed slot starts the oldest queued task (bounded pump).
     _pumpDownloadQueue();
   }
 
+  /// Phase K2 — one aggregate notification while downloads run. Publishes
+  /// at most about once a second, and only when something actually changed.
+  void _pushFgProgress() {
+    final now = DateTime.now();
+    if (now.difference(_lastFgPush).inMilliseconds < 1200) return;
+
+    final running = tasksNotifier.value
+        .where((t) => t.status == DownloadStatus.downloading)
+        .toList();
+    if (running.isEmpty) {
+      _lastFgPush = now;
+      if (_lastFgActive == 0) return;
+      _lastFgActive = 0;
+      _lastFgPercent = -1;
+      unawaited(DownloadFgBridge.stop());
+      return;
+    }
+
+    var total = 0;
+    var done = 0;
+    for (final t in running) {
+      total += t.totalBytes;
+      done += t.receivedBytes;
+    }
+    final pct = total > 0 ? ((done / total) * 100).round() : 0;
+    if (_lastFgActive == running.length && _lastFgPercent == pct) return;
+
+    _lastFgPush = now;
+    _lastFgActive = running.length;
+    _lastFgPercent = pct;
+    final first = running.first;
+    unawaited(
+      DownloadFgBridge.publish(
+        active: running.length,
+        percent: pct,
+        label: (first.episodeTitle ?? first.title).trim(),
+      ),
+    );
+  }
+
+  Future<void> _fgPauseAll() async {
+    final running = tasksNotifier.value
+        .where((t) => t.status == DownloadStatus.downloading)
+        .map((t) => t.id)
+        .toList();
+    for (final id in running) {
+      await pauseDownload(id);
+    }
+  }
+
+  Future<void> _fgCancelAll() async {
+    final active = tasksNotifier.value
+        .where(
+          (t) =>
+              t.status == DownloadStatus.downloading ||
+              t.status == DownloadStatus.queued ||
+              t.status == DownloadStatus.paused,
+        )
+        .map((t) => t.id)
+        .toList();
+    for (final id in active) {
+      try {
+        await cancelDownload(id);
+      } catch (_) {}
+    }
+    await DownloadFgBridge.stop();
+  }
+
   void _updateWakelockState() {
-    final hasActive = tasksNotifier.value.any((t) => t.status == DownloadStatus.downloading);
+    final hasActive = tasksNotifier.value.any(
+      (t) => t.status == DownloadStatus.downloading,
+    );
     if (hasActive) {
       WakelockPlus.enable();
     } else {
@@ -294,14 +446,17 @@ class DownloadService {
   }) async {
     await initialize();
 
-    final downloadDir = customDownloadDir ?? await DownloadPathHelper.getDownloadsDirectoryPath();
+    final downloadDir =
+        customDownloadDir ??
+        await DownloadPathHelper.getDownloadsDirectoryPath();
     // P11: storage-critical (<500MB free or >90% used) → refuse with an
     // Easy-English line instead of writing into a full disk mid-stream
     // (that corrupts partials AND stalls playback buffers sharing the disk).
     await StorageGuard.refresh(downloadDir);
     final storageBlocked = StorageGuard.isCritical;
     final now = DateTime.now();
-    final taskId = 'dl_${mediaId}_${season ?? 0}_${episode ?? 0}_${now.millisecondsSinceEpoch}';
+    final taskId =
+        'dl_${mediaId}_${season ?? 0}_${episode ?? 0}_${now.millisecondsSinceEpoch}';
 
     final safeTitle = DownloadPathHelper.sanitizeFilename(title);
     final epSuffix = (season != null && episode != null)
@@ -335,7 +490,8 @@ class DownloadService {
     }
 
     final isTorrent = (infoHash != null && infoHash.isNotEmpty) || isMagnetUrl;
-    final useDebrid = isTorrent && await DebridService().isDebridActiveForStreams();
+    final useDebrid =
+        isTorrent && await DebridService().isDebridActiveForStreams();
 
     DownloadSourceType sourceType;
     String targetExt = '.mp4';
@@ -382,9 +538,11 @@ class DownloadService {
 
     // Deduplicate against existing tasks
     final current = List<DownloadTask>.from(tasksNotifier.value);
-    final existingIdx = current.indexWhere((t) =>
-        t.id == taskId ||
-        (t.mediaId == mediaId && t.season == season && t.episode == episode));
+    final existingIdx = current.indexWhere(
+      (t) =>
+          t.id == taskId ||
+          (t.mediaId == mediaId && t.season == season && t.episode == episode),
+    );
 
     if (existingIdx != -1) {
       final existing = current[existingIdx];
@@ -400,12 +558,16 @@ class DownloadService {
     // P11: full disk → fail fast with Easy English (never a half-written
     // file, never a stuck "downloading 0%" task heating the radio).
     if (storageBlocked) {
-      _updateTask(task.copyWith(
-        status: DownloadStatus.failed,
-        error: DownloadErrorText.easyText('E_SPACE_FULL'),
-      ));
-      return tasksNotifier.value
-          .firstWhere((t) => t.id == taskId, orElse: () => task);
+      _updateTask(
+        task.copyWith(
+          status: DownloadStatus.failed,
+          error: DownloadErrorText.easyText('E_SPACE_FULL'),
+        ),
+      );
+      return tasksNotifier.value.firstWhere(
+        (t) => t.id == taskId,
+        orElse: () => task,
+      );
     }
 
     // Begin download in background without blocking caller/player
@@ -485,8 +647,12 @@ class DownloadService {
         }
       }
 
-      final magnet = task.magnet ?? (task.infoHash != null ? 'magnet:?xt=urn:btih:${task.infoHash}' : '');
-      if (magnet.isEmpty) throw Exception('No valid magnet link for torrent download');
+      final magnet =
+          task.magnet ??
+          (task.infoHash != null ? 'magnet:?xt=urn:btih:${task.infoHash}' : '');
+      if (magnet.isEmpty) {
+        throw Exception('No valid magnet link for torrent download');
+      }
 
       // Resolve stream URL from TorrentStreamService
       final streamUrl = await tss.streamTorrent(
@@ -519,7 +685,9 @@ class DownloadService {
   Future<void> _executeDebridDownload(DownloadTask task) async {
     try {
       final debrid = DebridService();
-      final magnet = task.magnet ?? (task.infoHash != null ? 'magnet:?xt=urn:btih:${task.infoHash}' : '');
+      final magnet =
+          task.magnet ??
+          (task.infoHash != null ? 'magnet:?xt=urn:btih:${task.infoHash}' : '');
 
       final debridFiles = await debrid.resolveMagnet(
         magnet: magnet,
@@ -566,10 +734,12 @@ class DownloadService {
   Future<void> _executeHttpDownload(DownloadTask task) async {
     final urlStr = task.rawUrl;
     if (urlStr == null || urlStr.isEmpty) {
-      _updateTask(task.copyWith(
-        status: DownloadStatus.failed,
-        error: DownloadErrorText.easyText('E_FILE_GONE'),
-      ));
+      _updateTask(
+        task.copyWith(
+          status: DownloadStatus.failed,
+          error: DownloadErrorText.easyText('E_FILE_GONE'),
+        ),
+      );
       return;
     }
 
@@ -613,14 +783,17 @@ class DownloadService {
       final isOk = response.statusCode == HttpStatus.ok;
 
       if (!isPartial && !isOk) {
-        throw Exception('Server returned HTTP ${response.statusCode}: ${response.reasonPhrase}');
+        throw Exception(
+          'Server returned HTTP ${response.statusCode}: ${response.reasonPhrase}',
+        );
       }
 
       int totalContentLength = response.contentLength;
       int totalBytes = task.totalBytes;
 
       if (isPartial) {
-        totalBytes = existingBytes + (totalContentLength > 0 ? totalContentLength : 0);
+        totalBytes =
+            existingBytes + (totalContentLength > 0 ? totalContentLength : 0);
       } else if (isOk) {
         existingBytes = 0; // Server did not accept Range, restarting from 0
         totalBytes = totalContentLength > 0 ? totalContentLength : 0;
@@ -635,7 +808,9 @@ class DownloadService {
         throw Exception('Insufficient free disk space on target partition');
       }
 
-      final mode = (existingBytes > 0 && isPartial) ? FileMode.append : FileMode.write;
+      final mode = (existingBytes > 0 && isPartial)
+          ? FileMode.append
+          : FileMode.write;
       final sink = partFile.openWrite(mode: mode);
       _httpFileSinks[task.id] = sink;
 
@@ -662,12 +837,14 @@ class DownloadService {
               eta = ((totalBytes - receivedSoFar) / speed).ceil();
             }
 
-            _updateTask(task.copyWith(
-              receivedBytes: receivedSoFar,
-              totalBytes: totalBytes > 0 ? totalBytes : receivedSoFar,
-              speedBytesPerSec: speed,
-              etaSeconds: eta,
-            ));
+            _updateTask(
+              task.copyWith(
+                receivedBytes: receivedSoFar,
+                totalBytes: totalBytes > 0 ? totalBytes : receivedSoFar,
+                speedBytesPerSec: speed,
+                etaSeconds: eta,
+              ),
+            );
           }
         },
         onDone: () async {
@@ -682,14 +859,16 @@ class DownloadService {
           if (await finalFile.exists()) await finalFile.delete();
           await partFile.rename(task.targetFilePath);
 
-          _updateTask(task.copyWith(
-            status: DownloadStatus.completed,
-            receivedBytes: receivedSoFar,
-            totalBytes: totalBytes > 0 ? totalBytes : receivedSoFar,
-            speedBytesPerSec: 0.0,
-            etaSeconds: 0,
-            completedAt: DateTime.now(),
-          ));
+          _updateTask(
+            task.copyWith(
+              status: DownloadStatus.completed,
+              receivedBytes: receivedSoFar,
+              totalBytes: totalBytes > 0 ? totalBytes : receivedSoFar,
+              speedBytesPerSec: 0.0,
+              etaSeconds: 0,
+              completedAt: DateTime.now(),
+            ),
+          );
         },
         onError: (err) async {
           await sink.flush();
@@ -733,12 +912,14 @@ class DownloadService {
 
     _cleanupHttpTask(taskId);
 
-    _updateTask(task.copyWith(
-      status: DownloadStatus.paused,
-      netPaused: false,
-      speedBytesPerSec: 0.0,
-      etaSeconds: null,
-    ));
+    _updateTask(
+      task.copyWith(
+        status: DownloadStatus.paused,
+        netPaused: false,
+        speedBytesPerSec: 0.0,
+        etaSeconds: null,
+      ),
+    );
   }
 
   /// Resumes a paused download.
@@ -750,7 +931,8 @@ class DownloadService {
     _canceledOrPausedTaskIds.remove(task.id);
     _updateTask(task.copyWith(netPaused: false));
     _executeDownload(
-        tasksNotifier.value.where((t) => t.id == taskId).firstOrNull ?? task);
+      tasksNotifier.value.where((t) => t.id == taskId).firstOrNull ?? task,
+    );
   }
 
   /// Cancels an active download and cleans up temporary .part files.
@@ -796,7 +978,8 @@ class DownloadService {
       } catch (_) {}
     }
 
-    final current = List<DownloadTask>.from(tasksNotifier.value)..removeWhere((t) => t.id == taskId);
+    final current = List<DownloadTask>.from(tasksNotifier.value)
+      ..removeWhere((t) => t.id == taskId);
     tasksNotifier.value = current;
     await _persistTasks();
     _updateWakelockState();

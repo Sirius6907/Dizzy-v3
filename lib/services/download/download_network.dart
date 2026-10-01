@@ -80,6 +80,8 @@ DownloadNetwork classifyConnectivity(List<ConnectivityResult> results) {
   }
   const unmetered = {ConnectivityResult.wifi, ConnectivityResult.ethernet};
   if (results.any(unmetered.contains)) return DownloadNetwork.wifi;
-  if (results.contains(ConnectivityResult.mobile)) return DownloadNetwork.mobile;
+  if (results.contains(ConnectivityResult.mobile)) {
+    return DownloadNetwork.mobile;
+  }
   return DownloadNetwork.unknown;
 }

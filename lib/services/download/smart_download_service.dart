@@ -15,8 +15,9 @@ class SmartDownloadService {
   static const int minFreeBytes = 1024 * 1024 * 1024; // 1 GB safety floor
 
   static final ValueNotifier<bool> enabled = ValueNotifier<bool>(false);
-  static final ValueNotifier<String> preferredQuality =
-      ValueNotifier<String>('720p');
+  static final ValueNotifier<String> preferredQuality = ValueNotifier<String>(
+    '720p',
+  );
 
   static Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
