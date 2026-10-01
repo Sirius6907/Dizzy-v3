@@ -20,6 +20,7 @@ import '../../services/discord/discord_rpc_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../widgets/audiobook/audiobook_interactive_physics_button.dart';
 import '../../widgets/audiobook/audiobook_waveform_seekbar.dart';
+import '../../services/heartbeat/heartbeat_service.dart';
 import '../../services/media/media_session_bridge.dart';
 import '../settings/appearance/audiobook_player_studio_page.dart';
 
@@ -178,6 +179,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     _saveProgress();
     _progressTimer?.cancel();
     unawaited(MediaSessionBridge.detach());
+    // Phase L2: closing the player releases the listening signal.
+    HeartbeatService.instance.noteActivity(null);
     AudiobookSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     for (final s in _playerSubscriptions) {
@@ -380,6 +383,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     // The notification's play/pause icon must flip immediately, not on the
     // next 5-second tick.
     _publishMediaSession(force: true);
+    // Phase L2: this screen owns the "listening" signal — the music player
+    // cannot know an audiobook is playing.
+    HeartbeatService.instance.noteAudiobook(playing: _isPlaying);
   }
 
   void _seekRelative(int seconds) {

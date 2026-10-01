@@ -582,6 +582,9 @@ class DownloadService {
   static int get maxParallelDownloads =>
       Platform.isAndroid || Platform.isIOS ? 2 : 3;
 
+  /// Phase L2: coarse activity signal for the heartbeat (never content).
+  int get activeDownloadCount => _activeDownloadCount;
+
   int get _activeDownloadCount => tasksNotifier.value
       .where((t) => t.status == DownloadStatus.downloading)
       .length;

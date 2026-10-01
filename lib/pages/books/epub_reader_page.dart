@@ -16,6 +16,7 @@ import 'widgets/epub_content_view.dart';
 import 'widgets/focus_mode_view.dart';
 import 'widgets/reader_customization_sheet.dart';
 import 'widgets/reader_design_tokens.dart';
+import '../../services/heartbeat/heartbeat_service.dart';
 
 class EpubReaderPage extends StatefulWidget {
   final File file;
@@ -52,6 +53,8 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
   @override
   void initState() {
     super.initState();
+    // Phase L2: reading presence for the fleet view.
+    HeartbeatService.instance.noteReading();
     _currentChapterIndex = widget.initialChapterIndex;
     _scrollController.addListener(_onScrollChanged);
     _loadBook();
@@ -59,6 +62,8 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
 
   @override
   void dispose() {
+    // Leaving the reader ends the reading signal.
+    HeartbeatService.instance.clearReading();
     _chromeTimer?.cancel();
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();

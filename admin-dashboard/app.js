@@ -101,7 +101,7 @@ function show(name) {
   if (name === 'rooms') loadRooms();
   if (name === 'moderation') { loadRooms(true); loadUserReports(); loadAppeals(); }
   if (name === 'scrapers') loadScrapers();
-  if (name === 'users') { loadUsers(); loadDevices(); }
+  if (name === 'users') { loadUsers(); loadDevices(); startFleetLive(); } else stopFleetLive();
   if (name === 'push') loadAnn();
   if (name === 'config') loadCfg();
   if (name === 'audit') loadAudit(); else stopAuditLive();
@@ -543,6 +543,92 @@ async function loadUsers() {
   } catch (e) { toast('Installs failed: ' + e.message, 'err'); }
 }
 
+// ── Phase L3: live fleet pulse ──
+// Must mirror the server's devices_activity_check values exactly.
+const ACTIVITY_META = {
+  idle: ['💤', 'idle'],
+  watching: ['🎬', 'watching'],
+  listening: ['🎧', 'listening'],
+  reading: ['📖', 'reading'],
+  downloading: ['⬇️', 'downloading'],
+  in_room: ['🏠', 'in a room'],
+  in_voice: ['🎤', 'in voice'],
+};
+function prettyActivity(k) {
+  const m = ACTIVITY_META[k];
+  return m ? `${m[0]} ${m[1]}` : (k || 'idle');
+}
+
+let _fleetTimer = null;
+
+async function loadFleetLive() {
+  const statsEl = $('fleetStats');
+  const actEl = $('fleetActivity');
+  const verEl = $('fleetVersions');
+  if (statsEl && !statsEl.children.length) statsEl.innerHTML = skStats(4);
+  if (actEl) actEl.innerHTML = skLines(4);
+  if (verEl) verEl.innerHTML = skLines(4);
+  try {
+    const f = await rpc('admin_fleet_live');
+    if (statsEl) {
+      const cards = [
+        ['🟢', 'Online now', f.online, 'devices'],
+        ['📦', 'Devices', f.total, 'total'],
+        ['🚩', 'Banned', f.banned, 'users'],
+        ['🔒', 'Revoked', f.revoked, 'devices'],
+      ];
+      statsEl.innerHTML = cards.map((c) => `
+        <div class="stat">
+          <div class="stat-top"><span class="stat-ico">${c[0]}</span><span class="stat-l">${c[1]}</span></div>
+          <div class="n">${fmtNum(c[2])}<small>${c[3]}</small></div>
+        </div>`).join('');
+    }
+
+    const acts = f.activity || [];
+    const maxA = Math.max(1, ...acts.map((a) => a.cnt));
+    if (actEl) {
+      actEl.innerHTML = acts.length
+        ? `<div class="bd-group"><div class="bd-l"><span>Online devices</span><span>${fmtNum(f.online || 0)}</span></div>` +
+          acts.map((a) => `
+            <div class="bd-row"><span class="nm">${esc(prettyActivity(a.key))}</span><span class="vl">${fmtNum(a.cnt)}</span></div>
+            <div class="bd-bar"><i style="width:${Math.round((a.cnt / maxA) * 100)}%"></i></div>`).join('') +
+          `</div>` +
+          ((f.with_activity || 0) < (f.online || 0)
+            ? `<div class="bd-group"><div class="bd-l"><span>Idle online</span><span>${fmtNum((f.online || 0) - (f.with_activity || 0))}</span></div>
+               <div class="bd-chips"><span class="chip">💤 idle · ${fmtNum(Math.max(0, (f.online || 0) - (f.with_activity || 0)))}</span></div></div>`
+            : '')
+        : emptyState('🌙', 'Nobody online', 'Open the app to show up here.');
+    }
+
+    const vers = f.versions || [];
+    const maxV = Math.max(1, ...vers.map((v) => v.cnt));
+    if (verEl) {
+      verEl.innerHTML = vers.length
+        ? `<div class="bd-group"><div class="bd-l"><span>Devices</span><span>${fmtNum(f.total || 0)}</span></div>` +
+          vers.map((v) => `
+            <div class="bd-row"><span class="nm">${esc(v.key || 'unknown')}</span><span class="vl">${fmtNum(v.cnt)}</span></div>
+            <div class="bd-bar"><i style="width:${Math.round((v.cnt / maxV) * 100)}%"></i></div>`).join('') +
+          `</div>`
+        : emptyState('📭', 'No devices yet', 'Devices register on app boot.');
+    }
+
+    if ($('fleetStamp')) $('fleetStamp').textContent = 'updated ' + ago(new Date().toISOString());
+  } catch (e) {
+    if (actEl) actEl.innerHTML = emptyState('⚠️', 'Live fleet unavailable', e.message);
+    if (verEl) verEl.innerHTML = emptyState('⚠️', 'Versions unavailable', e.message);
+    toast('Fleet live failed: ' + e.message, 'err');
+  }
+}
+
+function startFleetLive() {
+  loadFleetLive();
+  if (_fleetTimer) clearInterval(_fleetTimer);
+  _fleetTimer = setInterval(loadFleetLive, 30000);
+}
+function stopFleetLive() {
+  if (_fleetTimer) { clearInterval(_fleetTimer); _fleetTimer = null; }
+}
+
 // ── devices (Phase C) ──
 async function loadDevices() {
   const tb = document.querySelector('#devicesTbl tbody');
@@ -551,10 +637,13 @@ async function loadDevices() {
     const rows = await rpc('admin_devices', { p_limit: 100, p_search: ($('devSearch') || {}).value || '' });
     if (tb) tb.innerHTML = rows.map((d) => {
       const dot = d.online ? '<span class="pill p-live">● online</span>' : '<span class="mut">offline</span>';
+      const activity = d.online && d.activity && d.activity !== 'idle'
+        ? `<span class="pill" title="what this device is doing right now">${prettyActivity(d.activity)}</span>` : '';
       const badges = [
         d.revoked_at ? '<span class="pill p-closed">revoked</span>' : '',
         d.banned ? `<span class="pill p-closed" title="level ${esc(d.ban_level || 'social')}">banned</span>` : '',
         d.hwid_stable === false ? '<span class="pill" title="weak identity anchor">new</span>' : '',
+        activity,
       ].filter(Boolean).join(' ');
       const action = d.revoked_at
         ? `<button class="btn btn-ok btn-sm" onclick="revokeDevice('${d.device_id}',false)">Restore</button>`

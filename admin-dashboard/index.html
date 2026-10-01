@@ -206,6 +206,25 @@
 
       <!-- ── INSTALLS ── -->
       <section id="s-users" role="tabpanel" aria-label="Installs">
+        <!-- Phase L3: live fleet pulse (admin_fleet_live, 30s poll while open) -->
+        <div class="stats" id="fleetStats"></div>
+        <div class="card" id="fleetLiveCard">
+          <div class="card-h">
+            <div class="card-t"><h3>Live now</h3><p class="sub">Presence + coarse activity (never titles or names) · auto-refresh every 30s</p></div>
+            <div class="card-a"><span class="mut" id="fleetStamp">—</span><button class="btn btn-ghost btn-sm" onclick="loadFleetLive()">↻ Refresh</button></div>
+          </div>
+          <div class="grid2">
+            <div class="card">
+              <div class="card-h"><div class="card-t"><h3>Activity · online</h3><p class="sub">What connected devices are doing</p></div></div>
+              <div id="fleetActivity"></div>
+            </div>
+            <div class="card">
+              <div class="card-h"><div class="card-t"><h3>Versions</h3><p class="sub">Every registered device</p></div></div>
+              <div id="fleetVersions"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-h">
             <div class="card-t"><h3>Installs</h3><p class="sub">No PII — anonymous device IDs only</p></div>

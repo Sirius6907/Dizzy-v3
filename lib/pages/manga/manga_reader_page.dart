@@ -14,6 +14,7 @@ import '../../services/manga/manga_service.dart';
 import '../../services/manga/manga_settings.dart';
 import '../../services/discord/discord_rpc_service.dart';
 import '../../widgets/common/custom_scroll_track.dart';
+import '../../services/heartbeat/heartbeat_service.dart';
 
 class MangaReaderPage extends StatefulWidget {
   final Manga manga;
@@ -57,6 +58,8 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
   @override
   void initState() {
     super.initState();
+    // Phase L2: reading presence for the fleet view.
+    HeartbeatService.instance.noteReading();
     _currentChapterIndex = widget.currentChapterIndex;
     _currentPageIndex = widget.resumePageIndex;
     _readingMode = MangaSettings.defaultReadingMode.value;
@@ -85,6 +88,8 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
 
   @override
   void dispose() {
+    // Leaving the reader ends the reading signal.
+    HeartbeatService.instance.clearReading();
     MangaSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     _focusNode.dispose();

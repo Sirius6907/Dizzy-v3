@@ -5,6 +5,7 @@ import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/tactile/dizzy_tactile_card.dart';
 
 import '../../services/cloud/cloud_auth_service.dart';
+import '../../services/heartbeat/heartbeat_service.dart';
 import '../../services/cloud/cloud_client.dart';
 import '../../services/theme/app_theme_service.dart';
 
@@ -129,6 +130,19 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                   value: v,
                   onChanged: (nv) =>
                       CloudAuthService.setConsent(crash: nv),
+                ),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: HeartbeatService.instance.consentNotifier,
+                builder: (context, v, _) => SwitchListTile(
+                  title: const Text('Live activity for admins',
+                      style: TextStyle(color: Colors.white)),
+                  subtitle: const Text(
+                      'Online now, what you\'re playing (watch / listen / read), and voice presence. Off keeps only last-seen time. Never titles, names or files.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  value: v,
+                  onChanged: (nv) =>
+                      HeartbeatService.instance.setConsent(nv),
                 ),
               ),
               ValueListenableBuilder<bool>(
