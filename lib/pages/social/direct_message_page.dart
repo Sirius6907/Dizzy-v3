@@ -5,6 +5,7 @@ import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/cloud/watch_party_service.dart';
+import 'package:dizzy/services/cloud/remote_config_service.dart';
 import '../settings/watch_party_page.dart';
 import '../../widgets/common/notify.dart';
 import '../../widgets/guide/guide_trigger.dart';
@@ -36,6 +37,17 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   @override
   void initState() {
     super.initState();
+    // Phase E2: admin feature flag — DMs paused → Easy English line.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!RemoteConfigService.featureEnabled('dm')) {
+        DizzyNotify.show(
+          context,
+          'Messages are paused for fixes right now. Back soon!',
+          tone: NotifyTone.warn,
+        );
+      }
+    });
     // Pre-populate with sample welcome / interactive media card message
     _messages.add(
       DizzyDirectMessage(
@@ -58,6 +70,17 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   }
 
   Future<void> _sendMessage() async {
+    // Phase E2: admin feature flag — never queue into a dead channel.
+    if (!RemoteConfigService.featureEnabled('dm')) {
+      if (mounted) {
+        DizzyNotify.show(
+          context,
+          'Messages are paused for fixes right now. Back soon!',
+          tone: NotifyTone.warn,
+        );
+      }
+      return;
+    }
     final text = _textController.text.trim();
     if (text.isEmpty || _isSending) return;
 
@@ -79,8 +102,11 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
       return;
     }
     _textController.text = text;
-    DizzyNotify.show(context, "Couldn't send — check net, then try again.",
-        tone: NotifyTone.warn);
+    DizzyNotify.show(
+      context,
+      "Couldn't send — check net, then try again.",
+      tone: NotifyTone.warn,
+    );
   }
 
   /// DM media card → real Watch Together: create a room, send the invite
@@ -91,8 +117,10 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
     if (!WatchPartyService.isAvailable) {
       if (!mounted) return;
       DizzyNotify.show(
-          context, 'Watch Together needs net + sign-in. Then try again.',
-          tone: NotifyTone.warn);
+        context,
+        'Watch Together needs net + sign-in. Then try again.',
+        tone: NotifyTone.warn,
+      );
       return;
     }
     setState(() => _partyBusy = true);
@@ -107,12 +135,17 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
       if (room == null) {
         if (!mounted) return;
         DizzyNotify.show(
-            context, "Couldn't start the room — check net, then try again.",
-            tone: NotifyTone.warn);
+          context,
+          "Couldn't start the room — check net, then try again.",
+          tone: NotifyTone.warn,
+        );
         return;
       }
       await WatchPartyService.updateCurrentMedia(
-          roomId: room.roomId, ref: ref, title: msg.body);
+        roomId: room.roomId,
+        ref: ref,
+        title: msg.body,
+      );
       await DizzySocialService.sendDirectMessage(
         recipientUid: widget.recipientUid,
         body: 'Join my Watch Together room: ${room.roomId}',
@@ -120,11 +153,14 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
         mediaRef: 'party:${room.roomId}',
       );
       if (!mounted) return;
-      DizzyNotify.show(context, 'Room ${room.roomId} is live — invite sent!',
-          tone: NotifyTone.success);
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const WatchPartyPage()),
+      DizzyNotify.show(
+        context,
+        'Room ${room.roomId} is live — invite sent!',
+        tone: NotifyTone.success,
       );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const WatchPartyPage()));
     } finally {
       if (mounted) setState(() => _partyBusy = false);
     }
@@ -172,7 +208,10 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                       const SizedBox(height: 4),
                       Text(
                         msg.body,
-                        style: const TextStyle(color: DizzyVoid.ash, fontSize: 12),
+                        style: const TextStyle(
+                          color: DizzyVoid.ash,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -193,14 +232,22 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 20),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                   const SizedBox(width: 6),
                   Text(
                     _partyBusy ? 'Starting...' : 'Watch Together',
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -277,7 +324,9 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                           ? widget.recipientUsername[0].toUpperCase()
                           : '?',
                       style: const TextStyle(
-                          color: DizzyVoid.bone, fontWeight: FontWeight.bold),
+                        color: DizzyVoid.bone,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -333,7 +382,9 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                   final isMe = msg.senderId == 'me';
                   if (msg.kind == 'media_card') {
                     return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: _buildMediaCardBubble(msg, isMe),
                     );
                   }
@@ -356,7 +407,9 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: DizzySpace.sm),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DizzySpace.sm,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(24),
                           gradient: DizzyGradients.carvedSurface,
@@ -364,10 +417,16 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                         ),
                         child: TextField(
                           controller: _textController,
-                          style: const TextStyle(color: DizzyVoid.bone, fontSize: 14),
+                          style: const TextStyle(
+                            color: DizzyVoid.bone,
+                            fontSize: 14,
+                          ),
                           decoration: const InputDecoration(
                             hintText: 'Message or share title...',
-                            hintStyle: TextStyle(color: DizzyVoid.ash, fontSize: 13),
+                            hintStyle: TextStyle(
+                              color: DizzyVoid.ash,
+                              fontSize: 13,
+                            ),
                             border: InputBorder.none,
                           ),
                           onSubmitted: (_) => _sendMessage(),

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/audiobook/audiobook_model.dart';
 import '../../utils/search/relevance_scorer.dart';
+import '../cloud/remote_config_service.dart';
 import 'audiobookbay_scraper.dart';
 
 class AudiobookScraperService {
@@ -11,27 +12,36 @@ class AudiobookScraperService {
   static final AudiobookScraperService instance = AudiobookScraperService._();
 
   // List of scrapers to run in parallel (AudiobookBay first for fast results)
-  final List<Future<List<Audiobook>> Function(String)> _searchScrapers = [
-    AudiobookBayScraper.search,
-    _searchBookAudio,
-    _searchGolden,
-    _searchFullLength,
-    _searchHot,
-    _searchAudiozaic,
-    _searchAudioAZ,
-    _searchAudiobooks4Soul,
-    _searchAudionest,
-  ];
+  // Phase E3: keyed by server source id so the admin kill map can skip them.
+  final Map<String, Future<List<Audiobook>> Function(String)> _searchScrapers =
+      {
+        'audiobookbay': AudiobookBayScraper.search,
+        'bookaudiobooks': _searchBookAudio,
+        'goldenaudiobooks': _searchGolden,
+        'fulllengthaudiobooks': _searchFullLength,
+        'hotaudiobooks': _searchHot,
+        'audiozaic': _searchAudiozaic,
+        'audioaz': _searchAudioAZ,
+        'audiobooks4soul': _searchAudiobooks4Soul,
+        'audionest': _searchAudionest,
+      };
 
   Future<List<Audiobook>> search(String query) async {
-    final futures = _searchScrapers.map(
-      (scraper) => scraper(query)
-          .timeout(const Duration(seconds: 5), onTimeout: () => <Audiobook>[])
-          .catchError((e) {
-            debugPrint('Audiobook scraper failed: $e');
-            return <Audiobook>[];
-          }),
-    );
+    final futures = _searchScrapers.entries
+        // Phase E3: admin kill map — killed sources make no HTTP call.
+        .where((e) => !RemoteConfigService.isKilled(e.key))
+        .map(
+          (e) => e
+              .value(query)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => <Audiobook>[],
+              )
+              .catchError((e) {
+                debugPrint('Audiobook scraper failed: $e');
+                return <Audiobook>[];
+              }),
+        );
 
     final results = await Future.wait(futures);
     final allBooks = results.expand((x) => x).toList();
@@ -111,7 +121,10 @@ class AudiobookScraperService {
 
     // 2. Remove [Listen], [Download], [Audiobook], etc. prefixes/tags
     title = title.replaceAll(
-      RegExp(r'\[\s*(?:Listen|Download|Audiobook|Stream|MP3|Free)\s*\]', caseSensitive: false),
+      RegExp(
+        r'\[\s*(?:Listen|Download|Audiobook|Stream|MP3|Free)\s*\]',
+        caseSensitive: false,
+      ),
       '',
     );
 
