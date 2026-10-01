@@ -107,6 +107,24 @@
       <!-- ── OVERVIEW ── -->
       <section id="s-overview" class="on" role="tabpanel" aria-label="Overview">
         <div class="stats" id="statCards"></div>
+        <!-- Phase O1: users — one admin_usage_stats call. "Devices" is
+             Android-skewed: device_boot is Android-shaped, so Windows/Linux
+             clients may not register (verify in Phase S). -->
+        <div class="stats" id="userStats"></div>
+        <!-- Phase O2: downloads split by source. Landing = our own counter
+             and a SUBSET of the GitHub total (the landing CTA 302s to the
+             same asset URL); GitHub-direct is derived (≈), never added. -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Downloads</h3><p class="sub">Landing = counted by us · GitHub total = all sources · GitHub-direct ≈ derived</p></div>
+            <div class="card-a">
+              <span class="chip" id="dlFresh" title="GitHub numbers come from the release-latest edge fn (5-min cache)">—</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadUsage()">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="stats" id="dlStats"></div>
+          <div id="dlBars"></div>
+        </div>
         <div class="grid2">
           <div class="card">
             <div class="card-h">
@@ -223,6 +241,15 @@
               <div id="fleetVersions"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Phase O3: activity feed — last 50 coarse transitions (enum + 7-char
+             code only, never titles/URLs). Refreshes with the 30s Live poll. -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Activity feed</h3><p class="sub">Newest first · what devices did recently · auto-refreshes with Live</p></div>
+          </div>
+          <div id="feedList"></div>
         </div>
 
         <!-- Phase C: live device fleet (real post-Phase-3 table, not consent-gated installs) -->

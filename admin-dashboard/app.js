@@ -73,6 +73,7 @@ function enterApp(email) {
   $('meAvatar').textContent = String(email || 'a').trim().charAt(0).toUpperCase();
   $('cloudDot').textContent = '● live';
   loadOverview();
+  startOverviewLive();          // default tab is Overview
 }
 
 // ── nav ──
@@ -101,6 +102,7 @@ function show(name) {
   if (name === 'rooms') loadRooms();
   if (name === 'moderation') { loadRooms(true); loadUserReports(); loadAppeals(); }
   if (name === 'scrapers') loadScrapers();
+  if (name === 'overview') startOverviewLive(); else stopOverviewLive();
   if (name === 'users') { loadUsers(); loadDevices(); startFleetLive(); } else stopFleetLive();
   if (name === 'push') loadAnn();
   if (name === 'config') loadCfg();
@@ -184,6 +186,122 @@ async function loadOverview() {
     $('health').innerHTML = emptyState('⚠️', 'Health check failed', e.message);
     toast('Overview failed: ' + e.message, 'err');
   }
+}
+
+// ── Phase O1/O2: users + downloads (admin_usage_stats + release-latest) ──
+// One RPC feeds both the Users stats row and the Downloads card. GitHub
+// numbers come from OUR edge fn (5-min DB cache), never GitHub directly —
+// unauthenticated GitHub is 60 req/hr per IP.
+// Counting semantics: landing ⊂ GitHub total; "GitHub-direct ≈" is derived.
+let _ovTimer = null;
+let _usage = null;
+let _gh = null;   // {total, tag, fetchedAt} | null before the first fetch
+
+function statCard(c) {
+  const v = (c[2] === null || c[2] === undefined) ? '—' : fmtNum(c[2]);
+  return `<div class="stat">
+    <div class="stat-top"><span class="stat-ico">${c[0]}</span><span class="stat-l">${esc(c[1])}</span></div>
+    <div class="n">${v}<small>${esc(c[3] || '')}</small></div>
+  </div>`;
+}
+
+async function fetchReleaseLatest() {
+  const cfg = window.DIZZY_CONFIG || {};
+  const base = String(cfg.url || '').replace(/\/$/, '');
+  if (!base) throw new Error('no supabase url in config.js');
+  const res = await fetch(base + '/functions/v1/release-latest',
+    { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error('release-latest ' + res.status);
+  const d = await res.json();
+  if (!d || !d.tag) throw new Error('release-latest empty');
+  return {
+    tag: d.tag,
+    fetchedAt: d.fetched_at,
+    total: (d.assets || []).reduce((n, a) => n + (Number(a.download_count) || 0), 0),
+  };
+}
+
+function paintDownloads() {
+  if (!_usage) return;
+  const statsEl = $('dlStats'), barsEl = $('dlBars'), freshEl = $('dlFresh');
+  const dl = _usage.downloads || {};
+  const landingToday = Number(dl.landing_today) || 0;
+  const landingTotal = Number(dl.landing_total) || 0;
+  const ghTotal = _gh ? _gh.total : null;
+  const ghDirect = (ghTotal !== null) ? Math.max(0, ghTotal - landingTotal) : null;
+
+  if (statsEl) {
+    statsEl.innerHTML = [
+      ['⬇️', 'Landing today', landingToday, 'tracked'],
+      ['📦', 'Landing total', landingTotal, 'all time'],
+      ['🐙', 'GitHub total', ghTotal, 'all sources'],
+      ['⚡', 'GitHub-direct ≈', ghDirect, 'derived'],
+    ].map(statCard).join('');
+  }
+
+  const files = dl.landing_by_file || [];
+  const maxF = Math.max(1, ...files.map((f) => Number(f.count) || 0));
+  if (barsEl) {
+    barsEl.innerHTML = files.length
+      ? `<div class="bd-group"><div class="bd-l"><span>Landing downloads by file</span><span>${fmtNum(landingTotal)}</span></div>` +
+        files.map((f) => `
+        <div class="bd-row"><span class="nm mono">${esc(f.file)}</span><span class="vl">${fmtNum(f.count)}</span></div>
+        <div class="bd-bar"><i style="width:${Math.round(((Number(f.count) || 0) / maxF) * 100)}%"></i></div>`).join('') +
+        `</div>`
+      : emptyState('⬇️', 'No landing downloads yet',
+          'Counts appear the moment someone downloads from the site.');
+  }
+
+  if (freshEl) {
+    freshEl.textContent = _gh
+      ? `${_gh.tag} · GitHub counts ${ago(_gh.fetchedAt)}`
+      : 'GitHub counts —';
+    freshEl.title = _gh
+      ? `Cached by release-latest · fetched ${fmtAbs(_gh.fetchedAt)}`
+      : 'release-latest not reachable yet — landing numbers stay live';
+  }
+}
+
+async function loadUsage() {
+  const uEl = $('userStats'), dEl = $('dlStats');
+  if (uEl && !uEl.children.length) uEl.innerHTML = skStats(7);
+  if (dEl && !dEl.children.length) dEl.innerHTML = skStats(4);
+  try {
+    _usage = await rpc('admin_usage_stats');
+    if (uEl) {
+      uEl.innerHTML = [
+        ['📡', 'Devices (Android)', _usage.total_devices, 'total'],
+        ['👤', 'Accounts', _usage.accounts, 'registered'],
+        ['🟢', 'Active now', _usage.active_now, '<10 min'],
+        ['📅', 'DAU', _usage.dau, '24h'],
+        ['📆', 'WAU', _usage.wau, '7d'],
+        ['🗓️', 'MAU', _usage.mau, '30d'],
+        ['✨', 'New today', _usage.new_today, 'first boot'],
+      ].map(statCard).join('');
+    }
+  } catch (e) {
+    if (uEl) uEl.innerHTML = emptyState('⚠️', 'Usage stats unavailable', e.message);
+    if (dEl) dEl.innerHTML = emptyState('⚠️', 'Usage stats unavailable', e.message);
+    toast('Usage stats failed: ' + e.message, 'err');
+    return;
+  }
+  try {
+    _gh = await fetchReleaseLatest();
+  } catch (_) {
+    // Keep the last known numbers (the chip ages naturally via ago()); a
+    // flaky edge fn must never blank the card.
+  }
+  paintDownloads();
+}
+
+// 30s poll, ONLY while the Overview tab is open (show() starts/stops it).
+function startOverviewLive() {
+  loadUsage();
+  if (_ovTimer) clearInterval(_ovTimer);
+  _ovTimer = setInterval(loadUsage, 30000);
+}
+function stopOverviewLive() {
+  if (_ovTimer) { clearInterval(_ovTimer); _ovTimer = null; }
 }
 
 /* ── installs chart (DPR-aware, gradient bars, hover tooltip) ── */
@@ -565,9 +683,11 @@ async function loadFleetLive() {
   const statsEl = $('fleetStats');
   const actEl = $('fleetActivity');
   const verEl = $('fleetVersions');
+  const feedEl = $('feedList');
   if (statsEl && !statsEl.children.length) statsEl.innerHTML = skStats(4);
   if (actEl) actEl.innerHTML = skLines(4);
   if (verEl) verEl.innerHTML = skLines(4);
+  if (feedEl && !feedEl.children.length) feedEl.innerHTML = skLines(5);
   try {
     const f = await rpc('admin_fleet_live');
     if (statsEl) {
@@ -613,6 +733,23 @@ async function loadFleetLive() {
     }
 
     if ($('fleetStamp')) $('fleetStamp').textContent = 'updated ' + ago(new Date().toISOString());
+
+    // Phase O3: last 50 transitions — 7-char device code + enum + time only
+    // (no hwid, no user id, no titles — the privacy floor). Failures are
+    // isolated so a feed hiccup never blanks the live cards above.
+    try {
+      const feed = await rpc('admin_activity_feed', { p_limit: 50 });
+      if (feedEl) {
+        feedEl.innerHTML = (feed || []).length
+          ? `<div class="chatbox">${feed.map((f) =>
+              `<div><span class="who">DIZ-${esc(f.device_code)}</span>${esc(prettyActivity(f.activity))}` +
+              `<span class="mut" style="margin-left:8px">${ago(f.at)}</span></div>`).join('')}</div>`
+          : emptyState('🕒', 'No transitions yet',
+              'Open the app and start playing — changes appear here instantly.');
+      }
+    } catch (fe) {
+      if (feedEl) feedEl.innerHTML = emptyState('⚠️', 'Activity feed unavailable', fe.message);
+    }
   } catch (e) {
     if (actEl) actEl.innerHTML = emptyState('⚠️', 'Live fleet unavailable', e.message);
     if (verEl) verEl.innerHTML = emptyState('⚠️', 'Versions unavailable', e.message);
