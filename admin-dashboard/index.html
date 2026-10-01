@@ -63,7 +63,7 @@
       <button class="nav-btn" role="tab" data-s="rooms" aria-selected="false" onclick="show('rooms')"><span class="ni">🏠</span><span class="nl">Rooms</span></button>
       <button class="nav-btn" role="tab" data-s="moderation" aria-selected="false" onclick="show('moderation')"><span class="ni">🚩</span><span class="nl">Moderation</span><span class="nav-badge" id="navReports" hidden>0</span></button>
       <button class="nav-btn" role="tab" data-s="scrapers" aria-selected="false" onclick="show('scrapers')"><span class="ni">🎬</span><span class="nl">Scrapers</span></button>
-      <button class="nav-btn" role="tab" data-s="users" aria-selected="false" onclick="show('users')"><span class="ni">📱</span><span class="nl">Installs</span></button>
+      <button class="nav-btn" role="tab" data-s="users" aria-selected="false" onclick="show('users')"><span class="ni">📡</span><span class="nl">Fleet</span></button>
       <button class="nav-btn" role="tab" data-s="push" aria-selected="false" onclick="show('push')"><span class="ni">📣</span><span class="nl">Announcements</span></button>
       <button class="nav-btn" role="tab" data-s="config" aria-selected="false" onclick="show('config')"><span class="ni">⚙️</span><span class="nl">Config</span></button>
       <button class="nav-btn" role="tab" data-s="audit" aria-selected="false" onclick="show('audit')"><span class="ni">🧾</span><span class="nl">Audit</span></button>
@@ -205,7 +205,7 @@
       </section>
 
       <!-- ── INSTALLS ── -->
-      <section id="s-users" role="tabpanel" aria-label="Installs">
+      <section id="s-users" role="tabpanel" aria-label="Fleet">
         <!-- Phase L3: live fleet pulse (admin_fleet_live, 30s poll while open) -->
         <div class="stats" id="fleetStats"></div>
         <div class="card" id="fleetLiveCard">
@@ -225,19 +225,6 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-h">
-            <div class="card-t"><h3>Installs</h3><p class="sub">No PII — anonymous device IDs only</p></div>
-            <div class="card-a">
-              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="uSearch" placeholder="Platform / version / region…" onkeydown="if(event.key==='Enter')loadUsers()"></div>
-              <button class="btn btn-primary btn-sm" onclick="loadUsers()">Search</button>
-            </div>
-          </div>
-          <div class="tbl-wrap"><table id="usersTbl">
-            <thead><tr><th>Anon ID</th><th>Platform</th><th>Ver</th><th>Region</th><th>First seen</th><th>Last seen</th></tr></thead>
-            <tbody></tbody>
-          </table></div>
-        </div>
         <!-- Phase C: live device fleet (real post-Phase-3 table, not consent-gated installs) -->
         <div class="card">
           <div class="card-h">
@@ -249,6 +236,19 @@
           </div>
           <div class="tbl-wrap"><table id="devicesTbl">
             <thead><tr><th>Code</th><th>Platform</th><th>Ver</th><th>Status</th><th>Last seen</th><th>Action</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Installs</h3><p class="sub">No PII — anonymous device IDs only</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="uSearch" placeholder="Platform / version / region…" onkeydown="if(event.key==='Enter')loadUsers()"></div>
+              <button class="btn btn-primary btn-sm" onclick="loadUsers()">Search</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table id="usersTbl">
+            <thead><tr><th>Anon ID</th><th>Platform</th><th>Ver</th><th>Region</th><th>First seen</th><th>Last seen</th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>
