@@ -81,7 +81,7 @@ void main() {
     });
 
     test('dueNow keeps only what the clock says is due', () {
-      final now = 1000000;
+      const now = 1000000;
       final list = [
         entry(attempts: 0, lastAttemptMs: 0), // never tried → due
         entry(attempts: 1, lastAttemptMs: now - 60000), // backoff expired → due
@@ -118,7 +118,7 @@ void main() {
   group('persistence', () {
     test('encode/decode round-trips attempts', () {
       final list = [
-        OutboxEntry(
+        const OutboxEntry(
           id: 'id',
           recipientUid: 'u1',
           recipientUsername: 'friend',
@@ -174,7 +174,7 @@ void main() {
     test('sends what succeeds, keeps what fails, counts both', () async {
       SharedPreferences.setMockInitialValues({});
 
-      final ok = await DmOutbox.enqueue(
+      await DmOutbox.enqueue(
         recipientUid: 'ok',
         recipientUsername: 'a',
         body: 'first',
