@@ -162,6 +162,24 @@
           </div>
           <div id="repList">loading…</div>
         </div>
+        <!-- Phase D: reported users queue + escalating ban controls -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Reported users</h3><p class="sub">Levels: <b>social</b> = no friends/rooms · <b>full</b> = account paused · offence_count auto-increments</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke="linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="repSearch" placeholder="User id / reason…" onkeydown="if(event.key==='Enter')loadUserReports()"></div>
+              <button class="btn btn-primary btn-sm" onclick="loadUserReports()">Search</button>
+            </div>
+          </div>
+          <div id="userRepList">loading…</div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Appeals</h3><p class="sub">Approve lifts the ban + un-revokes their devices</p></div>
+            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadAppeals()">↻ Refresh</button></div>
+          </div>
+          <div id="appealList">loading…</div>
+        </div>
       </section>
 
       <!-- ── SCRAPERS ── -->
