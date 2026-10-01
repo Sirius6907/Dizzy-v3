@@ -100,6 +100,7 @@ class MainActivity : FlutterActivity() {
         // call notification that keeps LiveKit alive with the screen off.
         // Phase K2/K3: background services need the engine to talk back.
         DownloadForegroundService.engine = flutterEngine
+        MediaPlaybackService.engine = flutterEngine
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/voice").setMethodCallHandler { call, result ->
             when (call.method) {

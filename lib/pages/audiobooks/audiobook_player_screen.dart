@@ -20,6 +20,7 @@ import '../../services/discord/discord_rpc_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../widgets/audiobook/audiobook_interactive_physics_button.dart';
 import '../../widgets/audiobook/audiobook_waveform_seekbar.dart';
+import '../../services/media/media_session_bridge.dart';
 import '../settings/appearance/audiobook_player_studio_page.dart';
 
 class AudiobookPlayerScreen extends StatefulWidget {
@@ -77,11 +78,79 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     AppThemeService.currentPalette.addListener(_onSettingsChanged);
 
     _initChapter(_currentChapterIndex);
+    _attachMediaSession();
 
-    // Save progress every 5 seconds
+    // Save progress and refresh the now-playing notification every 5 seconds
     _progressTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _saveProgress();
+      _publishMediaSession();
     });
+  }
+
+  /// Phase K1 — surface the audiobook in the system media notification.
+  Future<void> _attachMediaSession() async {
+    await MediaSessionBridge.attach(
+      MediaSessionActions(
+        onToggle: () async => _togglePlayPause(),
+        onPlay: () async => _togglePlayPause(),
+        onPause: () async => _togglePlayPause(),
+        onPrev: () async {
+          if (_currentChapterIndex > 0) {
+            await _initChapter(_currentChapterIndex - 1);
+          } else {
+            _seekRelative(-10);
+          }
+        },
+        onNext: () async {
+          if (_currentChapterIndex + 1 < widget.chapters.length) {
+            await _initChapter(_currentChapterIndex + 1);
+          }
+        },
+        onSeekRelative: (deltaMs) async => _seekRelative(deltaMs ~/ 1000),
+        onSeekAbsolute: (positionMs) async {
+          if (_player != null && _duration > Duration.zero) {
+            final target = Duration(milliseconds: positionMs);
+            _player!.seek(target < Duration.zero
+                ? Duration.zero
+                : (target > _duration ? _duration : target));
+          }
+        },
+        onStop: () async => _togglePlayPause(),
+        onFocusLost: () async {
+          if (_isPlaying) {
+            _togglePlayPause();
+          }
+        },
+      ),
+    );
+    _publishMediaSession(force: true);
+  }
+
+  void _publishMediaSession({bool force = false}) {
+    if (!mounted) {
+      return;
+    }
+    if (_player == null && !force) {
+      return;
+    }
+    final chapter = (widget.chapters.isNotEmpty &&
+            _currentChapterIndex < widget.chapters.length)
+        ? widget.chapters[_currentChapterIndex].title
+        : null;
+    final author = widget.audiobook.author;
+    unawaited(
+      MediaSessionBridge.publish(
+        MediaSessionState(
+          title: widget.audiobook.title,
+          subtitle: chapter ??
+              ((author ?? '').isNotEmpty ? author : null),
+          playing: _isPlaying,
+          positionMs: _position.inMilliseconds,
+          durationMs: _duration.inMilliseconds,
+        ),
+        force: force,
+      ),
+    );
   }
 
   void _onSettingsChanged() {
@@ -108,6 +177,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
   void dispose() {
     _saveProgress();
     _progressTimer?.cancel();
+    unawaited(MediaSessionBridge.detach());
     AudiobookSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     for (final s in _playerSubscriptions) {
@@ -307,6 +377,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
       _discAnimController.repeat();
       setState(() => _isPlaying = true);
     }
+    // The notification's play/pause icon must flip immediately, not on the
+    // next 5-second tick.
+    _publishMediaSession(force: true);
   }
 
   void _seekRelative(int seconds) {
