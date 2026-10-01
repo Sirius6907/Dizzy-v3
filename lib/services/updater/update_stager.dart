@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../notification/notification_prefs.dart';
+import '../notification/notification_service.dart';
 import 'update_state_machine.dart';
 
 /// Minimal [Sink<Digest>] collector so we can read the final hash without
@@ -148,6 +150,15 @@ class UpdateStager {
           UpdateRunState.ready,
           progressValue: 1,
           version: version,
+        );
+        // Phase J2: heads-up that the update is waiting in the Hub.
+        unawaited(
+          NotificationService.push(
+            NotificationKind.update,
+            'Update ready to install',
+            'Dizzy v$version is downloaded. Open Profile → Updates and tap Install.',
+            id: 'update-ready-$version',
+          ),
         );
         return out.path;
       } finally {

@@ -15,9 +15,11 @@ import 'package:dizzy/services/guide/guide_service.dart';
 import 'package:dizzy/services/updater/app_updater_service.dart';
 import 'package:dizzy/services/updater/update_prefs.dart';
 import 'package:dizzy/services/updater/update_state_machine.dart';
+import 'package:dizzy/services/notification/notification_inbox.dart';
 import 'package:dizzy/services/updater/update_stager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../common/notification_center_sheet.dart';
 import '../settings/about_settings_page.dart';
 import '../settings/appearance_settings_page.dart';
 import '../settings/download_settings_page.dart';
@@ -832,6 +834,42 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           onTap: () => _go(context, const PrivacySettingsPage()),
         ),
         _groupLabel('NOTICES'),
+        ValueListenableBuilder<List<InboxItem>>(
+          valueListenable: NotificationInbox.items,
+          builder: (context, items, _) {
+            final unread = NotificationInbox.unreadCount(items);
+            return _sectionCard(
+              icon: Icons.notifications_none_rounded,
+              title: 'Notification Center',
+              subtitle: items.isEmpty
+                  ? 'Download news, updates and messages land here'
+                  : unread > 0
+                      ? '$unread new · tap to open'
+                      : '${items.length} · tap to open',
+              trailing: unread > 0
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: DizzyGlow.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        NotificationInbox.badgeCount(items).toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                  : null,
+              onTap: () => NotificationCenterSheet.show(context),
+            );
+          },
+        ),
         _buildNotices(),
         _groupLabel('APP SHORTCUTS'),
         _sectionCard(

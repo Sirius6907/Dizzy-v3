@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -54,6 +55,8 @@ import './pages/common/device_revoked_screen.dart';
 import './pages/common/ban_notice_screen.dart';
 import './pages/common/update_required_screen.dart';
 import './services/moderation/ban_service.dart';
+import './services/notification/notification_service.dart';
+import './services/notification/notification_triggers.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
 import './pages/search/universal_spotlight_modal.dart';
@@ -233,6 +236,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     // Phase I3: rehydrate the staged-update state machine (a process killed
     // mid-download must not leave the Hub row stuck).
     UpdateOrchestrator.restore();
+    // Phase J1/J2: notification channels + event triggers (downloads,
+    // announcements, staged updates) feeding the Hub Notification Center.
+    unawaited(NotificationTriggers.attach());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
@@ -244,7 +250,49 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
       _onDeviceRevoked();
       BanService.refresh().then((_) => _onBanChanged());
       _enforceForceUpdate();
+      // Phase J1: one Easy-English permission ask, ever.
+      unawaited(_maybeAskNotificationPermission());
     });
+  }
+
+  /// Phase J1 — Android 13+ POST_NOTIFICATIONS, asked once with a plain
+  /// explanation and a real "Not now" (never a blocking prompt).
+  Future<void> _maybeAskNotificationPermission() async {
+    try {
+      await NotificationService.initialize();
+      if (!mounted || NotificationService.permissionAsked) return;
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      final go = await showDialog<bool>(
+        context: ctx,
+        builder: (c) => AlertDialog(
+          title: const Text('Stay in the loop?'),
+          content: const Text(
+            'Dizzy can tell you when a download finishes, an update is ready '
+            'to install, or there is news from us. No spam — and you can '
+            'change this any time in Profile → Notifications.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Turn on'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (go == true) {
+        await NotificationService.requestPermission();
+      } else {
+        await NotificationService.markPermissionAsked();
+      }
+    } catch (e) {
+      debugPrint('[Notify] permission prompt failed (soft): $e');
+    }
   }
 
   void _onDeviceRevoked() {
