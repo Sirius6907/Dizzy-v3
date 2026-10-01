@@ -1,0 +1,12 @@
+{
+  "name": "Dizzy — Your media. Your rules.",
+  "short_name": "Dizzy",
+  "description": "Free and open media player for Android, Windows and Linux. Watch together, listen, read, download offline.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#07070B",
+  "theme_color": "#07070B",
+  "icons": [
+    { "src": "assets/img/favicon.png", "sizes": "128x128", "type": "image/png" }
+  ]
+}
