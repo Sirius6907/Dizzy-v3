@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloud_client.dart';
 import '../errors/app_log.dart';
+import '../updater/update_policy.dart';
 
 /// v1.2.0-ADMIN: remote config pulled from Supabase `remote_config` table.
 ///
@@ -31,6 +32,15 @@ class RemoteConfigService {
 
   /// Phase E1: ISO deadline after which min_app_version becomes blocking.
   static String get forceAfter => _cfg['force_after'] ?? '';
+
+  /// Phase I1: staged-rollout percent (0..100). Missing key → 100 (offer to
+  /// everyone) so a bad config can never hide updates.
+  static int get rolloutPercent =>
+      UpdatePolicy.parseRolloutPercent(_cfg[UpdatePolicy.keyRolloutPercent]);
+
+  /// Phase I1: 'stable' (default) or 'beta'.
+  static String get updateChannel =>
+      UpdatePolicy.normalizeChannel(_cfg[UpdatePolicy.keyUpdateChannel]);
 
   static int get scraperCooldownDays =>
       int.tryParse(_cfg['scraper_cooldown_days'] ?? '') ?? 7;

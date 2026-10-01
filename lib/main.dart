@@ -12,8 +12,9 @@ import 'package:window_manager/window_manager.dart';
 import './pages/home/home_page.dart';
 import './services/addon/addon_manager.dart';
 import './services/theme/app_theme_service.dart';
-import './services/updater/app_updater_service.dart';
 import './services/updater/update_gate.dart';
+import './services/updater/update_orchestrator.dart';
+import './services/updater/update_state_machine.dart';
 import './services/books/continue_reading_service.dart';
 import './services/books/reader_settings.dart';
 import './services/continue_watching/continue_watching_service.dart';
@@ -229,6 +230,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     BanService.state.addListener(_onBanChanged);
     // Phase E1: blocking force-update when the server deadline has passed.
     RemoteConfigService.revision.addListener(_enforceForceUpdate);
+    // Phase I3: rehydrate the staged-update state machine (a process killed
+    // mid-download must not leave the Hub row stuck).
+    UpdateOrchestrator.restore();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
@@ -304,9 +308,17 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
   Future<void> _checkForUpdates() async {
     if (_isShowingUpdateDialog) return;
     try {
-      final updater = AppUpdaterService();
-      final updateInfo = await updater.checkForUpdates();
+      final updateInfo = await UpdateOrchestrator.autoStageIfDue();
       if (updateInfo == null) return;
+
+      // I2: a silent staged download is already running (or finished) — the
+      // Hub's Install-now pill is the UI, no modal needed.
+      final runState = UpdateStateMachine.state.value;
+      if (runState == UpdateRunState.downloading ||
+          runState == UpdateRunState.ready) {
+        debugPrint('[Main] Update staged silently — skipping modal.');
+        return;
+      }
 
       BuildContext? context = navigatorKey.currentContext;
       for (int i = 0; i < 6 && (context == null || !context.mounted); i++) {

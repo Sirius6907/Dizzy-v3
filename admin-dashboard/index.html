@@ -286,6 +286,20 @@
           </div>
 
           <div class="rule"></div>
+          <div class="cfg-row">
+            <div class="cfg-l"><label class="fl" for="cfgRollout">rollout_percent</label><p class="hint">0–100. Only this % of devices (bucketed by stable device id) is offered the new version. 100 = everyone, 0 = nobody. Forced min-version updates ignore this.</p></div>
+            <div class="cfg-r"><input type="number" id="cfgRollout" min="0" max="100" placeholder="100" style="max-width:110px"><button class="btn btn-primary btn-sm" onclick="saveCfg('rollout_percent',document.getElementById('cfgRollout').value)">Save</button></div>
+          </div>
+
+          <div class="rule"></div>
+
+          <div class="cfg-row">
+            <div class="cfg-l"><label class="fl" for="cfgChannel">update_channel</label><p class="hint"><code>stable</code> = only finished releases. <code>beta</code> = this device also sees GitHub prereleases.</p></div>
+            <div class="cfg-r"><select id="cfgChannel" style="max-width:140px"><option value="stable">stable</option><option value="beta">beta</option></select><button class="btn btn-primary btn-sm" onclick="saveCfg('update_channel',document.getElementById('cfgChannel').value)">Save</button></div>
+          </div>
+
+          <div class="rule"></div>
+
           <div class="cfg-row col">
             <div class="cfg-l"><label class="fl">Feature flags</label><p class="hint">One tap flips the flag and pushes it live immediately.</p></div>
             <div id="featureToggles" class="flags"></div>
