@@ -123,7 +123,7 @@ void main() {
       expect(home.contains('HomeNoticeBanner()'), isTrue);
       expect(banner.contains('AnnouncementService.active'), isTrue);
       expect(banner.contains('_kDismissedAnns'), isTrue); // dismiss persists
-      expect(rcs.contains("forceAfter"), isTrue);
+      expect(rcs.contains('forceAfter'), isTrue);
     });
 
     test('E1: main enforces blocking update, screen is back-proof', () {
