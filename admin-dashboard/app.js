@@ -81,7 +81,7 @@ const PAGE_META = {
   rooms: ['Rooms', 'Watch rooms across the app'],
   moderation: ['Moderation', 'Reported rooms waiting on you'],
   scrapers: ['Scrapers', 'Crowd votes & kill switches'],
-  users: ['Installs', 'Installed apps · anonymous IDs only'],
+  users: ['Fleet', 'Live presence · devices · installs — everything tracked in one place'],
   push: ['Announcements', 'In-app banners the app polls'],
   config: ['Remote config', 'Flags & limits read at app startup'],
   audit: ['Audit log', 'Every admin write, newest first'],
