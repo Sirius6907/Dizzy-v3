@@ -6,6 +6,7 @@ import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
+import 'package:dizzy/services/messaging/dm_outbox.dart';
 import '../settings/watch_party_page.dart';
 import '../../widgets/common/notify.dart';
 import '../../widgets/guide/guide_trigger.dart';
@@ -87,25 +88,107 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
     setState(() => _isSending = true);
     _textController.clear();
 
+    // Phase K4: written to disk BEFORE the network attempt, so a process
+    // kill mid-send leaves a record the next launch retries instead of a
+    // message that silently disappears.
+    final entry = await DmOutbox.enqueue(
+      recipientUid: widget.recipientUid,
+      recipientUsername: widget.recipientUsername,
+      body: text,
+    );
+
     final success = await DizzySocialService.sendDirectMessage(
       recipientUid: widget.recipientUid,
       body: text,
     );
 
-    if (!mounted) return;
-    setState(() => _isSending = false);
-    if (!mounted) return;
     if (success) {
+      await DmOutbox.markSent(entry.id);
+      if (mounted) setState(() => _isSending = false);
       // Server is the source of truth — realtime delivers the real row.
       // (Optimistic echo removed: a fail-soft add here used to show a
       // message that was never sent, with no way to retry it.)
       return;
     }
-    _textController.text = text;
+
+    // Still queued: the outbox scheduler keeps trying, the pending bar
+    // above the composer shows it, and tapping it retries immediately.
+    await DmOutbox.recordFailure(entry.id);
+    if (!mounted) return;
+    setState(() => _isSending = false);
     DizzyNotify.show(
       context,
-      "Couldn't send — check net, then try again.",
+      "Couldn't send yet — saved, Dizzy will keep trying.",
       tone: NotifyTone.warn,
+    );
+  }
+
+  /// Phase K4 — the retry surface for messages still in the outbox for
+  /// this conversation. Tapping retries right now; otherwise the scheduler
+  /// retries on its own.
+  Future<void> _retryPending() async {
+    await DmOutbox.flush(
+      send: (e) => DizzySocialService.sendDirectMessage(
+        recipientUid: e.recipientUid,
+        body: e.body,
+      ),
+    );
+  }
+
+  Widget _pendingBar() {
+    return ValueListenableBuilder<List<OutboxEntry>>(
+      valueListenable: DmOutbox.entries,
+      builder: (context, list, _) {
+        final mine = DmOutbox.forRecipient(list, widget.recipientUid);
+        if (mine.isEmpty) return const SizedBox.shrink();
+        return InkWell(
+          onTap: _retryPending,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(
+              DizzySpace.md,
+              DizzySpace.xs,
+              DizzySpace.md,
+              0,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DizzySpace.sm,
+              vertical: DizzySpace.xs,
+            ),
+            decoration: BoxDecoration(
+              color: DizzyGlow.gold.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(DizzyRadius.sm),
+              border: Border.all(color: DizzyGlow.gold.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.schedule_rounded,
+                  size: 14,
+                  color: DizzyGlow.gold,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    mine.length == 1
+                        ? '1 message not sent yet — tap to retry now'
+                        : '${mine.length} messages not sent yet — tap to retry',
+                    style: const TextStyle(
+                      color: DizzyGlow.gold,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.refresh_rounded,
+                  size: 14,
+                  color: DizzyGlow.gold,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -392,6 +475,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                 },
               ),
             ),
+            _pendingBar(),
             // Bottom Tactile Input Bar
             Container(
               padding: const EdgeInsets.symmetric(
