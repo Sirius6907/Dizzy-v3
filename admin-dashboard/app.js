@@ -99,7 +99,7 @@ function show(name) {
   if (meta) { $('pageTitle').textContent = meta[0]; $('pageSub').textContent = meta[1]; }
   closeNav();
   if (name === 'rooms') loadRooms();
-  if (name === 'moderation') loadRooms(true);
+  if (name === 'moderation') { loadRooms(true); loadUserReports(); loadAppeals(); }
   if (name === 'scrapers') loadScrapers();
   if (name === 'users') { loadUsers(); loadDevices(); }
   if (name === 'push') loadAnn();
@@ -577,6 +577,97 @@ async function revokeDevice(deviceId, revoke) {
     toast(revoke ? 'Device revoked 🔒' : 'Device restored 🔓', 'ok');
     loadDevices();
   } catch (e) { toast(verb + ' failed: ' + e.message, 'err'); }
+}
+
+// ── Phase D: reported users + escalating bans ──
+async function loadUserReports() {
+  $('userRepList').innerHTML = skLines(4);
+  try {
+    const rows = await rpc('admin_user_reports', { p_limit: 100, p_search: ($('repSearch') || {}).value || '' });
+    $('userRepList').innerHTML = rows.map((u) => {
+      const lvl = u.level === 'full' ? '<span class="pill p-closed">full</span>'
+        : u.level === 'social' ? '<span class="pill p-adult">social</span>'
+        : '<span class="pill p-live">clean</span>';
+      const open = Number(u.reports_open) || 0;
+      return `<div class="ann">
+        <div class="ann-top"><span class="ann-title mono">${esc(u.user_id)}</span>
+          <span>${open > 0 ? `<span class="pill p-closed">🚩 ${open} open</span>` : '<span class="mut">all dismissed</span>'} ${lvl}
+          ${u.offence_count > 0 ? `<span class="chip" title="offences">⛓ ${u.offence_count}</span>` : ''}</span></div>
+        <div class="ann-body">Last: ${esc(u.last_reason || '—')}</div>
+        <div class="ann-meta"><span class="chip" title="${esc(fmtAbs(u.last_at))}">${ago(u.last_at)}</span>
+          ${u.banned_until ? `<span class="chip">until ${esc(fmtAbs(u.banned_until))}</span>` : ''}</div>
+        <div class="rowbtns">
+          <button onclick="banUser('${u.user_id}','social')">🟠 Social ban</button>
+          <button class="danger" onclick="banUser('${u.user_id}','full')">⛔ Full ban</button>
+          <button onclick="dismissReports('${u.user_id}')">✓ Dismiss reports</button>
+          <button class="ok" onclick="unbanUser('${u.user_id}')">🔓 Unban</button>
+        </div></div>`;
+    }).join('') || emptyState('🎉', 'No reported users', 'Nobody has been reported.');
+  } catch (e) { toast('Reports failed: ' + e.message, 'err'); }
+}
+
+async function banUser(userId, level) {
+  const daysStr = prompt(
+    `${level === 'full' ? 'FULL' : 'SOCIAL'} ban — days (0 = permanent, blank = 3):`,
+    '3');
+  if (daysStr === null) return;
+  const days = daysStr.trim() === '' ? 3 : parseInt(daysStr, 10);
+  if (!Number.isFinite(days) || days < 0 || days > 3650) { toast('Days must be 0–3650', 'err'); return; }
+  const reason = prompt('Reason (shown to the user in Easy English):', '') || '';
+  if (!confirm(`Apply ${level} ban for ${days === 0 ? 'PERMANENTLY' : days + ' day(s)'}? offence_count will increase.`)) return;
+  try {
+    await rpc('admin_ban_user', { p_user_id: userId, p_level: level, p_days: days, p_reason: reason });
+    toast(`Banned (${level}) ⛔`, 'ok'); loadUserReports();
+  } catch (e) { toast('Ban failed: ' + e.message, 'err'); }
+}
+
+async function unbanUser(userId) {
+  if (!confirm('Lift this ban + restore their revoked devices?')) return;
+  try {
+    await rpc('admin_unban_user', { p_user_id: userId });
+    toast('Unbanned 🔓', 'ok'); loadUserReports();
+  } catch (e) { toast('Unban failed: ' + e.message, 'err'); }
+}
+
+async function dismissReports(userId) {
+  try {
+    await rpc('admin_dismiss_user_reports', { p_target_id: userId });
+    toast('Reports dismissed ✓', 'ok'); loadUserReports();
+  } catch (e) { toast('Dismiss failed: ' + e.message, 'err'); }
+}
+
+// ── Phase D: appeals ──
+async function loadAppeals() {
+  $('appealList').innerHTML = skLines(4);
+  try {
+    const rows = await rpc('ban_appeals_pending');
+    $('appealList').innerHTML = rows.map((a) => {
+      const st = a.status === 'pending' ? '<span class="pill p-live">pending</span>'
+        : a.status === 'approved' ? '<span class="pill p-closed">approved</span>'
+        : '<span class="pill p-closed">rejected</span>';
+      const actions = a.status === 'pending' ? `<div class="rowbtns">
+          <button class="ok" onclick="decideAppeal('${a.id}',true)">✓ Approve (lift ban)</button>
+          <button class="danger" onclick="decideAppeal('${a.id}',false)">✗ Reject</button>
+        </div>` : '';
+      return `<div class="ann">
+        <div class="ann-top"><span class="ann-title mono">${esc(a.user_id)}</span>
+          <span>${st} ${a.level ? `<span class="pill ${a.level === 'full' ? 'p-closed' : 'p-adult'}">${esc(a.level)}</span>` : ''}
+          ${a.offence_count > 0 ? `<span class="chip">⛓ ${a.offence_count}</span>` : ''}</span></div>
+        <div class="ann-body">${esc(a.text)}</div>
+        <div class="ann-meta"><span class="chip" title="${esc(fmtAbs(a.created_at))}">${ago(a.created_at)}</span></div>
+        ${actions}</div>`;
+    }).join('') || emptyState('📭', 'No appeals', 'Appeals show up here when users send them.');
+  } catch (e) { toast('Appeals failed: ' + e.message, 'err'); }
+}
+
+async function decideAppeal(id, approve) {
+  if (approve && !confirm('Approve? Ban is lifted and their devices are restored.')) return;
+  const note = approve ? (prompt('Note (optional):', '') || '') : (prompt('Rejection reason:', '') || '');
+  try {
+    await rpc('ban_appeal_decide', { p_appeal_id: id, p_approve: approve, p_note: note });
+    toast(approve ? 'Appeal approved ✅' : 'Appeal rejected ✗', 'ok');
+    loadAppeals();
+  } catch (e) { toast('Decision failed: ' + e.message, 'err'); }
 }
 
 // ── announcements ──

@@ -76,12 +76,18 @@ void main() {
       expect(bootStart, isNot(-1));
       final bootBody = src.substring(bootStart);
       final guardIdx = bootBody.indexOf('if (!CloudClient.isReady) return;');
-      final hashIdx = bootBody.indexOf('hwidHash');
+      // Phase H: hash source moved to DeviceIdentityV2.stableHwid();
+      // legacyHash is the old random-code derivation. Both must stay guarded.
+      final hashIdx = bootBody.indexOf('DeviceIdentityV2.stableHwid()');
       expect(guardIdx, isNot(-1),
           reason: 'bootDevice must early-return when cloud is not ready.');
       expect(hashIdx, isNot(-1));
       expect(guardIdx, lessThan(hashIdx),
           reason: 'HWID hash must only be computed after the cloud-ready guard.');
+      final legacyIdx = bootBody.indexOf('legacyHash');
+      expect(legacyIdx, isNot(-1));
+      expect(guardIdx, lessThan(legacyIdx),
+          reason: 'Legacy hwid hash must also stay behind the guard.');
 
       // init() also gates the background registration on cloud readiness.
       final initStart = src.indexOf('static Future<void> init()');
