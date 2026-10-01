@@ -79,4 +79,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // Phase K1: MediaSessionCompat + MediaStyle notification (now-playing
+    // controls, lock-screen / Bluetooth / Android Auto routing).
+    implementation("androidx.media:media:1.7.1")
 }

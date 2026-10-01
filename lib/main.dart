@@ -68,6 +68,8 @@ import './pages/search/universal_spotlight_modal.dart';
 import './services/system/resource_governor.dart';
 import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
+import './services/media/media_session_bridge.dart';
+import './services/music/music_player_controller.dart';
 import './services/watchparty/voice_background_gate.dart';
 import './services/watchparty/guest_auto_open.dart';
 
@@ -341,6 +343,12 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     // Phase K3: voice gets its own foreground service so the mic thread
     // survives the screen going off.
     unawaited(VoiceBackgroundGate.attach());
+    // Phase K1: a system media session (now-playing notification, lock
+    // screen / Bluetooth controls) follows the music player. No-ops off
+    // Android, so desktop and web behaviour is untouched.
+    unawaited(
+      MusicMediaSessionWatcher(MusicPlayerController.instance).start(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;

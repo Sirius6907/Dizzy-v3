@@ -7,17 +7,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-
-    <!-- Phase K2: downloads keep their own foreground service so a long
-         transfer survives the screen going off. -->
-    <service
-        android:name=".DownloadForegroundService"
-        android:exported="false"
-        android:foregroundServiceType="dataSync" />
-    <service
-        android:name=".VoiceForegroundService"
-        android:exported="false"
-        android:foregroundServiceType="microphone" />
+    <!-- Phase K1: now-playing media notification + system media session. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
@@ -87,6 +78,25 @@
                 <action android:name="${applicationId}.ACTION_INSTALL_COMPLETE"/>
             </intent-filter>
         </receiver>
+
+        <!-- Foreground services (Phase K1–K3). Declared inside <application>,
+             where the manifest merger requires them. -->
+        <!-- Phase K2: downloads keep their own foreground service so a long
+             transfer survives the screen going off. -->
+        <service
+            android:name=".DownloadForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+        <!-- Phase K3: microphone foreground service while in a voice room. -->
+        <service
+            android:name=".VoiceForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+        <!-- Phase K1: now-playing media notification + system media session. -->
+        <service
+            android:name=".MediaPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
