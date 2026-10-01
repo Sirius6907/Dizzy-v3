@@ -76,12 +76,17 @@ class WatchedEpisodeLedger {
     DateTime? at,
   }) async {
     await initialize();
-    final key = storageSweepKey(mediaId: mediaId, season: season, episode: episode);
+    final key = storageSweepKey(
+      mediaId: mediaId,
+      season: season,
+      episode: episode,
+    );
     final when = (at ?? DateTime.now()).millisecondsSinceEpoch;
     final next = Map<String, int>.from(_cache)..[key] = when;
 
     if (next.length > maxEntries) {
-      final byAge = next.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+      final byAge = next.entries.toList()
+        ..sort((a, b) => a.value.compareTo(b.value));
       for (final entry in byAge.take(next.length - maxEntries)) {
         next.remove(entry.key);
       }
@@ -98,10 +103,9 @@ class WatchedEpisodeLedger {
     required String mediaId,
     required int? season,
     required int? episode,
-  }) =>
-      _cache.containsKey(
-        storageSweepKey(mediaId: mediaId, season: season, episode: episode),
-      );
+  }) => _cache.containsKey(
+    storageSweepKey(mediaId: mediaId, season: season, episode: episode),
+  );
 
   /// Total watched episodes on record. Shown on the downloads screen so
   /// the suggestion is never a mystery.

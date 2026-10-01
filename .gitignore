@@ -73,3 +73,6 @@ admin-dashboard/config.js
 /TRD.md
 /UIUX.md
 /Backend.md
+
+# Local dashboard QA scratch (screenshots + preview copies)
+/.dashboard-preview/

@@ -56,10 +56,7 @@ class StorageSweepSuggestion {
   /// suggestion was built, never estimated from a guess.
   final int bytes;
 
-  const StorageSweepSuggestion({
-    required this.task,
-    required this.bytes,
-  });
+  const StorageSweepSuggestion({required this.task, required this.bytes});
 
   /// Stable key for the trash ledger.
   String get taskId => task.id;
@@ -113,26 +110,30 @@ List<StorageSweepSuggestion> rankStorageSweepCandidates({
   // Stable sort: the comparator must be a total order or the list order
   // would leak the insertion order of `tasks` into the UI.
   eligible.sort((a, b) {
-    final byWatched = _watchedRank(b, watchedKeys).compareTo(
-      _watchedRank(a, watchedKeys),
-    );
+    final byWatched = _watchedRank(
+      b,
+      watchedKeys,
+    ).compareTo(_watchedRank(a, watchedKeys));
     if (byWatched != 0) return byWatched;
     final aAt = a.completedAt ?? a.createdAt;
     final bAt = b.completedAt ?? b.createdAt;
     final byAge = aAt.compareTo(bAt); // oldest first
     if (byAge != 0) return byAge;
-    final bySize = (sizeBytesById[b.id] ?? b.totalBytes)
-        .compareTo(sizeBytesById[a.id] ?? a.totalBytes);
+    final bySize = (sizeBytesById[b.id] ?? b.totalBytes).compareTo(
+      sizeBytesById[a.id] ?? a.totalBytes,
+    );
     if (bySize != 0) return bySize;
     return a.id.compareTo(b.id);
   });
 
   return eligible
       .take(limit)
-      .map((t) => StorageSweepSuggestion(
-            task: t,
-            bytes: sizeBytesById[t.id] ?? t.totalBytes,
-          ))
+      .map(
+        (t) => StorageSweepSuggestion(
+          task: t,
+          bytes: sizeBytesById[t.id] ?? t.totalBytes,
+        ),
+      )
       .toList(growable: false);
 }
 
@@ -143,17 +144,16 @@ int _watchedRank(DownloadTask task, Set<String> watchedKeys) =>
 /// ledger and the task list can be compared without either side knowing
 /// the other's storage format. `mediaId|season|episode`.
 String storageSweepKeyFor(DownloadTask task) => storageSweepKey(
-      mediaId: task.mediaId,
-      season: task.season,
-      episode: task.episode,
-    );
+  mediaId: task.mediaId,
+  season: task.season,
+  episode: task.episode,
+);
 
 String storageSweepKey({
   required String mediaId,
   required int? season,
   required int? episode,
-}) =>
-    '$mediaId|${season ?? 0}|${episode ?? 0}';
+}) => '$mediaId|${season ?? 0}|${episode ?? 0}';
 
 /// How long an undo stays live. Seven days, by the brief.
 ///
@@ -165,7 +165,10 @@ const Duration kStorageUndoWindow = Duration(days: 7);
 /// Whether an undo is still available for something trashed at
 /// [trashedAt]. Exactly at the boundary the undo is gone — the window is
 /// half-open, so a 7-day-old entry is expired, not "just barely alive".
-bool canUndoStorageSweep({required DateTime? trashedAt, required DateTime now}) {
+bool canUndoStorageSweep({
+  required DateTime? trashedAt,
+  required DateTime now,
+}) {
   if (trashedAt == null) return false;
   return now.difference(trashedAt) < kStorageUndoWindow;
 }
