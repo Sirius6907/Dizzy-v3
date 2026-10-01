@@ -939,7 +939,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   subtitle: 'Open the fleet dashboard',
                   onTap: () async {
                     final uri = Uri.parse(
-                      'https://thriving-salamander-3620d1.netlify.app',
+                      'https://dizzy-s-admin.netlify.app',
                     );
                     try {
                       await launchUrl(
