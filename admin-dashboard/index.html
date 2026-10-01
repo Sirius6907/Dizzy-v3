@@ -279,6 +279,13 @@
           </div>
 
           <div class="rule"></div>
+
+          <div class="cfg-row">
+            <div class="cfg-l"><label class="fl" for="cfgForceAfter">force_after</label><p class="hint">ISO deadline (e.g. 2026-10-15T00:00:00+05:30). Before it: banner only. After it: blocking full-screen update. Empty = never blocking.</p></div>
+            <div class="cfg-r"><input type="text" id="cfgForceAfter" placeholder="2026-10-15T00:00:00+05:30" style="max-width:230px"><button class="btn btn-primary btn-sm" onclick="saveCfg('force_after',document.getElementById('cfgForceAfter').value)">Save</button></div>
+          </div>
+
+          <div class="rule"></div>
           <div class="cfg-row col">
             <div class="cfg-l"><label class="fl">Feature flags</label><p class="hint">One tap flips the flag and pushes it live immediately.</p></div>
             <div id="featureToggles" class="flags"></div>

@@ -784,6 +784,7 @@ async function loadCfg() {
     const { data } = await sb.from('remote_config').select('key,value');
     const m = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
     $('cfgMinVer').value = m.min_app_version || '';
+    $('cfgForceAfter').value = m.force_after || '';
     $('cfgFeatures').value = pretty(m.features);
     $('cfgNotice').value = pretty(m.notice);
     let feat = {};

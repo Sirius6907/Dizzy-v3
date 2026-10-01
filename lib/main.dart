@@ -13,6 +13,7 @@ import './pages/home/home_page.dart';
 import './services/addon/addon_manager.dart';
 import './services/theme/app_theme_service.dart';
 import './services/updater/app_updater_service.dart';
+import './services/updater/update_gate.dart';
 import './services/books/continue_reading_service.dart';
 import './services/books/reader_settings.dart';
 import './services/continue_watching/continue_watching_service.dart';
@@ -50,6 +51,7 @@ import './services/discord/discord_rpc_service.dart';
 import './widgets/updater/update_dialog.dart';
 import './pages/common/device_revoked_screen.dart';
 import './pages/common/ban_notice_screen.dart';
+import './pages/common/update_required_screen.dart';
 import './services/moderation/ban_service.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
@@ -87,7 +89,9 @@ void main() async {
     PerformanceMode.setLowEndDeviceMode(true);
   } else {
     final smoothSaved = prefs.getBool('perf_smooth_mode');
-    PerformanceMode.setSmoothMode(smoothSaved ?? PerformanceMode.isLowRamDevice);
+    PerformanceMode.setSmoothMode(
+      smoothSaved ?? PerformanceMode.isLowRamDevice,
+    );
   }
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await EnvService.initialize();
@@ -193,11 +197,11 @@ class DesktopCustomScrollBehavior extends MaterialScrollBehavior {
 
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-        PointerDeviceKind.stylus,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+  };
 }
 
 class DizzyApp extends StatefulWidget {
@@ -207,11 +211,11 @@ class DizzyApp extends StatefulWidget {
   State<DizzyApp> createState() => _DizzyAppState();
 }
 
-class _DizzyAppState extends State<DizzyApp>
-    with WidgetsBindingObserver {
+class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
   static bool _hasCheckedInitialUpdate = false;
   static bool _isShowingUpdateDialog = false;
   bool _revokedShown = false;
+  bool _updateBlockedShown = false;
 
   @override
   void initState() {
@@ -223,6 +227,8 @@ class _DizzyAppState extends State<DizzyApp>
     DizzyIdentityService.deviceRevoked.addListener(_onDeviceRevoked);
     // Phase D: full-ban gate (boot refresh, fail-soft offline).
     BanService.state.addListener(_onBanChanged);
+    // Phase E1: blocking force-update when the server deadline has passed.
+    RemoteConfigService.revision.addListener(_enforceForceUpdate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
@@ -233,6 +239,7 @@ class _DizzyAppState extends State<DizzyApp>
       // Boot may have finished before this listener attached.
       _onDeviceRevoked();
       BanService.refresh().then((_) => _onBanChanged());
+      _enforceForceUpdate();
     });
   }
 
@@ -253,13 +260,40 @@ class _DizzyAppState extends State<DizzyApp>
     final ctx = navigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
     _revokedShown = true;
-    Navigator.of(ctx).push(
-      MaterialPageRoute(builder: (_) => const BanNoticeScreen()),
-    );
+    Navigator.of(
+      ctx,
+    ).push(MaterialPageRoute(builder: (_) => const BanNoticeScreen()));
+  }
+
+  /// Phase E1 — blocking screen ONLY when remote config carried a deadline
+  /// that has passed (UpdateGate). Offline / no config → never fires.
+  Future<void> _enforceForceUpdate() async {
+    if (_updateBlockedShown) return;
+    try {
+      final pkg = await PackageInfo.fromPlatform();
+      final gate = UpdateGate.evaluate(
+        currentVersion: pkg.version,
+        minVersion: RemoteConfigService.minAppVersion,
+        forceAfter: RemoteConfigService.forceAfter,
+        now: DateTime.now(),
+      );
+      if (!gate.isBlocking) return;
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      _updateBlockedShown = true;
+      Navigator.of(ctx).push(
+        MaterialPageRoute(
+          builder: (_) => UpdateRequiredScreen(minVersion: gate.minVersion),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Force-update gate failed (soft): $e');
+    }
   }
 
   @override
   void dispose() {
+    RemoteConfigService.revision.removeListener(_enforceForceUpdate);
     BanService.state.removeListener(_onBanChanged);
     DizzyIdentityService.deviceRevoked.removeListener(_onDeviceRevoked);
     WidgetsBinding.instance.removeObserver(this);
@@ -341,4 +375,3 @@ class _DizzyAppState extends State<DizzyApp>
     );
   }
 }
-

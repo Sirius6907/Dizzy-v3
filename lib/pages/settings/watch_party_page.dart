@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../services/cloud/watch_party_service.dart';
+import '../../services/cloud/remote_config_service.dart';
 import '../../services/device/device_id_service.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/watchparty/party_session.dart';
@@ -70,8 +71,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       appBar: AppBar(
         backgroundColor: DizzyVoid.voidB,
         surfaceTintColor: Colors.transparent,
-        title: const Text('Watch Party',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+        title: const Text(
+          'Watch Party',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -92,80 +95,86 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               } catch (_) {}
             },
             child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      palette.primaryColor.withValues(alpha: 0.24),
-                      DizzyGlow.violet.withValues(alpha: 0.12),
+              padding: const EdgeInsets.all(20),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        palette.primaryColor.withValues(alpha: 0.24),
+                        DizzyGlow.violet.withValues(alpha: 0.12),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: palette.primaryColor.withValues(alpha: 0.30),
+                    ),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '🍿 Watch together, anywhere',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Host a room, share its six-character Room ID, then play, pause and seek in sync. Media streams stay on every viewer’s own device.',
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: palette.primaryColor.withValues(alpha: 0.30)),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('🍿 Watch together, anywhere',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900)),
-                    SizedBox(height: 8),
-                    Text(
-                      'Host a room, share its six-character Room ID, then play, pause and seek in sync. Media streams stay on every viewer’s own device.',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (!available)
-                _lockedCard(palette)
-              else ...[
-                _deviceChip(),
-                const SizedBox(height: 12),
-                _actionCard(
-                  palette: palette,
-                  icon: Icons.add_circle_outline_rounded,
-                  title: 'Create a room',
-                  subtitle: 'Public = Room ID only. Private = Room ID + 6-digit pass.',
-                  onTap: _busy ? null : _createRoom,
-                ),
-                const SizedBox(height: 12),
-                _actionCard(
-                  palette: palette,
-                  icon: Icons.login_rounded,
-                  title: 'Join a room',
-                  subtitle: 'Enter the host’s Room ID. Private rooms also need the pass.',
-                  onTap: _busy ? null : _joinRoom,
                 ),
                 const SizedBox(height: 20),
-                _pubLobby(palette),
-                const SizedBox(height: 12),
-                _voiceBar(),
-                if (_activeRoom != null) ...[
+                if (!available)
+                  _lockedCard(palette)
+                else ...[
+                  _deviceChip(),
                   const SizedBox(height: 12),
-                  PartyRoomPanel(
-                    room: _activeRoom!,
-                    isHost: _activeIsHost,
-                    onExit: () {
-                      _lobbyFuture = null;
-                      // v1.2.0-P3: leaving ends the session (stops follow + sync).
-                      PartySession.instance.end();
-                      setState(() {
-                        _activeRoom = null;
-                        _activeIsHost = false;
-                      });
-                    },
+                  _actionCard(
+                    palette: palette,
+                    icon: Icons.add_circle_outline_rounded,
+                    title: 'Create a room',
+                    subtitle:
+                        'Public = Room ID only. Private = Room ID + 6-digit pass.',
+                    onTap: _busy ? null : _createRoom,
                   ),
+                  const SizedBox(height: 12),
+                  _actionCard(
+                    palette: palette,
+                    icon: Icons.login_rounded,
+                    title: 'Join a room',
+                    subtitle:
+                        'Enter the host’s Room ID. Private rooms also need the pass.',
+                    onTap: _busy ? null : _joinRoom,
+                  ),
+                  const SizedBox(height: 20),
+                  _pubLobby(palette),
+                  const SizedBox(height: 12),
+                  _voiceBar(),
+                  if (_activeRoom != null) ...[
+                    const SizedBox(height: 12),
+                    PartyRoomPanel(
+                      room: _activeRoom!,
+                      isHost: _activeIsHost,
+                      onExit: () {
+                        _lobbyFuture = null;
+                        // v1.2.0-P3: leaving ends the session (stops follow + sync).
+                        PartySession.instance.end();
+                        setState(() {
+                          _activeRoom = null;
+                          _activeIsHost = false;
+                        });
+                      },
+                    ),
+                  ],
                 ],
               ],
-            ],
             ),
           ),
         ),
@@ -174,119 +183,143 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   Widget _deviceChip() => ValueListenableBuilder<String?>(
-        valueListenable: DeviceIdService.deviceCode,
-        builder: (c, code, _) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.badge_outlined, color: Colors.white54, size: 20),
-              const SizedBox(width: 10),
-              const Text('My Device ID',
-                  style: TextStyle(color: Colors.white60, fontSize: 13)),
-              const Spacer(),
-              Text(
-                code == null ? '…' : DeviceIdService.displayCode(code),
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2),
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _pubLobby(dynamic palette) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    valueListenable: DeviceIdService.deviceCode,
+    builder: (c, code, _) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: DizzyVoid.surface1,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
         children: [
-          Row(
-            children: [
-              const Text('🔴 Live public rooms',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800)),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Refresh',
-                onPressed: () {
-                  // ignore: unawaited_futures
-                  WatchPartyService.sweepStale();
-                  _invalidateLobby();
-                },
-                icon: const Icon(Icons.refresh_rounded,
-                    color: Colors.white54, size: 22),
-              ),
-            ],
+          const Icon(Icons.badge_outlined, color: Colors.white54, size: 20),
+          const SizedBox(width: 10),
+          const Text(
+            'My Device ID',
+            style: TextStyle(color: Colors.white60, fontSize: 13),
           ),
-          const SizedBox(height: 8),
-          if (!WatchPartyService.isKidsProfile) _adultGate(),
-          if (!WatchPartyService.isKidsProfile) const SizedBox(height: 8),
-          FutureBuilder<List<WatchPartyRoom>>(
-            future: _lobbyQuery(),
-            builder: (c, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                );
-              }
-              final rooms = snap.data ?? const [];
-              if (rooms.isEmpty) {
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: DizzyVoid.surface1,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08)),
-                  ),
-                  child: const Text(
-                    'No public rooms live right now. Create one and it shows up here for everyone.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13)),
-                );
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: rooms.length,
-                itemBuilder: (c, i) => _pubTile(palette, rooms[i]),
-              );
-            },
+          const Spacer(),
+          Text(
+            code == null ? '…' : DeviceIdService.displayCode(code),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
           ),
         ],
-      );
+      ),
+    ),
+  );
+
+  Widget _pubLobby(dynamic palette) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          const Text(
+            '🔴 Live public rooms',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () {
+              // ignore: unawaited_futures
+              WatchPartyService.sweepStale();
+              _invalidateLobby();
+            },
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: Colors.white54,
+              size: 22,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      if (!WatchPartyService.isKidsProfile) _adultGate(),
+      if (!WatchPartyService.isKidsProfile) const SizedBox(height: 8),
+      FutureBuilder<List<WatchPartyRoom>>(
+        future: _lobbyQuery(),
+        builder: (c, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          final rooms = snap.data ?? const [];
+          if (rooms.isEmpty) {
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: DizzyVoid.surface1,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: const Text(
+                'No public rooms live right now. Create one and it shows up here for everyone.',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            );
+          }
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: rooms.length,
+            itemBuilder: (c, i) => _pubTile(palette, rooms[i]),
+          );
+        },
+      ),
+    ],
+  );
 
   Widget _adultGate() => ValueListenableBuilder<bool>(
-        valueListenable: WatchPartyService.adultUnlocked,
-        builder: (c, unlocked, _) => SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Show 18+ rooms',
-              style: TextStyle(color: Colors.white, fontSize: 14)),
-          subtitle: const Text('Age-gated. Kids profiles never see this.',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
-          value: unlocked,
-          onChanged: (v) => v ? _confirmAdult() : WatchPartyService.setAdultUnlocked(false).then((_) => setState(() {})),
-        ),
-      );
+    valueListenable: WatchPartyService.adultUnlocked,
+    builder: (c, unlocked, _) => SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: const Text(
+        'Show 18+ rooms',
+        style: TextStyle(color: Colors.white, fontSize: 14),
+      ),
+      subtitle: const Text(
+        'Age-gated. Kids profiles never see this.',
+        style: TextStyle(color: Colors.white54, fontSize: 12),
+      ),
+      value: unlocked,
+      onChanged: (v) => v
+          ? _confirmAdult()
+          : WatchPartyService.setAdultUnlocked(
+              false,
+            ).then((_) => setState(() {})),
+    ),
+  );
 
   Future<void> _confirmAdult() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Confirm age'),
-        content: const Text('I confirm I am 18 or older and want to see 18+ public rooms.'),
+        content: const Text(
+          'I confirm I am 18 or older and want to see 18+ public rooms.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('I am 18+')),
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('I am 18+'),
+          ),
         ],
       ),
     );
@@ -297,74 +330,82 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   Widget _pubTile(dynamic palette, WatchPartyRoom r) => Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: DizzyVoid.surface1,
-          borderRadius: BorderRadius.circular(14),
-          border:
-              Border.all(color: Colors.white.withValues(alpha: 0.08)),
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: DizzyVoid.surface1,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+    ),
+    child: ListTile(
+      // P12: red pulse while something plays, dim TV while picking.
+      leading: Icon(
+        r.isLiveNow
+            ? Icons.radio_button_checked_rounded
+            : Icons.live_tv_rounded,
+        color: r.isLiveNow
+            ? Colors.redAccent
+            : palette.primaryColor.withValues(alpha: 0.55),
+        size: 28,
+      ),
+      title: Text(
+        r.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
         ),
-        child: ListTile(
-          // P12: red pulse while something plays, dim TV while picking.
-          leading: Icon(
-              r.isLiveNow
-                  ? Icons.radio_button_checked_rounded
-                  : Icons.live_tv_rounded,
-              color: r.isLiveNow
-                  ? Colors.redAccent
-                  : palette.primaryColor.withValues(alpha: 0.55),
-              size: 28),
-          title: Text(r.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700)),
-          // P12: LIVE watching title + headcount, or the picking state.
-          subtitle: Text(
-              WatchPartyService.isFull(r.memberCount)
-                  ? '${r.roomId} • FULL (${r.memberCount}/${WatchPartyService.maxMembers})'
-                  : r.isLiveNow
-                      ? '🔴 ${r.watchingLabel} • 👥 ${r.memberCount} watching'
-                      : '💭 Choosing… • 👥 ${r.memberCount} in room',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style:
-                  const TextStyle(color: Colors.white54, fontSize: 12)),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (r.isAdult)
-                const Padding(
-                  padding: EdgeInsets.only(right: 4),
-                  child: Text('18+',
-                      style: TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800)),
+      ),
+      // P12: LIVE watching title + headcount, or the picking state.
+      subtitle: Text(
+        WatchPartyService.isFull(r.memberCount)
+            ? '${r.roomId} • FULL (${r.memberCount}/${WatchPartyService.maxMembers})'
+            : r.isLiveNow
+            ? '🔴 ${r.watchingLabel} • 👥 ${r.memberCount} watching'
+            : '💭 Choosing… • 👥 ${r.memberCount} in room',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: Colors.white54, fontSize: 12),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (r.isAdult)
+            const Padding(
+              padding: EdgeInsets.only(right: 4),
+              child: Text(
+                '18+',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
-              IconButton(
-                tooltip: 'Report room',
-                onPressed: () => _reportRoom(r),
-                icon: const Icon(Icons.flag_outlined,
-                    color: Colors.white38, size: 20),
               ),
-              const Icon(Icons.arrow_forward_rounded, color: Colors.white54),
-            ],
+            ),
+          IconButton(
+            tooltip: 'Report room',
+            onPressed: () => _reportRoom(r),
+            icon: const Icon(
+              Icons.flag_outlined,
+              color: Colors.white38,
+              size: 20,
+            ),
           ),
-          onTap: _busy
-              ? null
-              : () {
-                  if (WatchPartyService.isFull(r.memberCount)) {
-                    _snack(
-                        'Room is full (${WatchPartyService.maxMembers} max).');
-                    return;
-                  }
-                  _joinPublic(r);
-                },
-        ),
-      );
+          const Icon(Icons.arrow_forward_rounded, color: Colors.white54),
+        ],
+      ),
+      onTap: _busy
+          ? null
+          : () {
+              if (WatchPartyService.isFull(r.memberCount)) {
+                _snack('Room is full (${WatchPartyService.maxMembers} max).');
+                return;
+              }
+              _joinPublic(r);
+            },
+    ),
+  );
 
   /// v1.2.0-P4: host per-user mute sheet (Easy English, no tech words).
   void _showVoiceMembers(BuildContext context) {
@@ -385,9 +426,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               const Text(
                 'People in voice',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800),
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 4),
               const Text(
@@ -396,15 +438,20 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               ),
               const SizedBox(height: 12),
               if (ids.isEmpty)
-                const Text('Nobody else here yet.',
-                    style: TextStyle(color: Colors.white60, fontSize: 13)),
+                const Text(
+                  'Nobody else here yet.',
+                  style: TextStyle(color: Colors.white60, fontSize: 13),
+                ),
               for (final id in ids)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFF1E2A3D),
-                    child: Icon(Icons.person_rounded,
-                        color: Colors.white70, size: 20),
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: Colors.white70,
+                      size: 20,
+                    ),
                   ),
                   title: Text(
                     'Friend ${id.length > 6 ? id.substring(id.length - 6) : id}',
@@ -412,8 +459,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   ),
                   trailing: IconButton(
                     tooltip: 'Mute this person',
-                    icon: const Icon(Icons.mic_off_rounded,
-                        color: Colors.orangeAccent),
+                    icon: const Icon(
+                      Icons.mic_off_rounded,
+                      color: Colors.orangeAccent,
+                    ),
                     onPressed: () async {
                       final ok = await PartyVoiceService.muteUser(id);
                       if (c.mounted) Navigator.pop(c);
@@ -429,117 +478,126 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   Widget _voiceBar() => ValueListenableBuilder<bool>(
-        valueListenable: PartyVoiceService.connected,
-        builder: (c, connected, _) {
-          if (!connected) return const SizedBox.shrink();
-          return Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0E2A1A),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: Colors.greenAccent.withValues(alpha: 0.35)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    valueListenable: PartyVoiceService.connected,
+    builder: (c, connected, _) {
+      if (!connected) return const SizedBox.shrink();
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E2A1A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.35)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    ValueListenableBuilder<int>(
-                      valueListenable: PartyVoiceService.memberCount,
-                      builder: (c, n, _) => Text(
-                        '🔊 Voice • $n in channel',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700),
-                      ),
+                ValueListenableBuilder<int>(
+                  valueListenable: PartyVoiceService.memberCount,
+                  builder: (c, n, _) => Text(
+                    '🔊 Voice • $n in channel',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const Spacer(),
-                    ValueListenableBuilder<bool>(
-                      valueListenable: PartyVoiceService.micOn,
-                      builder: (c, on, _) => IconButton(
-                        tooltip: on ? 'Mute mic' : 'Unmute mic',
-                        // v1.2.0-WTFIX2: toast on failure — dead button never.
-                        onPressed: () async {
-                          final ok =
-                              await PartyVoiceService.toggleMic();
-                          if (!ok && c.mounted) {
-                            _snack(
-                                'Mic is off. Allow mic permission, join voice, then try again.');
-                          }
-                        },
-                        icon: Icon(
-                          on ? Icons.mic_rounded : Icons.mic_off_rounded,
-                          color: on ? Colors.greenAccent : Colors.white54,
-                        ),
-                      ),
-                    ),
-                    // v1.2.0-P4: deafen — hear nobody, mic locked off.
-                    ValueListenableBuilder<bool>(
-                      valueListenable: PartyVoiceService.deafened,
-                      builder: (c, deaf, _) => IconButton(
-                        tooltip: deaf ? 'Undeafen' : 'Deafen (mute all sound)',
-                        onPressed: PartyVoiceService.toggleDeafen,
-                        icon: Icon(
-                          deaf
-                              ? Icons.hearing_disabled_rounded
-                              : Icons.hearing_rounded,
-                          color: deaf ? Colors.orangeAccent : Colors.white54,
-                        ),
-                      ),
-                    ),
-                    if (PartyVoiceService.amHost) ...[
-                      IconButton(
-                        tooltip: 'Mute one person',
-                        onPressed: () => _showVoiceMembers(c),
-                        icon: const Icon(Icons.manage_accounts_rounded,
-                            color: Colors.white54),
-                      ),
-                      IconButton(
-                        tooltip: 'Mute everyone',
-                        onPressed: () async {
-                          final ok =
-                              await PartyVoiceService.muteAll();
-                          _snack(ok
-                              ? 'Everyone muted.'
-                              : 'Mute-all failed.');
-                        },
-                        icon: const Icon(Icons.volume_off_rounded,
-                            color: Colors.white54),
-                      ),
-                    ],
-                    IconButton(
-                      tooltip: 'Leave voice',
-                      onPressed: () => PartyVoiceService.leave(),
-                      icon: const Icon(Icons.call_end_rounded,
-                          color: Colors.redAccent),
-                    ),
-                  ],
+                  ),
                 ),
-                ValueListenableBuilder<Set<String>>(
-                  valueListenable: PartyVoiceService.speakingIds,
-                  builder: (c, ids, _) => ids.isEmpty
-                      ? const SizedBox.shrink()
-                      : Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '🗣️ ${ids.length} speaking…',
-                            style: const TextStyle(
-                                color: Colors.greenAccent, fontSize: 12),
-                          ),
-                        ),
+                const Spacer(),
+                ValueListenableBuilder<bool>(
+                  valueListenable: PartyVoiceService.micOn,
+                  builder: (c, on, _) => IconButton(
+                    tooltip: on ? 'Mute mic' : 'Unmute mic',
+                    // v1.2.0-WTFIX2: toast on failure — dead button never.
+                    onPressed: () async {
+                      final ok = await PartyVoiceService.toggleMic();
+                      if (!ok && c.mounted) {
+                        _snack(
+                          'Mic is off. Allow mic permission, join voice, then try again.',
+                        );
+                      }
+                    },
+                    icon: Icon(
+                      on ? Icons.mic_rounded : Icons.mic_off_rounded,
+                      color: on ? Colors.greenAccent : Colors.white54,
+                    ),
+                  ),
+                ),
+                // v1.2.0-P4: deafen — hear nobody, mic locked off.
+                ValueListenableBuilder<bool>(
+                  valueListenable: PartyVoiceService.deafened,
+                  builder: (c, deaf, _) => IconButton(
+                    tooltip: deaf ? 'Undeafen' : 'Deafen (mute all sound)',
+                    onPressed: PartyVoiceService.toggleDeafen,
+                    icon: Icon(
+                      deaf
+                          ? Icons.hearing_disabled_rounded
+                          : Icons.hearing_rounded,
+                      color: deaf ? Colors.orangeAccent : Colors.white54,
+                    ),
+                  ),
+                ),
+                if (PartyVoiceService.amHost) ...[
+                  IconButton(
+                    tooltip: 'Mute one person',
+                    onPressed: () => _showVoiceMembers(c),
+                    icon: const Icon(
+                      Icons.manage_accounts_rounded,
+                      color: Colors.white54,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Mute everyone',
+                    onPressed: () async {
+                      final ok = await PartyVoiceService.muteAll();
+                      _snack(ok ? 'Everyone muted.' : 'Mute-all failed.');
+                    },
+                    icon: const Icon(
+                      Icons.volume_off_rounded,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ],
+                IconButton(
+                  tooltip: 'Leave voice',
+                  onPressed: () => PartyVoiceService.leave(),
+                  icon: const Icon(
+                    Icons.call_end_rounded,
+                    color: Colors.redAccent,
+                  ),
                 ),
               ],
             ),
-          );
-        },
+            ValueListenableBuilder<Set<String>>(
+              valueListenable: PartyVoiceService.speakingIds,
+              builder: (c, ids, _) => ids.isEmpty
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '🗣️ ${ids.length} speaking…',
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       );
+    },
+  );
 
   Future<void> _autoVoice(WatchPartyRoom room, bool asHost) async {
     // v1.2.0-T2.8: one-tap voice sheet (consent + join together, join-muted).
     // No Settings maze. Denied/failed → party still works (soft).
+    // Phase E2: admin feature flag for voice.
+    if (!RemoteConfigService.featureEnabled('voice')) {
+      _snack('Voice is paused for fixes right now. Party still works!');
+      return;
+    }
     if (!mounted) return;
     await VoiceConsentSheet.maybeAsk(
       context: context,
@@ -550,6 +608,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   Future<void> _joinPublic(WatchPartyRoom r) async {
+    // Phase E2: admin feature flag.
+    if (!RemoteConfigService.featureEnabled('watch_party')) {
+      _snack('Watch Party is paused for fixes right now. Back soon!');
+      return;
+    }
     setState(() => _busy = true);
     final room = await WatchPartyService.joinRoom(roomId: r.roomId);
     if (mounted) setState(() => _busy = false);
@@ -565,13 +628,15 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     final nowRef = room.nowWatchingRef;
     if (nowRef != null && nowRef.isNotEmpty) {
       // ignore: unawaited_futures
-      GuestAutoOpen.handle(WatchSyncMessage(
-        mediaRef: nowRef,
-        mediaTitle: room.currentTitle,
-        positionMs: 0,
-        playing: true,
-        hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
-      ));
+      GuestAutoOpen.handle(
+        WatchSyncMessage(
+          mediaRef: nowRef,
+          mediaTitle: room.currentTitle,
+          positionMs: 0,
+          playing: true,
+          hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
       PartySession.instance.setGuestMedia(
         mediaRef: nowRef,
         mediaTitle: room.currentTitle,
@@ -588,28 +653,33 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   Widget _lockedCard(dynamic palette) => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: DizzyVoid.surface1,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: DizzyVoid.surface1,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+    ),
+    child: const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.cloud_off_rounded, color: Colors.white70),
+        SizedBox(height: 8),
+        Text(
+          'Cloud not available',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.cloud_off_rounded, color: Colors.white70),
-            SizedBox(height: 8),
-            Text('Cloud not available',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700)),
-            SizedBox(height: 4),
-            Text('Watch Party needs a cloud-enabled build. Sync and other features work offline.',
-                style: TextStyle(color: Colors.white60, fontSize: 13)),
-          ],
+        SizedBox(height: 4),
+        Text(
+          'Watch Party needs a cloud-enabled build. Sync and other features work offline.',
+          style: TextStyle(color: Colors.white60, fontSize: 13),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _actionCard({
     required dynamic palette,
@@ -618,41 +688,51 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     required String subtitle,
     required VoidCallback? onTap,
   }) => InkWell(
-        onTap: onTap,
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: palette.primaryColor, size: 30),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Text(subtitle,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12)),
-                  ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: palette.primaryColor, size: 30),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white54),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
+          const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+        ],
+      ),
+    ),
+  );
 
   Future<void> _createRoom() async {
+    // Phase E2: admin feature flag — killed → Easy English, no dead spinner.
+    if (!RemoteConfigService.featureEnabled('watch_party')) {
+      _snack('Watch Party is paused for fixes right now. Back soon!');
+      return;
+    }
     final title = TextEditingController(text: 'Dizzy Watch Party');
     final pass = TextEditingController();
     var private = false;
@@ -665,7 +745,10 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: title, decoration: const InputDecoration(labelText: 'Room title')),
+              TextField(
+                controller: title,
+                decoration: const InputDecoration(labelText: 'Room title'),
+              ),
               const SizedBox(height: 4),
               // v1.2.0-P1: no media needed — play anything after creating,
               // everyone in the room follows you automatically.
@@ -692,14 +775,19 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
                 title: const Text('This is 18+ content'),
-                subtitle: const Text('Required. Wrong marking + 3 reports hides the room.'),
+                subtitle: const Text(
+                  'Required. Wrong marking + 3 reports hides the room.',
+                ),
                 value: adult,
                 onChanged: (v) => setState(() => adult = v ?? false),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Cancel'),
+            ),
             FilledButton(
               onPressed: () => Navigator.pop(c, {
                 'title': title.text,
@@ -714,7 +802,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       ),
     );
     if (values == null) return;
-    if (values['private'] == 'true' && !WatchPartyService.validPass(values['pass']!)) {
+    if (values['private'] == 'true' &&
+        !WatchPartyService.validPass(values['pass']!)) {
       _snack('Private rooms need exactly 6 digits.');
       return;
     }
@@ -743,6 +832,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   Future<void> _joinRoom() async {
+    // Phase E2: admin feature flag.
+    if (!RemoteConfigService.featureEnabled('watch_party')) {
+      _snack('Watch Party is paused for fixes right now. Back soon!');
+      return;
+    }
     final id = TextEditingController();
     final pass = TextEditingController();
     final values = await showDialog<Map<String, String>?>(
@@ -763,8 +857,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   tooltip: 'Paste',
                   icon: const Icon(Icons.paste_rounded),
                   onPressed: () async {
-                    final data =
-                        await Clipboard.getData(Clipboard.kTextPlain);
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
                     final text = data?.text ?? '';
                     if (text.trim().isNotEmpty) {
                       id.text = PartySession.normalizeCode(text);
@@ -777,31 +870,52 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                 if (norm != v) {
                   id.value = id.value.copyWith(
                     text: norm,
-                    selection:
-                        TextSelection.collapsed(offset: norm.length),
+                    selection: TextSelection.collapsed(offset: norm.length),
                   );
                 }
               },
             ),
-            TextField(controller: pass, maxLength: 6, keyboardType: TextInputType.number, obscureText: true, decoration: const InputDecoration(labelText: 'Private pass (only if needed)')),
+            TextField(
+              controller: pass,
+              maxLength: 6,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Private pass (only if needed)',
+              ),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, {'id': PartySession.normalizeCode(id.text), 'pass': pass.text}), child: const Text('Join')),
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, {
+              'id': PartySession.normalizeCode(id.text),
+              'pass': pass.text,
+            }),
+            child: const Text('Join'),
+          ),
         ],
       ),
     );
     if (values == null) return;
     setState(() => _busy = true);
-    final room = await WatchPartyService.joinRoom(roomId: values['id']!, pass: values['pass']);
+    final room = await WatchPartyService.joinRoom(
+      roomId: values['id']!,
+      pass: values['pass'],
+    );
     if (mounted) setState(() => _busy = false);
     if (room == null) {
       // v1.2.0-P5: full rooms get their own easy message (20 max).
       final n = await WatchPartyService.roomMemberCount(values['id']!);
-      _snack((n != null && n >= 20)
-          ? 'Room is full (20 max). Ask host for a new room.'
-          : "Couldn't find this room. Check the code, ask host to resend.");
+      _snack(
+        (n != null && n >= 20)
+            ? 'Room is full (20 max). Ask host for a new room.'
+            : "Couldn't find this room. Check the code, ask host to resend.",
+      );
       return;
     }
     PartySession.instance.startAsGuest(room: room);
@@ -812,13 +926,15 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       // handle() FIRST (its same-title early-return must see pre-join state),
       // display state right after (handle sets it again on success).
       // ignore: unawaited_futures
-      GuestAutoOpen.handle(WatchSyncMessage(
-        mediaRef: nowRef,
-        mediaTitle: room.currentTitle,
-        positionMs: 0,
-        playing: true,
-        hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
-      ));
+      GuestAutoOpen.handle(
+        WatchSyncMessage(
+          mediaRef: nowRef,
+          mediaTitle: room.currentTitle,
+          positionMs: 0,
+          playing: true,
+          hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
       PartySession.instance.setGuestMedia(
         mediaRef: nowRef,
         mediaTitle: room.currentTitle,
@@ -836,9 +952,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
 
   Future<void> _reportRoom(WatchPartyRoom r) async {
     final ok = await WatchPartyService.reportRoom(r.roomId);
-    _snack(ok
-        ? 'Reported. 3+ reports hides this room for everyone.'
-        : 'Could not report. Try again.');
+    _snack(
+      ok
+          ? 'Reported. 3+ reports hides this room for everyone.'
+          : 'Could not report. Try again.',
+    );
     if (ok && mounted) {
       _lobbyFuture = null; // enough reports hide the room
       setState(() {});
@@ -851,21 +969,20 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
       context: context,
       builder: (c) => AlertDialog(
         backgroundColor: DizzyVoid.surface1,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        title: const Text('Room ready 🎉',
-            style: TextStyle(color: Colors.white)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Room ready 🎉',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
               ),
               child: Text(
                 room.roomId,
@@ -882,16 +999,16 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               room.isPrivate
                   ? 'Private room — share the 6-digit pass too.'
                   : 'Public room — code is enough, no pass.',
-              style: const TextStyle(
-                  color: Colors.white60, fontSize: 12.5),
+              style: const TextStyle(color: Colors.white60, fontSize: 12.5),
               textAlign: TextAlign.center,
             ),
             if (room.isAdult)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
-                child: Text('⚠️ 18+ room — viewer discretion advised.',
-                    style: TextStyle(
-                        color: Colors.orangeAccent, fontSize: 12)),
+                child: Text(
+                  '⚠️ 18+ room — viewer discretion advised.',
+                  style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                ),
               ),
             const SizedBox(height: 4),
             const Text(
@@ -905,22 +1022,23 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: room.roomId));
-              ScaffoldMessenger.of(c).showSnackBar(
-                const SnackBar(content: Text('Code copied.')),
-              );
+              ScaffoldMessenger.of(
+                c,
+              ).showSnackBar(const SnackBar(content: Text('Code copied.')));
             },
             child: const Text('Copy'),
           ),
           TextButton(
             onPressed: () {
-              Clipboard.setData(ClipboardData(
-                text:
-                    'Join my Watch Together: ${room.roomId} — ${room.title}',
-              ));
+              Clipboard.setData(
+                ClipboardData(
+                  text:
+                      'Join my Watch Together: ${room.roomId} — ${room.title}',
+                ),
+              );
               ScaffoldMessenger.of(c).showSnackBar(
                 const SnackBar(
-                  content:
-                      Text('Invite copied. Paste it on WhatsApp.'),
+                  content: Text('Invite copied. Paste it on WhatsApp.'),
                 ),
               );
             },
@@ -940,6 +1058,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
   }
 
   void _snack(String text) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 }

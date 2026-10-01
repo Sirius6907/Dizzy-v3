@@ -29,6 +29,9 @@ class RemoteConfigService {
 
   static String get minAppVersion => _cfg['min_app_version'] ?? '';
 
+  /// Phase E1: ISO deadline after which min_app_version becomes blocking.
+  static String get forceAfter => _cfg['force_after'] ?? '';
+
   static int get scraperCooldownDays =>
       int.tryParse(_cfg['scraper_cooldown_days'] ?? '') ?? 7;
 

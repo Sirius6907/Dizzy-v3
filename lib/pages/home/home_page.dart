@@ -18,6 +18,7 @@ import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/home/continue_watching_slider.dart';
+import 'home_notice_banner.dart';
 import 'widgets/home_glass_app_bar.dart';
 import 'widgets/home_hero_carousel.dart';
 import 'widgets/home_scroll_track.dart';
@@ -452,23 +453,26 @@ class _HomePageState extends State<HomePage> {
                 physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
-                itemCount: _sections.length + 3,
+                itemCount: _sections.length + 4,
                 itemBuilder: (context, index) {
-                  if (index == 0) {
+                  // Phase E: notice slot (update banner / announcements /
+                  // activeNotice). Renders SizedBox.shrink() when idle.
+                  if (index == 0) return const HomeNoticeBanner();
+                  if (index == 1) {
                     if (!HomePageSettings.enableSpotlight.value) {
                       return SizedBox(height: topPadding + 76);
                     }
                     return HomeHeroCarousel(movies: _featuredMovies);
                   }
-                  if (index == 1) {
+                  if (index == 2) {
                     return const ContinueWatchingSlider(typeFilter: 'main');
                   }
-                  if (index == _sections.length + 2) {
+                  if (index == _sections.length + 3) {
                     return SizedBox(
                       height: 110.0 + MediaQuery.paddingOf(context).bottom,
                     );
                   }
-                  final sectionIdx = index - 2;
+                  final sectionIdx = index - 3;
                   final isLastTwo = sectionIdx >= (_sections.length - 2);
                   return ValueListenableBuilder<bool>(
                     valueListenable: HomePageSettings.enableCalendar,

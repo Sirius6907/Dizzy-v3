@@ -139,8 +139,8 @@ begin
     where user_id = p_user_id and revoked_at is null;
   end if;
 
-  insert into admin_audit (admin_id, action, target_type, target_id, detail) values
-    (v_admin, 'ban_user', 'user', p_user_id,
+  insert into admin_audit (admin_id, action, target, detail) values
+    (v_admin, 'ban_user', p_user_id::text,
      jsonb_build_object('level', p_level, 'days', p_days, 'reason', p_reason));
   return jsonb_build_object('ok', true);
 end;
@@ -157,8 +157,8 @@ begin
   delete from user_bans where user_id = p_user_id;
   update devices set revoked_at = null, revoke_reason = null
   where user_id = p_user_id and revoke_reason = 'Account banned';
-  insert into admin_audit (admin_id, action, target_type, target_id, detail) values
-    (v_admin, 'unban_user', 'user', p_user_id, '{}'::jsonb);
+  insert into admin_audit (admin_id, action, target, detail) values
+    (v_admin, 'unban_user', p_user_id::text, '{}'::jsonb);
   return jsonb_build_object('ok', true);
 end;
 $$;
@@ -189,8 +189,8 @@ begin
   if not public.is_admin() then raise exception 'admin only'; end if;
   update user_reports set status = 'dismissed', handled_by = v_admin, handled_at = now()
   where target_id = p_target_id and status = 'open';
-  insert into admin_audit (admin_id, action, target_type, target_id, detail) values
-    (v_admin, 'dismiss_reports', 'user', p_target_id, '{}'::jsonb);
+  insert into admin_audit (admin_id, action, target, detail) values
+    (v_admin, 'dismiss_reports', p_target_id::text, '{}'::jsonb);
   return jsonb_build_object('ok', true);
 end;
 $$;
@@ -249,8 +249,8 @@ begin
     update devices set revoked_at = null, revoke_reason = null
     where user_id = v_row.user_id and revoke_reason = 'Account banned';
   end if;
-  insert into admin_audit (admin_id, action, target_type, target_id, detail) values
-    (v_admin, 'appeal_decide', 'appeal', p_appeal_id,
+  insert into admin_audit (admin_id, action, target, detail) values
+    (v_admin, 'appeal_decide', p_appeal_id::text,
      jsonb_build_object('approve', p_approve, 'note', p_note));
   return jsonb_build_object('ok', true);
 end;
