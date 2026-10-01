@@ -31,6 +31,15 @@ class RemoteConfigService {
   static String get minAppVersion => _cfg['min_app_version'] ?? '';
 
   /// Phase E1: ISO deadline after which min_app_version becomes blocking.
+  /// Phase L2: fleet heartbeat cadence in seconds. Clamped so a typo'd
+  /// config can neither spam the server (60 = server floor) nor freeze
+  /// presence (3600 = staleness ceiling); missing key = 5 minutes.
+  static int get heartbeatIntervalSeconds {
+    final raw = int.tryParse(_cfg['heartbeat_interval_s'] ?? '');
+    if (raw == null || raw < 60) return 300;
+    return raw > 3600 ? 3600 : raw;
+  }
+
   static String get forceAfter => _cfg['force_after'] ?? '';
 
   /// Phase I1: staged-rollout percent (0..100). Missing key → 100 (offer to

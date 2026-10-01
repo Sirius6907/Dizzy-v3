@@ -11,6 +11,7 @@ import '../../services/books/continue_reading_service.dart';
 import '../../services/books/reader_settings.dart';
 import '../../services/window/window_service.dart';
 import '../../services/discord/discord_rpc_service.dart';
+import '../../services/heartbeat/heartbeat_service.dart';
 
 class PdfReaderPage extends StatefulWidget {
   final File file;
@@ -38,6 +39,8 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
   @override
   void initState() {
     super.initState();
+    // Phase L2: reading presence for the fleet view.
+    HeartbeatService.instance.noteReading();
     _currentPage = widget.initialPage;
     _pdfController = PdfViewerController();
     DiscordRpcService.instance.setReadingBook(
@@ -51,6 +54,8 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
 
   @override
   void dispose() {
+    // Leaving the reader ends the reading signal.
+    HeartbeatService.instance.clearReading();
     _controlsTimer?.cancel();
     DiscordRpcService.instance.clearToIdle();
     super.dispose();

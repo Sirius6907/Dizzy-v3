@@ -19,6 +19,8 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
+// MediaStyle lives in androidx.media, not androidx.core.
+import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.core.app.ServiceCompat
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -247,7 +249,7 @@ class MediaPlaybackService : android.app.Service() {
             .addAction(actionButton(android.R.drawable.ic_media_ff, "ffwd", REQ_FFWD))
             .addAction(actionButton(android.R.drawable.ic_media_next, "next", REQ_NEXT))
             .setStyle(
-                NotificationCompat.MediaStyle()
+                MediaStyle()
                     .setMediaSession(session?.sessionToken)
                     .setShowActionsInCompactView(0, 2, 4)
             )
@@ -404,7 +406,7 @@ class MediaPlaybackService : android.app.Service() {
             MethodChannel(e.dartExecutor.binaryMessenger, CH)
                 .invokeMethod(method, arg, object : MethodChannel.Result {
                     override fun success(result: Any?) {}
-                    override fun error(code: String?, msg: String?, details: Any?) {}
+                    override fun error(code: String, msg: String?, details: Any?) {}
                     override fun notImplemented() {}
                 })
         }
