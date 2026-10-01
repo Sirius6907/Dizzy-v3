@@ -96,6 +96,39 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Staged-update install (Phase I2): hand a locally verified APK to the
+        // system installer through the OTA plugin's own FileProvider (already
+        // registered in the manifest) with an explicit read grant.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/install").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "installApk" -> {
+                    try {
+                        val path = call.argument<String>("path").orEmpty()
+                        val file = java.io.File(path)
+                        if (path.isEmpty() || !file.exists()) {
+                            result.success(false)
+                        } else {
+                            val uri = androidx.core.content.FileProvider.getUriForFile(
+                                this,
+                                "$packageName.ota_update_provider",
+                                file
+                            )
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, "application/vnd.android.package-archive")
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            startActivity(intent)
+                            result.success(true)
+                        }
+                    } catch (e: Exception) {
+                        result.error("INSTALL_ERROR", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         // Signing-cert channel: the updater reads this install's own cert fingerprint
         // and picks the matching GitHub asset (release-key vs legacy-key), so every
         // old install can update IN PLACE — no uninstall ever needed.

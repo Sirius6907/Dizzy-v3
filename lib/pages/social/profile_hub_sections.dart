@@ -12,6 +12,11 @@ import 'package:dizzy/services/cloud/cloud_client.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
 import 'package:dizzy/services/device/device_id_service.dart';
 import 'package:dizzy/services/guide/guide_service.dart';
+import 'package:dizzy/services/updater/app_updater_service.dart';
+import 'package:dizzy/services/updater/update_prefs.dart';
+import 'package:dizzy/services/updater/update_state_machine.dart';
+import 'package:dizzy/services/updater/update_stager.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../settings/about_settings_page.dart';
 import '../settings/appearance_settings_page.dart';
@@ -94,7 +99,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
       final rows = await CloudClient.db
           .from('devices')
           .select(
-              'device_id,device_code,platform,app_version,last_seen_at,revoked_at')
+            'device_id,device_code,platform,app_version,last_seen_at,revoked_at',
+          )
           .eq('user_id', uid)
           .order('last_seen_at', ascending: false)
           .limit(20);
@@ -174,7 +180,9 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   padding: EdgeInsets.symmetric(vertical: DizzySpace.lg),
                   child: Center(
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: DizzyGlow.beam),
+                      strokeWidth: 2,
+                      color: DizzyGlow.beam,
+                    ),
                   ),
                 )
               else if (_devices.isEmpty)
@@ -197,12 +205,15 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                       final d = _devices[i];
                       final mine = _isThisDevice(d);
                       final revoked = d['revoked_at'] != null;
-                      final seen =
-                          DateTime.tryParse(d['last_seen_at']?.toString() ?? '');
+                      final seen = DateTime.tryParse(
+                        d['last_seen_at']?.toString() ?? '',
+                      );
                       return DizzyTactileCard(
                         margin: const EdgeInsets.only(bottom: DizzySpace.sm),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -221,7 +232,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                                     children: [
                                       Text(
                                         DeviceIdService.displayCode(
-                                            (d['device_code'] ?? '').toString()),
+                                          (d['device_code'] ?? '').toString(),
+                                        ),
                                         style: const TextStyle(
                                           color: DizzyVoid.bone,
                                           fontWeight: FontWeight.bold,
@@ -240,7 +252,9 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                                     '${d['app_version'] ?? 'unknown'}'
                                     '${seen != null ? ' · last seen ${_ago(seen)}' : ''}',
                                     style: const TextStyle(
-                                        color: DizzyVoid.ash, fontSize: 11),
+                                      color: DizzyVoid.ash,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -248,8 +262,9 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                             if (!mine && !revoked)
                               DizzyTactileButton(
                                 height: 30,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
                                 onTap: () async {
                                   final ok = await DizzyDialogs.confirm(
                                     ctx,
@@ -264,21 +279,25 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                                     await CloudClient.db
                                         .from('devices')
                                         .update({
-                                          'revoked_at':
-                                              DateTime.now().toIso8601String(),
+                                          'revoked_at': DateTime.now()
+                                              .toIso8601String(),
                                         })
                                         .eq('device_id', d['device_id']);
                                     if (!ctx.mounted) return;
-                                    DizzyNotify.show(ctx, 'Device removed.',
-                                        tone: NotifyTone.success);
+                                    DizzyNotify.show(
+                                      ctx,
+                                      'Device removed.',
+                                      tone: NotifyTone.success,
+                                    );
                                     await _loadDevices();
                                     if (mounted) setState(() {});
                                   } catch (_) {
                                     if (!ctx.mounted) return;
                                     DizzyNotify.show(
-                                        ctx,
-                                        "Couldn't remove that device — check net.",
-                                        tone: NotifyTone.warn);
+                                      ctx,
+                                      "Couldn't remove that device — check net.",
+                                      tone: NotifyTone.warn,
+                                    );
                                   }
                                 },
                                 child: const Text(
@@ -304,17 +323,17 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
   }
 
   static Widget _chip(String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          color: color.withValues(alpha: 0.15),
-          border: Border.fromBorderSide(BorderSide(color: color, width: 0.5)),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(6),
+      color: color.withValues(alpha: 0.15),
+      border: Border.fromBorderSide(BorderSide(color: color, width: 0.5)),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+    ),
+  );
 
   static String _ago(DateTime t) {
     final diff = DateTime.now().difference(t);
@@ -329,8 +348,10 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
   void _showToggleSheet({
     required String title,
     required String line,
-    required List<({String label, String hint, bool value, void Function(bool) set})>
-        toggles,
+    required List<
+      ({String label, String hint, bool value, void Function(bool) set})
+    >
+    toggles,
   }) {
     showModalBottomSheet(
       context: context,
@@ -354,18 +375,22 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                 ),
               ),
               const SizedBox(height: DizzySpace.xs),
-              Text(line,
-                  style: const TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+              Text(
+                line,
+                style: const TextStyle(color: DizzyVoid.ash, fontSize: 13),
+              ),
               const SizedBox(height: DizzySpace.sm),
               for (final t in toggles)
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(t.label,
-                      style: const TextStyle(
-                          color: DizzyVoid.bone, fontSize: 14)),
-                  subtitle: Text(t.hint,
-                      style: const TextStyle(
-                          color: DizzyVoid.ash, fontSize: 11)),
+                  title: Text(
+                    t.label,
+                    style: const TextStyle(color: DizzyVoid.bone, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    t.hint,
+                    style: const TextStyle(color: DizzyVoid.ash, fontSize: 11),
+                  ),
                   value: t.value,
                   activeThumbColor: DizzyGlow.beam,
                   onChanged: (v) {
@@ -404,39 +429,318 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                 Text(
                   title,
                   style: const TextStyle(
-                      color: DizzyVoid.bone,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700),
+                    color: DizzyVoid.bone,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          color: DizzyVoid.ash, fontSize: 11.5)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: DizzyVoid.ash,
+                      fontSize: 11.5,
+                    ),
+                  ),
                 ],
               ],
             ),
           ),
           trailing ??
-              const Icon(Icons.chevron_right_rounded,
-                  color: DizzyVoid.ash, size: 20),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DizzyVoid.ash,
+                size: 20,
+              ),
         ],
       ),
     );
   }
 
   Widget _groupLabel(String text) => Padding(
-        padding: const EdgeInsets.only(top: DizzySpace.sm, bottom: DizzySpace.xs),
+    padding: const EdgeInsets.only(top: DizzySpace.sm, bottom: DizzySpace.xs),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: DizzyVoid.ash,
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.1,
+      ),
+    ),
+  );
+
+  // ── Phase I2/I3: staged-update row + What's new ──────────────────────────
+
+  static String _easyFailReason(UpdateFailReason r) {
+    switch (r) {
+      case UpdateFailReason.checksumFail:
+        return 'The file came out damaged — tap to download it again.';
+      case UpdateFailReason.installAbort:
+        return 'The install was cancelled.';
+      case UpdateFailReason.wifiBlocked:
+        return 'Waiting for Wi-Fi (you turned on Wi-Fi-only downloads).';
+      case UpdateFailReason.downloadFail:
+      case UpdateFailReason.none:
+        return 'The download stopped. Check your connection and try again.';
+    }
+  }
+
+  Future<void> _installStaged() async {
+    try {
+      final f = await UpdateStager.fileFor(UpdateStateMachine.targetVersion);
+      await UpdateStager.installApk(f.path);
+    } catch (e) {
+      debugPrint('[Hub] staged install failed: $e');
+    }
+  }
+
+  Future<void> _retryStage() async {
+    try {
+      final info = await AppUpdaterService().checkForUpdates(
+        ignoreDismissed: true,
+      );
+      if (info == null) return;
+      await UpdateStager.stage(
+        info.downloadUrl,
+        info.latestVersion,
+        expectedSha256: info.sha256,
+        requireWifi: await UpdatePrefs.wifiOnly,
+      );
+    } catch (e) {
+      debugPrint('[Hub] staged retry failed: $e');
+    }
+  }
+
+  Widget _pill(
+    String label, {
+    required VoidCallback onTap,
+    bool primary = true,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DizzySpace.md,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: primary ? DizzyGlow.volt : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: primary ? null : Border.all(color: DizzyGlow.gold),
+        ),
         child: Text(
-          text,
-          style: const TextStyle(
-            color: DizzyVoid.ash,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.1,
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: primary ? DizzyVoid.voidA : DizzyGlow.gold,
           ),
         ),
-      );
+      ),
+    );
+  }
+
+  /// Live row for the staged-update state machine (plan §2d).
+  Widget _updateStatusRow(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        UpdateStateMachine.state,
+        UpdateStateMachine.progress,
+      ]),
+      builder: (context, _) {
+        final s = UpdateStateMachine.state.value;
+        if (s == UpdateRunState.idle || s == UpdateRunState.done) {
+          return const SizedBox.shrink();
+        }
+
+        final progress = UpdateStateMachine.progress.value;
+        var title = '';
+        var sub = '';
+        var actions = <Widget>[];
+        var accent = DizzyGlow.volt;
+
+        switch (s) {
+          case UpdateRunState.downloading:
+            title = 'Downloading update…';
+            sub =
+                '${(progress * 100).round()}% · keeps going in the background';
+            accent = DizzyGlow.beam;
+            break;
+          case UpdateRunState.ready:
+            title = 'Update ready to install';
+            sub = 'v${UpdateStateMachine.targetVersion} downloaded and checked';
+            accent = DizzyGlow.volt;
+            actions = [
+              _pill('Install now', onTap: _installStaged),
+              const SizedBox(width: 8),
+              _pill(
+                'Not now',
+                onTap: () =>
+                    UpdateStager.discard(UpdateStateMachine.targetVersion),
+                primary: false,
+              ),
+            ];
+            break;
+          case UpdateRunState.installing:
+            title = 'Opening the installer…';
+            sub = 'Follow the prompt to finish updating.';
+            accent = DizzyGlow.gold;
+            break;
+          case UpdateRunState.failed:
+            title = 'Update didn\'t finish';
+            sub = _easyFailReason(UpdateStateMachine.reason);
+            accent = DizzyGlow.red;
+            actions = [
+              _pill('Try again', onTap: _retryStage),
+              const SizedBox(width: 8),
+              _pill(
+                'Discard',
+                onTap: () => UpdateStateMachine.set(UpdateRunState.idle),
+                primary: false,
+              ),
+            ];
+            break;
+          case UpdateRunState.idle:
+          case UpdateRunState.done:
+            return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: DizzySpace.sm),
+          padding: const EdgeInsets.all(DizzySpace.md),
+          decoration: BoxDecoration(
+            color: DizzyVoid.surface1.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(DizzyRadius.lg),
+            border: Border.all(color: accent.withValues(alpha: 0.45)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    s == UpdateRunState.failed
+                        ? Icons.error_outline_rounded
+                        : Icons.system_update_rounded,
+                    size: 16,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                sub,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              if (s == UpdateRunState.downloading) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: progress <= 0 ? null : progress,
+                    minHeight: 6,
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    color: accent,
+                  ),
+                ),
+              ],
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, children: actions),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// I3: "What's new" — release notes cached at check time, hidden once that
+  /// version is the one installed.
+  Widget _whatsNewRow(BuildContext context) {
+    return FutureBuilder<({String version, String notes, String date})?>(
+      future: () async {
+        final rel = await UpdatePrefs.lastRelease();
+        if (rel == null) return null;
+        final pkg = await PackageInfo.fromPlatform();
+        return rel.version == pkg.version ? null : rel;
+      }(),
+      builder: (context, snap) {
+        final rel = snap.data;
+        if (rel == null) return const SizedBox.shrink();
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          leading: const Icon(
+            Icons.new_releases_rounded,
+            size: 18,
+            color: DizzyGlow.gold,
+          ),
+          title: Text(
+            'What\'s new in v${rel.version}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            'See what changed before you update',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 12,
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white.withValues(alpha: 0.4),
+          ),
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: DizzyVoid.surface1,
+              title: Text('What\'s new in v${rel.version}'),
+              content: SingleChildScrollView(
+                child: Text(
+                  rel.notes.isEmpty
+                      ? 'No release notes for this version.'
+                      : rel.notes,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Got it'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -456,6 +760,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           subtitle: 'Check for the latest Dizzy version',
           onTap: () => _go(context, const UpdatesSettingsPage()),
         ),
+        _updateStatusRow(context),
+        _whatsNewRow(context),
         _groupLabel('PING ME'),
         _sectionCard(
           icon: Icons.notifications_none_rounded,
@@ -493,7 +799,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           subtitle: 'Music, downloads & voice when Dizzy is minimized',
           onTap: () => _showToggleSheet(
             title: 'Background',
-            line: 'All ON keeps things alive when you switch apps. Battery '
+            line:
+                'All ON keeps things alive when you switch apps. Battery '
                 'saver settings on your phone may still pause them.',
             toggles: [
               (
@@ -544,12 +851,16 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           title: 'Help',
           subtitle: 'Show the guide cards again',
           onTap: () async {
-            await GuideService.resetAll(
-              [...GuideService.allKeys, GuideService.onboardingKey],
-            );
+            await GuideService.resetAll([
+              ...GuideService.allKeys,
+              GuideService.onboardingKey,
+            ]);
             if (context.mounted) {
-              DizzyNotify.show(context, 'Guides will show again as you go.',
-                  tone: NotifyTone.success);
+              DizzyNotify.show(
+                context,
+                'Guides will show again as you go.',
+                tone: NotifyTone.success,
+              );
             }
           },
         ),
@@ -568,15 +879,20 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   subtitle: 'Open the fleet dashboard',
                   onTap: () async {
                     final uri = Uri.parse(
-                        'https://thriving-salamander-3620d1.netlify.app');
+                      'https://thriving-salamander-3620d1.netlify.app',
+                    );
                     try {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     } catch (_) {
                       if (context.mounted) {
                         DizzyNotify.show(
-                            context, "Couldn't open the dashboard — check net.",
-                            tone: NotifyTone.warn);
+                          context,
+                          "Couldn't open the dashboard — check net.",
+                          tone: NotifyTone.warn,
+                        );
                       }
                     }
                   },
@@ -619,12 +935,17 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   DizzyTactileCard(
                     margin: const EdgeInsets.only(bottom: DizzySpace.sm),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.notifications_active_outlined,
-                            color: DizzyGlow.gold, size: 20),
+                        const Icon(
+                          Icons.notifications_active_outlined,
+                          color: DizzyGlow.gold,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -633,23 +954,30 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                               Text(
                                 a.title,
                                 style: const TextStyle(
-                                    color: DizzyVoid.bone,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700),
+                                  color: DizzyVoid.bone,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                               if (a.body.isNotEmpty) ...[
                                 const SizedBox(height: 2),
-                                Text(a.body,
-                                    style: const TextStyle(
-                                        color: DizzyVoid.ash,
-                                        fontSize: 12)),
+                                Text(
+                                  a.body,
+                                  style: const TextStyle(
+                                    color: DizzyVoid.ash,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ],
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              size: 16, color: DizzyVoid.ash),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: DizzyVoid.ash,
+                          ),
                           onPressed: () => AnnouncementService.dismiss(a.id),
                         ),
                       ],
@@ -687,13 +1015,17 @@ class ProfileHubAdminBadge extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               color: DizzyGlow.gold.withValues(alpha: 0.15),
               border: const Border.fromBorderSide(
-                  BorderSide(color: DizzyGlow.gold, width: 0.5)),
+                BorderSide(color: DizzyGlow.gold, width: 0.5),
+              ),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.verified_user_rounded,
-                    size: 12, color: DizzyGlow.gold),
+                Icon(
+                  Icons.verified_user_rounded,
+                  size: 12,
+                  color: DizzyGlow.gold,
+                ),
                 SizedBox(width: 4),
                 Text(
                   'ADMIN',

@@ -9,6 +9,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../cloud/remote_config_service.dart';
+import '../device/device_identity_v2.dart';
+import 'update_policy.dart';
+
 class AppUpdaterService {
   static const String githubRepo = 'Sirius6907/Dizzy-v3';
   static const String githubApiUrl =
@@ -16,8 +20,9 @@ class AppUpdaterService {
   static const String _keyDismissedVersion = 'dismissed_update_version';
 
   /// Channel to read THIS install's own signing-cert fingerprint (MainActivity).
-  static const MethodChannel _signingChannel =
-      MethodChannel('com.sirius6907.dizzyv3/signing');
+  static const MethodChannel _signingChannel = MethodChannel(
+    'com.sirius6907.dizzyv3/signing',
+  );
 
   /// Release-key fingerprint (CN=Sirius) — every release since v1.1.7.
   static const String releaseCertSha256 =
@@ -72,14 +77,32 @@ class AppUpdaterService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
+      // Phase I1: beta opt-in reads the releases list (prereleases included);
+      // stable keeps the classic /releases/latest endpoint (prereleases are
+      // excluded by GitHub itself there).
+      final channel = RemoteConfigService.updateChannel;
+      final endpoint = channel == UpdatePolicy.betaChannel
+          ? 'https://api.github.com/repos/$githubRepo/releases?per_page=5'
+          : githubApiUrl;
+
       // v1.1.9 (Task 17): 8s cap — no update-check hang on dead networks.
-      final response = await http.get(
-        Uri.parse(githubApiUrl),
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      ).timeout(const Duration(seconds: 8));
+      final response = await http
+          .get(
+            Uri.parse(endpoint),
+            headers: {'Accept': 'application/vnd.github.v3+json'},
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final decoded = json.decode(response.body);
+        // /releases/latest → object; /releases → array (first is newest).
+        final Map<String, dynamic> data = decoded is List
+            ? (decoded.isNotEmpty
+                  ? Map<String, dynamic>.from(decoded.first as Map)
+                  : <String, dynamic>{})
+            : Map<String, dynamic>.from(decoded as Map);
+        if (data.isEmpty || data['tag_name'] == null) return null;
+
         final latestVersion = (data['tag_name'] as String).replaceFirst(
           'v',
           '',
@@ -90,7 +113,30 @@ class AppUpdaterService {
 
         if (_isNewerVersion(currentVersion, latestVersion)) {
           if (!ignoreDismissed && await isVersionDismissed(latestVersion)) {
-            debugPrint('[AppUpdaterService] Update $latestVersion is newer but was dismissed by user.');
+            debugPrint(
+              '[AppUpdaterService] Update $latestVersion is newer but was dismissed by user.',
+            );
+            return null;
+          }
+
+          // Phase I1 — server rollout + channel gate (soft offer only; the
+          // min_app_version force path in UpdateGate is never gated by these).
+          // Bucket uses the STABLE hwid so reinstalls keep their bucket.
+          final ident = await DeviceIdentityV2.stableHwid();
+          final isPrerelease = data['prerelease'] == true;
+          final offered = UpdatePolicy.shouldOffer(
+            stableHwid: ident.hash,
+            rolloutPercent: RemoteConfigService.rolloutPercent,
+            channel: RemoteConfigService.updateChannel,
+            isPrerelease: isPrerelease,
+          );
+          if (!offered) {
+            debugPrint(
+              '[AppUpdaterService] $latestVersion held back by rollout/channel gate '
+              '(bucket=${UpdatePolicy.hashBucket(ident.hash)}, '
+              'rollout=${RemoteConfigService.rolloutPercent}%, '
+              'channel=${RemoteConfigService.updateChannel}, prerelease=$isPrerelease).',
+            );
             return null;
           }
 
@@ -106,7 +152,9 @@ class AppUpdaterService {
           }
           final legacyChannel = cert == legacyCertSha256;
           if (legacyChannel) {
-            debugPrint('[AppUpdaterService] Legacy-signed install ($cert) — using legacy asset channel.');
+            debugPrint(
+              '[AppUpdaterService] Legacy-signed install ($cert) — using legacy asset channel.',
+            );
           }
 
           final downloadUrl = _findAssetForPlatform(
@@ -185,7 +233,9 @@ class AppUpdaterService {
     required bool legacyChannel,
   }) {
     var apks = assets
-        .where((a) => ((a['name'] as String?) ?? '').toLowerCase().endsWith('.apk'))
+        .where(
+          (a) => ((a['name'] as String?) ?? '').toLowerCase().endsWith('.apk'),
+        )
         .toList();
 
     if (legacyChannel) {
@@ -195,7 +245,9 @@ class AppUpdaterService {
       if (legacy.isNotEmpty) {
         apks = legacy;
       } else {
-        debugPrint('[AppUpdaterService] No legacy assets in this release yet — falling back to normal channel.');
+        debugPrint(
+          '[AppUpdaterService] No legacy assets in this release yet — falling back to normal channel.',
+        );
       }
     } else {
       apks = apks
@@ -240,13 +292,24 @@ class AppUpdaterService {
   }
 
   /// Android: match arm64-v8a, armeabi-v7a, x86_64, or fall back to universal
-  String? _findAndroidAsset(List assets, Abi? abi, {bool legacyChannel = false}) {
+  String? _findAndroidAsset(
+    List assets,
+    Abi? abi, {
+    bool legacyChannel = false,
+  }) {
     // Determine architecture keywords to search for
     List<String> archKeywords = [];
     if (abi == Abi.androidArm64) {
       archKeywords = ['arm64-v8a', 'arm64_v8a', 'arm64', 'v8a', 'aarch64'];
     } else if (abi == Abi.androidArm) {
-      archKeywords = ['armeabi-v7a', 'armeabi_v7a', 'armeabi', 'v7a', 'armv7', 'arm-v7a'];
+      archKeywords = [
+        'armeabi-v7a',
+        'armeabi_v7a',
+        'armeabi',
+        'v7a',
+        'armv7',
+        'arm-v7a',
+      ];
     } else if (abi == Abi.androidX64) {
       archKeywords = ['x86_64', 'x86-64', 'x64'];
     } else if (abi == Abi.androidIA32) {
@@ -268,16 +331,25 @@ class AppUpdaterService {
   String? _findWindowsAsset(List assets, Abi? abi) {
     final windowsAssets = assets.where((a) {
       final name = (a['name'] as String).toLowerCase();
-      return (name.contains('windows') || name.contains('win') || name.contains('setup') || name.endsWith('.exe')) &&
-          (name.endsWith('.exe') || name.endsWith('.msix') || name.endsWith('.zip'));
+      return (name.contains('windows') ||
+              name.contains('win') ||
+              name.contains('setup') ||
+              name.endsWith('.exe')) &&
+          (name.endsWith('.exe') ||
+              name.endsWith('.msix') ||
+              name.endsWith('.zip'));
     }).toList();
 
     if (windowsAssets.isEmpty) return null;
 
     // 1. Look for installer .exe matching setup/installer
     final setupExe = windowsAssets
-        .where((a) => (a['name'] as String).toLowerCase().endsWith('.exe') &&
-            ((a['name'] as String).toLowerCase().contains('setup') || (a['name'] as String).toLowerCase().contains('install')))
+        .where(
+          (a) =>
+              (a['name'] as String).toLowerCase().endsWith('.exe') &&
+              ((a['name'] as String).toLowerCase().contains('setup') ||
+                  (a['name'] as String).toLowerCase().contains('install')),
+        )
         .firstOrNull;
     if (setupExe != null) {
       debugPrint('Selected Windows Setup installer: ${setupExe['name']}');
@@ -347,7 +419,10 @@ class AppUpdaterService {
   String? _findMacOSAsset(List assets, Abi? abi) {
     final macAssets = assets.where((a) {
       final name = (a['name'] as String).toLowerCase();
-      return name.contains('mac') || name.contains('darwin') || name.endsWith('.dmg') || name.endsWith('.pkg');
+      return name.contains('mac') ||
+          name.contains('darwin') ||
+          name.endsWith('.dmg') ||
+          name.endsWith('.pkg');
     }).toList();
 
     if (macAssets.isNotEmpty) {

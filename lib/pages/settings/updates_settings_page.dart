@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/updater/app_updater_service.dart';
+import '../../services/updater/update_prefs.dart';
+import '../../services/updater/update_state_machine.dart';
+import '../../services/updater/update_stager.dart';
 import '../../widgets/updater/release_notes_studio.dart';
 
 class UpdatesSettingsPage extends StatefulWidget {
@@ -13,6 +16,54 @@ class UpdatesSettingsPage extends StatefulWidget {
 
 class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
   bool _isCheckingForUpdates = false;
+  bool _autoDownload = false;
+  bool _wifiOnly = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStagingPrefs();
+  }
+
+  Future<void> _loadStagingPrefs() async {
+    final auto = await UpdatePrefs.autoDownload;
+    final wifi = await UpdatePrefs.wifiOnly;
+    if (mounted) {
+      setState(() {
+        _autoDownload = auto;
+        _wifiOnly = wifi;
+      });
+    }
+  }
+
+  /// I2: silent staged download honouring the Wi-Fi-only gate.
+  Future<void> _stageNow() async {
+    try {
+      final info = await AppUpdaterService().checkForUpdates(
+        ignoreDismissed: true,
+      );
+      if (info == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dizzy is up to date!'),
+              backgroundColor: Color(0xFF7C5CFF),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      await UpdateStager.stage(
+        info.downloadUrl,
+        info.latestVersion,
+        expectedSha256: info.sha256,
+        requireWifi: _wifiOnly,
+      );
+    } catch (e) {
+      debugPrint('[UpdatesPage] stage failed: $e');
+    }
+  }
 
   Future<void> _checkForUpdates(BuildContext context) async {
     setState(() {
@@ -99,9 +150,15 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
               FutureBuilder<PackageInfo>(
                 future: PackageInfo.fromPlatform(),
                 builder: (context, snapshot) {
-                  final version = snapshot.hasData ? snapshot.data!.version : '1.1.3';
-                  final buildNumber = snapshot.hasData ? snapshot.data!.buildNumber : '14';
-                  final appName = snapshot.hasData ? snapshot.data!.appName : 'Dizzy';
+                  final version = snapshot.hasData
+                      ? snapshot.data!.version
+                      : '1.1.3';
+                  final buildNumber = snapshot.hasData
+                      ? snapshot.data!.buildNumber
+                      : '14';
+                  final appName = snapshot.hasData
+                      ? snapshot.data!.appName
+                      : 'Dizzy';
 
                   return Container(
                     padding: const EdgeInsets.all(18),
@@ -121,7 +178,9 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF7C5CFF).withValues(alpha: 0.14),
+                                color: const Color(
+                                  0xFF7C5CFF,
+                                ).withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -174,7 +233,9 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                                   )
                                 : const Icon(Icons.refresh_rounded, size: 18),
                             label: Text(
-                              _isCheckingForUpdates ? 'Checking for updates...' : 'Check for Updates',
+                              _isCheckingForUpdates
+                                  ? 'Checking for updates...'
+                                  : 'Check for Updates',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13.5,
@@ -199,6 +260,142 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
 
               const SizedBox(height: 24),
 
+              // Phase I2: silent staged download controls.
+              Text(
+                'SMART DOWNLOAD',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.35),
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: DizzyVoid.surface1,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: _autoDownload,
+                      onChanged: (v) {
+                        setState(() => _autoDownload = v);
+                        UpdatePrefs.setAutoDownload(v);
+                      },
+                      title: const Text(
+                        'Download updates automatically',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'We fetch the update in the background — you just tap Install.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.45),
+                        ),
+                      ),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: _wifiOnly,
+                      onChanged: !_autoDownload
+                          ? null
+                          : (v) {
+                              setState(() => _wifiOnly = v);
+                              UpdatePrefs.setWifiOnly(v);
+                            },
+                      title: const Text(
+                        'Wi-Fi only',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Never download on mobile data.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.45),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ValueListenableBuilder<UpdateRunState>(
+                        valueListenable: UpdateStateMachine.state,
+                        builder: (context, s, _) {
+                          if (s == UpdateRunState.downloading) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: ValueListenableBuilder<double>(
+                                valueListenable: UpdateStateMachine.progress,
+                                builder: (context, p, _) => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Downloading… ${(p * 100).round()}%',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(999),
+                                      child: LinearProgressIndicator(
+                                        value: p <= 0 ? null : p,
+                                        minHeight: 5,
+                                        backgroundColor: Colors.white
+                                            .withValues(alpha: 0.08),
+                                        color: const Color(0xFF7C5CFF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _stageNow,
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Download update now'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7C5CFF),
+                    side: const BorderSide(color: Color(0xFF7C5CFF)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               // Release Channel Info
               Text(
                 'RELEASE CHANNELS',
@@ -214,13 +411,15 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
               _buildInfoTile(
                 icon: Icons.verified_rounded,
                 title: 'Official Stable Channel',
-                subtitle: 'Direct GitHub release distribution with automated checksum verification.',
+                subtitle:
+                    'Direct GitHub release distribution with automated checksum verification.',
               ),
               const SizedBox(height: 10),
               _buildInfoTile(
                 icon: Icons.security_rounded,
                 title: 'Seamless In-App Patching',
-                subtitle: 'Downloads and applies executable updates directly without manual file downloads.',
+                subtitle:
+                    'Downloads and applies executable updates directly without manual file downloads.',
               ),
             ],
           ),
@@ -239,9 +438,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
       decoration: BoxDecoration(
         color: DizzyVoid.surface1,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [

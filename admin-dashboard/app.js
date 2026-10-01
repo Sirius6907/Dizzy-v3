@@ -785,6 +785,8 @@ async function loadCfg() {
     const m = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
     $('cfgMinVer').value = m.min_app_version || '';
     $('cfgForceAfter').value = m.force_after || '';
+    $('cfgRollout').value = m.rollout_percent || '100';
+    $('cfgChannel').value = (m.update_channel === 'beta') ? 'beta' : 'stable';
     $('cfgFeatures').value = pretty(m.features);
     $('cfgNotice').value = pretty(m.notice);
     let feat = {};
