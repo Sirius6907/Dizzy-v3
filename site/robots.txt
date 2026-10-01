@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://merry-babka-47374d.netlify.app/sitemap.xml
