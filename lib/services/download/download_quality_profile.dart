@@ -30,9 +30,18 @@ import 'download_network.dart';
 
 /// The three rungs, named for the link they belong to.
 enum DownloadQualityProfile {
-  wifi1080(label: 'WiFi — best quality', choice: QualityChoice.q1080),
-  data720(label: 'Mobile data — balanced', choice: QualityChoice.q720),
-  saver480(label: 'Save data — small file', choice: QualityChoice.q480);
+  wifi1080(
+    label: 'WiFi — best quality',
+    choice: QualityChoice.q1080,
+  ),
+  data720(
+    label: 'Mobile data — balanced',
+    choice: QualityChoice.q720,
+  ),
+  saver480(
+    label: 'Save data — small file',
+    choice: QualityChoice.q480,
+  );
 
   /// Easy English name for the settings row. No codec names.
   final String label;
@@ -112,5 +121,6 @@ abstract final class DownloadQualityPolicy {
   static QualityChoice choiceFor({
     required DownloadNetwork network,
     required DownloadQualityOverride override,
-  }) => pick(network: network, override: override).choice;
+  }) =>
+      pick(network: network, override: override).choice;
 }
