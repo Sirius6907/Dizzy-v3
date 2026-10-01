@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -55,8 +57,11 @@ import './pages/common/device_revoked_screen.dart';
 import './pages/common/ban_notice_screen.dart';
 import './pages/common/update_required_screen.dart';
 import './services/moderation/ban_service.dart';
+import './services/messaging/dm_outbox.dart';
+import './services/messaging/oem_kill_detector.dart';
 import './services/notification/notification_service.dart';
 import './services/notification/notification_triggers.dart';
+import './services/social/dizzy_social_service.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
 import './pages/search/universal_spotlight_modal.dart';
@@ -221,6 +226,84 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
   bool _revokedShown = false;
   bool _updateBlockedShown = false;
 
+  /// Phase K4: app came back to the foreground → flush the DM outbox now
+  /// instead of waiting for the scheduler tick (poll-on-resume).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(DmOutbox.flush(send: _sendOutboxEntry));
+      unawaited(AnnouncementService.refresh());
+    }
+  }
+
+  static Future<bool> _sendOutboxEntry(OutboxEntry e) =>
+      DizzySocialService.sendDirectMessage(
+        recipientUid: e.recipientUid,
+        body: e.body,
+      );
+
+  /// Phase K4: outbox is the only part of this that can lose data, so it
+  /// is loaded and scheduled before anything else at boot.
+  Future<void> _bootOutbox() async {
+    await DmOutbox.load();
+    DmOutbox.startScheduler(_sendOutboxEntry);
+    unawaited(OemKillDetector.markAlive());
+    Timer.periodic(const Duration(minutes: 1), (_) {
+      unawaited(OemKillDetector.markAlive());
+    });
+    final suggest = await OemKillDetector.considerBoot(
+      pendingCount: DmOutbox.entries.value.length,
+    );
+    if (!suggest || !mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showBatteryGuide();
+    });
+  }
+
+  /// Easy English only: no "OEM", no "whitelist", no technical words.
+  void _showBatteryGuide() {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+    showDialog<void>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        title: const Text('Some messages did not send'),
+        content: const Text(
+          'It looks like your phone stopped Dizzy while it was still '
+          'sending. Let Dizzy keep running in the background and your '
+          'messages will always get through.\n\n'
+          'You can turn this on in the next screen — pick Battery, then '
+          'choose "No restrictions" or "Unrestricted".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(c);
+              unawaited(openBatterySettings());
+            },
+            child: const Text('Open settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> openBatterySettings() async {
+    // package: opens this app's own system page — Battery, permissions and
+    // "no restrictions" all live one tap away, on every OEM, without the
+    // app needing a battery-optimization permission it cannot justify.
+    try {
+      final uri = Uri.parse('package:com.sirius6907.dizzyv3');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -239,6 +322,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     // Phase J1/J2: notification channels + event triggers (downloads,
     // announcements, staged updates) feeding the Hub Notification Center.
     unawaited(NotificationTriggers.attach());
+    // Phase K4: resend whatever a kill left in the DM outbox, and ask the
+    // battery guide once if that kill looks like an OEM freezer.
+    unawaited(_bootOutbox());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
