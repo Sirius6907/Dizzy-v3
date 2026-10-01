@@ -16,10 +16,12 @@ import 'package:dizzy/services/updater/app_updater_service.dart';
 import 'package:dizzy/services/updater/update_prefs.dart';
 import 'package:dizzy/services/updater/update_state_machine.dart';
 import 'package:dizzy/services/notification/notification_inbox.dart';
+import 'package:dizzy/services/watchparty/party_voice_service.dart';
 import 'package:dizzy/services/updater/update_stager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../common/notification_center_sheet.dart';
+import '../settings/watch_party_page.dart';
 import '../settings/about_settings_page.dart';
 import '../settings/appearance_settings_page.dart';
 import '../settings/download_settings_page.dart';
@@ -749,6 +751,26 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Phase K3 — "return to room": the voice call is still live even
+        // when this screen is not, so the Hub says so and offers the way
+        // back in one tap.
+        ListenableBuilder(
+          listenable: PartyVoiceService.connected,
+          builder: (context, _) {
+            if (!PartyVoiceService.connected.value) {
+              return const SizedBox.shrink();
+            }
+            final room = PartyVoiceService.currentRoomCode;
+            return _sectionCard(
+              icon: Icons.graphic_eq_rounded,
+              title: "You're in voice",
+              subtitle: room == null || room.isEmpty
+                  ? 'Tap to go back to the party'
+                  : 'Live in room $room — tap to return',
+              onTap: () => _go(context, const WatchPartyPage()),
+            );
+          },
+        ),
         _groupLabel('MY STUFF'),
         _sectionCard(
           icon: Icons.devices_rounded,
@@ -844,8 +866,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
               subtitle: items.isEmpty
                   ? 'Download news, updates and messages land here'
                   : unread > 0
-                      ? '$unread new · tap to open'
-                      : '${items.length} · tap to open',
+                  ? '$unread new · tap to open'
+                  : '${items.length} · tap to open',
               trailing: unread > 0
                   ? Container(
                       padding: const EdgeInsets.symmetric(
