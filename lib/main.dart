@@ -68,6 +68,7 @@ import './pages/search/universal_spotlight_modal.dart';
 import './services/system/resource_governor.dart';
 import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
+import './services/watchparty/voice_background_gate.dart';
 import './services/watchparty/guest_auto_open.dart';
 
 void main() async {
@@ -233,6 +234,18 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       unawaited(DmOutbox.flush(send: _sendOutboxEntry));
       unawaited(AnnouncementService.refresh());
+      return;
+    }
+    if (state != AppLifecycleState.paused) return;
+    // Phase K3: background VIDEO does not stay — decoding a hidden player
+    // is pure heat. Audio does stay: voice owns its own foreground service
+    // and music has its own session, and neither is touched here. An active
+    // party timeline is left alone too, because pausing locally would
+    // desync everyone else in the room.
+    if (!PartySession.instance.inParty &&
+        GlobalMediaCoordinator.instance.videoActive.value) {
+      final pauseVideo = GlobalMediaCoordinator.instance.onPauseVideoRequest;
+      pauseVideo?.call();
     }
   }
 
@@ -325,6 +338,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     // Phase K4: resend whatever a kill left in the DM outbox, and ask the
     // battery guide once if that kill looks like an OEM freezer.
     unawaited(_bootOutbox());
+    // Phase K3: voice gets its own foreground service so the mic thread
+    // survives the screen going off.
+    unawaited(VoiceBackgroundGate.attach());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;

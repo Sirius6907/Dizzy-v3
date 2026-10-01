@@ -96,6 +96,37 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Phase K3: microphone foreground service — start/stop the ongoing
+        // call notification that keeps LiveKit alive with the screen off.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/voice").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    try {
+                        val room = call.argument<String>("room") ?: ""
+                        val intent = Intent(this, VoiceForegroundService::class.java)
+                            .putExtra(VoiceForegroundService.EXTRA_ROOM, room)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent)
+                        } else {
+                            startService(intent)
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("VOICE_START", e.message, null)
+                    }
+                }
+                "stop" -> {
+                    try {
+                        stopService(Intent(this, VoiceForegroundService::class.java))
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("VOICE_STOP", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         // Staged-update install (Phase I2): hand a locally verified APK to the
         // system installer through the OTA plugin's own FileProvider (already
         // registered in the manifest) with an explicit read grant.
