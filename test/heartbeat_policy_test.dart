@@ -108,6 +108,37 @@ void main() {
     });
   });
 
+  group('resume contract (Phase P)', () {
+    test('resume forces a beat: due even 1ms after the last send', () {
+      expect(
+        HeartbeatPolicy.beatDue(
+          current: Activity.idle,
+          lastSent: Activity.idle,
+          lastSentMs: 100000,
+          nowMs: 100001,
+          force: true,
+        ),
+        isTrue,
+        reason: 'Active now must flip the moment the app opens',
+      );
+    });
+
+    test('pause path never forces: an unforced same-activity beat is held back',
+        () {
+      expect(
+        HeartbeatPolicy.beatDue(
+          current: Activity.idle,
+          lastSent: Activity.idle,
+          lastSentMs: 100000,
+          nowMs: 100001,
+        ),
+        isFalse,
+        reason:
+            'paused → no forced beat; an OS-killed app ageing out of the 10-min window is the correct semantics',
+      );
+    });
+  });
+
   group('offline flush', () {
     test('only when pending, online and past the cooldown', () {
       expect(
