@@ -232,11 +232,18 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
 
   /// Phase K4: app came back to the foreground → flush the DM outbox now
   /// instead of waiting for the scheduler tick (poll-on-resume).
+  /// Phase P: an instant forced heartbeat so dashboard "Active now" flips
+  /// the moment the app opens — `force` bypasses the client throttle (the
+  /// server still no-ops identical beats inside 60s). On `paused` nothing
+  /// is sent: the timer keeps beating while the process lives, and if the
+  /// OS kills it the device ages out of the 10-min window — that IS the
+  /// correct "active" semantics.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(DmOutbox.flush(send: _sendOutboxEntry));
       unawaited(AnnouncementService.refresh());
+      unawaited(HeartbeatService.instance.beat(force: true));
       return;
     }
     if (state != AppLifecycleState.paused) return;
