@@ -270,12 +270,17 @@ jobs:
           # Every APK must match its channel's expected key or the release is blocked:
           #   Dizzy-v3-*.apk        -> release key (CN=Sirius)
           #   Dizzy-v3-legacy-*.apk -> local debug key (v1.1.3/v1.1.4 installs)
-          # PLUS: every APK's versionCode must be ABOVE 2031 — v1.2.1 shipped
-          # split APKs with Flutter's abiCode*1000 override (arm64 = 2031) and
-          # v1.3.0 shipped base-code copies (arm64 = 32); Android treats
-          # new-code < old-code as INSTALL_FAILED_VERSION_DOWNGRADE
-          # ("package not valid") even when the key matches. Version floor:
-          # pubspec build number must stay >= 1032 (arm64 floor 3032).
+          # PLUS: every SPLIT APK's versionCode must be ABOVE 2031 — v1.2.1
+          # shipped split APKs with Flutter's abiCode*1000 override (arm64 =
+          # 2031) and v1.3.0 shipped base-code copies (arm64 = 32); Android
+          # treats new-code < old-code as INSTALL_FAILED_VERSION_DOWNGRADE
+          # ("package not valid") even when the key matches.
+          # The fat Universal APK is EXEMPT from the floor: it carries the
+          # base pubspec build number BY DESIGN (no abiCode*1000 override ever
+          # applies to it — e.g. build 1032 -> versionCode 1032), and the app's
+          # picker only serves it as the LAST fallback, so no old install ever
+          # receives it ahead of its split build.
+          # Version floor: pubspec build number must stay >= 1032 (arm64 floor 3032).
           MIN_VERSION_CODE=2031
           EXPECTED="c513faef1906c5d67f01f7ff27946d52fe727773e72324e294c58de5711a1974"
           EXPECTED_LEGACY="5e70235900d8a44c350bae08d8949e6491f3724e572d3c9b021a85376ccf1548"
@@ -299,8 +304,10 @@ jobs:
               fail=1
             fi
             # versionCode floor: v1.2.1 split APKs shipped 1031/2031/4031.
-            # Any APK at/below 2031 re-triggers the v1.3.0 downgrade block.
-            if [ -n "$AAPT" ] && [[ "$apk" != *-legacy-* ]]; then
+            # Any SPLIT APK at/below 2031 re-triggers the v1.3.0 downgrade
+            # block. The fat Universal is exempt (base build number by
+            # design — no abiCode*1000 override; picker serves it last).
+            if [ -n "$AAPT" ] && [[ "$apk" != *-legacy-* ]] && [[ "$apk" != *-Universal.apk ]]; then
               vc="$("$AAPT" dump badging "$apk" 2>/dev/null | grep -oE "versionCode='[0-9]+'" | grep -oE '[0-9]+' | head -1)"
               echo "$apk versionCode=${vc:-<unknown>} (must be > $MIN_VERSION_CODE)"
               if [ -z "$vc" ] || [ "$vc" -le "$MIN_VERSION_CODE" ]; then

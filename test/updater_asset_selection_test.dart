@@ -107,6 +107,25 @@ void main() {
       expect(picked?['name'], 'Dizzy-v3-Universal.apk');
     });
 
+    test('unknown ABI keyword prefers standard release over universal', () {
+      final withRelease = [
+        ...assets,
+        {
+          'name': 'Dizzy-v3-release.apk',
+          'browser_download_url': 'https://x/Dizzy-v3-release.apk',
+          'digest': 'sha256:333',
+        },
+      ];
+      final picked = AppUpdaterService.pickAndroidAsset(
+        withRelease,
+        archKeywords: const ['some-unknown-abi'],
+        legacyChannel: false,
+      );
+      // Universal carries the base versionCode (no abiCode*1000 override) —
+      // it must stay the LAST fallback so old installs never downgrade.
+      expect(picked?['name'], 'Dizzy-v3-release.apk');
+    });
+
     test('returns null when no APK assets exist', () {
       expect(
         AppUpdaterService.pickAndroidAsset(
