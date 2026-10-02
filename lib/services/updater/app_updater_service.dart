@@ -223,6 +223,12 @@ class AppUpdaterService {
 
   /// Picks the Android release asset matching [archKeywords].
   ///
+  /// Fallback order is deliberate: exact arch match first, then the standard
+  /// `release` build, and the fat Universal APK LAST. The Universal is a
+  /// by-design base-versionCode build (no abiCode*1000 override), so serving
+  /// it ahead of split builds would hand version-downgraded APKs to old
+  /// installs (INSTALL_FAILED_VERSION_DOWNGRADE, "package not valid").
+  ///
   /// [legacyChannel]=true keeps ONLY `legacy`-named assets (installs whose own
   /// cert is the pre-v1.1.7 debug key), falling back to normal assets while a
   /// release has no legacy variant yet. The normal channel EXCLUDES legacy
@@ -268,22 +274,26 @@ class AppUpdaterService {
       }
     }
 
-    // 2. Fall back to a "universal" APK if available
-    final universal = apks
-        .where((a) => (a['name'] as String).toLowerCase().contains('universal'))
-        .firstOrNull;
-    if (universal != null) {
-      debugPrint('Falling back to universal APK: ${universal['name']}');
-      return universal;
-    }
-
-    // 3. Fall back to standard release APK name
+    // 2. Prefer the standard release APK over the fat Universal: the
+    // Universal carries the base versionCode (no abiCode*1000 override)
+    // while per-ABI/split builds carry the high code old installs need.
     final standardRelease = apks
         .where((a) => (a['name'] as String).toLowerCase().contains('release'))
         .firstOrNull;
     if (standardRelease != null) {
       debugPrint('Using standard release APK: ${standardRelease['name']}');
       return standardRelease;
+    }
+
+    // 3. Last resort before first-available: the fat Universal APK.
+    // Kept here (not earlier) because its base versionCode lags the
+    // split builds — serving it first would downgrade-block old installs.
+    final universal = apks
+        .where((a) => (a['name'] as String).toLowerCase().contains('universal'))
+        .firstOrNull;
+    if (universal != null) {
+      debugPrint('Falling back to universal APK: ${universal['name']}');
+      return universal;
     }
 
     // 4. Last resort: first available APK
