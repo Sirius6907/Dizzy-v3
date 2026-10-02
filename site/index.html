@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dizzy — Watch together. Your media, your rules.</title>
 <meta name="description" content="Dizzy is a free, open media player for Android, Windows and Linux — sync watch rooms with friends, voice chat, live TV (IPTV), offline downloads, lossless music, audiobooks and manga. No ads, no account needed.">
-<meta name="theme-color" content="#06060A">
+<meta name="theme-color" content="#07060A">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://dizzy-by-sirius.netlify.app/">
 <link rel="icon" type="image/png" sizes="64x64" href="./assets/img/favicon.png?v=2">
 <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png?v=2">
 <link rel="manifest" href="./site.webmanifest">
-<link rel="preload" href="./assets/fonts/space-grotesk-700.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="./assets/fonts/space-grotesk-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/cinzel-decorative-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/cinzel-decorative-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/yesteryear-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./assets/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./assets/css/main.css">
 <meta property="og:type" content="website">
@@ -81,7 +82,7 @@
         <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
         <span class="stars" data-gh-stars hidden>★</span>
       </a>
-      <a class="btn btn-sm btn-hot" href="#download" data-dl-jump>Get Dizzy</a>
+      <a class="btn btn-sm btn-gold" href="#download" data-dl-jump>Get Dizzy</a>
       <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mobileMenu" aria-label="Menu"><span></span></button>
     </div>
   </div>
@@ -109,13 +110,13 @@
       <div class="hero-copy">
         <p class="eyebrow reveal"><span class="dot-live" aria-hidden="true"></span><span data-ver>latest</span><span class="sep">·</span>free &amp; open<span class="sep">·</span>no account</p>
         <h1>
-          <span class="line"><span>Watch together.</span></span>
+          <span class="line"><span class="script">Watch together.</span></span>
           <span class="line"><span class="grad">Your media, your rules.</span></span>
         </h1>
         <p class="sub reveal">One app for <b>movies, shows, anime, live TV, music, audiobooks</b> and manga — with sync-perfect watch rooms, voice chat, lossless audio, offline downloads and background play that survives battery savers.</p>
         <div class="cta-row reveal">
-          <a class="btn btn-hot btn-lg magnetic" href="#download" data-dl-jump>
-            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <a class="btn btn-gold btn-lg magnetic" href="#download" data-dl-jump>
+            <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
             <span data-dl-label>Download for your device</span>
           </a>
           <a class="btn btn-lg" href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">
@@ -435,14 +436,14 @@
         </button>
       </div>
 
-      <div class="dl-panel reveal" id="panel-os" role="tabpanel" aria-live="polite">
+      <div class="dl-panel gborder reveal" id="panel-os" role="tabpanel" aria-live="polite">
         <div class="abi-row" id="abiRow" hidden>
           <span class="abi-label" id="abiLabel">Your phone (recommended):</span>
           <div class="abi-btns" role="group" aria-label="Android version" id="abiBtns"></div>
         </div>
         <div class="file-list" id="fileList"></div>
-        <a class="btn btn-hot btn-lg magnetic" id="dlPrimary" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
-          <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <a class="btn btn-gold btn-lg magnetic" id="dlPrimary" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
+          <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
           <span id="dlPrimaryLabel">Download</span>
         </a>
         <p class="alt">or <a href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" target="_blank" rel="noopener">grab it from GitHub</a></p>
@@ -496,13 +497,13 @@
   <!-- ═══ FINAL CTA ═══ -->
   <section class="section" id="get">
     <div class="wrap">
-      <div class="cta-band reveal" data-rev="zoom">
+      <div class="cta-band gborder reveal" data-rev="zoom">
         <p class="kicker" style="justify-content:center">Two minutes from now</p>
         <h2>Your next watch party starts with one download.</h2>
         <p>Install Dizzy, send the room link to whoever you'd watch with, and press play. That's the whole tutorial.</p>
         <div class="cta-row">
-          <a class="btn btn-hot btn-lg magnetic" href="#download" data-dl-jump>
-            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <a class="btn btn-gold btn-lg magnetic" href="#download" data-dl-jump>
+            <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
             <span data-dl-label>Download for your device</span>
           </a>
           <a class="btn btn-lg" href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">Browse the source</a>
