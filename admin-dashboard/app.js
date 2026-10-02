@@ -396,11 +396,11 @@ function renderBars() {
   }
 
   const grad = ctx.createLinearGradient(0, padT, 0, H - padB);
-  grad.addColorStop(0, '#a78bfa');
-  grad.addColorStop(1, '#6d28d9');
+  grad.addColorStop(0, '#f9e3b0');
+  grad.addColorStop(1, '#e8912a');
   const hot = ctx.createLinearGradient(0, padT, 0, H - padB);
-  hot.addColorStop(0, '#c4b5fd');
-  hot.addColorStop(1, '#8b5cf6');
+  hot.addColorStop(0, '#d9556e');
+  hot.addColorStop(1, '#8e1f35');
 
   const iw = (W - padL - padR) / data.length;
   const bw = Math.max(3, Math.min(26, iw * 0.62));

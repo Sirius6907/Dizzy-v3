@@ -86,7 +86,7 @@ function confirmDialog(opts) {
   return new Promise((resolve) => {
     const prev = document.activeElement;
     const ov = el('div', 'overlay');
-    ov.innerHTML = `<div class="confirm-box" role="alertdialog" aria-modal="true">
+    ov.innerHTML = `<div class="confirm-box gborder" role="alertdialog" aria-modal="true">
       <h3>${esc(o.title || 'Are you sure?')}</h3>
       <p>${esc(o.message || 'This action cannot be undone.')}</p>
       <div class="confirm-acts">
@@ -129,7 +129,7 @@ let _palSel = 0, _palItems = [];
 function openPalette() {
   if (document.querySelector('.overlay')) return;
   const ov = el('div', 'overlay');
-  ov.innerHTML = `<div class="palette" role="dialog" aria-modal="true" aria-label="Quick switch">
+  ov.innerHTML = `<div class="palette gborder" role="dialog" aria-modal="true" aria-label="Quick switch">
     <input type="text" id="palInput" placeholder="Jump to a section…" autocomplete="off" spellcheck="false">
     <div class="palette-list" id="palList"></div></div>`;
   ov.addEventListener('click', (e) => { if (e.target === ov) closePalette(); });
