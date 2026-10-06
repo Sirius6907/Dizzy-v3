@@ -165,14 +165,17 @@ Ye 5 infra ke upar user ko dikhne wale, independently shippable, demo-ready feat
 
 ## ✅ Done matlab
 
-- [ ] P1 clean tree + green analyze
-- [ ] Har feature pe guide card + Help se wapas
-- [ ] Koi silent dead screen nahi, admin me live logs
-- [ ] 360px pe zero overflow, desktop wheel/drag smooth
-- [ ] Party 10x flawless + countdown UI
-- [ ] Budgets green, user tested build OK, tag sirf bolne pe
+- [x] P1 clean tree + green analyze
+- [x] Har feature pe guide card + Help se wapas
+- [x] Koi silent dead screen nahi, admin me live logs (P8 residual: consent default ON 2026-10-06)
+- [x] 360px pe zero overflow, desktop wheel/drag smooth
+- [x] Party 10x flawless + countdown UI
+- [x] Budgets green, user tested build OK, tag sirf bolne pe (v1.3.1)
 
-**Status:** Draft — review chahiye
+**Status:** EXECUTED — P1-P10 shipped across v1.3.0 (2026-09-29) & v1.3.1 (2026-10-02).
+Remaining residuals now tracked in `.hermes/plans/2026-10-06_105652-dizzy-full-proof-roadmap.md`:
+P3 partial (DizzyNet adoption = Phase 4 of that plan), P8 partial (error pipeline live,
+consent default ON 2026-10-06). Superseded for planning purposes by that roadmap.
 **Approval:** @Sirius
 
 ---
