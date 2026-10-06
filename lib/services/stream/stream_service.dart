@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 
 import '../../models/addon/addon.dart';
 import '../../models/stream/stream_model.dart';
@@ -58,6 +57,7 @@ import '../anime/anime_scraper_service.dart';
 import '../anime_arabic/anime_arabic_service.dart';
 import '../anime_arabic/anime_arabic_extractor.dart';
 import '../p2p/p2p_settings_service.dart';
+import '../net/dizzy_net.dart';
 import '../errors/app_log.dart';
 
 /// Service that fetches playback streams from all installed Stremio addons
@@ -407,7 +407,7 @@ class StreamService {
       final pathId = Uri.encodeComponent(id);
       final url = '${addon.baseUrl}/stream/$type/$pathId.json';
 
-      final response = await http.get(
+      final response = await DizzyNet.instance.get(
         Uri.parse(url),
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

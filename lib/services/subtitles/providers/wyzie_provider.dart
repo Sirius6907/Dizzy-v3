@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../models/subtitle/subtitle_model.dart';
 import '../subtitle_provider.dart';
+import '../../net/dizzy_net.dart';
 
 class WyzieProvider extends SubtitleProvider {
   @override
@@ -112,7 +113,7 @@ class WyzieProvider extends SubtitleProvider {
       if (episode != null) queryParams['episode'] = episode.toString();
 
       final uri = Uri.parse(_endpoint).replace(queryParameters: queryParams);
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      final res = await DizzyNet.instance.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
 
       if (res.statusCode != 200) return [];
 

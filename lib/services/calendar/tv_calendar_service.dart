@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import '../net/dizzy_net.dart';
 
 class TvCalendarEntryModel {
   final String showTitle;
@@ -113,7 +113,7 @@ class TvCalendarService {
 
   Future<List<TvCalendarEntryModel>> _fetchTvMazeSchedule(String url, DateTime targetDay) async {
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse(url),
         headers: {
           'Accept': 'application/json',

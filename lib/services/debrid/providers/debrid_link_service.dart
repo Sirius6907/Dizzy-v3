@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/debrid_file.dart';
 import '../utils/debrid_media_matcher.dart';
+import '../../net/dizzy_net.dart';
 
 class DebridLinkService {
   static const String _key = 'debridlink_api_key';
@@ -35,7 +36,7 @@ class DebridLinkService {
     final trimmed = key.trim();
     if (trimmed.isEmpty) return null;
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse('https://debrid-link.com/api/v2/account/infos'),
         headers: {'Authorization': 'Bearer $trimmed'},
       );
@@ -91,7 +92,7 @@ class DebridLinkService {
       'Content-Type': 'application/json',
     };
 
-    final addRes = await http.post(
+    final addRes = await DizzyNet.instance.post(
       Uri.parse('https://debrid-link.com/api/v2/seedbox/add'),
       headers: headers,
       body: json.encode({'url': magnet, 'async': true}),
@@ -110,7 +111,7 @@ class DebridLinkService {
     int attempts = 0;
     while (!ready && attempts < 40) {
       await Future.delayed(const Duration(seconds: 3));
-      final stRes = await http.get(
+      final stRes = await DizzyNet.instance.get(
         Uri.parse('https://debrid-link.com/api/v2/seedbox/list?ids=$torrentId'),
         headers: {'Authorization': 'Bearer $apiKey'},
       );

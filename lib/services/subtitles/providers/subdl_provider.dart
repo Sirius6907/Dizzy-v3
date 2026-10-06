@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
 
 import '../../../models/subtitle/subtitle_model.dart';
 import '../subtitle_provider.dart';
 import '../subtitle_extractor.dart';
+import '../../net/dizzy_net.dart';
 
 class SubdlProvider extends SubtitleProvider {
   @override
@@ -84,7 +84,7 @@ class SubdlProvider extends SubtitleProvider {
 
       // 4. For TV Shows, find the correct season page
       if (isTvShow) {
-        final showHtmlRes = await http.get(Uri.parse(targetUrl), headers: _headers);
+        final showHtmlRes = await DizzyNet.instance.get(Uri.parse(targetUrl), headers: _headers);
         if (showHtmlRes.statusCode == 200) {
           final doc = html_parser.parse(showHtmlRes.body);
           final links = doc.querySelectorAll('a[href*="/subtitle/"]');
@@ -112,7 +112,7 @@ class SubdlProvider extends SubtitleProvider {
       }
 
       // 5. Scrape the final page (movie or season)
-      final htmlRes = await http.get(Uri.parse(targetUrl), headers: _headers);
+      final htmlRes = await DizzyNet.instance.get(Uri.parse(targetUrl), headers: _headers);
       if (htmlRes.statusCode != 200) return [];
 
       final doc = html_parser.parse(htmlRes.body);
@@ -251,7 +251,7 @@ class SubdlProvider extends SubtitleProvider {
   Future<List<Map<String, dynamic>>> _queryApi(String query) async {
     try {
       final uri = Uri.parse('$_apiBaseUrl/auto?query=${Uri.encodeComponent(query)}');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      final res = await DizzyNet.instance.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -268,7 +268,7 @@ class SubdlProvider extends SubtitleProvider {
     final List<Map<String, dynamic>> results = [];
     try {
       final url = '$_baseUrl/search/${Uri.encodeComponent(query)}';
-      final res = await http.get(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 5));
+      final res = await DizzyNet.instance.get(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 5));
 
       if (res.statusCode == 200) {
         final doc = html_parser.parse(res.body);

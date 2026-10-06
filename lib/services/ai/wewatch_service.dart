@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import '../net/dizzy_net.dart';
 
 class WeWatchStarterPick {
   final String label;
@@ -225,7 +225,7 @@ class WeWatchService {
     if (trimmed.isEmpty) return [];
 
     try {
-      final res = await http.post(
+      final res = await DizzyNet.instance.post(
         Uri.https(_domain, '/onboarding'),
         headers: {
           'Next-Action': '40e1094766c1eb3fac9963001491efec94b7ff8db7',
@@ -271,7 +271,7 @@ class WeWatchService {
           ? {'tmdbId': tmdbId, 'mediaType': mediaType}
           : null;
 
-      final res = await http.post(
+      final res = await DizzyNet.instance.post(
         Uri.https(_domain, '/onboarding'),
         headers: {
           'Next-Action': '7855e82fc70f46551293c772a08f6d599df0a69e66',
@@ -365,7 +365,7 @@ class WeWatchService {
     });
 
     // 1. Submit movies to initialize session
-    final submitRes = await http.post(
+    final submitRes = await DizzyNet.instance.post(
       Uri.https(_domain, '/api/internal/onboarding/submit-movies'),
       headers: {
         'Content-Type': 'application/json',
@@ -386,7 +386,7 @@ class WeWatchService {
     final cookieHeader = cookiesList.join('; ');
 
     // 2. Fetch recommendations stream with the returned session cookies
-    final recRes = await http.get(
+    final recRes = await DizzyNet.instance.get(
       Uri.https(_domain, '/recommendations'),
       headers: {
         'Cookie': cookieHeader,

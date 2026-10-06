@@ -5,6 +5,7 @@ import '../../models/audiobook/audiobook_model.dart';
 import '../../utils/search/relevance_scorer.dart';
 import '../cloud/remote_config_service.dart';
 import 'audiobookbay_scraper.dart';
+import '../net/dizzy_net.dart';
 
 class AudiobookScraperService {
   AudiobookScraperService._();
@@ -90,7 +91,7 @@ class AudiobookScraperService {
   // --- Helper Methods ---
 
   static Future<http.Response> _fetch(String url) {
-    return http.get(
+    return DizzyNet.instance.get(
       Uri.parse(url),
       headers: {
         'User-Agent':
@@ -295,7 +296,7 @@ class AudiobookScraperService {
       return _audionestIdToken;
     }
     try {
-      final res = await http.post(
+      final res = await DizzyNet.instance.post(
         Uri.parse(
           'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$apiKey',
         ),
@@ -320,7 +321,7 @@ class AudiobookScraperService {
 
   static Future<List<Audiobook>> _searchAudionest(String query) async {
     try {
-      final res = await http.post(
+      final res = await DizzyNet.instance.post(
         Uri.parse('https://search.audionestapp.com/indexes/trackfiles/search'),
         headers: {
           'Authorization': 'Bearer MWJiNWM0MjA2N2ZkM2RiMDNhNWFmNGNk',
@@ -431,7 +432,7 @@ class AudiobookScraperService {
     int chapterNum = 1;
     for (final blob in blobs) {
       final encrypted = blob.group(1)!;
-      final decryptRes = await http.get(
+      final decryptRes = await DizzyNet.instance.get(
         Uri.parse(
           'https://audiobooks4soul.com/wp-content/plugins/custom-story-audio/inc/security/decrypt.php?encrypted=${Uri.encodeComponent(encrypted)}',
         ),
@@ -478,7 +479,7 @@ class AudiobookScraperService {
       },
     });
 
-    Future<http.Response> runQuery(String tk) => http.post(
+    Future<http.Response> runQuery(String tk) => DizzyNet.instance.post(
       Uri.parse(
         'https://firestore.googleapis.com/v1/projects/learningfirebase-ae02f/databases/(default)/documents:runQuery',
       ),

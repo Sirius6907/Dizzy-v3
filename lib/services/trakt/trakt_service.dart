@@ -10,6 +10,7 @@ import '../profiles/profile_runtime.dart';
 import '../storage/storage_service.dart';
 import 'trakt_calendar_service.dart';
 import 'trakt_constants.dart';
+import '../net/dizzy_net.dart';
 
 /// The user's Trakt relationship to a single title — used to render a
 /// state-aware detail page (in watchlist / collection / watched / rating)
@@ -358,7 +359,7 @@ class TraktService {
     final shouldRevokeRemote = await StorageService.clearTraktAuth();
     try {
       if (shouldRevokeRemote && accessToken != null) {
-        await http.post(
+        await DizzyNet.instance.post(
           Uri.parse('$kTraktApiBaseUrl/oauth/revoke'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
@@ -414,7 +415,7 @@ class TraktService {
       final authorization = await ProfileAsyncAuthorization.capture(
         ProfileFeature.trackersAndDiscovery,
       );
-      final response = await http.post(
+      final response = await DizzyNet.instance.post(
         Uri.parse(kTraktDeviceCodeUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'client_id': kTraktClientId}),
@@ -1248,7 +1249,7 @@ class TraktService {
   /// Fetch the user's Trakt profile settings (username, etc.).
   Future<bool> _fetchAndStoreUsername(String accessToken) async {
     try {
-      final response = await http.get(
+      final response = await DizzyNet.instance.get(
         Uri.parse('$kTraktApiBaseUrl/users/settings'),
         headers: _apiHeaders(accessToken: accessToken),
       );

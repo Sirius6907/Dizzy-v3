@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/debrid_file.dart';
 import '../utils/debrid_media_matcher.dart';
+import '../../net/dizzy_net.dart';
 
 class AllDebridService {
   static const String _key = 'alldebrid_api_key';
@@ -35,7 +36,7 @@ class AllDebridService {
     final trimmed = key.trim();
     if (trimmed.isEmpty) return null;
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse('https://api.alldebrid.com/v4/user?agent=Dizzy&apikey=$trimmed'),
       );
       if (res.statusCode == 200) {
@@ -99,7 +100,7 @@ class AllDebridService {
     final headers = {'Authorization': 'Bearer $apiKey'};
 
     // 1. Upload magnet
-    final upRes = await http.post(
+    final upRes = await DizzyNet.instance.post(
       Uri.parse('https://api.alldebrid.com/v4/magnet/upload'),
       headers: headers,
       body: {'magnets[]': magnet},
@@ -120,7 +121,7 @@ class AllDebridService {
     // 2. Poll status
     int attempts = 0;
     while (attempts < 40) {
-      final stRes = await http.post(
+      final stRes = await DizzyNet.instance.post(
         Uri.parse('https://api.alldebrid.com/v4.1/magnet/status'),
         headers: headers,
         body: {'id': magnetId.toString()},
@@ -145,7 +146,7 @@ class AllDebridService {
     }
 
     // 3. Get files
-    final filesRes = await http.post(
+    final filesRes = await DizzyNet.instance.post(
       Uri.parse('https://api.alldebrid.com/v4/magnet/files'),
       headers: headers,
       body: {'id[]': magnetId.toString()},
@@ -189,7 +190,7 @@ class AllDebridService {
     }
 
     // 5. Unlock link
-    final unRes = await http.post(
+    final unRes = await DizzyNet.instance.post(
       Uri.parse('https://api.alldebrid.com/v4/link/unlock'),
       headers: headers,
       body: {'link': pickedLink},

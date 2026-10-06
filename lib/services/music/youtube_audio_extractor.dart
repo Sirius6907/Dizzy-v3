@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import '../net/dizzy_net.dart';
 
 /// 1-to-1 Match of WAVE / NuvioTV InAppYouTubeExtractor for Audio Streams.
 ///
@@ -438,7 +439,7 @@ class YoutubeAudioExtractor {
 
   Future<bool> _isUrlReachable(String url, {required String userAgent}) async {
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse(url),
         headers: {
           'Range': 'bytes=0-0',

@@ -14,7 +14,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' as html_parser;
-import 'package:http/http.dart' as http;
+import '../net/dizzy_net.dart';
 
 class BSAutocompleteHit {
   final int id;
@@ -155,7 +155,7 @@ class BestSimilarScraper {
     final uri = Uri.parse(
         '$baseUrl/site/autocomplete?term=${Uri.encodeQueryComponent(q)}');
     try {
-      final res = await http.get(uri, headers: {
+      final res = await DizzyNet.instance.get(uri, headers: {
         'User-Agent': _ua,
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
@@ -313,7 +313,7 @@ class BestSimilarScraper {
     if (cached != null) return cached;
     final uri = Uri.parse('$baseUrl/movies/$slug');
     try {
-      final res = await http.get(uri, headers: {
+      final res = await DizzyNet.instance.get(uri, headers: {
         'User-Agent': _ua,
         'Accept': 'text/html,application/xhtml+xml',
         'Referer': '$baseUrl/',

@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../../models/audiobook/audiobook_model.dart';
 import '../debrid/debrid_service.dart';
 import '../stream/torrent_stream_service.dart';
+import '../net/dizzy_net.dart';
 
 class AudiobookBayScraper {
   static const String _baseUrl = 'https://audiobookbay.lu';
 
   static Future<List<Audiobook>> search(String query) async {
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse('$_baseUrl/?s=${Uri.encodeComponent(query)}&cat=undefined%2Cundefined'),
         headers: {
           'User-Agent':
@@ -59,7 +59,7 @@ class AudiobookBayScraper {
 
   static Future<List<AudiobookChapter>> getChapters(String url) async {
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse(url),
         headers: {
           'User-Agent':

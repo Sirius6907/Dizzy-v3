@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
 import '../../models/profiles/profile_policy.dart';
 import '../continue_watching/episode_tracker_snapshot_revision.dart';
@@ -10,6 +10,7 @@ import '../profiles/profile_runtime.dart';
 import '../storage/storage_service.dart';
 import 'simkl_calendar_service.dart';
 import 'simkl_constants.dart';
+import '../net/dizzy_net.dart';
 
 /// The user's Simkl relationship to a single title — mirrors
 /// [TraktTitleStatus] but simpler: Simkl's watchlist model is one exclusive
@@ -291,7 +292,7 @@ class SimklService {
       final uri = Uri.parse(
         kSimklPinUrl,
       ).replace(queryParameters: {'client_id': kSimklClientId});
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      final response = await DizzyNet.instance.get(uri).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -331,7 +332,7 @@ class SimklService {
       final uri = Uri.parse(
         simklPinPollUrl(userCode),
       ).replace(queryParameters: {'client_id': kSimklClientId});
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      final response = await DizzyNet.instance.get(uri).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -388,7 +389,7 @@ class SimklService {
   /// back to "Logged in") if none match.
   Future<void> _fetchAndStoreUsername(String accessToken) async {
     try {
-      final response = await http.get(
+      final response = await DizzyNet.instance.get(
         Uri.parse('$kSimklApiBaseUrl/users/settings'),
         headers: _apiHeaders(accessToken: accessToken),
       );

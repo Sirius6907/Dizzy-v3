@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloud_client.dart';
+import '../net/dizzy_net.dart';
 
 /// P21 — Cloud resolve API client (`resolve` edge function).
 ///
@@ -64,7 +64,7 @@ class CloudResolveService {
         'type': type == 'tv' ? 'tv' : 'movie',
         if (imdb.isNotEmpty) 'imdbId': imdb,
       });
-      final res = await http.get(uri, headers: {
+      final res = await DizzyNet.instance.get(uri, headers: {
         'apikey': CloudClient.anonKey,
         'Accept': 'application/json',
       }).timeout(const Duration(seconds: 8));

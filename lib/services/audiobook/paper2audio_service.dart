@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../net/dizzy_net.dart';
 
 /// Voice option exposed in the picker. IDs match paper2audio.com (kokoro voices).
 class Paper2AudioVoice {
@@ -145,7 +145,7 @@ class Paper2AudioService {
 
   Future<String> _getAuthToken() async {
     final email = '${_uuid()}@mailinator.com';
-    final resp = await http.post(
+    final resp = await DizzyNet.instance.post(
       Uri.parse(
           'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_firebaseKey'),
       headers: {'Content-Type': 'application/json'},
@@ -204,7 +204,7 @@ class Paper2AudioService {
       'tertiaryVoice': 'af_alloy',
     });
 
-    final resp = await http.post(
+    final resp = await DizzyNet.instance.post(
       uri,
       headers: {
         'Authorization': 'Bearer $token',
@@ -241,7 +241,7 @@ class Paper2AudioService {
     final job = jobs.value[idx];
 
     try {
-      final resp = await http.post(
+      final resp = await DizzyNet.instance.post(
         Uri.parse('$_baseUrl/batchCheckStatus'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'runIds': [runId]}),

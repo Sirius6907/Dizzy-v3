@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../../models/music/music_track.dart';
+import '../net/dizzy_net.dart';
 
 class DeezerApiClient {
   static final DeezerApiClient instance = DeezerApiClient._internal();
@@ -66,7 +67,7 @@ class DeezerApiClient {
     }
 
     try {
-      final res = await http.get(Uri.parse(requestUrl), headers: _headers).timeout(const Duration(seconds: 10));
+      final res = await DizzyNet.instance.get(Uri.parse(requestUrl), headers: _headers).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         // If not using proxy, verify we didn't get empty data due to a geo-restriction block
@@ -75,7 +76,7 @@ class DeezerApiClient {
             (decoded['error'] != null || (decoded['data'] is List && (decoded['data'] as List).isEmpty))) {
           useProxy = true;
           final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
-          final proxyRes = await http.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+          final proxyRes = await DizzyNet.instance.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
           if (proxyRes.statusCode == 200) {
             return jsonDecode(proxyRes.body);
           }
@@ -85,7 +86,7 @@ class DeezerApiClient {
         // Retry with proxy
         useProxy = true;
         final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
-        final proxyRes = await http.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+        final proxyRes = await DizzyNet.instance.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
         if (proxyRes.statusCode == 200) {
           return jsonDecode(proxyRes.body);
         }
@@ -95,7 +96,7 @@ class DeezerApiClient {
         useProxy = true;
         try {
           final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
-          final proxyRes = await http.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+          final proxyRes = await DizzyNet.instance.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
           if (proxyRes.statusCode == 200) {
             return jsonDecode(proxyRes.body);
           }

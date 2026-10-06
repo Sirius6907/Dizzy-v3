@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/debrid_file.dart';
 import '../utils/debrid_media_matcher.dart';
+import '../../net/dizzy_net.dart';
 
 class TorBoxService {
   static const String _key = 'torbox_api_key';
@@ -35,7 +35,7 @@ class TorBoxService {
     final trimmed = key.trim();
     if (trimmed.isEmpty) return null;
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse('https://api.torbox.app/v1/api/user/me'),
         headers: {'Authorization': 'Bearer $trimmed'},
       );
@@ -65,7 +65,7 @@ class TorBoxService {
     final headers = {'Authorization': 'Bearer $apiKey'};
 
     // 1. Create Torrent
-    final createRes = await http.post(
+    final createRes = await DizzyNet.instance.post(
       Uri.parse('https://api.torbox.app/v1/api/torrents/createtorrent'),
       headers: headers,
       body: {'magnet': magnet},
@@ -82,7 +82,7 @@ class TorBoxService {
     Map<String, dynamic>? info;
     int attempts = 0;
     while (attempts < 25) {
-      final infoRes = await http.get(
+      final infoRes = await DizzyNet.instance.get(
         Uri.parse('https://api.torbox.app/v1/api/torrents/mylist?id=$torrentId&bypass_cache=true'),
         headers: headers,
       );

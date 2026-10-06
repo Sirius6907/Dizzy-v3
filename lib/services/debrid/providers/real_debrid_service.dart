@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/debrid_file.dart';
 import '../utils/debrid_media_matcher.dart';
+import '../../net/dizzy_net.dart';
 
 class RealDebridService {
   static const String _rdTokenKey = 'rd_access_token';
@@ -36,7 +36,7 @@ class RealDebridService {
     final trimmed = key.trim();
     if (trimmed.isEmpty) return null;
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse('https://api.real-debrid.com/rest/1.0/user'),
         headers: {'Authorization': 'Bearer $trimmed'},
       );
@@ -65,7 +65,7 @@ class RealDebridService {
     final headers = {'Authorization': 'Bearer $token'};
 
     // 1. Add the magnet
-    final addRes = await http.post(
+    final addRes = await DizzyNet.instance.post(
       Uri.parse('https://api.real-debrid.com/rest/1.0/torrents/addMagnet'),
       headers: headers,
       body: {'magnet': magnet},
@@ -84,7 +84,7 @@ class RealDebridService {
     int attempts = 0;
 
     while (attempts < 20) {
-      final infoRes = await http.get(
+      final infoRes = await DizzyNet.instance.get(
         Uri.parse('https://api.real-debrid.com/rest/1.0/torrents/info/$torrentId'),
         headers: headers,
       );
@@ -128,14 +128,14 @@ class RealDebridService {
     final pickedPath = (picked['path'] as String?) ?? '';
     final pickedSize = (picked['bytes'] as num?)?.toInt() ?? 0;
 
-    final selRes = await http.post(
+    final selRes = await DizzyNet.instance.post(
       Uri.parse('https://api.real-debrid.com/rest/1.0/torrents/selectFiles/$torrentId'),
       headers: headers,
       body: {'files': pickedId},
     );
 
     if (selRes.statusCode != 204 && selRes.statusCode != 202) {
-      await http.post(
+      await DizzyNet.instance.post(
         Uri.parse('https://api.real-debrid.com/rest/1.0/torrents/selectFiles/$torrentId'),
         headers: headers,
         body: {'files': 'all'},
@@ -145,7 +145,7 @@ class RealDebridService {
     // 4. Poll until downloaded / ready in cloud
     attempts = 0;
     while (attempts < 40) {
-      final infoRes = await http.get(
+      final infoRes = await DizzyNet.instance.get(
         Uri.parse('https://api.real-debrid.com/rest/1.0/torrents/info/$torrentId'),
         headers: headers,
       );
@@ -184,7 +184,7 @@ class RealDebridService {
       }
     }
 
-    final unRes = await http.post(
+    final unRes = await DizzyNet.instance.post(
       Uri.parse('https://api.real-debrid.com/rest/1.0/unrestrict/link'),
       headers: headers,
       body: {'link': targetLink},

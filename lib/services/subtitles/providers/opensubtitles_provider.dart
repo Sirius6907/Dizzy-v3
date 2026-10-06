@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 import '../../../models/subtitle/subtitle_model.dart';
 import '../subtitle_provider.dart';
 import '../subtitle_extractor.dart';
+import '../../net/dizzy_net.dart';
 
 class OpenSubtitlesProvider extends SubtitleProvider {
   @override
@@ -110,7 +110,7 @@ class OpenSubtitlesProvider extends SubtitleProvider {
     for (final base in _endpoints) {
       try {
         final url = '$base/subtitles/$type/$id.json';
-        final res = await http.get(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 4));
+        final res = await DizzyNet.instance.get(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 4));
 
         if (res.statusCode == 200) {
           final data = jsonDecode(utf8.decode(res.bodyBytes));

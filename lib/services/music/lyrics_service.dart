@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../../models/music/music_track.dart';
+import '../net/dizzy_net.dart';
 
 class LyricsService {
   static final LyricsService instance = LyricsService._internal();
@@ -72,7 +72,7 @@ class LyricsService {
       }
 
       final uri = Uri.https('lrclib.net', '/api/get', query);
-      final res = await http.get(uri, headers: {
+      final res = await DizzyNet.instance.get(uri, headers: {
         'User-Agent': 'Dizzy/1.0.0 (https://github.com/ayman708-UX/Dizzy v3)',
       }).timeout(const Duration(seconds: 6));
 
@@ -105,7 +105,7 @@ class LyricsService {
   Future<LyricsData?> _searchLrcLib(String trackId, String query) async {
     try {
       final uri = Uri.https('lrclib.net', '/api/search', {'q': query});
-      final res = await http.get(uri, headers: {
+      final res = await DizzyNet.instance.get(uri, headers: {
         'User-Agent': 'Dizzy/1.0.0 (https://github.com/ayman708-UX/Dizzy v3)',
       }).timeout(const Duration(seconds: 6));
 

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/iptv/iptv_models.dart';
 import 'pastesh_decryptor.dart';
+import '../net/dizzy_net.dart';
 
 /// Xtream-Codes player_api client. Login + categories + streams + episodes + EPG.
 class IptvClient {
@@ -1093,7 +1094,7 @@ class IptvScraper {
 
   static Future<String?> _httpGetText(String url) async {
     try {
-      final resp = await http.get(Uri.parse(url), headers: {
+      final resp = await DizzyNet.instance.get(Uri.parse(url), headers: {
         'User-Agent': _ua,
         'Accept': 'text/html,application/json,*/*',
       }).timeout(const Duration(seconds: 15));
@@ -1121,7 +1122,7 @@ class IptvScraper {
       final idx = (_oauthClientIdx + i) % _oauthClientIds.length;
       final clientId = _oauthClientIds[idx];
       try {
-        final resp = await http.post(
+        final resp = await DizzyNet.instance.post(
           Uri.parse('https://www.reddit.com/api/v1/access_token'),
           headers: {
             'User-Agent': _oauthUa,
@@ -1167,7 +1168,7 @@ class IptvScraper {
         : '$base&after=$after';
 
     try {
-      final resp = await http.get(Uri.parse(url), headers: {
+      final resp = await DizzyNet.instance.get(Uri.parse(url), headers: {
         'User-Agent': _oauthUa,
         'Authorization': 'Bearer $token',
       }).timeout(const Duration(seconds: 12));
@@ -1192,7 +1193,7 @@ class IptvScraper {
         : '$base&after=$after';
 
     try {
-      final resp = await http.get(Uri.parse(url), headers: {
+      final resp = await DizzyNet.instance.get(Uri.parse(url), headers: {
         'User-Agent': _oauthUa,
         'Accept': 'application/atom+xml, application/xml, */*',
       }).timeout(const Duration(seconds: 15));

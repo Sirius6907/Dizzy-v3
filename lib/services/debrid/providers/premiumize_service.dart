@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/debrid_file.dart';
 import '../utils/debrid_media_matcher.dart';
+import '../../net/dizzy_net.dart';
 
 class PremiumizeService {
   static const String _key = 'premiumize_api_key';
@@ -36,7 +36,7 @@ class PremiumizeService {
     final trimmed = key.trim();
     if (trimmed.isEmpty) return null;
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         Uri.parse('https://www.premiumize.me/api/account/info?apikey=$trimmed'),
       );
       if (res.statusCode == 200) {
@@ -55,7 +55,7 @@ class PremiumizeService {
     String prefix,
     List<Map<String, dynamic>> out,
   ) async {
-    final res = await http.post(
+    final res = await DizzyNet.instance.post(
       Uri.parse('https://www.premiumize.me/api/folder/list'),
       body: {'apikey': apiKey, 'id': folderId},
     );
@@ -98,7 +98,7 @@ class PremiumizeService {
 
     // Direct download (cached)
     try {
-      final dlRes = await http.post(
+      final dlRes = await DizzyNet.instance.post(
         Uri.parse('https://www.premiumize.me/api/transfer/directdl'),
         body: {'apikey': apiKey, 'src': magnet},
       );
@@ -122,7 +122,7 @@ class PremiumizeService {
     }
 
     if (files.isEmpty) {
-      final createRes = await http.post(
+      final createRes = await DizzyNet.instance.post(
         Uri.parse('https://www.premiumize.me/api/transfer/create'),
         body: {'apikey': apiKey, 'src': magnet},
       );
@@ -139,7 +139,7 @@ class PremiumizeService {
       int attempts = 0;
       while (attempts < 40) {
         await Future.delayed(const Duration(seconds: 3));
-        final listRes = await http.post(
+        final listRes = await DizzyNet.instance.post(
           Uri.parse('https://www.premiumize.me/api/transfer/list'),
           body: {'apikey': apiKey},
         );

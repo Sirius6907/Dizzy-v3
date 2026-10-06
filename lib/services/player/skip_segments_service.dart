@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../models/player/skip_segment_model.dart';
 import '../scraper/sites/tmdb_helper.dart';
 import '../errors/app_log.dart';
+import '../net/dizzy_net.dart';
 
 /// Service to fetch movie and TV intro/recap/credits/preview skip timestamps from IntroDB.
 class SkipSegmentsService {
@@ -70,7 +70,7 @@ class SkipSegmentsService {
     AppLog.d('[SkipSegmentsService] Querying IntroDB: $uri');
 
     try {
-      final res = await http.get(
+      final res = await DizzyNet.instance.get(
         uri,
         headers: {
           'Accept': 'application/json',
