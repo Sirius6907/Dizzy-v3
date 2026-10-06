@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import '../../services/errors/app_error_log.dart';
 import '../../services/updater/app_updater_service.dart';
 import '../../services/updater/update_prefs.dart';
 import '../../services/updater/update_state_machine.dart';
@@ -18,6 +19,37 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
   bool _isCheckingForUpdates = false;
   bool _autoDownload = false;
   bool _wifiOnly = true;
+
+  // ── Phase 3.3 dev probe ────────────────────────────────────────────
+  // Five taps on the installed-version line (within 2s each) queue a
+  // synthetic report through the real AppErrorLog pipeline, so the
+  // crash -> admin-dashboard path can be proven live (~10s) without
+  // crashing anything. Hidden by design; harmless if never tapped.
+  int _probeTaps = 0;
+  DateTime? _probeAt;
+
+  Future<void> _devProbeTap() async {
+    final now = DateTime.now();
+    if (_probeAt == null ||
+        now.difference(_probeAt!) > const Duration(seconds: 2)) {
+      _probeTaps = 0;
+    }
+    _probeAt = now;
+    _probeTaps += 1;
+    if (_probeTaps < 5) return;
+    _probeTaps = 0;
+    await AppErrorLog.log(
+      code: 'E_PROBE',
+      screen: 'dev_probe',
+      detail: 'manual_probe',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Test report sent. It shows up in about 10 seconds.'),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -203,11 +235,15 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'Installed Version: v$version (Build $buildNumber)',
-                                    style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 12.5,
+                                  GestureDetector(
+                                    onTap: _devProbeTap,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Text(
+                                      'Installed Version: v$version (Build $buildNumber)',
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12.5,
+                                      ),
                                     ),
                                   ),
                                 ],
