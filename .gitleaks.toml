@@ -1,0 +1,30 @@
+# gitleaks config — Dizzy-v3
+# Why these are allowed (2026-10-06 triage of 26 historical findings):
+#  - Hardcoded provider keys in shipped app code: they compile INTO the APK
+#    anyway (dart-define is not a secret); real mitigation = API restrictions
+#    in the provider console (GCP: Android pkg + cert fingerprint restriction).
+#    ACTION(Sirius): restrict those keys in Google Cloud Console.
+#  - Scraper site tokens: by design, public site keys embedded in scrapers.
+#  - SharedPreferences pref-keys: false positives (string look like api keys).
+#  - TempJs/: dead experiment folder, deleted from HEAD, history only.
+# Scan still catches ANY new secret outside these exact files.
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''^TempJs\/clickn_step3\.html$''',
+  '''^TempJs\/movienight_study\/home\.html$''',
+  '''^lib\/services\/anime\/extractors\/miruro_extractor\.dart$''',
+  '''^lib\/services\/audiobook\/audiobook_scraper_service\.dart$''',
+  '''^lib\/services\/audiobook\/paper2audio_service\.dart$''',
+  '''^lib\/services\/cloud\/announcement_service\.dart$''',
+  '''^lib\/services\/music\/youtube_audio_extractor\.dart$''',
+  '''^lib\/services\/notification\/notification_service\.dart$''',
+  '''^lib\/services\/scraper\/sites\/mapple\.dart$''',
+  '''^lib\/services\/scraper\/sites\/vidrock\.dart$''',
+  '''^lib\/services\/scraper\/sites\/xpass\.dart$''',
+  '''^lib\/services\/scraper\/sites\/zxcstream\.dart$''',
+  '''^lib\/services\/subtitles\/providers\/wyzie_provider\.dart$''',
+]

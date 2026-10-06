@@ -1,0 +1,46 @@
+name: CI
+
+# Quality gate — runs on every push to main and every PR.
+# Release builds stay in build.yml (tag-only); this file only gates code health.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Analyze + Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Static analysis (zero issues)
+        run: flutter analyze
+
+      - name: Test suite
+        run: flutter test
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
