@@ -76,3 +76,6 @@ admin-dashboard/config.js
 
 # Local dashboard QA scratch (screenshots + preview copies)
 /.dashboard-preview/
+
+# Session memory - LOCAL ONLY (leaked a password once, never again)
+/memory/
