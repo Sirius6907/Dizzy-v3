@@ -44,7 +44,9 @@ class CloudAuthService {
     onboarded.value = prefs.getBool(_keyOnboarded) ?? false;
     consentTelemetry.value = prefs.getBool(_keyTelemetry) ?? false;
     consentGenrePrefs.value = prefs.getBool(_keyGenrePrefs) ?? false;
-    consentCrash.value = prefs.getBool(_keyCrash) ?? false;
+    // Defaults ON — Dizzy rule: crash reports reach the admin dashboard
+    // with zero setup; the switch in Settings → Privacy turns it off.
+    consentCrash.value = prefs.getBool(_keyCrash) ?? true;
     consentWatchParty.value = prefs.getBool(_keyWatchParty) ?? false;
 
     _anonId = prefs.getString(_keyAnonId);
