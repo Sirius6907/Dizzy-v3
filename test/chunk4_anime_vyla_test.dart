@@ -3,13 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dizzy/services/anime/extractors/anipm_extractor.dart';
 import 'package:dizzy/services/anime/extractors/vidnest_extractor.dart';
 
+import 'helpers/live_gate.dart';
+
 class _AllowAllHttpOverrides extends HttpOverrides {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _AllowAllHttpOverrides();
 
-  group('Chunk 4 Anime Scrapers Tests', () {
+  group('Chunk 4 Anime Scrapers Tests', skip: liveSkip, () {
     test('AniPM extractor queries for One Piece (AniList 21 Ep 1)', () async {
       final extractor = AniPMExtractor.instance;
       final results = await extractor.extract(
