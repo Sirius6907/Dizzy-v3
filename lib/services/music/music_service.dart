@@ -67,9 +67,50 @@ class MusicService {
   }
 
   Future<List<MusicArtist>> fetchTrendingArtists() async {
+    // India-first: seed desi artist faces so the row never opens with
+    // only western faces. Chart artists append after.
+    // Dedup by id AND normalized name — Deezer can return the same
+    // artist twice under different ids (e.g. two "Arijit Singh" rows).
+    final out = <MusicArtist>[];
+    final seenIds = <String>{};
+    final seenNames = <String>{};
+    bool addUnique(MusicArtist a) {
+      final norm = a.name.trim().toLowerCase();
+      if (norm.isEmpty || seenNames.contains(norm)) return false;
+      if (!seenIds.add(a.id)) return false;
+      seenNames.add(norm);
+      out.add(a);
+      return true;
+    }
     try {
-      final artists = await _deezer.getChartArtists(limit: 20);
-      if (artists.isNotEmpty) return artists;
+      const seeds = [
+        'Arijit Singh',
+        'Pritam',
+        'Diljit Dosanjh',
+        'Badshah',
+        'Shreya Ghoshal',
+        'Anuv Jain',
+      ];
+      for (final name in seeds) {
+        try {
+          final found = await _deezer.searchArtists(name, limit: 2);
+          for (final a in found) {
+            addUnique(a);
+            if (out.length >= 7) break;
+          }
+        } catch (_) {}
+        if (out.length >= 7) break;
+      }
+      try {
+        final chart = await _deezer.getChartArtists(limit: 20);
+        for (final a in chart) {
+          addUnique(a);
+          if (out.length >= 14) break;
+        }
+      } catch (e) {
+        debugPrint('fetchTrendingArtists chart error: $e');
+      }
+      if (out.isNotEmpty) return out;
     } catch (e) {
       debugPrint('fetchTrendingArtists error: $e');
     }
@@ -77,52 +118,121 @@ class MusicService {
   }
 
   Future<List<MusicAlbum>> fetchNewReleases() async {
+    // India-first: desi albums open the row, global editorial fills behind.
+    final out = <MusicAlbum>[];
+    final seen = <String>{};
     try {
-      final albums = await _deezer.getNewReleases(limit: 20);
-      if (albums.isNotEmpty) return albums;
-      return await _deezer.getChartAlbums(limit: 20);
+      const seeds = ['Arijit Singh', 'AP Dhillon', 'Pritam', 'Diljit Dosanjh'];
+      for (final name in seeds) {
+        try {
+          final found = await _deezer.searchAlbums(name, limit: 3);
+          for (final a in found) {
+            if (seen.add(a.id)) out.add(a);
+            if (out.length >= 8) break;
+          }
+        } catch (_) {}
+        if (out.length >= 8) break;
+      }
+      try {
+        final releases = await _deezer.getNewReleases(limit: 20);
+        final pick = releases.isNotEmpty
+            ? releases
+            : await _deezer.getChartAlbums(limit: 20);
+        for (final a in pick) {
+          if (seen.add(a.id)) out.add(a);
+          if (out.length >= 14) break;
+        }
+      } catch (e) {
+        debugPrint('fetchNewReleases chart error: $e');
+      }
+      if (out.isNotEmpty) return out;
     } catch (e) {
       debugPrint('fetchNewReleases error: $e');
-      return [];
     }
+    return [];
   }
 
   Future<List<MusicPlaylist>> fetchCuratedPlaylists() async {
+    // India-first: desi playlist queries open the row — Bollywood romance,
+    // Bhangra party, phonk/drive/lofi for the GenZ late-night crowd.
+    // Chart/editorial append after as the "thoda global" tail.
+    final out = <MusicPlaylist>[];
+    final seen = <String>{};
     try {
-      final playlists = await _deezer.getChartPlaylists(limit: 20);
-      if (playlists.isNotEmpty) return playlists;
-      return await _deezer.getEditorialSelection(limit: 20);
+      const seeds = [
+        'Bollywood Love Songs',
+        'Punjabi Bhangra',
+        'Honey Singh',
+        'Bollywood Remix',
+        'Night Drive',
+        'Sad Lofi',
+        'Phonk Hits',
+      ];
+      for (final q in seeds) {
+        try {
+          final found = await _deezer.searchPlaylists(q, limit: 2);
+          for (final p in found) {
+            if (seen.add(p.id)) out.add(p);
+            if (out.length >= 8) break;
+          }
+        } catch (_) {}
+        if (out.length >= 8) break;
+      }
+      try {
+        final chart = await _deezer.getChartPlaylists(limit: 20);
+        final pick = chart.isNotEmpty
+            ? chart
+            : await _deezer.getEditorialSelection(limit: 20);
+        for (final p in pick) {
+          if (seen.add(p.id)) out.add(p);
+          if (out.length >= 12) break;
+        }
+      } catch (e) {
+        debugPrint('fetchCuratedPlaylists chart error: $e');
+      }
+      if (out.isNotEmpty) return out;
     } catch (e) {
       debugPrint('fetchCuratedPlaylists error: $e');
-      return [];
     }
+    return [];
   }
 
   Future<Map<String, List<MusicTrack>>> fetchFeaturedSections() async {
     final results = <String, List<MusicTrack>>{};
 
     try {
-      // 1. Chart Top Tracks
-      final chartTracks = await _deezer.getChartTracks(limit: 25);
-      if (chartTracks.isNotEmpty) {
-        results['🔥 Top Global & Trending Hits'] = chartTracks;
-      }
-
-      // 2. Genre / Mood Searches
-      final queries = {
-        '🌟 Pop Essentials': 'Top Pop Hits',
-        '🎙️ Hip-Hop & Rap Heavyweights': 'Hip Hop Hits',
-        '🎧 Electronic, Dance & EDM': 'Electronic Dance',
-        '🎸 Rock Classics & Alternative': 'Rock Essentials',
-        '🎬 Film & Anime Soundtracks': 'Hans Zimmer Soundtracks',
-        '🌙 Chill, Lofi & Ambient Beats': 'Lofi Beats Chill',
+      // India-first order: pehla section hero billboard banata hai,
+      // isliye sabse pehle desi romance taaki hero hamesha desi lage.
+      // Har query Deezer pe live verify hai (khaali section nahi banega).
+      // Aakhri me global chart — "thoda global" touch ke liye.
+      final queries = <String, String>{
+        '❤️ Bollywood Romance Essentials': 'Pritam Bollywood',
+        '💃 Bollywood Dance & Party': 'Bollywood Dance',
+        '🎧 Mashup & Remix Lab': 'Bollywood Mashup',
+        '🌾 Punjabi Party Hits': 'AP Dhillon',
+        '🎤 Desi Hip-Hop — Gully Vibes': 'Desi Hip Hop',
+        '🛻 Indie & Acoustic Feels': 'Anuv Jain',
+        '🥁 Ollywood DJ & Sambalpuri Mashups': 'Sambalpuri DJ',
+        '🌙 Lofi & Slowed-Reverb Nights': 'Bollywood LoFi',
       };
 
-      for (final entry in queries.entries) {
-        final tracks = await _deezer.searchTracks(entry.value, limit: 15);
+      final chartFuture = _deezer.getChartTracks(limit: 25);
+      final queryFutures = queries.entries
+          .map((e) => _deezer.searchTracks(e.value, limit: 15))
+          .toList();
+      final settled = await Future.wait<Object>([chartFuture, ...queryFutures]);
+
+      for (var i = 0; i < queries.length; i++) {
+        final title = queries.keys.elementAt(i);
+        final tracks = settled[i + 1] as List<MusicTrack>;
         if (tracks.isNotEmpty) {
-          results[entry.key] = tracks;
+          results[title] = tracks;
         }
+      }
+
+      final chartTracks = settled[0] as List<MusicTrack>;
+      if (chartTracks.isNotEmpty) {
+        results['🔥 Trending Now — Global'] = chartTracks;
       }
     } catch (e) {
       debugPrint('fetchFeaturedSections error: $e');

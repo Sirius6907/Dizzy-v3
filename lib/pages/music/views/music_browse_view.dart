@@ -15,16 +15,16 @@ class MusicBrowseView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final genres = [
-      {'title': 'Pop Hits', 'color': const Color(0xFF7C5CFF), 'query': 'Pop Hits'},
-      {'title': 'Hip-Hop & Rap', 'color': const Color(0xFF7850FF), 'query': 'Hip-Hop'},
-      {'title': 'Electronic & EDM', 'color': const Color(0xFF00D294), 'query': 'EDM Dance'},
-      {'title': 'Chill Lofi Beats', 'color': const Color(0xFF00D2EF), 'query': 'Chill Lofi'},
-      {'title': 'Rock Classics', 'color': const Color(0xFFF99C00), 'query': 'Rock Classics'},
-      {'title': 'R&B & Soul', 'color': const Color(0xFFE12AFB), 'query': 'R&B Soul'},
-      {'title': 'Soundtracks & Gaming', 'color': const Color(0xFFFF6568), 'query': 'Soundtracks'},
-      {'title': 'Heavy Metal', 'color': const Color(0xFFFB2C36), 'query': 'Heavy Metal'},
-      {'title': 'Jazz & Blues', 'color': const Color(0xFF625FFF), 'query': 'Jazz Blues'},
-      {'title': 'Classical Piano', 'color': const Color(0xFFFAC800), 'query': 'Classical Piano'},
+      {'title': 'Bollywood Romance', 'color': const Color(0xFF7C5CFF), 'query': 'Pritam Bollywood'},
+      {'title': 'Dance & Party', 'color': const Color(0xFF7850FF), 'query': 'Bollywood Dance'},
+      {'title': 'Mashup & Remix', 'color': const Color(0xFF00D294), 'query': 'Bollywood Mashup'},
+      {'title': 'Punjabi Party', 'color': const Color(0xFF00D2EF), 'query': 'AP Dhillon'},
+      {'title': 'Desi Hip-Hop', 'color': const Color(0xFFF99C00), 'query': 'Desi Hip Hop'},
+      {'title': 'Indie & Acoustic', 'color': const Color(0xFFE12AFB), 'query': 'Anuv Jain'},
+      {'title': 'Ollywood DJ Mix', 'color': const Color(0xFFFF6568), 'query': 'Sambalpuri DJ'},
+      {'title': 'Lofi Nights', 'color': const Color(0xFFFB2C36), 'query': 'Bollywood LoFi'},
+      {'title': 'Sad & Slow Reverb', 'color': const Color(0xFF625FFF), 'query': 'Slowed Reverb Bollywood'},
+      {'title': '90s Evergreen', 'color': const Color(0xFFFAC800), 'query': 'Kishore Kumar'},
     ];
 
     return ListView(

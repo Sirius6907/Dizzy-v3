@@ -15,14 +15,14 @@ class MusicRadioView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radioGenres = [
-      {'name': 'Pop Radio', 'color': const Color(0xFF7C5CFF), 'query': 'Pop Radio Hits'},
-      {'name': 'Rap & Hip-Hop', 'color': const Color(0xFF7850FF), 'query': 'Hip Hop Radio'},
-      {'name': 'Rock Mix', 'color': const Color(0xFFF99C00), 'query': 'Rock Radio'},
-      {'name': 'Dance & Electro', 'color': const Color(0xFF00D294), 'query': 'Electro Radio'},
-      {'name': 'R&B Station', 'color': const Color(0xFFE12AFB), 'query': 'R&B Radio'},
-      {'name': 'Lofi & Ambient', 'color': const Color(0xFF00D2EF), 'query': 'Lofi Radio'},
-      {'name': 'Heavy Metal Station', 'color': const Color(0xFFFB2C36), 'query': 'Metal Radio'},
-      {'name': 'Jazz Club', 'color': const Color(0xFF625FFF), 'query': 'Jazz Radio'},
+      {'name': 'Bollywood Romance', 'color': const Color(0xFF7C5CFF), 'query': 'Pritam Bollywood'},
+      {'name': 'Bollywood Party Mix', 'color': const Color(0xFF7850FF), 'query': 'Bollywood Dance'},
+      {'name': 'Mashup Radio', 'color': const Color(0xFF00D294), 'query': 'Bollywood Mashup'},
+      {'name': 'Punjabi Radio', 'color': const Color(0xFF00D2EF), 'query': 'AP Dhillon'},
+      {'name': 'Gully Hip-Hop', 'color': const Color(0xFFF99C00), 'query': 'Desi Hip Hop'},
+      {'name': 'Indie Feels', 'color': const Color(0xFFE12AFB), 'query': 'Anuv Jain'},
+      {'name': 'Ollywood DJ', 'color': const Color(0xFFFF6568), 'query': 'Sambalpuri DJ'},
+      {'name': 'Lofi Nights Radio', 'color': const Color(0xFF625FFF), 'query': 'Bollywood LoFi'},
     ];
 
     return ListView(
