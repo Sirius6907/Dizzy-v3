@@ -1,9 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../design/dizzy_tactile.dart';
 import '../../../design/dizzy_tokens.dart';
 import '../../../models/music/music_track.dart';
-import '../../../utils/perf/image_caps.dart';
+import 'music_cover_image.dart';
 import 'music_hoverable.dart';
 
 class MusicAlbumCard extends StatelessWidget {
@@ -29,14 +28,10 @@ class MusicAlbumCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(DizzyRadius.xl),
-                child: CachedNetworkImage(
+                child: MusicCoverImage(
                   imageUrl: album.coverUrl,
                   width: 145,
                   height: 145,
-                  fit: BoxFit.cover,
-                  // P12: decode-capped (was full-res).
-                  memCacheWidth: ImageCaps.kThumb,
-                  maxWidthDiskCache: ImageCaps.kThumb,
                 ),
               ),
               const SizedBox(height: 8),

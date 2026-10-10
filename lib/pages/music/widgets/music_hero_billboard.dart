@@ -49,8 +49,35 @@ class MusicHeroBillboard extends StatelessWidget {
                 imageUrl: track.coverUrl,
                 fit: BoxFit.cover,
                 // P12: decode-capped (was full-res).
-                memCacheWidth: ImageCaps.kCardW,
-                maxWidthDiskCache: ImageCaps.kCardW,
+                memCacheWidth: ImageCaps.kBackdrop,
+                maxWidthDiskCache: ImageCaps.kBackdrop,
+                // 2026-10-10: never blank — loading shimmer + themed
+                // fallback so a cache/network hiccup can't empty the hero.
+                placeholder: (c, u) => Container(
+                  color: DizzyVoid.surface1,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: DizzyGlow.violet,
+                    ),
+                  ),
+                ),
+                errorWidget: (c, u, e) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF2A1B4E), Color(0xFF120A24)],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.music_note_rounded,
+                      color: DizzyGlow.violet,
+                      size: 72,
+                    ),
+                  ),
+                ),
               ),
             ),
             Positioned.fill(

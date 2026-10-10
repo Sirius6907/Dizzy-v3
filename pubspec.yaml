@@ -42,6 +42,11 @@ dependencies:
   http: ^1.2.2
   html: ^0.15.5
   cached_network_image: ^3.4.1
+  # Windows/Linux/macOS: sqflite has no desktop plugin — CachedNetworkImage's
+  # disk cache (flutter_cache_manager → sqflite) throws on first image write,
+  # leaving every CachedNetworkImage blank on desktop. FFI backend fixes it.
+  sqflite_common_ffi: ^2.3.6
+  sqlite3_flutter_libs: ^0.5.21
   shared_preferences: ^2.3.3
   url_launcher: ^6.3.2
   torrserver_flutter: ^0.0.6

@@ -1,7 +1,6 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../models/music/music_track.dart';
-import '../../../utils/perf/image_caps.dart';
+import 'music_cover_image.dart';
 import 'music_hoverable.dart';
 import 'music_horizontal_scroll_section.dart';
 
@@ -37,16 +36,11 @@ class MusicTrendingArtists extends StatelessWidget {
                       width: 2,
                     ),
                   ),
-                  child: ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: artist.pictureUrl,
-                      width: 78,
-                      height: 78,
-                      fit: BoxFit.cover,
-                      // P12: decode-capped (was full-res).
-                      memCacheWidth: ImageCaps.kThumb,
-                      maxWidthDiskCache: ImageCaps.kThumb,
-                    ),
+                  child: MusicCoverImage(
+                    imageUrl: artist.pictureUrl,
+                    width: 78,
+                    height: 78,
+                    circular: true,
                   ),
                 ),
                 const SizedBox(height: 8),

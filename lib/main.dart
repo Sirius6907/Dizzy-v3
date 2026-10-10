@@ -67,6 +67,7 @@ import './core/error_boundary.dart';
 import './core/nav_key.dart';
 import './pages/search/universal_spotlight_modal.dart';
 import './services/system/resource_governor.dart';
+import './services/system/desktop_database.dart';
 import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
 import './services/heartbeat/heartbeat_service.dart';
@@ -77,6 +78,11 @@ import './services/watchparty/guest_auto_open.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Desktop DB FIRST (2026-10-10): sqflite has no Windows/Linux plugin —
+  // without the FFI backend, CachedNetworkImage's disk cache throws on
+  // first write and every remote image stays blank. Must run before any
+  // widget/painting touches an image.
+  await DesktopDatabase.initialize();
   MediaKit.ensureInitialized();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();

@@ -1,9 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_download_service.dart';
-import '../../../utils/perf/image_caps.dart';
+import 'music_cover_image.dart';
 import 'music_hoverable.dart';
 
 class MusicTrackRow extends StatelessWidget {
@@ -37,14 +36,10 @@ class MusicTrackRow extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: CachedNetworkImage(
+              child: MusicCoverImage(
                 imageUrl: track.coverUrl,
                 width: 48,
                 height: 48,
-                fit: BoxFit.cover,
-                // P12: decode-capped (was full-res).
-                memCacheWidth: ImageCaps.kThumb,
-                maxWidthDiskCache: ImageCaps.kThumb,
               ),
             ),
             if (isCurrent)
