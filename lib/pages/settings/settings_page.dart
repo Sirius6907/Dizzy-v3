@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../services/addon/addon_manager.dart';
+import '../../services/adult/adult_section_gate.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/debrid/debrid_service.dart';
 import '../../services/trakt/trakt_service.dart';
@@ -19,6 +20,7 @@ import 'updates_settings_page.dart';
 import 'about_settings_page.dart';
 import '../stats/stats_page.dart';
 import 'privacy_settings_page.dart';
+import '../adult/adult_heaven_page.dart';
 import 'profiles_settings_page.dart';
 import 'scraper_health_page.dart';
 import 'watch_party_page.dart';
@@ -505,6 +507,30 @@ class _SettingsPageState extends State<SettingsPage> {
                 badgeText: 'NEW',
                 badgeColor: palette.primaryColor,
                 onTap: () => _navigateTo(const PrivacySettingsPage()),
+              ),
+
+              // 18+ Heaven: gated entry — renders ONLY when the triple
+              // lock is open, so the section is invisible otherwise.
+              ValueListenableBuilder<bool>(
+                valueListenable: AdultSectionGate.visible,
+                builder: (context, open, _) {
+                  if (!open) return const SizedBox.shrink();
+                  return Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      _SettingsCategoryTile(
+                        icon: Icons.no_adult_content_rounded,
+                        iconColor: const Color(0xFFE50914),
+                        title: '🔞 18+ Heaven',
+                        subtitle: 'Adult-only browsed rows, category-wise',
+                        badgeText: '18+',
+                        badgeColor: const Color(0xFFE50914),
+                        onTap: () =>
+                            _navigateTo(const AdultHeavenPage()),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 12),

@@ -779,9 +779,13 @@ async function loadDevices() {
       const badges = [
         d.revoked_at ? '<span class="pill p-closed">revoked</span>' : '',
         d.banned ? `<span class="pill p-closed" title="level ${esc(d.ban_level || 'social')}">banned</span>` : '',
+        d.adult_allowed ? '<span class="pill p-adult" title="18+ Heaven allowed">🔞 18+</span>' : '',
         d.hwid_stable === false ? '<span class="pill" title="weak identity anchor">new</span>' : '',
         activity,
       ].filter(Boolean).join(' ');
+      const adultBtn = d.adult_allowed
+        ? `<button class="btn btn-ok btn-sm" onclick="setAdultAllow('${d.device_id}',false)">Block 18+</button>`
+        : `<button class="btn btn-sm" onclick="setAdultAllow('${d.device_id}',true)">Allow 18+</button>`;
       const action = d.revoked_at
         ? `<button class="btn btn-ok btn-sm" onclick="revokeDevice('${d.device_id}',false)">Restore</button>`
         : `<button class="btn btn-danger btn-sm" onclick="revokeDevice('${d.device_id}',true)">Revoke</button>`;
@@ -789,7 +793,7 @@ async function loadDevices() {
        <td>${esc(d.platform)}</td><td>${esc(d.app_version)}</td>
        <td>${dot} ${badges}</td>
        <td class="mut" title="${esc(fmtAbs(d.last_seen_at))}">${ago(d.last_seen_at)}</td>
-       <td>${action}</td></tr>`;
+       <td>${action} ${adultBtn}</td></tr>`;
     }).join('')
       || `<tr><td colspan="6">${emptyState('📭', 'No devices yet', 'Devices register on app boot.')}</td></tr>`;
   } catch (e) { toast('Devices failed: ' + e.message, 'err'); }
@@ -801,6 +805,17 @@ async function revokeDevice(deviceId, revoke) {
   try {
     await rpc('admin_device_revoke', { p_device_id: deviceId, p_revoke: revoke });
     toast(revoke ? 'Device revoked 🔒' : 'Device restored 🔓', 'ok');
+    loadDevices();
+  } catch (e) { toast(verb + ' failed: ' + e.message, 'err'); }
+}
+
+// ── 18+ Heaven per-device allow ──
+async function setAdultAllow(deviceId, allow) {
+  const verb = allow ? 'Allow 18+' : 'Block 18+';
+  if (!allow && !confirm('Block 18+ Heaven on this device? Its adult section vanishes on next boot.')) return;
+  try {
+    await rpc('admin_device_adult', { p_device_id: deviceId, p_allow: allow });
+    toast(allow ? '18+ Heaven allowed 🔞' : '18+ Heaven blocked 🔒', 'ok');
     loadDevices();
   } catch (e) { toast(verb + ' failed: ' + e.message, 'err'); }
 }

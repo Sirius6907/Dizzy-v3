@@ -131,7 +131,10 @@ class StreamService {
   }) {
     final controller = StreamController<StreamSource>();
 
-    final addons = AddonManager.instance.activeStreamAddons;
+    // 18+ Heaven: adult stream addons answer only when the gate is open.
+    final addons = AddonManager.instance.activeStreamAddons
+        .where(AddonManager.allowAddon)
+        .toList(growable: false);
     final isHttpActive = AddonManager.instance.isDizzyHttpActive;
 
     if (addons.isEmpty && !isHttpActive) {
@@ -352,12 +355,14 @@ class StreamService {
       return controller.stream;
     }
 
-    // Otherwise, find the matching Stremio addon
+    // Otherwise, find the matching Stremio addon.
+    // 18+ Heaven: adult addons match only when the gate is open.
     final matchingAddons = AddonManager.instance.activeStreamAddons.where(
       (a) =>
-          a.manifest.name.toLowerCase() == normalizedTarget ||
-          a.manifest.name.toLowerCase().contains(normalizedTarget) ||
-          normalizedTarget.contains(a.manifest.name.toLowerCase()),
+          AddonManager.allowAddon(a) &&
+          (a.manifest.name.toLowerCase() == normalizedTarget ||
+              a.manifest.name.toLowerCase().contains(normalizedTarget) ||
+              normalizedTarget.contains(a.manifest.name.toLowerCase())),
     ).toList();
 
     if (matchingAddons.isNotEmpty) {

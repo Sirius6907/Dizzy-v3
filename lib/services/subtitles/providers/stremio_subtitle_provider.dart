@@ -160,7 +160,10 @@ class StremioSubtitleProvider extends SubtitleProvider {
     final id = isEpisode ? '$cleanImdbId:$season:$episode' : cleanImdbId;
 
     final List<SubtitleVariant> results = [];
-    final activeAddons = AddonManager.instance.activeSubtitleAddons;
+    // 18+ Heaven: adult subtitle addons answer only when the gate is open.
+    final activeAddons = AddonManager.instance.activeSubtitleAddons
+        .where(AddonManager.allowAddon)
+        .toList(growable: false);
 
     for (final addon in activeAddons) {
       try {

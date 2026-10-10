@@ -9,6 +9,7 @@ import '../cloud/cloud_client.dart';
 import '../device/device_identity_v2.dart';
 import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
+import '../adult/adult_section_gate.dart';
 
 /// Progressive Identity & Cross-Device Sync Service for Dizzy-v3.
 ///
@@ -86,6 +87,11 @@ class DizzyIdentityService {
         deviceRevoked.value = true;
       } else if (res is Map && res['success'] == true) {
         deviceRevoked.value = false;
+      }
+      // 18+ Heaven: server allow rides the same boot response (fail-closed —
+      // a missing key keeps the last-known value, never grants).
+      if (res is Map && res['adult_allowed'] is bool) {
+        await AdultSectionGate.applyServerAllow(res['adult_allowed'] as bool);
       }
     } catch (e) {
       AppLog.d('[DizzyIdentityService] bootDevice: $e');

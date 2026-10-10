@@ -7,6 +7,8 @@ import '../../models/movie/movie.dart';
 import '../../models/movie/movie_section.dart';
 import '../../utils/search/relevance_scorer.dart';
 import '../metadata/metadata_service.dart';
+import '../adult/adult_directory.dart';
+import '../adult/adult_section_gate.dart';
 import '../p2p/p2p_settings_service.dart';
 import '../scraper/scraper_quarantine_service.dart';
 
@@ -332,12 +334,81 @@ class AddonManager {
     );
   }
 
+  // ── 18+ Heaven filter ───────────────────────────────────────────────
+
+  static final _adultUrls = <String>{
+    for (final e in AdultDirectory.entries) _normBase(e.manifestUrl),
+  };
+
+  static String _normBase(String manifestUrl) {
+    var u = manifestUrl.trim();
+    if (u.endsWith('/manifest.json')) {
+      u = u.substring(0, u.length - '/manifest.json'.length);
+    }
+    if (u.endsWith('/')) u = u.substring(0, u.length - 1);
+    return u.toLowerCase();
+  }
+
+  static String _normAddonBase(String baseUrl) {
+    var u = baseUrl.trim();
+    if (u.startsWith('stremio://')) {
+      u = 'https://${u.substring('stremio://'.length)}';
+    } else if (u.startsWith('stremio:')) {
+      u = 'https://${u.substring('stremio:'.length)}';
+    }
+    if (u.endsWith('/manifest.json')) {
+      u = u.substring(0, u.length - '/manifest.json'.length);
+    }
+    if (u.endsWith('/')) u = u.substring(0, u.length - 1);
+    return u.toLowerCase();
+  }
+
+  /// True when this installed addon is one of the 18+ Heaven entries, or
+  /// matches known adult markers (id/name/type/catalog type). Production
+  /// gate AND page both use this.
+  static bool isAdultAddon(InstalledAddon addon) {
+    if (_adultUrls.contains(_normAddonBase(addon.baseUrl))) return true;
+    final id = addon.manifest.id.toLowerCase();
+    final name = addon.manifest.name.toLowerCase();
+    const keys = [
+      'adult',
+      'porn',
+      'porntube',
+      'onlyporn',
+      'xxx',
+      'jav',
+      'hentai',
+      'midnight',
+      'stravo',
+      'asa:',
+      'tpb:',
+    ];
+    if (keys.any(id.contains) || keys.any(name.contains)) return true;
+    const types = {'porn', 'adultvideo', 'xxx', 'adult'};
+    if (addon.manifest.types.any((t) => types.contains(t.toLowerCase()))) {
+      return true;
+    }
+    return addon.manifest.catalogs
+        .any((c) => types.contains(c.type.toLowerCase()));
+  }
+
+  /// Home/search fan-outs call this: adult addons pass ONLY when the
+  /// 18+ Heaven gate is open. Fail-closed by default.
+  static bool _allowAddon(InstalledAddon addon) {
+    if (!isAdultAddon(addon)) return true;
+    return AdultSectionGate.visible.value;
+  }
+
+  /// Public twin for stream/subtitle services: same gate, same default.
+  static bool allowAddon(InstalledAddon addon) => _allowAddon(addon);
+
   // ── Home sections ─────────────────────────────────────────────────────
 
   /// Fetch all home page sections from every active addon's catalogs.
   /// Each addon's catalogs are fetched concurrently.
   Future<List<MovieSection>> fetchAllHomeSections() async {
-    final active = activeCatalogAddons;
+    final active =
+        activeCatalogAddons.where(_allowAddon).toList(growable: false);
 
     final addonFutures = active.map(_fetchAddonSections);
     final results = await Future.wait(addonFutures);
@@ -352,7 +423,8 @@ class AddonManager {
 
   /// Streams home page sections one by one as they load, so the UI can populate dynamically.
   Stream<MovieSection> streamHomeSections() async* {
-    final active = activeCatalogAddons;
+    final active =
+        activeCatalogAddons.where(_allowAddon).toList(growable: false);
     final List<Future<MovieSection?>> sectionFutures = [];
 
     // 1. Kick off all network requests concurrently
@@ -428,8 +500,10 @@ class AddonManager {
   }
 
   /// Search across all active addons that support search.
+  /// 18+ Heaven addons answer only when the gate is open.
   Future<List<MovieSection>> searchAll(String query) async {
-    final active = activeSearchAddons;
+    final active =
+        activeSearchAddons.where(_allowAddon).toList(growable: false);
     final futures = <Future<MovieSection?>>[];
 
     for (final addon in active) {
@@ -489,8 +563,10 @@ class AddonManager {
   }
 
   /// Fetch catalogs filtered by a specific genre across all active addons.
+  /// 18+ Heaven addons answer only when the gate is open.
   Future<List<MovieSection>> fetchByGenre(String genre) async {
-    final active = activeCatalogAddons;
+    final active =
+        activeCatalogAddons.where(_allowAddon).toList(growable: false);
     final futures = <Future<MovieSection?>>[];
 
     for (final addon in active) {

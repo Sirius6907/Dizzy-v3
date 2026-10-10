@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import '../../services/adult/adult_section_gate.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/tactile/dizzy_tactile_card.dart';
 
@@ -19,6 +22,13 @@ class PrivacySettingsPage extends StatefulWidget {
 
 class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   bool _deleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 18+ Heaven gate boots closed — reflect persisted state.
+    AdultSectionGate.ensureLoaded();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,6 +166,74 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                   value: v,
                   onChanged: (nv) =>
                       CloudAuthService.setConsent(watchParty: nv),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _sectionTitle('18+ Heaven (adults only)'),
+              ValueListenableBuilder<bool>(
+                valueListenable: AdultSectionGate.localConfirmed,
+                builder: (context, v, _) => SwitchListTile(
+                  title: const Text('I am 18+ — unlock adult section',
+                      style: TextStyle(color: Colors.white)),
+                  subtitle: const Text(
+                      'Needs admin allow for this device too. Kids profiles stay locked.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  value: v,
+                  onChanged: (nv) async {
+                    if (nv) {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (c) => AlertDialog(
+                          title: const Text('Confirm you are 18+?'),
+                          content: const Text(
+                              'This unlocks the 18+ Heaven section on THIS device only. Your admin must also allow this device.'),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(c, false),
+                                child: const Text('Cancel')),
+                            FilledButton(
+                                onPressed: () => Navigator.pop(c, true),
+                                child: const Text('I am 18+')),
+                          ],
+                        ),
+                      );
+                      if (ok != true) return;
+                    }
+                    await AdultSectionGate.setLocalConfirmed(nv);
+                    if (context.mounted) {
+                      unawaited(AdultSectionGate.refreshFromServer());
+                      final open = AdultSectionGate.visible.value;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(open
+                                ? '18+ Heaven unlocked ✓'
+                                : 'Saved. Waiting for admin allow on this device.')),
+                      );
+                    }
+                  },
+                ),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: AdultSectionGate.adminAllowed,
+                builder: (context, allowed, _) => ListTile(
+                  leading: Icon(
+                      allowed
+                          ? Icons.verified_user_rounded
+                          : Icons.hourglass_empty_rounded,
+                      color: allowed ? Colors.greenAccent : Colors.orangeAccent),
+                  title: const Text('Admin allow status',
+                      style: TextStyle(color: Colors.white)),
+                  subtitle: Text(
+                      allowed
+                          ? 'This device is allowed by your admin.'
+                          : 'Not allowed yet — ask your admin to allow this device.',
+                      style: const TextStyle(
+                          color: Colors.white60, fontSize: 12)),
+                  trailing: TextButton(
+                    onPressed: () =>
+                        unawaited(AdultSectionGate.refreshFromServer()),
+                    child: const Text('Check again'),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

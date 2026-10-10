@@ -14,6 +14,7 @@ import 'package:window_manager/window_manager.dart';
 
 import './pages/home/home_page.dart';
 import './services/addon/addon_manager.dart';
+import './services/adult/adult_section_gate.dart';
 import './services/theme/app_theme_service.dart';
 import './services/updater/update_gate.dart';
 import './services/updater/update_orchestrator.dart';
@@ -131,6 +132,7 @@ void main() async {
   });
   await Future.wait([
     AddonManager.instance.initialize(),
+    AdultSectionGate.ensureLoaded(),
     AppThemeService.initialize(),
     AudiobookSettings.initialize(),
     ContinueWatchingService.initialize(),
