@@ -26,6 +26,12 @@ class AddonManager {
   List<InstalledAddon> _addons = [];
   bool _initialized = false;
 
+  /// Test-only: drop cached state so initialize() re-runs from storage.
+  void resetForTest() {
+    _addons = [];
+    _initialized = false;
+  }
+
   void _ensureBuiltInsExist() {
     bool changed = false;
     if (!_addons.any((a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy')) {
@@ -190,12 +196,21 @@ class AddonManager {
       await _save();
     }
 
-    // Sync P2P state
+    // Sync P2P state — the builtin addon entry is the single source of truth.
+    // A stored Settings-switch choice (older builds wrote it without touching
+    // the addon) wins once, then both stay in lockstep via toggleAddon.
     final p2pAddon = _addons.firstWhere(
       (a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy',
       orElse: () => playTorrioBuiltin,
     );
+    final persisted = await P2pSettingsService.persistedChoice();
+    if (persisted != null && persisted != p2pAddon.isStreamsActive) {
+      p2pAddon.enabled = persisted;
+      p2pAddon.enableStreams = persisted;
+      await _save();
+    }
     P2pSettingsService.isP2pEnabled.value = p2pAddon.isStreamsActive;
+    await P2pSettingsService.persistChoice(p2pAddon.isStreamsActive);
 
     _initialized = true;
   }

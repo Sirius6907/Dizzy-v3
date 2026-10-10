@@ -635,7 +635,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     badgeColor: isP2p ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                     value: isP2p,
                     onChanged: (val) async {
-                      await P2pSettingsService.setP2pEnabled(val);
+                      // Route through the addon so the Settings switch and the
+                      // builtin entry (isDizzyActive) never desync — toggleAddon
+                      // also flips P2pSettingsService internally.
+                      await AddonManager.instance.toggleAddon('builtin.dizzy', val);
                     },
                     onInfoTap: () {
                       showDialog(

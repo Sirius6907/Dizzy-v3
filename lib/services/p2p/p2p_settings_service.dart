@@ -24,6 +24,27 @@ class P2pSettingsService {
     }
   }
 
+  /// Raw persisted choice, null when the user never touched the switch.
+  /// Lets startup reconcile tell "explicit OFF" apart from "never set".
+  static Future<bool?> persistedChoice() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_kP2pEnabledKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Persists the choice without touching the engine (startup path).
+  static Future<void> persistChoice(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kP2pEnabledKey, enabled);
+    } catch (e) {
+      debugPrint('[P2pSettingsService] Error persisting choice: $e');
+    }
+  }
+
   /// Updates the P2P torrent source enabled state and persists it.
   static Future<void> setP2pEnabled(bool enabled) async {
     isP2pEnabled.value = enabled;

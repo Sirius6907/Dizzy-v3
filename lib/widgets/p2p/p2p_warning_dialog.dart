@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../services/p2p/p2p_settings_service.dart';
+import '../../services/addon/addon_manager.dart';
 
 class P2pWarningDialog extends StatelessWidget {
   const P2pWarningDialog({super.key});
@@ -341,7 +342,7 @@ class P2pWarningDialog extends StatelessWidget {
         // Yes, Turn Off P2P button
         ElevatedButton.icon(
           onPressed: () async {
-            await P2pSettingsService.setP2pEnabled(false);
+            await AddonManager.instance.toggleAddon('builtin.dizzy', false);
             await P2pSettingsService.setNeverShowWarning(true);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -379,7 +380,7 @@ class P2pWarningDialog extends StatelessWidget {
         // Yes, Turn Off P2P button
         ElevatedButton.icon(
           onPressed: () async {
-            await P2pSettingsService.setP2pEnabled(false);
+            await AddonManager.instance.toggleAddon('builtin.dizzy', false);
             await P2pSettingsService.setNeverShowWarning(true);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

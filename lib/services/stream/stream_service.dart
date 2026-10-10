@@ -56,7 +56,6 @@ import '../scraper/sites/hindmoviez.dart';
 import '../anime/anime_scraper_service.dart';
 import '../anime_arabic/anime_arabic_service.dart';
 import '../anime_arabic/anime_arabic_extractor.dart';
-import '../p2p/p2p_settings_service.dart';
 import '../net/dizzy_net.dart';
 import '../errors/app_log.dart';
 
@@ -66,7 +65,9 @@ class StreamService {
   StreamService._();
 
   static void _registerBuiltInScrapers() {
-    if (P2pSettingsService.isP2pEnabled.value) {
+    // Source of truth = builtin addon entry (kept in lockstep with the
+    // Settings switch via AddonManager.toggleAddon). isP2pEnabled mirrors it.
+    if (AddonManager.instance.isDizzyActive) {
       ScraperManager.instance.registerScraper(KnabenScraper());
       ScraperManager.instance.registerScraper(TorrentGalaxyScraper());
     } else {
