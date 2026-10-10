@@ -137,6 +137,49 @@ class TmdbHelper {
     return got;
   }
 
+  /// Pure: exact-title TMDB id picker (2026-10-10 strict gate).
+  ///
+  /// Exact (case/ punctuation-insensitive) title REQUIRED — substring
+  /// matching + results.first fallback played the WRONG movie
+  /// (poster A, playback B). No exact hit → null (safe "not found").
+  /// Unit-tested: the wrong-content bug must never regress.
+  static int? pickExactTitleId({
+    required List? results,
+    required String title,
+    int? year,
+  }) {
+    if (results == null || results.isEmpty) return null;
+    final targetCleanTitle = _cleanString(title);
+    if (targetCleanTitle.isEmpty) return null;
+    int? bestMatchId;
+    for (final item in results) {
+      final m = item as Map;
+      final itemTitle = (m['title'] ??
+              m['name'] ??
+              m['original_title'] ??
+              m['original_name'] ??
+              '')
+          .toString();
+      final itemCleanTitle = _cleanString(itemTitle);
+      if (itemCleanTitle != targetCleanTitle) continue;
+      final dateStr =
+          (m['release_date'] ?? m['first_air_date'] ?? '').toString();
+      final itemYear = dateStr.length >= 4
+          ? int.tryParse(dateStr.substring(0, 4))
+          : null;
+      if (year != null && itemYear != null) {
+        if (itemYear == year || (itemYear - year).abs() <= 1) {
+          final id = m['id'] as int?;
+          if (id != null) return id;
+        }
+      } else {
+        bestMatchId ??= m['id'] as int?;
+      }
+    }
+    // No exact-title hit anywhere → null (never results.first).
+    return bestMatchId;
+  }
+
   static Future<int?> resolveTmdbId({
     String? imdbId,
     required String title,
@@ -180,51 +223,8 @@ class TmdbHelper {
           .toList();
     }
 
-    int? pickTitle(List? results) {
-      if (results == null || results.isEmpty) return null;
-      final targetCleanTitle = _cleanString(title);
-      int? bestMatchId;
-      for (final item in results) {
-        final m = item as Map;
-        final itemTitle = (m['title'] ??
-                m['name'] ??
-                m['original_title'] ??
-                m['original_name'] ??
-                '')
-            .toString();
-        final itemCleanTitle = _cleanString(itemTitle);
-        final dateStr =
-            (m['release_date'] ?? m['first_air_date'] ?? '').toString();
-        final itemYear = dateStr.length >= 4
-            ? int.tryParse(dateStr.substring(0, 4))
-            : null;
-        final titleMatch = itemCleanTitle == targetCleanTitle ||
-            itemCleanTitle.contains(targetCleanTitle) ||
-            targetCleanTitle.contains(itemCleanTitle);
-        if (!titleMatch) continue;
-        if (year != null && itemYear != null) {
-          if (itemYear == year || (itemYear - year).abs() <= 1) {
-            final id = m['id'] as int?;
-            if (id != null) {
-              _cache[cacheKey] = id;
-              return id;
-            }
-          }
-        } else {
-          bestMatchId ??= m['id'] as int?;
-        }
-      }
-      if (bestMatchId != null) {
-        _cache[cacheKey] = bestMatchId;
-        return bestMatchId;
-      }
-      final fallbackId = (results.first as Map)['id'] as int?;
-      if (fallbackId != null) {
-        _cache[cacheKey] = fallbackId;
-        return fallbackId;
-      }
-      return null;
-    }
+    int? pickTitle(List? results) => pickExactTitleId(
+          results: results, title: title, year: year);
 
     if (cleanId.isNotEmpty) {
       // 1. Direct numeric ID
@@ -264,23 +264,33 @@ class TmdbHelper {
 
     // 3. Search by title — edge, keyed direct, keyless last.
     if (title.isNotEmpty) {
+      int? hit;
       if (edge) {
         final data = await _edgeGet(
             '/search/$endpoint', {'query': title});
-        final hit = pickTitle(data?['results'] as List?);
-        if (hit != null) return hit;
+        hit = pickTitle(data?['results'] as List?);
+        if (hit != null) {
+          _cache[cacheKey] = hit;
+          return hit;
+        }
       }
       if (hasKey) {
         final data = await _directGet(Uri.parse(
             '$_tmdbDirect/search/$endpoint?api_key=$_apiKey&query=${Uri.encodeComponent(title)}'));
-        final hit = pickTitle(data?['results'] as List?);
-        if (hit != null) return hit;
+        hit = pickTitle(data?['results'] as List?);
+        if (hit != null) {
+          _cache[cacheKey] = hit;
+          return hit;
+        }
       }
       final data = await _directGet(Uri.parse(
           '$_speedrace/search/$endpoint?query=${Uri.encodeComponent(title)}'),
           seconds: 6);
-      final hit = pickTitle(data?['results'] as List?);
-      if (hit != null) return hit;
+      hit = pickTitle(data?['results'] as List?);
+      if (hit != null) {
+        _cache[cacheKey] = hit;
+        return hit;
+      }
     }
 
     return null;

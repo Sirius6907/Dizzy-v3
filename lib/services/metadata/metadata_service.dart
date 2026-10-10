@@ -233,6 +233,7 @@ class MetadataService {
     // +30 for title startsWith
     Movie? bestMatch;
     int highestScore = -1;
+    bool exactTitleHit = false;
 
     for (final c in allCandidates) {
       int score = 0;
@@ -261,9 +262,20 @@ class MetadataService {
       if (score > highestScore) {
         highestScore = score;
         bestMatch = c;
+        // The +100 exact-title component is the ONLY safe resolver.
+        // (startsWith 30 + year 60 + type 20 = 110 would otherwise
+        // pass a pure-score gate with a DIFFERENT video.)
+        exactTitleHit = (cName == qLower);
       }
     }
 
-    return bestMatch ?? allCandidates.first;
+    // Strict gate (2026-10-10): exact title match REQUIRED. A fuzzy
+    // "best guess" resolves to a DIFFERENT video — poster A, playback B.
+    // Returning null shows "not found" (safe); returning a guess plays
+    // the wrong content (harmful). Callers all null-guard
+    // (details fallback, similar resolver, party guest auto-open).
+    if (!exactTitleHit) return null;
+
+    return bestMatch;
   }
 }
