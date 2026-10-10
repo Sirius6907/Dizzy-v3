@@ -27,7 +27,6 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
   final _manager = AddonManager.instance;
   bool _loading = true;
   List<MovieSection> _sections = [];
-  Set<String> _installedIds = {};
   String? _error;
 
   @override
@@ -71,7 +70,6 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
     });
     try {
       final installed = _manager.addons;
-      _installedIds = installed.map((a) => a.manifest.id).toSet();
       final out = <MovieSection>[];
       // One rail per installed adult addon = category-wise rows.
       for (final addon in installed) {
@@ -189,20 +187,15 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
   }
 
   /// Directory entries not yet installed → one-tap install cards.
-  List<AdultDirectoryEntry> _missingInstalls() {
-    bool known(String manifestUrl) {
-      final base = manifestUrl
-          .replaceAll('/manifest.json', '')
-          .toLowerCase();
-      return _manager.addons.any(
-        (a) =>
-            a.baseUrl.toLowerCase() == base ||
-            _installedIds.contains(a.manifest.id),
-      );
-    }
-
-    return AdultDirectory.entries.where((e) => !known(e.manifestUrl)).toList();
-  }
+  ///
+  /// (2026-10-10 fix: the old check `_installedIds.contains(a.manifest.id)`
+  /// was a tautology — _installedIds is BUILT from the installed list, so it
+  /// was true for every installed addon, marking every entry "known" and the
+  /// install cards NEVER rendered. Now matches the ENTRY id / base URL.)
+  List<AdultDirectoryEntry> _missingInstalls() =>
+      AdultDirectory.missingEntries(_manager.addons
+          .map((a) => (id: a.manifest.id, baseUrl: a.baseUrl))
+          .toList());
 
   Widget _installCard(AdultDirectoryEntry entry) {
     return Padding(

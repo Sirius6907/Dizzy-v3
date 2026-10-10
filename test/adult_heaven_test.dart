@@ -115,4 +115,31 @@ void main() {
       expect(AddonManager.isAdultAddon(c), isFalse);
     });
   });
+
+  group('AdultDirectory.missingEntries (install cards)', () {
+    test('empty install base → all 8 entries missing (cards render)', () {
+      expect(AdultDirectory.missingEntries(const []),
+          hasLength(AdultDirectory.entries.length));
+    });
+
+    test('unrelated addons (Cinemeta + builtin) change nothing', () {
+      final installed = [
+        (id: 'com.linvo.cinemeta', baseUrl: 'https://v3-cinemeta.strem.io'),
+        (id: 'builtin.dizzy', baseUrl: 'builtin:dizzy'),
+      ];
+      expect(AdultDirectory.missingEntries(installed),
+          hasLength(AdultDirectory.entries.length));
+    });
+
+    test('installed entry drops out by id or baseUrl', () {
+      final installed = [
+        (id: 'com.tpb.adult.4k', baseUrl: 'https://tpb-adult-addon.click'),
+        (id: 'hub.adultvideo.hd', baseUrl: 'https://something-else.example'),
+      ];
+      final missing = AdultDirectory.missingEntries(installed);
+      expect(missing, hasLength(AdultDirectory.entries.length - 2));
+      expect(missing.map((e) => e.id), isNot(contains('com.tpb.adult.4k')));
+      expect(missing.map((e) => e.id), isNot(contains('hub.adultvideo.hd')));
+    });
+  });
 }

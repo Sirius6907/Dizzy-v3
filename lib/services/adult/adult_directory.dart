@@ -93,4 +93,26 @@ abstract final class AdultDirectory {
     final present = entries.map((e) => e.category).toSet();
     return [...order.where(present.contains)];
   }
+
+  /// Entries NOT yet installed → install cards.
+  ///
+  /// Matches on entry id OR base URL. (2026-10-10: the page's old inline
+  /// check compared installed ids against THEMSELVES — a tautology that
+  /// marked every entry "known", so install cards never rendered.)
+  /// Takes plain id/baseUrl pairs so tests need no AddonManager.
+  static List<AdultDirectoryEntry> missingEntries(
+    List<({String id, String baseUrl})> installed,
+  ) {
+    bool known(AdultDirectoryEntry e) {
+      final base =
+          e.manifestUrl.replaceAll('/manifest.json', '').toLowerCase();
+      return installed.any(
+        (a) =>
+            a.baseUrl.toLowerCase() == base ||
+            a.id.toLowerCase() == e.id.toLowerCase(),
+      );
+    }
+
+    return entries.where((e) => !known(e)).toList();
+  }
 }
