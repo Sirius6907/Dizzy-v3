@@ -10,6 +10,7 @@ import '../../models/movie/movie_detail.dart';
 import '../../models/my_list/my_list_item.dart';
 import '../../services/metadata/bestsimilar_scraper.dart';
 import '../../services/metadata/metadata_service.dart';
+import '../../services/scraper/sites/tmdb_helper.dart';
 import '../../services/my_list/my_list_service.dart';
 import '../../services/home/genre_preference_service.dart';
 import '../../services/watchparty/party_session.dart';
@@ -271,6 +272,23 @@ class _DetailsPageState extends State<DetailsPage> with SingleTickerProviderStat
 
     if (meta != null && meta.type.isNotEmpty) {
       _resolvedType = meta.type;
+    }
+
+    // ID-first priming: meta carries the VERIFIED tmdb id (moviedb_id).
+    // Seed it so scrapers resolve by id instead of title-searching.
+    final verifiedTmdb = int.tryParse((meta?.tmdbId ?? '').trim());
+    if (verifiedTmdb != null) {
+      final primeTitle = meta?.name ?? widget.movie.name;
+      final primeType = _resolvedType ?? meta?.type ?? widget.movie.type;
+      final primeYear = int.tryParse(
+          ((meta?.year ?? widget.movie.year ?? '').replaceAll(RegExp(r'[^0-9]'), '')));
+      TmdbHelper.primeTmdbId(
+        imdbId: effectiveId,
+        tmdbId: verifiedTmdb,
+        title: primeTitle,
+        type: primeType,
+        year: primeYear,
+      );
     }
 
     if (mounted) {

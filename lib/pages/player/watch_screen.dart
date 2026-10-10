@@ -19,6 +19,7 @@ import '../../models/stream/stream_model.dart';
 import './player_screen.dart';
 import './watch_resolve_controller.dart';
 import '../../services/addon/addon_manager.dart';
+import '../../services/scraper/sites/tmdb_helper.dart';
 import '../../services/scraper/stream_scraper.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/theme/glass_settings.dart';
@@ -110,6 +111,19 @@ class _WatchScreenState extends State<WatchScreen>
         );
 
     _animController.forward();
+    // ID-first priming (belt-and-suspenders): DetailsPage already primes
+    // from meta, but a direct WatchScreen open re-seeds here so scrapers
+    // resolve by verified id instead of title-searching.
+    final verifiedTmdb = int.tryParse((widget.detail.tmdbId ?? '').trim());
+    if (verifiedTmdb != null) {
+      TmdbHelper.primeTmdbId(
+        imdbId: widget.selectedEpisode?.id ?? widget.detail.id,
+        tmdbId: verifiedTmdb,
+        title: widget.detail.name,
+        type: widget.type,
+        year: int.tryParse(widget.detail.year ?? ''),
+      );
+    }
     // P17: resolve pipeline moved to WatchResolveController (pure move —
     // callbacks below are the old inline setState/snackbar/Navigator code).
     _resolve = WatchResolveController(

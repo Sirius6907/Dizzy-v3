@@ -12,13 +12,18 @@ class P2pSettingsService {
 
   /// Whether the built-in P2P torrent source ('Dizzy') is enabled.
   /// When false, only direct HTTP streaming and external addons are used.
-  static final ValueNotifier<bool> isP2pEnabled = ValueNotifier<bool>(false);
+  /// Default ON (fresh installs): AddonManager ships the builtin entry
+  /// enabled, and main() inits both services concurrently — a false default
+  /// here used to win the race and show P2P OFF while the engine entry
+  /// stayed ON (scrapers registered but dropped at scrape time).
+  static final ValueNotifier<bool> isP2pEnabled = ValueNotifier<bool>(true);
 
   /// Initializes the service and loads preferences from disk.
+  /// No stored choice (fresh install) → ON, matching the builtin default.
   static Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      isP2pEnabled.value = prefs.getBool(_kP2pEnabledKey) ?? false;
+      isP2pEnabled.value = prefs.getBool(_kP2pEnabledKey) ?? true;
     } catch (e) {
       debugPrint('[P2pSettingsService] Error initializing: $e');
     }

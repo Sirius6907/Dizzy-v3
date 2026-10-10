@@ -51,9 +51,14 @@ class KnabenScraper extends StreamScraper {
         final tdList = row.querySelectorAll('td');
         if (tdList.length < 6) continue;
 
-        // Extract title
+        // Extract title (live structure 2026-10-10: full name in BOTH the
+        // anchor text and its title attr; fall back to the attr so a
+        // layout tweak never blanks the filter input).
         final titleNode = row.querySelector('.text-wrap.w-100 > a');
-        final torrentName = titleNode?.text.trim() ?? '';
+        var torrentName = titleNode?.text.trim() ?? '';
+        torrentName = torrentName.isNotEmpty
+            ? torrentName
+            : (titleNode?.attributes['title']?.trim() ?? '');
         
         // Extract magnet
         final magnetNode = row.querySelector('a[href^="magnet:"]');

@@ -180,13 +180,46 @@ class TmdbHelper {
     return bestMatchId;
   }
 
+  /// ID-first priming (user's design): seed a VERIFIED tmdbId straight from
+  /// the catalogue/meta layer (Cinemeta `moviedb_id`) so scrapers never
+  /// title-search for content whose id is already known. [title]/[type]/
+  /// [year] only fill the cache key — resolution is skipped entirely and the
+  /// primed id returns verbatim. Key normalization matches [resolveTmdbId]
+  /// so primed entries hit even with 'series' vs 'tv' or 'tt123:1:2' ids.
+  static void primeTmdbId({
+    String? imdbId,
+    required int tmdbId,
+    required String title,
+    required String type,
+    int? year,
+  }) {
+    final cacheKey =
+        '${_cleanCacheImdb(imdbId)}|$title|${_normCacheType(type)}|${year ?? ""}';
+    _cache[cacheKey] = tmdbId;
+  }
+
+  static String _cleanCacheImdb(String? imdbId) {
+    var clean = (imdbId ?? '').trim();
+    clean = clean.replaceAll(
+        RegExp(r'^(tmdb|movie|tv|imdb):', caseSensitive: false), '');
+    if (clean.contains(':')) clean = clean.split(':')[0];
+    return clean;
+  }
+
+  static String _normCacheType(String type) =>
+      (type == 'tv' || type == 'series') ? 'tv' : 'movie';
+
   static Future<int?> resolveTmdbId({
     String? imdbId,
     required String title,
     required String type,
     int? year,
   }) async {
-    final cacheKey = '${imdbId ?? ""}|$title|$type|${year ?? ""}';
+    // ID-first cache key: normalized so a primed verified id (Cinemeta
+    // moviedb_id via primeTmdbId) hits regardless of type spelling
+    // ('series' vs 'tv') or episode-suffixed ids ('tt123:1:2').
+    final cacheKey =
+        '${_cleanCacheImdb(imdbId)}|$title|${_normCacheType(type)}|${year ?? ""}';
     if (_cache.containsKey(cacheKey)) return _cache[cacheKey];
 
     // 0. P21: Cloud resolve API (server key, year-pinned) — first when ready.
