@@ -73,15 +73,35 @@ serve(async (req) => {
     if (/^\d{4}$/.test(year)) {
       params[type === "tv" ? "first_air_date_year" : "year"] = year;
     }
+    // 2) Title search — EXACT-title gate (2026-10-10): TMDB ranks by
+    // popularity, not exactness. Blind arr[0] returned the WRONG video
+    // (poster A, playback B) for ~40 app scrapers that trust this answer.
+    // Require a cleaned exact title hit (year-pinned when a year is given);
+    // else 404 so the client falls through to its next chain rung.
     const { data } = await tmdbFetch(`/search/${type}`, params);
     const arr = (data.results ?? []) as Record<string, unknown>[];
     if (arr.length === 0) return json({ error: "not found" }, 404, 3600);
-    const best = arr[0];
+    const clean = (s: unknown) =>
+      String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const want = clean(title);
+    const wantYear = /^\d{4}$/.test(year) ? year : "";
+    const hit = (arr as Record<string, unknown>[]).find((r) => {
+      const t = clean(r["title"] ?? r["name"] ?? "");
+      if (!t || t !== want) return false;
+      if (wantYear) {
+        const y = String(
+          r["release_date"] ?? r["first_air_date"] ?? "",
+        ).slice(0, 4);
+        if (y && Math.abs(parseInt(y) - parseInt(wantYear)) > 1) return false;
+      }
+      return true;
+    });
+    if (!hit) return json({ error: "not found" }, 404, 3600);
     return json({
-      tmdbId: best.id,
+      tmdbId: hit.id,
       imdbId: imdbId || null,
-      year: String(best.release_date ?? best.first_air_date ?? "").slice(0, 4),
-      title: best.title ?? best.name ?? title,
+      year: String(hit.release_date ?? hit.first_air_date ?? "").slice(0, 4),
+      title: hit.title ?? hit.name ?? title,
     });
   } catch (e) {
     return json({ error: String(e) }, 500, 10);

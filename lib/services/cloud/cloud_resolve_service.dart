@@ -24,10 +24,24 @@ class CloudResolveService {
 
   static const _ttlDays = 30;
 
+  /// Bump on gate changes so poisoned entries (resolved by older, looser
+  /// logic) auto-expire instead of serving wrong videos for 30 days.
+  /// v2 = 2026-10-10 exact-title lock (server + client).
+  static const _gateVersion = 'v2';
+
+  /// Pure: cleaned-title comparison for the exact-title lock.
+  /// Same normalization as the `resolve` edge fn + TmdbHelper._cleanString.
+  /// Unit-tested: a mismatched echo must never resolve.
+  static bool titlesMatch(String requested, String echoed) {
+    String clean(String s) =>
+        s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return clean(requested) == clean(echoed);
+  }
+
   static String _cacheKey(
       {required String type, String? imdbId, required String title, String? year}) {
     final raw = '${imdbId ?? ''}|$title|${year ?? ''}'.toLowerCase().trim();
-    return 'resolve:$type:${raw.hashCode}';
+    return 'resolve:$_gateVersion:$type:${raw.hashCode}';
   }
 
   /// title/year/type/imdbId → `{tmdbId, imdbId, year, title}` or null.
@@ -71,6 +85,14 @@ class CloudResolveService {
       if (res.statusCode != 200) return null;
       final data = jsonDecode(res.body) as Map<String, dynamic>?;
       if (data == null || data['tmdbId'] == null) return null;
+
+      // Client-side exact-title lock (2026-10-10): never trust a resolved id
+      // whose echoed title doesn't match the request. The server gates too,
+      // but belt-and-suspenders — a mismatched id plays the WRONG video
+      // (poster A, playback B) across ~40 scrapers. Mismatch → null so the
+      // chain falls through to its next rung instead of playing garbage.
+      final gotTitle = (data['title'] ?? '').toString();
+      if (gotTitle.isNotEmpty && !titlesMatch(t, gotTitle)) return null;
 
       // Write: cache for 30 days (titles don't change IDs).
       data['_at'] = DateTime.now().millisecondsSinceEpoch;

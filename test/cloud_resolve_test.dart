@@ -20,5 +20,20 @@ void main() {
               title: '', imdbId: 'tt0137523'),
           isNull);
     });
+
+    test('titlesMatch: exact, case/punct-insensitive; mismatch rejected',
+        () {
+      expect(CloudResolveService.titlesMatch('Inception', 'Inception'), isTrue);
+      expect(
+          CloudResolveService.titlesMatch(
+              'The Dark Knight', 'the dark knight!'), isTrue);
+      expect(CloudResolveService.titlesMatch('Dune: Part Two', 'dune part 2'),
+          isFalse);
+      // THE regression: server echoing a DIFFERENT video must not resolve.
+      expect(CloudResolveService.titlesMatch('The', 'The Odyssey'), isFalse);
+      expect(
+          CloudResolveService.titlesMatch(
+              'Janam Janam', 'The Odyssey'), isFalse);
+    });
   });
 }
