@@ -10,6 +10,7 @@ import '../device/device_identity_v2.dart';
 import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
 import '../adult/adult_section_gate.dart';
+import 'dizzy_social_service.dart';
 
 /// Progressive Identity & Cross-Device Sync Service for Dizzy-v3.
 ///
@@ -184,6 +185,11 @@ class DizzyIdentityService {
       linkedKind.value = kind;
       linkedIdentifier.value = ident;
 
+      // v1.3.3-T1.2: post-link refresh — the session changed, so the saved
+      // @username must reload under the canonical uid or the profile page
+      // falls back to user_<code> right after a successful link.
+      // ignore: unawaited_futures
+      DizzySocialService.loadCurrentUsername();
       // Re-register device under canonical account
       await bootDevice();
       return true;

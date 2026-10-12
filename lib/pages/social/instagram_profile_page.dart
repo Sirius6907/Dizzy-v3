@@ -375,9 +375,12 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
   }
 
   /// 6-digit OTP entry → verify + atomic merge of old anonymous data.
+  /// Resend is cooldown-guarded (30s) so rapid taps don't burn the
+  /// Supabase email rate limit.
   void _showOtpDialog({String? phone, String? email}) {
     final controller = TextEditingController();
     var busy = false;
+    var cooldown = 0;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -397,7 +400,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Code sent to ${phone ?? email}. It expires soon.',
+              Text(
+                  'Code sent to ${phone ?? email} ✓ check inbox + spam folder. It expires soon.',
                   style: const TextStyle(color: DizzyVoid.ash, fontSize: 13)),
               const SizedBox(height: DizzySpace.sm),
               TextField(
@@ -426,7 +430,39 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           actions: [
             TextButton(
               onPressed: busy ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: DizzyVoid.ash)),
+              child: const Text('Cancel',
+                  style: TextStyle(color: DizzyVoid.ash)),
+            ),
+            TextButton(
+              onPressed: (busy || cooldown > 0)
+                  ? null
+                  : () async {
+                      setD(() {
+                        busy = true;
+                        cooldown = 30;
+                      });
+                      final ok = phone != null
+                          ? await DizzyIdentityService.requestPhoneOtp(phone)
+                          : await DizzyIdentityService.requestEmailOtp(
+                              email ?? '');
+                      if (!ctx.mounted) return;
+                      setD(() => busy = false);
+                      if (!mounted) return;
+                      DizzyNotify.show(
+                          context,
+                          ok
+                              ? 'Fresh code sent ✓ check inbox + spam.'
+                              : "Couldn't resend — check net, then try again.",
+                          tone: ok ? NotifyTone.info : NotifyTone.warn);
+                      // Cooldown ticker: re-enable Resend after 30s.
+                      while (cooldown > 0 && ctx.mounted) {
+                        await Future.delayed(const Duration(seconds: 1));
+                        if (!ctx.mounted) return;
+                        setD(() => cooldown--);
+                      }
+                    },
+              child: Text(cooldown > 0 ? 'Resend ($cooldown)' : 'Resend',
+                  style: const TextStyle(color: DizzyVoid.ash)),
             ),
             DizzyTactileButton(
               height: 38,
