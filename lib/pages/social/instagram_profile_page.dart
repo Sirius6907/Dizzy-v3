@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
 import 'package:dizzy/services/social/dizzy_identity_service.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
+import 'package:dizzy/services/social/phone_link_service.dart';
 import 'package:dizzy/services/device/device_id_service.dart';
 import 'package:dizzy/models/continue_watching/continue_watching_item.dart';
 import 'package:dizzy/services/continue_watching/continue_watching_service.dart';
@@ -160,6 +162,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
 
   void _showLinkAccountSheet() {
     final linkedKind = DizzyIdentityService.linkedKind.value;
+    final savedPhone = PhoneLinkService.phoneNumber.value;
+    final phoneOk = PhoneLinkService.phoneVerified.value;
     showModalBottomSheet(
       context: context,
       backgroundColor: DizzyVoid.surface1,
@@ -194,14 +198,20 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                 _startPhoneLink();
               },
               gradient: DizzyGradients.beamButton,
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.phone_iphone_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.phone_iphone_rounded,
+                      color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
                   Text(
-                    'Link Phone Number',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    savedPhone == null
+                        ? 'Link Phone Number'
+                        : (phoneOk
+                            ? 'Phone $savedPhone ✓'
+                            : 'Phone $savedPhone · verify soon'),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -251,7 +261,11 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('We will text you a 6-digit code. Nothing else changes.',
+            // v1.3.3-T1.3: missed-call verify. Supabase SMS is costly, so the
+            // number saves instantly (unverified badge) and verification
+            // completes with one free missed call.
+            const Text(
+                'Give one missed call — fully free. Your number saves right away.',
                 style: TextStyle(color: DizzyVoid.ash, fontSize: 13)),
             const SizedBox(height: DizzySpace.sm),
             TextField(
@@ -283,7 +297,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               if (v.isEmpty) return;
               Navigator.pop(ctx, v);
             },
-            child: const Text('Send Code',
+            child: const Text('Continue',
                 style: TextStyle(
                     color: DizzyVoid.bone, fontWeight: FontWeight.bold)),
           ),
@@ -291,16 +305,116 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
       ),
     );
     if (phone == null || phone.isEmpty || !mounted) return;
-    DizzyNotify.show(context, 'Sending code...', tone: NotifyTone.info);
-    final ok = await DizzyIdentityService.requestPhoneOtp(phone);
+    await _startMissedCallLink(phone);
+  }
+
+  /// v1.3.3-T1.3: missed-call link — save number → show gateway → poll.
+  /// Fail-soft everywhere, Easy English only.
+  Future<void> _startMissedCallLink(String rawPhone) async {
+    DizzyNotify.show(context, 'Saving number...', tone: NotifyTone.info);
+    Map<String, dynamic> res;
+    try {
+      res = await PhoneLinkService.requestLink(rawPhone);
+    } catch (_) {
+      res = {'success': false};
+    }
     if (!mounted) return;
-    if (!ok) {
+    if (res['success'] != true) {
       DizzyNotify.show(
-          context, "Couldn't send code — check net, or link Email instead.",
+          context,
+          (res['error']?.toString().isNotEmpty ?? false)
+              ? res['error'].toString()
+              : "Couldn't save number — check it, then try again.",
           tone: NotifyTone.warn);
       return;
     }
-    _showOtpDialog(phone: phone);
+    if (res['status'] == 'verified') {
+      setState(() {});
+      DizzyNotify.show(context, 'Phone verified ✓',
+          tone: NotifyTone.success);
+      return;
+    }
+    final gateway = res['gateway_number']?.toString() ?? '';
+    if (!mounted) return;
+    if (gateway.isEmpty) {
+      // Stub mode: gateway key isn't live yet. Number stays saved with an
+      // unverified badge — verification unlocks with the next update.
+      setState(() {});
+      DizzyNotify.show(
+          context,
+          'Number saved ✓ missed-call verify opens with the next update.',
+          tone: NotifyTone.success);
+      return;
+    }
+    final dialed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DizzyVoid.surface2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: DizzyEdge.hairline,
+        ),
+        title: const Text('Give a missed call',
+            style: TextStyle(
+                color: DizzyVoid.bone,
+                fontSize: DizzyType.title,
+                fontWeight: DizzyType.wBold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+                'Ring once and cut — fully free, no talk time used.',
+                style: TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+            const SizedBox(height: DizzySpace.sm),
+            SelectableText(gateway,
+                style: const TextStyle(
+                    color: DizzyVoid.bone,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child:
+                const Text('Later', style: TextStyle(color: DizzyVoid.ash)),
+          ),
+          DizzyTactileButton(
+            height: 38,
+            onTap: () async {
+              final uri = Uri(scheme: 'tel', path: gateway);
+              try {
+                await launchUrl(uri);
+              } catch (_) {}
+              if (ctx.mounted) Navigator.pop(ctx, true);
+            },
+            child: const Text('Call now',
+                style: TextStyle(
+                    color: DizzyVoid.bone, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (dialed != true || !mounted) {
+      setState(() {});
+      return;
+    }
+    DizzyNotify.show(context, 'Waiting for your call...',
+        tone: NotifyTone.info);
+    bool ok = false;
+    try {
+      ok = await PhoneLinkService.pollVerified();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {});
+    DizzyNotify.show(
+        context,
+        ok
+            ? 'Phone verified ✓'
+            : "Didn't catch the call — try again in a minute.",
+        tone: ok ? NotifyTone.success : NotifyTone.warn);
   }
 
   /// Email link (works with Gmail too): address → OTP → verify + merge.

@@ -34,6 +34,7 @@ import './services/cloud/cloud_auth_service.dart';
 import './services/cloud/remote_config_service.dart';
 import './services/device/device_id_service.dart';
 import './services/social/dizzy_identity_service.dart';
+import './services/social/phone_link_service.dart';
 import './services/profiles/dizzy_profile_service.dart';
 import './services/scraper/scraper_quarantine_service.dart';
 import './services/audiobook/audiobook_settings.dart';
@@ -126,6 +127,9 @@ void main() async {
   CloudClient.init().then((_) => CloudAuthService.init()).then((_) async {
     // ignore: unawaited_futures
     DizzyIdentityService.init();
+    // v1.3.3-T1.3: restore saved phone badge state.
+    // ignore: unawaited_futures
+    PhoneLinkService.init();
     // v1.3.3-T1.1: reload saved @username (local cache, then cloud refresh).
     // ignore: unawaited_futures
     DizzySocialService.loadCurrentUsername();
