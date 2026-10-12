@@ -49,6 +49,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
 
   Future<void> _loadProfileData() async {
     final code = await DeviceIdService.initialize();
+    // v1.3.3-T1.1: refresh saved @username before reading it below.
+    await DizzySocialService.loadCurrentUsername();
     // Real stats: watch time + streak from Continue Watching, chapters
     // from manga reading history. Fail-soft — zeros on any error.
     var stats = WatchStats.empty;

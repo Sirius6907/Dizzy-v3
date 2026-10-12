@@ -126,6 +126,9 @@ void main() async {
   CloudClient.init().then((_) => CloudAuthService.init()).then((_) async {
     // ignore: unawaited_futures
     DizzyIdentityService.init();
+    // v1.3.3-T1.1: reload saved @username (local cache, then cloud refresh).
+    // ignore: unawaited_futures
+    DizzySocialService.loadCurrentUsername();
     var appVersion = 'unknown';
     try {
       appVersion = (await PackageInfo.fromPlatform()).version;

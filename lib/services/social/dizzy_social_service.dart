@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -70,6 +71,38 @@ class DizzySocialService {
   static final ValueNotifier<String?> currentUsername =
       ValueNotifier<String?>(null);
 
+  static const _keyUsername = 'dizzy_username_v1';
+
+  /// v1.3.3-T1.1 boot loader: local cache first (instant), cloud refresh
+  /// after (soft). Without this, every restart fell back to user_<code>.
+  static Future<void> loadCurrentUsername() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString(_keyUsername);
+      if (cached != null && cached.isNotEmpty) {
+        currentUsername.value = cached;
+      }
+    } catch (_) {}
+    if (!CloudClient.isReady) return;
+    try {
+      final uid = CloudClient.db.auth.currentUser?.id;
+      if (uid == null) return;
+      final row = await CloudClient.db
+          .from('usernames')
+          .select('username')
+          .eq('user_id', uid)
+          .maybeSingle();
+      final name = (row as Map?)?['username']?.toString();
+      if (name != null && name.isNotEmpty) {
+        currentUsername.value = name;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_keyUsername, name);
+      }
+    } catch (e) {
+      AppLog.d('loadCurrentUsername: $e');
+    }
+  }
+
   /// Claims or updates an @username with atomic uniqueness check.
   static Future<Map<String, dynamic>> claimUsername(String username) async {
     if (!CloudClient.isReady) {
@@ -83,6 +116,13 @@ class DizzySocialService {
 
       if (res is Map && res['success'] == true) {
         currentUsername.value = res['username']?.toString();
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final v = currentUsername.value;
+          if (v != null && v.isNotEmpty) {
+            await prefs.setString(_keyUsername, v);
+          }
+        } catch (_) {}
         return {'success': true, 'username': currentUsername.value};
       }
       return {

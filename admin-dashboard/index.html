@@ -280,6 +280,17 @@
             <tbody></tbody>
           </table></div>
         </div>
+        <!-- v1.3.3-T1.1: identity lookup — @username + profiles + old → new trail -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Usernames & history</h3><p class="sub">Search @name, user id, device code or profile name · trail shows default → claimed</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="idSearch" placeholder="@username / user id / code…" onkeydown="if(event.key==='Enter')loadIdentity()"></div>
+              <button class="btn btn-primary btn-sm" onclick="loadIdentity()">Search</button>
+            </div>
+          </div>
+          <div id="identityList"></div>
+        </div>
       </section>
 
       <!-- ── ANNOUNCEMENTS ── -->
@@ -380,6 +391,17 @@
           </div>
           <div class="tbl-wrap"><table id="auditTbl">
             <thead><tr><th>When</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <!-- v1.3.3-T1.1: identity feed — newest renames/avatar changes fleet-wide -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Identity changes</h3><p class="sub">Newest renames first · auto-generated → claimed trail</p></div>
+            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadIdentityTail()">↻ Refresh</button></div>
+          </div>
+          <div class="tbl-wrap"><table id="idTailTbl">
+            <thead><tr><th>When</th><th>What</th><th>User</th><th>Change</th><th>Profile</th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>

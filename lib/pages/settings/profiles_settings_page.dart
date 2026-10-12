@@ -116,19 +116,48 @@ class ProfilesSettingsPage extends StatelessWidget {
           }
         },
         onLongPress: () async {
-          if (DizzyProfileService.profiles.value.length <= 1) return;
-          final delete = await showDialog<bool>(
+          final action = await showDialog<String>(
             context: context,
             builder: (c) => AlertDialog(
-              title: Text('Delete ${p.name}?'),
-              content: const Text('This only deletes the profile. Local media stays on this device.'),
+              title: Text(p.name),
+              content: const Text('Rename this profile or delete it.'),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
+                TextButton(
+                    onPressed: () => Navigator.pop(c, 'rename'),
+                    child: const Text('Rename')),
+                TextButton(
+                    onPressed: () => Navigator.pop(c, 'delete'),
+                    child: const Text('Delete')),
+                FilledButton(
+                    onPressed: () => Navigator.pop(c),
+                    child: const Text('Cancel')),
               ],
             ),
           );
-          if (delete == true) await DizzyProfileService.delete(p.id);
+          if (action == 'delete') {
+            if (DizzyProfileService.profiles.value.length <= 1) return;
+            if (!context.mounted) return;
+            final delete = await showDialog<bool>(
+              context: context,
+              builder: (c) => AlertDialog(
+                title: Text('Delete ${p.name}?'),
+                content: const Text(
+                    'This only deletes the profile. Local media stays on this device.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(c, false),
+                      child: const Text('Cancel')),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(c, true),
+                      child: const Text('Delete')),
+                ],
+              ),
+            );
+            if (delete == true) await DizzyProfileService.delete(p.id);
+          } else if (action == 'rename') {
+            if (!context.mounted) return;
+            await _showRename(context, p);
+          }
         },
       ),
     );
@@ -155,6 +184,35 @@ class ProfilesSettingsPage extends StatelessWidget {
                 maxLength: 6,
                 decoration: const InputDecoration(labelText: 'Optional 4–6 digit PIN'),
               ),
+              const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Avatar',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final e in const [
+                    '✨',
+                    '🦊',
+                    '🐼',
+                    '🎬',
+                    '🎧',
+                    '🚀',
+                    '🌙',
+                    '🔥'
+                  ])
+                    ChoiceChip(
+                      label: Text(e, style: const TextStyle(fontSize: 20)),
+                      selected: avatar == e,
+                      onSelected: (_) => setState(() => avatar = e),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Kids profile'),
@@ -184,6 +242,37 @@ class ProfilesSettingsPage extends StatelessWidget {
     );
     if (created == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile created')));
+    }
+  }
+
+  Future<void> _showRename(BuildContext context, dynamic p) async {
+    final name = TextEditingController(text: p.name as String? ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Rename profile'),
+        content: TextField(
+          controller: name,
+          autofocus: true,
+          maxLength: 30,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (saved != true) return;
+    final ok =
+        await DizzyProfileService.updateName(p.id as String, name.text);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ok ? 'Name saved ✓' : 'Could not save that name')));
     }
   }
 

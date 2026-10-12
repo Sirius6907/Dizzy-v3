@@ -106,7 +106,7 @@ function show(name) {
   if (name === 'users') { loadUsers(); loadDevices(); startFleetLive(); } else stopFleetLive();
   if (name === 'push') loadAnn();
   if (name === 'config') loadCfg();
-  if (name === 'audit') loadAudit(); else stopAuditLive();
+  if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
 }
 
@@ -659,6 +659,63 @@ async function loadUsers() {
        <td class="mut" title="${esc(fmtAbs(u.last_seen_at))}">${ago(u.last_seen_at)}</td></tr>`).join('')
       || `<tr><td colspan="6">${emptyState('📭', 'No installs found', 'Try another search term.')}</td></tr>`;
   } catch (e) { toast('Installs failed: ' + e.message, 'err'); }
+  loadIdentity();
+}
+
+// ── v1.3.3-T1.1: identity lookup + history ──
+// Shows current @username, profile display names + avatars, and the full
+// old → new trail (auto-generated default first) per user.
+function kindPill(kind) {
+  const k = String(kind || '');
+  if (k === 'username') return '<span class="pill p-live plain">@name</span>';
+  if (k === 'display_name') return '<span class="pill p-lobby plain">profile</span>';
+  if (k === 'avatar') return '<span class="pill p-pub plain">avatar</span>';
+  return '<span class="pill p-closed plain">' + esc(k) + '</span>';
+}
+function historyRows(hist) {
+  if (!hist || !hist.length) return '<span class="mut">no changes yet</span>';
+  return hist.map((h) =>
+    `<div class="hist-row">${kindPill(h.kind)}
+     <span class="mono">${esc(h.old_value || '—')}</span>
+     <span class="mut">→</span>
+     <span class="mono"><b>${esc(h.new_value || '—')}</b></span>
+     <span class="mut" title="${esc(fmtAbs(h.at))}">${ago(h.at)}</span></div>`).join('');
+}
+async function loadIdentity() {
+  const box = $('identityList');
+  if (box && !box.children.length) box.innerHTML = skLines(4);
+  try {
+    const rows = await rpc('admin_user_identity', { p_search: $('idSearch') ? $('idSearch').value : '' });
+    if (box) box.innerHTML = (rows || []).length
+      ? rows.map((u) => {
+        const prof = (u.profiles || []).map((p) =>
+          `<span class="chip">${esc(p.avatar || '')} ${esc(p.name || 'Profile')}</span>`).join(' ');
+        return `<div class="rep-card">
+          <div class="rep-top">
+            <span class="mono">@${esc(u.username || '—')}</span>
+            <span class="mut mono" title="${esc(u.user_id)}">${esc(shortId(u.user_id))}…</span>
+            <span class="mut" title="${esc(fmtAbs(u.last_change_at))}">changed ${ago(u.last_change_at)}</span>
+          </div>
+          <div class="rep-meta">profiles: ${prof || '<span class="mut">none synced</span>'}</div>
+          <div class="hist">${historyRows(u.history)}</div>
+        </div>`;
+      }).join('')
+      : emptyState('👤', 'No users with usernames yet', 'Usernames appear after the first claim.');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Identity lookup failed', e.message); }
+}
+async function loadIdentityTail() {
+  const tb = document.querySelector('#idTailTbl tbody');
+  if (tb && !tb.children.length) tb.innerHTML = skRows(6, 5);
+  try {
+    const rows = await rpc('admin_identity_tail', { p_limit: 50 });
+    if (tb) tb.innerHTML = (rows || []).map((h) =>
+      `<tr><td class="mut" title="${esc(fmtAbs(h.at))}">${ago(h.at)}</td>
+       <td>${kindPill(h.kind)}</td>
+       <td class="mono">@${esc(h.username || shortId(h.user_id) + '…')}</td>
+       <td><span class="mono">${esc(h.old_value || '—')}</span> <span class="mut">→</span> <span class="mono"><b>${esc(h.new_value || '—')}</b></span></td>
+       <td class="mut mono">${esc(h.profile_id || '—')}</td></tr>`).join('')
+      || `<tr><td colspan="5">${emptyState('🧾', 'No identity changes yet', 'Renames and avatar changes will show up here.')}</td></tr>`;
+  } catch (e) { toast('Identity feed failed: ' + e.message, 'err'); }
 }
 
 // ── Phase L3: live fleet pulse ──

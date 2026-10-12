@@ -108,6 +108,78 @@ class DizzyProfileService {
     }
   }
 
+  /// v1.3.3-T1.1: rename with local persist + cloud upsert + history trail.
+  /// Returns false when the name is blank or the profile is missing.
+  static Future<bool> updateName(String id, String name) async {
+    final clean = name.trim();
+    if (clean.isEmpty) return false;
+    final i = profiles.value.indexWhere((e) => e.id == id);
+    if (i < 0) return false;
+    final old = profiles.value[i];
+    final next = old.copyWith(
+      name: clean.substring(0, clean.length.clamp(0, 30)),
+      updatedAt: DateTime.now(),
+    );
+    if (old.name == next.name) return true;
+    final list = [...profiles.value];
+    list[i] = next;
+    profiles.value = list;
+    await _persist();
+    await _upsertCloud(next);
+    await _logHistory(
+      kind: 'display_name',
+      oldValue: old.name,
+      newValue: next.name,
+      profileId: id,
+    );
+    return true;
+  }
+
+  /// v1.3.3-T1.1: avatar change with cloud sync + history trail.
+  static Future<bool> updateAvatar(String id, String avatar) async {
+    final clean = avatar.trim();
+    if (clean.isEmpty) return false;
+    final i = profiles.value.indexWhere((e) => e.id == id);
+    if (i < 0) return false;
+    final old = profiles.value[i];
+    if (old.avatar == clean) return true;
+    final next = old.copyWith(avatar: clean, updatedAt: DateTime.now());
+    final list = [...profiles.value];
+    list[i] = next;
+    profiles.value = list;
+    await _persist();
+    await _upsertCloud(next);
+    await _logHistory(
+      kind: 'avatar',
+      oldValue: old.avatar,
+      newValue: next.avatar,
+      profileId: id,
+    );
+    return true;
+  }
+
+  /// v1.3.3-T1.1: display_name/avatar trail for the admin console.
+  /// Soft-fail — history never blocks the rename itself.
+  static Future<void> _logHistory({
+    required String kind,
+    String? oldValue,
+    String? newValue,
+    String? profileId,
+  }) async {
+    if (!isCloudUser) return;
+    try {
+      await CloudClient.db.from('identity_history').insert({
+        'user_id': CloudClient.db.auth.currentUser!.id,
+        'kind': kind,
+        'old_value': oldValue,
+        'new_value': newValue,
+        'profile_id': profileId,
+      });
+    } catch (e) {
+      debugPrint('[Profiles] history insert failed (soft): $e');
+    }
+  }
+
   static String? _hashPin(String? pin) {
     final p = pin?.trim() ?? '';
     if (!RegExp(r'^\d{4,6}$').hasMatch(p)) return null;
@@ -132,8 +204,9 @@ class DizzyProfileService {
     }
   }
 
-  /// Merge remote profiles; local profile wins matching IDs, because it may
-  /// have a newer local PIN selection. No profile is deleted by sync.
+  /// Merge remote profiles with last-write-wins on updated_at (ties keep
+  /// local, so an offline rename is never clobbered by a stale cloud row).
+  /// No profile is deleted by sync.
   static Future<void> syncFromCloud() async {
     if (!isCloudUser) return;
     try {
@@ -148,7 +221,10 @@ class DizzyProfileService {
       final byId = {for (final p in profiles.value) p.id: p};
       for (final row in rows as List) {
         final remote = DizzyProfile.fromJson(Map<String, dynamic>.from(row));
-        byId.putIfAbsent(remote.id, () => remote);
+        final local = byId[remote.id];
+        if (local == null || remote.updatedAt.isAfter(local.updatedAt)) {
+          byId[remote.id] = remote;
+        }
       }
       profiles.value = byId.values.toList();
       await _persist();
