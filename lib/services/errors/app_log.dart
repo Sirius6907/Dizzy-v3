@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'session_trail.dart';
+
 /// P16 — release-stripped debug logger.
 ///
 /// `debugPrint`/`print` still emit in release builds (console spam + wasted
@@ -17,4 +19,9 @@ class AppLog {
       debugPrint('$message');
     }
   }
+
+  /// v1.3.3-T2.3 — record a coarse enum breadcrumb for the crash trail.
+  /// Costs one string append; the trail only ships with an error report.
+  /// Callers pass constants like `nav_home` / `play_start` — never text.
+  static void trail(String token) => SessionTrail.record(token);
 }

@@ -736,6 +736,11 @@ canvas.chart{width:100%;height:100%;display:block}
 .hist{display:flex;flex-direction:column;gap:5px;margin-top:6px}
 .hist-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}
 
+/* v1.3.3-T2.3: session trail timeline in Device logs */
+td.trail{max-width:280px;line-height:1.9}
+.tstep{display:inline-block;padding:1px 6px;margin:1px 0;border-radius:5px;font-family:var(--mono,ui-monospace,monospace);font-size:10.5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);white-space:nowrap}
+.tarrow{color:var(--acc2);opacity:.7;margin:0 3px;font-size:11px}
+
 /* high contrast / forced colors */
 @media (forced-colors:active){
   .card,.stat,.tbl-wrap{border:1px solid CanvasText}

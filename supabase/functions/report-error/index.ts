@@ -65,14 +65,32 @@ function normalize(body: Record<string, unknown>) {
   const screen = strict(body?.screen, SCREEN_MAX, /^[a-z0-9_]+$/) || "unknown";
 
   return {
-    device_code: device || "unknown",
-    platform: PLATFORMS.includes(platform) ? platform : "unknown",
-    app_version: strict(body?.app_version, VERSION_MAX, /^[a-z0-9_.+-]+$/),
-    screen,
-    code,
-    detail: strict(body?.detail, DETAIL_MAX, /^[a-z0-9_.-]+$/),
-  };
-}
+      device_code: device || "unknown",
+      platform: PLATFORMS.includes(platform) ? platform : "unknown",
+      app_version: strict(body?.app_version, VERSION_MAX, /^[a-z0-9_.+-]+$/),
+      screen,
+      code,
+      detail: strict(body?.detail, DETAIL_MAX, /^[a-z0-9_.-]+$/),
+      // v1.3.3-T2.3: enum-only session trail. Any bad token voids the whole
+      // trail (same rule as the RPC) — a half-validated breadcrumb is how
+      // free text rides into telemetry.
+      trail: strictTrail(body?.trail),
+    };
+  }
+
+  /**
+   * `nav_home>play_start>net_504` — lowercase enums joined by '>'. Returns ''
+   * when any token fails the allowlist, so the RPC stores an empty trail.
+   */
+  function strictTrail(raw: unknown, max = 240): string {
+    const v = String(raw ?? "").trim().toLowerCase();
+    if (v.length === 0) return "";
+    if (v.length > max) return "";
+    for (const t of v.split(">")) {
+      if (!/^[a-z][a-z0-9_]{0,31}$/.test(t)) return "";
+    }
+    return v;
+  }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -92,13 +110,14 @@ serve(async (req) => {
     // Called on the user-scoped client so the RPC runs as `authenticated`
     // (it is SECURITY DEFINER, so the write still bypasses RLS).
     const { data, error } = await supabase.rpc("report_error", {
-      p_device_code: p.device_code,
-      p_platform: p.platform,
-      p_version: p.app_version,
-      p_screen: p.screen,
-      p_code: p.code,
-      p_detail: p.detail,
-    });
+          p_device_code: p.device_code,
+          p_platform: p.platform,
+          p_version: p.app_version,
+          p_screen: p.screen,
+          p_code: p.code,
+          p_detail: p.detail,
+          p_trail: p.trail || "",
+        });
     if (error) throw error;
 
     return json({ ok: true, stored: data === true });

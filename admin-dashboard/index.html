@@ -292,6 +292,17 @@
           </div>
           <div id="identityList"></div>
         </div>
+        <!-- v1.3.3-T2.1: user lookup + scoped data reset (support/owner) -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>User lookup & reset</h3><p class="sub">Search @name / user id / device code · reset is owner-only and audit-logged</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="fuSearch" placeholder="@username / user id / DIZ-code..." onkeydown="if(event.key==='Enter')loadFindUser()"></div>
+              <button class="btn btn-primary btn-sm" onclick="loadFindUser()">Search</button>
+            </div>
+          </div>
+          <div id="findUserList">Search a user to see their devices, sessions and identity trail.</div>
+        </div>
       </section>
 
       <!-- ── ANNOUNCEMENTS ── -->
@@ -442,7 +453,7 @@
           </div>
           <div class="mut summary" id="dlSummary"></div>
           <div class="tbl-wrap"><table id="dlTbl">
-            <thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th class="num">Hits</th><th>Platform</th><th>Ver</th><th>Last seen</th></tr></thead>
+            <thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th class="num">Hits</th><th>Platform</th><th>Ver</th><th>Trail</th><th>Last seen</th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>

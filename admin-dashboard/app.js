@@ -722,6 +722,50 @@ async function loadIdentity() {
       : emptyState('👤', 'No users with usernames yet', 'Usernames appear after the first claim.');
   } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Identity lookup failed', e.message); }
 }
+
+// ── v1.3.3-T2.1: user lookup + scoped reset (server gates: support/owner) ──
+async function loadFindUser() {
+  const box = $('findUserList');
+  if (box) box.innerHTML = skLines(4);
+  try {
+    const q = ($('fuSearch') || {}).value || '';
+    if (!q.trim()) { if (box) box.innerHTML = emptyState('🔎', 'Search a user', 'Try @username, a user id, or a DIZ- device code.'); return; }
+    const rows = await rpc('admin_find_user', { p_search: q.trim() });
+    if (!box) return;
+    box.innerHTML = (rows || []).length
+      ? rows.map((u) => {
+        const dev = (u.installs || []).map((d) =>
+          `<span class="chip mono">DIZ-${esc(d.device_code || '?')} · ${esc(d.platform || '?')}</span>`).join(' ');
+        const prof = (u.profiles || []).map((p) =>
+          `<span class="chip">${esc(p.avatar || '')} ${esc(p.name || 'Profile')}</span>`).join(' ');
+        return `<div class="rep-card">
+          <div class="rep-top">
+            <span class="mono">@${esc(u.username || '—')}</span>
+            <span class="mut mono" title="${esc(u.user_id)}">${esc(shortId(u.user_id))}…</span>
+            <span class="mut">${Number(u.sessions) || 0} sessions</span>
+            <span class="mut">seen ${ago(u.last_seen)}</span>
+          </div>
+          <div class="rep-meta">devices: ${dev || '<span class="mut">none</span>'}</div>
+          <div class="rep-meta">profiles: ${prof || '<span class="mut">none</span>'}</div>
+          <div class="hist">${historyRows(u.history)}</div>
+          <div class="rowbtns">
+            <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','progress')">Reset progress</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','profile')">Reset profile</button>
+          </div>
+        </div>`;
+      }).join('')
+      : emptyState('🔎', 'No match', 'Check the spelling, or search by device code.');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Lookup failed', e.message); }
+}
+async function resetUser(uid, scope) {
+  const label = scope === 'profile' ? 'profiles + usernames + progress' : 'watch progress';
+  if (!confirm(`Reset ${label} for this user? This cannot be undone.`)) return;
+  try {
+    const r = await rpc('admin_reset_user', { p_user_id: uid, p_scope: scope });
+    toast(`Reset done · ${(r && r.sessions) || 0} sessions cleared`, 'ok');
+    loadFindUser();
+  } catch (e) { toast('Reset failed: ' + e.message, 'err'); }
+}
 async function loadIdentityTail() {
   const tb = document.querySelector('#idTailTbl tbody');
   if (tb && !tb.children.length) tb.innerHTML = skRows(6, 5);
@@ -1227,6 +1271,15 @@ function stopDeviceLogsLive() {
   const box = document.getElementById('dlLive');
   if (box) box.checked = false;
 }
+// v1.3.3-T2.3: render the enum session trail as a compact timeline.
+// The trail is already enum-only (validated client + edge + RPC), so this
+// is display sugar — but it still escapes, because "validated" is not a
+// licence to skip escaping.
+function trailCell(trail) {
+  const t = String(trail || '').trim();
+  if (!t) return '<span class="mut">—</span>';
+  return t.split('>').map((x) => `<span class="tstep">${esc(x)}</span>`).join('<span class="tarrow">›</span>');
+}
 async function loadDeviceLogs() {
   try {
     const filter = deviceCodeFilter();
@@ -1254,9 +1307,10 @@ async function loadDeviceLogs() {
         <td class="num"><b>${Number(r.count) || 0}</b></td>
         <td>${esc(r.platform)}</td>
         <td class="mut">${esc(r.app_version || '—')}</td>
+        <td class="trail">${trailCell(r.trail)}</td>
         <td class="mut" title="${esc(fmtAbs(r.last_at))}">${ago(r.last_at)}</td>
       </tr>`).join('')
-      || `<tr><td colspan="8">${emptyState('🌙', 'Nothing to show', filterDesc ? 'Try a different filter.' : 'No error reports yet.')}</td></tr>`;
+      || `<tr><td colspan="9">${emptyState('🌙', 'Nothing to show', filterDesc ? 'Try a different filter.' : 'No error reports yet.')}</td></tr>`;
   } catch (e) { toast('Device logs failed: ' + e.message, 'err'); }
 }
 

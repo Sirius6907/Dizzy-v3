@@ -50,6 +50,7 @@ import './services/my_list/my_list_service.dart';
 import './services/player/player_settings.dart';
 import './services/download/download_service.dart';
 import './services/errors/app_error_log.dart';
+import './services/errors/session_trail.dart';
 import './services/config/env_service.dart';
 import './services/window/window_service.dart';
 import './services/p2p/p2p_settings_service.dart';
@@ -537,10 +538,12 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
           orElse: () => AppThemeService.currentPalette.value,
         );
         return MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Dizzy',
-          debugShowCheckedModeBanner: false,
-          theme: AppThemeService.createThemeData(palette),
+                  navigatorKey: navigatorKey,
+                  title: 'Dizzy',
+                  debugShowCheckedModeBanner: false,
+                  // v1.3.3-T2.3: coarse route breadcrumbs for the crash trail.
+                  navigatorObservers: [TrailNavigatorObserver()],
+                  theme: AppThemeService.createThemeData(palette),
           scrollBehavior: const DesktopCustomScrollBehavior().copyWith(
             overscroll: false,
           ),
