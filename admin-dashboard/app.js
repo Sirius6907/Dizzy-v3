@@ -47,9 +47,11 @@ async function doLogin() {
       password: $('pass').value,
     });
     if (error) throw error;
-    // must be in admins allowlist
-    const { data: row } = await sb.from('admins').select('user_id').eq('user_id', data.user.id).maybeSingle();
-    if (!row) {
+    // must be an admin: admin_users (roles) OR legacy admins allowlist.
+    // my_admin_role raises for non-admins, returns the role otherwise.
+    try {
+      await sb.rpc('my_admin_role', {});
+    } catch (_) {
       await sb.auth.signOut();
       throw new Error('This account is not an admin.');
     }
@@ -74,6 +76,21 @@ function enterApp(email) {
   $('cloudDot').textContent = '● live';
   loadOverview();
   startOverviewLive();          // default tab is Overview
+  loadMyRole();                 // v1.3.3-T2.0: role badge + tab gating
+}
+
+// ── v1.3.3-T2.0: per-admin roles ──
+// Server is source of truth (require_role); the dashboard only hides
+// buttons. Legacy admins fall back to owner via my_admin_role().
+let MY_ROLE = 'owner';
+async function loadMyRole() {
+  try {
+    MY_ROLE = await rpc('my_admin_role', {}) || 'owner';
+  } catch (_) { MY_ROLE = 'owner'; }
+  const badge = $('meRole');
+  if (badge) badge.textContent = 'Administrator · ' + MY_ROLE;
+  const nav = $('navAdmins');
+  if (nav) nav.hidden = (MY_ROLE !== 'owner');
 }
 
 // ── nav ──
@@ -87,6 +104,7 @@ const PAGE_META = {
   config: ['Remote config', 'Flags & limits read at app startup'],
   audit: ['Audit log', 'Every admin write, newest first'],
   devicelogs: ['Device logs', 'Enum-only error telemetry'],
+  admins: ['Admins', 'Per-admin accounts and roles'],
 };
 
 function show(name) {
@@ -108,6 +126,7 @@ function show(name) {
   if (name === 'config') loadCfg();
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
+  if (name === 'admins' && MY_ROLE === 'owner') loadAdmins();
 }
 
 async function rpc(name, params) {
@@ -1103,6 +1122,41 @@ async function saveCfg(key, value) {
   } catch (e) { toast('Save failed: ' + e.message, 'err'); }
 }
 
+// ── v1.3.3-T5: hot-fix key editor (curators + owners; server gates keys) ──
+const HOTFIX_KEYS = [
+  ['min_supported_build', 'Min supported build (below → force update)', false],
+  ['support_faq_bundle_version', 'FAQ bundle version', false],
+  ['music_shelves_layout', 'Music shelves layout (JSON)', true],
+  ['music_endpoints.jiosaavn', 'Music endpoint: JioSaavn (Edge URL)', false],
+  ['music_endpoints.ytmusic', 'Music endpoint: YT-Music (Edge URL)', false],
+  ['music_endpoints.spotify', 'Music endpoint: Spotify (Edge URL)', false],
+  ['scraper_urls', 'Scraper URL overrides (JSON)', true],
+  ['scraper_regex', 'Scraper regex overrides (JSON)', true],
+  ['ranking_weights', 'Ranking weights (JSON)', true],
+  ['feature_flags', 'Feature flags (JSON)', true],
+  ['announcements_feed', 'Announcements feed (JSON)', true],
+];
+async function loadHotfix() {
+  const box = $('hotfixList');
+  try {
+    const { data } = await sb.from('remote_config').select('key,value');
+    const m = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
+    if (box) box.innerHTML = HOTFIX_KEYS.map(([k, label, isJson]) =>
+      `<div class="cfg-row col"><div class="cfg-l"><label class="fl" for="hf-${k}">${esc(label)}</label><p class="hint mono">${esc(k)}</p></div>
+       <textarea id="hf-${k}" rows="${isJson ? 3 : 1}" class="mono" spellcheck="false">${esc(m[k] || '')}</textarea>
+       <div class="rowbtns"><button class="btn btn-ok btn-sm" onclick="saveHotfix('${esc(k)}',${isJson})">💾 Save</button></div></div>`
+    ).join('');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Hot-fix load failed', e.message); }
+}
+async function saveHotfix(key, isJson) {
+  try {
+    const v = ($( 'hf-' + key) || {}).value || '';
+    if (isJson && v.trim()) JSON.parse(v);
+    await rpc('admin_set_config', { p_key: key, p_value: v });
+    toast(key + ' saved ⚙️', 'ok');
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+
 // ── audit ──
 // Live mode (15s poll) + action pills for readability.
 let _auditTimer = null;
@@ -1211,4 +1265,38 @@ if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', boot);
 } else {
   boot();
+}
+
+// ── v1.3.3-T2.0: admin account management (owner only) ──
+async function loadAdmins() {
+  const tb = document.querySelector('#admTbl tbody');
+  if (tb && !tb.children.length) tb.innerHTML = skRows(4, 4);
+  try {
+    const rows = await rpc('admin_user_list', {});
+    if (tb) tb.innerHTML = (rows || []).map((a) =>
+      `<tr><td>${esc(a.email || shortId(a.user_id) + '…')}</td>
+       <td><span class="pill ${a.role === 'owner' ? 'p-adult' : a.role === 'viewer' ? 'p-closed' : 'p-lobby'}">${esc(a.role)}</span></td>
+       <td class="mut" title="${esc(fmtAbs(a.created_at))}">${ago(a.created_at)}</td>
+       <td><button class="btn btn-ghost btn-sm" onclick="removeAdmin('${esc(a.user_id)}')">Remove</button></td></tr>`).join('')
+      || `<tr><td colspan="4">${emptyState('👑', 'No admins yet', 'Add the first owner above.')}</td></tr>`;
+  } catch (e) { toast('Admins failed: ' + e.message, 'err'); }
+}
+async function saveAdmin() {
+  const email = ($('admEmail') || {}).value || '';
+  const role = ($('admRole') || {}).value || 'viewer';
+  if (!email.trim()) { toast('Email needed', 'err'); return; }
+  try {
+    await rpc('admin_user_upsert', { p_email: email.trim(), p_role: role });
+    toast(email + ' → ' + role + ' ✓', 'ok');
+    if ($('admEmail')) $('admEmail').value = '';
+    loadAdmins();
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+async function removeAdmin(uid) {
+  if (!confirm('Remove this admin?')) return;
+  try {
+    await rpc('admin_user_remove', { p_user_id: uid });
+    toast('Removed ✓', 'ok');
+    loadAdmins();
+  } catch (e) { toast('Remove failed: ' + e.message, 'err'); }
 }

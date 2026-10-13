@@ -69,6 +69,7 @@
       <button class="nav-btn" role="tab" data-s="config" aria-selected="false" onclick="show('config')"><span class="ni">⚙️</span><span class="nl">Config</span></button>
       <button class="nav-btn" role="tab" data-s="audit" aria-selected="false" onclick="show('audit')"><span class="ni">🧾</span><span class="nl">Audit</span></button>
       <button class="nav-btn" role="tab" data-s="devicelogs" aria-selected="false" onclick="show('devicelogs')"><span class="ni">🐞</span><span class="nl">Device logs</span></button>
+      <button class="nav-btn" role="tab" data-s="admins" id="navAdmins" aria-selected="false" onclick="show('admins')" hidden><span class="ni">👑</span><span class="nl">Admins</span></button>
     </nav>
 
     <div class="side-foot">
@@ -76,7 +77,7 @@
         <div class="avatar" id="meAvatar">A</div>
         <div class="who-txt">
           <div class="who-em" id="meEmail">—</div>
-          <div class="who-role">Administrator</div>
+          <div class="who-role" id="meRole">Administrator</div>
         </div>
       </div>
       <button class="icon-btn" onclick="doLogout()" title="Sign out" aria-label="Sign out">
@@ -376,6 +377,14 @@
             <textarea id="cfgNotice" rows="3" class="mono" spellcheck="false"></textarea>
             <div class="rowbtns"><button class="btn btn-ok btn-sm" onclick="saveCfg('notice',document.getElementById('cfgNotice').value)">💾 Save notice</button></div>
           </div>
+
+          <div class="rule"></div>
+          <!-- v1.3.3-T5: hot-fix keys (values only — no code push) -->
+          <div class="cfg-row col">
+            <div class="cfg-l"><label class="fl">Hot-fix keys</label><p class="hint">Values go live on next pull (~1h or resume). Missing key = app keeps last value. Curators can edit music/scraper keys only.</p></div>
+            <div class="rowbtns"><button class="btn btn-ghost btn-sm" onclick="loadHotfix()">↻ Load hot-fix keys</button></div>
+            <div id="hotfixList">loading…</div>
+          </div>
         </div>
       </section>
 
@@ -436,6 +445,31 @@
             <thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th class="num">Hits</th><th>Platform</th><th>Ver</th><th>Last seen</th></tr></thead>
             <tbody></tbody>
           </table></div>
+        </div>
+      </section>
+
+      <!-- ── ADMINS (v1.3.3-T2.0, owner only) ── -->
+      <section id="s-admins" role="tabpanel" aria-label="Admin accounts">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Admin accounts</h3><p class="sub">Per-admin roles · owner manages here</p></div>
+            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadAdmins()">↻ Refresh</button></div>
+          </div>
+          <div class="rowbtns">
+            <input type="email" id="admEmail" placeholder="admin@dizzy.app" style="max-width:220px" autocomplete="off" spellcheck="false">
+            <select id="admRole" style="max-width:140px">
+              <option value="viewer">viewer</option>
+              <option value="support">support</option>
+              <option value="curator">curator</option>
+              <option value="owner">owner</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="saveAdmin()">➕ Add / change</button>
+          </div>
+          <div class="tbl-wrap"><table id="admTbl">
+            <thead><tr><th>Email</th><th>Role</th><th>Since</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+          <p class="hint">Roles: owner = all · support = tickets + notices · curator = playlists + music keys · viewer = read only. The old shared password stays until one owner signs in here.</p>
         </div>
       </section>
 

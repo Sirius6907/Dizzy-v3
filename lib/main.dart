@@ -259,6 +259,8 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
       unawaited(DmOutbox.flush(send: _sendOutboxEntry));
       unawaited(AnnouncementService.refresh());
       unawaited(HeartbeatService.instance.beat(force: true));
+      // v1.3.3-T5: hot-fix pull rides the resume heartbeat (forced, TTL-bypassed).
+      unawaited(RemoteConfigService.refresh(force: true));
       return;
     }
     if (state != AppLifecycleState.paused) return;

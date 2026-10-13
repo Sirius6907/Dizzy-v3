@@ -16,6 +16,14 @@ import '../updater/update_policy.dart';
 ///   features               JSON map {"watch_party": true, "voice": true}
 ///   notice                 JSON map {"text": "...", "until": "2026-10-01"}
 ///
+/// v1.3.3-T5 typed keys (hot-fix channel — values only, never code):
+///   scraper_urls.* / scraper_regex.* / ranking_weights.* / feature_flags.*
+///   music_endpoints.* (JSON: endpoint map) / music_shelves_layout (JSON)
+///   support_faq_bundle_version / min_supported_build / announcements_feed
+///
+/// Fail-closed: a missing/unparseable key keeps the last-known value,
+/// never grants. Fetches run at boot + every 6h heartbeat pull.
+///
 /// Cached 1h client-side. Everything fails soft — offline keeps last cache.
 class RemoteConfigService {
   static const _cacheKey = 'remote_config_v1';
@@ -82,6 +90,63 @@ class RemoteConfigService {
     return fallback;
   }
 
+  // ── v1.3.3-T5 typed hot-fix accessors (fail-closed) ──
+  // Every getter falls back to the shipped default when the server key is
+  // missing or unparseable: config can tweak behaviour, never grant it.
+
+  /// v1.3.3-T5: dotted key read (e.g. scraper override values).
+  static String typedValue(String key, {String fallback = ''}) {
+    final v = _cfg[key];
+    if (v == null || v.isEmpty) return fallback;
+    return v;
+  }
+
+  /// v1.3.3-T5: namespaced map read (keys starting "ns."), e.g.
+  /// scraper_urls.vidfast → {"vidfast": url}.
+  static Map<String, String> typedNamespace(String ns) {
+    final out = <String, String>{};
+    final prefix = '$ns.';
+    for (final e in _cfg.entries) {
+      if (e.key.startsWith(prefix) && e.value.isNotEmpty) {
+        out[e.key.substring(prefix.length)] = e.value;
+      }
+    }
+    return out;
+  }
+
+  /// v1.3.3-T5: JSON map read with fail-closed fallback.
+  static Map<String, dynamic> typedJson(String key) {
+    try {
+      final raw = jsonDecode(_cfg[key] ?? '{}');
+      if (raw is Map) return Map<String, dynamic>.from(raw);
+    } catch (_) {}
+    return const {};
+  }
+
+  /// v1.3.3-T5: music shelves layout (server-driven order/visibility).
+  /// Empty = app default layout.
+  static Map<String, dynamic> get musicShelvesLayout => typedJson('music_shelves_layout');
+
+  /// v1.3.3-T5: music endpoint overrides (Edge proxy URLs per source).
+  static Map<String, String> get musicEndpoints => typedNamespace('music_endpoints');
+
+  /// v1.3.3-T5: minimum supported build (below => force-update path).
+  static String get minSupportedBuild => typedValue('min_supported_build');
+
+  /// v1.3.3-T5: offline FAQ bundle version the app should carry.
+  static String get faqBundleVersion => typedValue('support_faq_bundle_version');
+
+  /// v1.3.3-T5: scoped snapshot for a single subsystem (music/scraper/etc).
+  /// Keys outside the prefix never leak in.
+  static Map<String, String> scopedSnapshot(String prefix) =>
+      typedNamespace(prefix);
+
+  /// Test-only: seed the in-memory map without touching prefs.
+  static void debugSeed(Map<String, String> values) {
+    _cfg = Map<String, String>.from(values);
+    revision.value++;
+  }
+
   static Map<String, dynamic> get notice {
     try {
       final raw = jsonDecode(_cfg['notice'] ?? '{}');
@@ -132,10 +197,11 @@ class RemoteConfigService {
         }
       }
       if (!CloudClient.isReady) return;
+      // v1.3.3-T5: typed keys grow the keyspace — 50 would truncate.
       final rows = await CloudClient.db
           .from('remote_config')
           .select('key,value')
-          .limit(50);
+          .limit(200);
       final next = <String, String>{};
       for (final r in (rows as List)) {
         final m = Map<String, dynamic>.from(r as Map);
