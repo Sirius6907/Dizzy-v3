@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../models/music/music_track.dart';
+import '../cloud/cloud_client.dart';
 import 'deezer_api_client.dart';
+import 'jiosaavn_music_client.dart';
 import 'lyrics_service.dart';
+import 'music_match_policy.dart';
 import 'qobuz_music_service.dart';
 import 'youtube_stream_resolver.dart';
 
@@ -29,16 +32,18 @@ class MusicService {
   MusicService._internal();
 
   final DeezerApiClient _deezer = DeezerApiClient.instance;
+  final JiosaavnMusicClient _jiosaavn = JiosaavnMusicClient.instance;
   final QobuzMusicService _qobuz = QobuzMusicService.instance;
   final YoutubeStreamResolver _streamResolver = YoutubeStreamResolver.instance;
   final LyricsService _lyricsService = LyricsService.instance;
+  final Map<String, MusicPlaylistDetails> _curatedCache = {};
 
   Future<MusicSearchData> searchFull(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return MusicSearchData.empty;
 
     try {
-      final tracksFuture = _deezer.searchTracks(trimmed, limit: 30);
+      final tracksFuture = searchTracks(trimmed);
       final artistsFuture = _deezer.searchArtists(trimmed, limit: 15);
       final albumsFuture = _deezer.searchAlbums(trimmed, limit: 15);
       final playlistsFuture = _deezer.searchPlaylists(trimmed, limit: 15);
@@ -63,7 +68,64 @@ class MusicService {
   }
 
   Future<List<MusicTrack>> searchTracks(String query) async {
-    return _deezer.searchTracks(query);
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+
+    try {
+      final saavnFuture = _jiosaavn.search(trimmed, limit: 20);
+      final deezerFuture = _deezer.searchTracks(trimmed, limit: 30);
+
+      final results = await Future.wait([
+        saavnFuture.catchError((e) {
+          debugPrint('searchTracks saavn error: $e');
+          return <MusicTrack>[];
+        }),
+        deezerFuture.catchError((e) {
+          debugPrint('searchTracks deezer error: $e');
+          return <MusicTrack>[];
+        }),
+      ]);
+
+      final saavnTracks = results[0];
+      final deezerTracks = results[1];
+
+      final langHint = MusicMatchPolicy.languageHint(trimmed);
+      final out = <MusicTrack>[];
+      final seenTitles = <String>{};
+
+      // Desi / regional query: prioritize JioSaavn depth first
+      final primary = langHint.isNotEmpty ? saavnTracks : deezerTracks;
+      final secondary = langHint.isNotEmpty ? deezerTracks : saavnTracks;
+
+      for (final t in primary) {
+        final norm = MusicMatchPolicy.normalize(t.title);
+        if (norm.isNotEmpty && seenTitles.add(norm)) {
+          out.add(t);
+        }
+      }
+      for (final t in secondary) {
+        final norm = MusicMatchPolicy.normalize(t.title);
+        if (norm.isNotEmpty && seenTitles.add(norm)) {
+          out.add(t);
+        }
+      }
+
+      // Exact-match elevation (site §13 rule): exact title jumps to top
+      final exactIdx = MusicMatchPolicy.pickExact(
+        trimmed,
+        candidateTitles: out.map((t) => t.title).toList(),
+        lang: langHint,
+      );
+      if (exactIdx != null && exactIdx > 0 && exactIdx < out.length) {
+        final exactTrack = out.removeAt(exactIdx);
+        out.insert(0, exactTrack);
+      }
+
+      return out;
+    } catch (e) {
+      debugPrint('searchTracks error: $e');
+      return _deezer.searchTracks(trimmed);
+    }
   }
 
   Future<List<MusicArtist>> fetchTrendingArtists() async {
@@ -153,11 +215,49 @@ class MusicService {
   }
 
   Future<List<MusicPlaylist>> fetchCuratedPlaylists() async {
-    // India-first: desi playlist queries open the row — Bollywood romance,
-    // Bhangra party, phonk/drive/lofi for the GenZ late-night crowd.
-    // Chart/editorial append after as the "thoda global" tail.
     final out = <MusicPlaylist>[];
     final seen = <String>{};
+
+    // 1. First priority: admin-published curated playlists from Supabase (v1.3.3-T2.4/T3.4)
+    if (CloudClient.isReady) {
+      try {
+        final res = await CloudClient.db
+            .from('curated_playlists')
+            .select()
+            .eq('active', true)
+            .order('position', ascending: true)
+            .limit(10);
+        for (final row in res) {
+          final id = (row['id'] ?? row['slug'] ?? '').toString();
+          if (id.isEmpty) continue;
+          final tracksRaw = row['tracks'] is List ? (row['tracks'] as List) : const [];
+          final tracks = tracksRaw
+              .whereType<Map<String, dynamic>>()
+              .map((m) => MusicTrack.fromJson(m))
+              .toList();
+          final p = MusicPlaylist(
+            id: 'curated_$id',
+            title: (row['title'] ?? 'Dizzy Curated').toString(),
+            description: (row['subtitle'] ?? '').toString(),
+            coverUrl: (row['cover_url'] ?? '').toString(),
+            trackCount: tracks.length,
+            creatorName: 'Dizzy Curators',
+            tracks: tracks,
+          );
+          if (seen.add(p.id)) {
+            _curatedCache[p.id] = MusicPlaylistDetails(
+              playlist: p,
+              tracks: tracks,
+            );
+            out.add(p);
+          }
+        }
+      } catch (e) {
+        debugPrint('fetchCuratedPlaylists supabase error: $e');
+      }
+    }
+
+    // 2. India-first Deezer curated seeds
     try {
       const seeds = [
         'Bollywood Love Songs',
@@ -173,10 +273,10 @@ class MusicService {
           final found = await _deezer.searchPlaylists(q, limit: 2);
           for (final p in found) {
             if (seen.add(p.id)) out.add(p);
-            if (out.length >= 8) break;
+            if (out.length >= 10) break;
           }
         } catch (_) {}
-        if (out.length >= 8) break;
+        if (out.length >= 10) break;
       }
       try {
         final chart = await _deezer.getChartPlaylists(limit: 20);
@@ -185,7 +285,7 @@ class MusicService {
             : await _deezer.getEditorialSelection(limit: 20);
         for (final p in pick) {
           if (seen.add(p.id)) out.add(p);
-          if (out.length >= 12) break;
+          if (out.length >= 14) break;
         }
       } catch (e) {
         debugPrint('fetchCuratedPlaylists chart error: $e');
@@ -194,7 +294,7 @@ class MusicService {
     } catch (e) {
       debugPrint('fetchCuratedPlaylists error: $e');
     }
-    return [];
+    return out;
   }
 
   Future<Map<String, List<MusicTrack>>> fetchFeaturedSections() async {
@@ -217,14 +317,21 @@ class MusicService {
       };
 
       final chartFuture = _deezer.getChartTracks(limit: 25);
+      final saavnTrendingFuture = _jiosaavn.trending(limit: 15).catchError((_) => <MusicTrack>[]);
       final queryFutures = queries.entries
           .map((e) => _deezer.searchTracks(e.value, limit: 15))
           .toList();
-      final settled = await Future.wait<Object>([chartFuture, ...queryFutures]);
+      final settled = await Future.wait<Object>([chartFuture, saavnTrendingFuture, ...queryFutures]);
+
+      // v1.3.3-T3.0: JioSaavn Trending row
+      final saavnTracks = settled[1] as List<MusicTrack>;
+      if (saavnTracks.isNotEmpty) {
+        results['🔥 Trending Desi Hits — JioSaavn'] = saavnTracks;
+      }
 
       for (var i = 0; i < queries.length; i++) {
         final title = queries.keys.elementAt(i);
-        final tracks = settled[i + 1] as List<MusicTrack>;
+        final tracks = settled[i + 2] as List<MusicTrack>;
         if (tracks.isNotEmpty) {
           results[title] = tracks;
         }
@@ -250,6 +357,9 @@ class MusicService {
   }
 
   Future<MusicPlaylistDetails?> fetchPlaylistDetails(String playlistId) async {
+    if (playlistId.startsWith('curated_') && _curatedCache.containsKey(playlistId)) {
+      return _curatedCache[playlistId];
+    }
     return _deezer.getPlaylistDetails(playlistId);
   }
 
@@ -282,6 +392,18 @@ class MusicService {
       }
     }
 
+    // Direct Saavn stream if available
+    if (track.id.startsWith('saavn_') &&
+        track.previewUrl != null &&
+        track.previewUrl!.startsWith('http')) {
+      return MusicStreamResult(
+        url: track.previewUrl!,
+        format: 'm4a',
+        quality: 'JioSaavn HQ',
+        isLossless: false,
+      );
+    }
+
     // YouTube Audio Stream (Primary or Fallback)
     final yt = await _streamResolver.resolveUrl(track);
     if (yt != null && yt.url.isNotEmpty) {
@@ -290,6 +412,16 @@ class MusicService {
         userAgent: yt.userAgent,
         format: 'm4a',
         quality: 'YouTube HQ',
+        isLossless: false,
+      );
+    }
+
+    // Last resort fallback: previewUrl
+    if (track.previewUrl != null && track.previewUrl!.startsWith('http')) {
+      return MusicStreamResult(
+        url: track.previewUrl!,
+        format: 'mp3',
+        quality: 'Preview (30s)',
         isLossless: false,
       );
     }

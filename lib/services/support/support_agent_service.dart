@@ -138,7 +138,9 @@ class SupportAgentService {
   /// Hinglish/Hindi (roman or devanagari) → 'hi'; else 'en'.
   static String detectLanguage(String message) {
     final m = message.toLowerCase();
-    if (RegExp(r'[\u0900-\u097F]').hasMatch(m)) return 'hi';
+    // NON-raw strings: inside r'...' the \u escape stays literal and the
+    // class would match the letters u/0/9/A/F instead of the script range.
+    if (RegExp('[\u0900-\u097F]').hasMatch(m)) return 'hi';
     const hindiRoman = [
       'nahi', 'nahin', 'kaise', 'kya', 'kyun', 'kyu', 'hai', 'hain', 'ho',
       'raha', 'rahi', 'gaya', 'gayi', 'karo', 'karna', 'chala', 'chal',
