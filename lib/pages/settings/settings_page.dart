@@ -21,6 +21,7 @@ import 'about_settings_page.dart';
 import '../stats/stats_page.dart';
 import 'privacy_settings_page.dart';
 import '../adult/adult_heaven_page.dart';
+import '../support/support_chat_page.dart';
 import 'profiles_settings_page.dart';
 import 'scraper_health_page.dart';
 import 'watch_party_page.dart';
@@ -840,7 +841,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-              // 9. About Dizzy
+                            // v1.3.3-T4: in-app help — offline FAQ first, human second.
+                            _SettingsCategoryTile(
+                              icon: Icons.support_agent_rounded,
+                              iconColor: Colors.white70,
+                              title: 'Help',
+                              subtitle: 'Ask a question — works offline too',
+                              onTap: () => _navigateTo(const SupportChatPage()),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // 9. About Dizzy
               _SettingsCategoryTile(
                 icon: Icons.info_outline_rounded,
                 iconColor: Colors.white70,

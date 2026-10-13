@@ -105,6 +105,8 @@ const PAGE_META = {
   audit: ['Audit log', 'Every admin write, newest first'],
   devicelogs: ['Device logs', 'Enum-only error telemetry'],
   admins: ['Admins', 'Per-admin accounts and roles'],
+  support: ['Support', 'AI-escalated tickets waiting on you'],
+  curated: ['Curated', 'Playlists and shelves the app shows'],
 };
 
 function show(name) {
@@ -127,6 +129,8 @@ function show(name) {
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
   if (name === 'admins' && MY_ROLE === 'owner') loadAdmins();
+  if (name === 'support') { loadTickets(); loadSupportStats(); }
+  if (name === 'curated') loadCurated();
 }
 
 async function rpc(name, params) {
@@ -723,7 +727,143 @@ async function loadIdentity() {
   } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Identity lookup failed', e.message); }
 }
 
-// ── v1.3.3-T2.1: user lookup + scoped reset (server gates: support/owner) ──
+// ── v1.3.3-T2.4: support inbox ──
+// Tickets carry the enum trail + error codes from T2.3 — never the user's
+// own words, which stay on the device. Replies go out via announcements.
+async function loadSupportStats() {
+  const box = $('supportStats');
+  if (box) box.innerHTML = skRows(1, 4);
+  try {
+    const s = await rpc('admin_support_stats', {}) || {};
+    const solved = (Number(s.ai_solved) || 0);
+    const human = (Number(s.human) || 0);
+    const closedLike = solved + human;
+    const rate = closedLike > 0 ? Math.round((solved / closedLike) * 100) : 0;
+    const badge = $('navTickets');
+    const openN = (Number(s.open) || 0) + (Number(s.assigned) || 0);
+    if (badge) { badge.textContent = String(openN); badge.hidden = openN === 0; }
+    if (box) box.innerHTML = [
+      ['Open', s.open || 0], ['Assigned', s.assigned || 0],
+      ['Closed', s.closed || 0], ['Last 30d', s.total_30d || 0],
+      ['AI solved', solved], ['Deflection', rate + '%'],
+    ].map(([l, v]) => `<div class="stat"><div class="stat-v">${esc(String(v))}</div><div class="stat-l">${esc(l)}</div></div>`).join('');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Stats failed', e.message); }
+}
+async function loadTickets() {
+  const box = $('ticketList');
+  if (box) box.innerHTML = skLines(5);
+  try {
+    const status = ($('tkStatus') || {}).value || '';
+    const rows = await rpc('admin_support_tickets', { p_status: status, p_limit: 50 });
+    if (!box) return;
+    box.innerHTML = (rows || []).length
+      ? rows.map((t) => {
+        const codes = (t.codes || []).map((c) => `<span class="chip mono">${esc(String(c))}</span>`).join(' ');
+        return `<div class="rep-card">
+          <div class="rep-top">
+            <span class="pill ${t.status === 'open' ? 'p-adult' : t.status === 'assigned' ? 'p-lobby' : 'p-closed'}">${esc(t.status)}</span>
+            <span class="mono">${esc(t.topic)}</span>
+            <span class="mut mono">@${esc(t.username || '—')}</span>
+            <span class="mut mono">DIZ-${esc(t.device_code)}</span>
+            <span class="mut">${esc(t.platform)} ${esc(t.app_version || '')}</span>
+            <span class="mut" title="${esc(fmtAbs(t.created_at))}">${ago(t.created_at)}</span>
+            ${t.ai_answered ? '<span class="pill p-live plain">AI answered</span>' : ''}
+          </div>
+          <div class="rep-meta">codes: ${codes || '<span class="mut">none</span>'}</div>
+          <div class="rep-meta">trail: ${trailCell(t.trail)}</div>
+          <div class="rowbtns">
+            <button class="btn btn-ghost btn-sm" onclick="ticketAct('${esc(t.id)}','assign')">Assign</button>
+            <button class="btn btn-ok btn-sm" onclick="ticketAct('${esc(t.id)}','close','fixed')">Close · fixed</button>
+            <button class="btn btn-ghost btn-sm" onclick="ticketAct('${esc(t.id)}','close','duplicate')">Duplicate</button>
+            <button class="btn btn-ghost btn-sm" onclick="ticketAct('${esc(t.id)}','reopen')">Reopen</button>
+          </div>
+        </div>`;
+      }).join('')
+      : emptyState('💬', 'Inbox zero', 'No tickets in this filter.');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Tickets failed', e.message); }
+}
+async function ticketAct(id, action, resolution) {
+  try {
+    await rpc('admin_ticket_action', { p_id: id, p_action: action, p_resolution: resolution || '' });
+    toast('Ticket ' + action + ' ✓', 'ok');
+    loadTickets(); loadSupportStats();
+  } catch (e) { toast('Ticket action failed: ' + e.message, 'err'); }
+}
+
+// ── v1.3.3-T2.4/T3.4: curated playlists ──
+async function loadCurated() {
+  const box = $('curatedList');
+  if (box) box.innerHTML = skLines(4);
+  try {
+    const rows = await rpc('admin_curated_list', {});
+    if (!box) return;
+    box.innerHTML = (rows || []).length
+      ? rows.map((p) => `<div class="rep-card">
+          <div class="rep-top">
+            <span class="mono">${esc(p.slug)}</span>
+            <span>${esc(p.title || '(untitled)')}</span>
+            <span class="pill ${p.active ? 'p-live' : 'p-closed'}">${p.active ? 'live' : 'hidden'}</span>
+            <span class="mut">${esc(p.rail)} · pos ${Number(p.position) || 0} · ${Number(p.track_count) || 0} tracks</span>
+            <span class="mut" title="${esc(fmtAbs(p.updated_at))}">${ago(p.updated_at)}</span>
+          </div>
+          <div class="rowbtns">
+            <button class="btn btn-ghost btn-sm" onclick="editCurated('${esc(p.id)}')">Edit</button>
+            <button class="btn btn-ghost btn-sm" onclick="delCurated('${esc(p.id)}')">Delete</button>
+          </div>
+        </div>`).join('')
+      : emptyState('🎧', 'No curated playlists yet', 'Publish one below — it shows up in the app rail.');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Curated list failed', e.message); }
+}
+let CURATED_CACHE = [];
+async function editCurated(id) {
+  try {
+    CURATED_CACHE = await rpc('admin_curated_list', {}) || [];
+    const p = CURATED_CACHE.find((x) => String(x.id) === String(id));
+    if (!p) return;
+    $('curId').value = p.id;
+    $('curSlug').value = p.slug || '';
+    $('curTitleIn').value = p.title || '';
+    $('curSub').value = p.subtitle || '';
+    $('curRail').value = p.rail || 'dizzy_pick';
+    $('curPos').value = p.position || 100;
+    $('curActive').value = p.active ? 'true' : 'false';
+    if ($('curTitle')) $('curTitle').textContent = 'Edit: ' + (p.title || p.slug);
+    toast('Loaded — tracks stay as-is unless you paste them', 'info');
+  } catch (e) { toast('Load failed: ' + e.message, 'err'); }
+}
+function resetCurated() {
+  ['curId', 'curSlug', 'curTitleIn', 'curSub', 'curCover', 'curTracks'].forEach((k) => { if ($(k)) $(k).value = ''; });
+  if ($('curPos')) $('curPos').value = '100';
+  if ($('curActive')) $('curActive').value = 'true';
+  if ($('curTitle')) $('curTitle').textContent = 'New playlist';
+}
+async function saveCurated() {
+  try {
+    const tracksRaw = ($('curTracks') || {}).value || '[]';
+    await rpc('admin_curated_upsert', {
+      p_id: ($('curId') || {}).value || '',
+      p_slug: ($('curSlug') || {}).value || '',
+      p_title: ($('curTitleIn') || {}).value || '',
+      p_subtitle: ($('curSub') || {}).value || '',
+      p_cover: ($('curCover') || {}).value || '',
+      p_rail: ($('curRail') || {}).value || 'dizzy_pick',
+      p_position: Number(($('curPos') || {}).value || 100),
+      p_tracks: JSON.parse(tracksRaw || '[]'),
+      p_active: (($('curActive') || {}).value || 'true') === 'true',
+    });
+    toast('Playlist saved 🎧', 'ok');
+    resetCurated();
+    loadCurated();
+  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+async function delCurated(id) {
+  if (!confirm('Delete this playlist?')) return;
+  try {
+    await rpc('admin_curated_delete', { p_id: id });
+    toast('Deleted ✓', 'ok');
+    loadCurated();
+  } catch (e) { toast('Delete failed: ' + e.message, 'err'); }
+}
 async function loadFindUser() {
   const box = $('findUserList');
   if (box) box.innerHTML = skLines(4);

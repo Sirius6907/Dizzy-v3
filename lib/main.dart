@@ -51,6 +51,7 @@ import './services/player/player_settings.dart';
 import './services/download/download_service.dart';
 import './services/errors/app_error_log.dart';
 import './services/errors/session_trail.dart';
+import './services/support/support_agent_service.dart';
 import './services/config/env_service.dart';
 import './services/window/window_service.dart';
 import './services/p2p/p2p_settings_service.dart';
@@ -139,7 +140,9 @@ void main() async {
       appVersion = (await PackageInfo.fromPlatform()).version;
     } catch (_) {}
     RemoteConfigService.initialize();
-    AnnouncementService.initialize(appVersion: appVersion);
+        AnnouncementService.initialize(appVersion: appVersion);
+        // v1.3.3-T4: offline FAQ bundle (tier 1 support answers, zero network).
+        unawaited(SupportAgentService.initialize());
     // v1.2.0-T2.2: opted-in error queue flush (no-op when consent OFF).
     AppErrorLog.schedulePeriodicFlush();
     AppErrorLog.flushOnStart();

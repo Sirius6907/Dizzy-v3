@@ -69,6 +69,8 @@
       <button class="nav-btn" role="tab" data-s="config" aria-selected="false" onclick="show('config')"><span class="ni">⚙️</span><span class="nl">Config</span></button>
       <button class="nav-btn" role="tab" data-s="audit" aria-selected="false" onclick="show('audit')"><span class="ni">🧾</span><span class="nl">Audit</span></button>
       <button class="nav-btn" role="tab" data-s="devicelogs" aria-selected="false" onclick="show('devicelogs')"><span class="ni">🐞</span><span class="nl">Device logs</span></button>
+      <button class="nav-btn" role="tab" data-s="support" aria-selected="false" onclick="show('support')"><span class="ni">💬</span><span class="nl">Support</span><span class="nav-badge" id="navTickets" hidden>0</span></button>
+      <button class="nav-btn" role="tab" data-s="curated" aria-selected="false" onclick="show('curated')"><span class="ni">🎧</span><span class="nl">Curated</span></button>
       <button class="nav-btn" role="tab" data-s="admins" id="navAdmins" aria-selected="false" onclick="show('admins')" hidden><span class="ni">👑</span><span class="nl">Admins</span></button>
     </nav>
 
@@ -456,6 +458,70 @@
             <thead><tr><th>Device</th><th>Code</th><th>Screen</th><th>Detail</th><th class="num">Hits</th><th>Platform</th><th>Ver</th><th>Trail</th><th>Last seen</th></tr></thead>
             <tbody></tbody>
           </table></div>
+        </div>
+      </section>
+
+      <!-- ── SUPPORT (v1.3.3-T2.4) ── -->
+      <section id="s-support" role="tabpanel" aria-label="Support inbox">
+        <div class="stats" id="supportStats"></div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Support inbox</h3><p class="sub">AI-escalated tickets · trail + error codes auto-attached · no conversation text</p></div>
+            <div class="card-a">
+              <select id="tkStatus" style="max-width:140px" onchange="loadTickets()">
+                <option value="">All</option>
+                <option value="open">Open</option>
+                <option value="assigned">Assigned</option>
+                <option value="closed">Closed</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="loadTickets()">↻ Refresh</button>
+            </div>
+          </div>
+          <div id="ticketList">loading...</div>
+        </div>
+      </section>
+
+      <!-- ── CURATED (v1.3.3-T2.4 / T3.4) ── -->
+      <section id="s-curated" role="tabpanel" aria-label="Curated playlists">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Curated playlists</h3><p class="sub">Published rows the app reads · tracks carry ids, never audio URLs</p></div>
+            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadCurated()">↻ Refresh</button></div>
+          </div>
+          <div id="curatedList">loading...</div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t"><h3 id="curTitle">New playlist</h3><p class="sub">Rail decides which home row it lands in</p></div></div>
+          <input type="hidden" id="curId">
+          <div class="grid2">
+            <div><label class="fl" for="curSlug">Slug <span class="opt">a-z 0-9 -</span></label><input type="text" id="curSlug" placeholder="festival-diwali-2026"></div>
+            <div><label class="fl" for="curRail">Rail</label>
+              <select id="curRail">
+                <option value="dizzy_pick">Dizzy Pick</option>
+                <option value="trending">Trending now</option>
+                <option value="mood">Mood</option>
+                <option value="festival">Festival</option>
+                <option value="ollywood">Ollywood</option>
+              </select></div>
+          </div>
+          <div class="grid2">
+            <div><label class="fl" for="curTitleIn">Title</label><input type="text" id="curTitleIn" maxlength="120" placeholder="Diwali Dhamaka 🪔"></div>
+            <div><label class="fl" for="curPos">Position <span class="opt">lower = higher</span></label><input type="number" id="curPos" value="100" style="max-width:110px"></div>
+          </div>
+          <label class="fl" for="curSub">Subtitle</label>
+          <input type="text" id="curSub" maxlength="200" placeholder="Best desi party tracks">
+          <label class="fl" for="curCover">Cover URL <span class="opt">optional</span></label>
+          <input type="text" id="curCover" placeholder="https://...">
+          <label class="fl" for="curTracks">Tracks (JSON array)</label>
+          <textarea id="curTracks" rows="5" class="mono" spellcheck="false" placeholder='[{"id":"123","title":"Song","artist":"Artist","source":"deezer"}]'></textarea>
+          <div class="grid2">
+            <div><label class="fl" for="curActive">Status</label>
+              <select id="curActive"><option value="true">✅ Published</option><option value="false">⏸ Hidden</option></select></div>
+          </div>
+          <div class="rowbtns" style="margin-top:14px">
+            <button class="btn btn-primary btn-sm" onclick="saveCurated()">💾 Save playlist</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetCurated()">Clear form</button>
+          </div>
         </div>
       </section>
 

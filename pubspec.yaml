@@ -172,6 +172,7 @@ flutter:
     - assets/subfont.ttf
     - assets/fonts/
     - assets/shaders/anime4k/
+    - assets/support_kb/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
