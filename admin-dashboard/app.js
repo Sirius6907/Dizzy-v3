@@ -831,30 +831,67 @@ async function editCurated(id) {
     toast('Loaded — tracks stay as-is unless you paste them', 'info');
   } catch (e) { toast('Load failed: ' + e.message, 'err'); }
 }
+
+function toSlug(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64);
+}
+
 function resetCurated() {
   ['curId', 'curSlug', 'curTitleIn', 'curSub', 'curCover', 'curTracks'].forEach((k) => { if ($(k)) $(k).value = ''; });
+  if ($('curSlug')) delete $('curSlug').dataset.touched;
   if ($('curPos')) $('curPos').value = '100';
   if ($('curActive')) $('curActive').value = 'true';
   if ($('curTitle')) $('curTitle').textContent = 'New playlist';
 }
+
 async function saveCurated() {
+  const saveBtn = document.querySelector('#s-curated button.btn-primary');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
   try {
-    const tracksRaw = ($('curTracks') || {}).value || '[]';
+    const title = ($('curTitleIn') || {}).value?.trim() || '';
+    let slug = ($('curSlug') || {}).value?.trim() || '';
+    if (!slug && title) {
+      slug = toSlug(title);
+      if ($('curSlug')) $('curSlug').value = slug;
+    }
+    if (!slug) slug = 'curated-' + Math.random().toString(36).slice(2, 7);
+
+    let tracks = [];
+    const tracksRaw = (($('curTracks') || {}).value || '').trim();
+    if (tracksRaw) {
+      try {
+        const parsed = JSON.parse(tracksRaw);
+        tracks = Array.isArray(parsed) ? parsed : [parsed];
+      } catch (err) {
+        toast('Tracks JSON invalid: ' + err.message, 'err');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Save playlist'; }
+        return;
+      }
+    }
+
     await rpc('admin_curated_upsert', {
       p_id: ($('curId') || {}).value || '',
-      p_slug: ($('curSlug') || {}).value || '',
-      p_title: ($('curTitleIn') || {}).value || '',
-      p_subtitle: ($('curSub') || {}).value || '',
-      p_cover: ($('curCover') || {}).value || '',
+      p_slug: slug,
+      p_title: title || 'Curated Playlist',
+      p_subtitle: ($('curSub') || {}).value?.trim() || '',
+      p_cover: ($('curCover') || {}).value?.trim() || '',
       p_rail: ($('curRail') || {}).value || 'dizzy_pick',
       p_position: Number(($('curPos') || {}).value || 100),
-      p_tracks: JSON.parse(tracksRaw || '[]'),
+      p_tracks: tracks,
       p_active: (($('curActive') || {}).value || 'true') === 'true',
     });
     toast('Playlist saved 🎧', 'ok');
     resetCurated();
     loadCurated();
-  } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+  } catch (e) {
+    toast('Save failed: ' + (e.message || e.details || 'unknown error'), 'err');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Save playlist'; }
+  }
 }
 async function delCurated(id) {
   if (!confirm('Delete this playlist?')) return;

@@ -494,7 +494,11 @@
           <div class="card-h"><div class="card-t"><h3 id="curTitle">New playlist</h3><p class="sub">Rail decides which home row it lands in</p></div></div>
           <input type="hidden" id="curId">
           <div class="grid2">
-            <div><label class="fl" for="curSlug">Slug <span class="opt">a-z 0-9 -</span></label><input type="text" id="curSlug" placeholder="festival-diwali-2026"></div>
+            <div><label class="fl" for="curTitleIn">Title</label><input type="text" id="curTitleIn" maxlength="120" placeholder="Diwali Dhamaka 🪔" oninput="if(!$('curSlug').dataset.touched) $('curSlug').value = toSlug(this.value)"></div>
+            <div><label class="fl" for="curPos">Position <span class="opt">lower = higher</span></label><input type="number" id="curPos" value="100" style="max-width:110px"></div>
+          </div>
+          <div class="grid2">
+            <div><label class="fl" for="curSlug">Slug <span class="opt">auto-filled or a-z0-9-</span></label><input type="text" id="curSlug" placeholder="diwali-dhamaka" oninput="this.dataset.touched = '1'"></div>
             <div><label class="fl" for="curRail">Rail</label>
               <select id="curRail">
                 <option value="dizzy_pick">Dizzy Pick</option>
@@ -503,10 +507,6 @@
                 <option value="festival">Festival</option>
                 <option value="ollywood">Ollywood</option>
               </select></div>
-          </div>
-          <div class="grid2">
-            <div><label class="fl" for="curTitleIn">Title</label><input type="text" id="curTitleIn" maxlength="120" placeholder="Diwali Dhamaka 🪔"></div>
-            <div><label class="fl" for="curPos">Position <span class="opt">lower = higher</span></label><input type="number" id="curPos" value="100" style="max-width:110px"></div>
           </div>
           <label class="fl" for="curSub">Subtitle</label>
           <input type="text" id="curSub" maxlength="200" placeholder="Best desi party tracks">
