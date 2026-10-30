@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:torrserver_flutter/torrserver_flutter.dart';
 
 import '../../models/download/download_task_model.dart';
@@ -49,10 +50,13 @@ class TorrentStreamService {
   static final TorrentStreamService _instance =
       TorrentStreamService._internal();
   factory TorrentStreamService() => _instance;
-  TorrentStreamService._internal();
+  TorrentStreamService._internal() : _controller = createTorrServerController();
+
+  @visibleForTesting
+  TorrentStreamService.withController(this._controller);
 
   // ── Controller & State ─────────────────────────────────────────────────────
-  final TorrServerController _controller = createTorrServerController();
+  final TorrServerController _controller;
   TorrServerController get controller => _controller;
 
   EngineState _state = EngineState.stopped;
@@ -85,12 +89,15 @@ class TorrentStreamService {
 
     _setState(EngineState.starting);
     try {
-      _log('Starting TorrServer engine with native defaults...');
-      await _controller.start();
+      // TorrServer's web server binds every interface by default and has no
+      // auth, so on shared Wi-Fi any LAN device could add/list/stream
+      // torrents. The app only ever talks to 127.0.0.1.
+      _log('Starting TorrServer engine on loopback...');
+      await _controller.start(extraArgs: const ['-i', '127.0.0.1']);
       final version = await _controller.echo();
       _setState(EngineState.ready);
       _log(
-        'TorrServer ready at ${_controller.baseUrl} (version: $version, default engine settings)',
+        'TorrServer ready at ${_controller.baseUrl} (version: $version, loopback-only)',
       );
       return true;
     } catch (e, st) {
