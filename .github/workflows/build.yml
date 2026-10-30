@@ -172,6 +172,22 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Pre-seed TorrServer Android binaries (upstream mirror is gone)
+        run: |
+          # torrserver_flutter 0.0.6 fetches per-ABI TorrServer binaries from
+          # ayman708-UX/torrserver_flutter (deleted → HTTP 404). Its Gradle task
+          # swallows the failure and the APK ships WITHOUT libtorrserver.so,
+          # silently killing torrent streaming (v1.3.3 was first built that way).
+          # Seed the official YouROK/TorrServer builds under the filenames the
+          # Gradle task looks for via TORRSERVER_FLUTTER_LOCAL_BINARIES.
+          mkdir -p .torrserver-bin
+          base="https://github.com/YouROK/TorrServer/releases/download/MatriX.147.2"
+          curl -fSL "$base/TorrServer-android-arm64" -o .torrserver-bin/torrserver-android-arm64
+          curl -fSL "$base/TorrServer-android-amd64" -o .torrserver-bin/torrserver-android-amd64
+          curl -fSL "$base/TorrServer-android-arm7"  -o .torrserver-bin/torrserver-android-arm7
+          curl -fSL "$base/TorrServer-android-386"   -o .torrserver-bin/torrserver-android-386
+          chmod +x .torrserver-bin/*
+
       - name: Restore release keystore (stable signing for OTA updates)
         shell: bash
         env:
@@ -203,6 +219,8 @@ jobs:
           " || true
 
       - name: Build Android Split APKs
+        env:
+          TORRSERVER_FLUTTER_LOCAL_BINARIES: ${{ github.workspace }}/.torrserver-bin
         run: flutter build apk --release --split-per-abi --dart-define-from-file=.env
 
       - name: Park split outputs (before universal build overwrites them)
@@ -222,6 +240,8 @@ jobs:
           echo "split outputs parked:"; ls -la split-out/
 
       - name: Build Android Universal APK
+        env:
+          TORRSERVER_FLUTTER_LOCAL_BINARIES: ${{ github.workspace }}/.torrserver-bin
         run: flutter build apk --release --dart-define-from-file=.env
 
       - name: Organize and Rename APKs
@@ -236,6 +256,23 @@ jobs:
           cp split-out/Dizzy-v3-x86_64.apk apks/Dizzy-v3-x86_64.apk
           cp build/app/outputs/flutter-apk/app-release.apk apks/Dizzy-v3-Universal.apk
           echo "final APKs:"; ls -la apks/
+
+      - name: Verify TorrServer payload (silent-missing guard)
+        run: |
+          # The plugin's Gradle downloader catches network errors and keeps
+          # going, so a missing libtorrserver.so only shows up as dead torrent
+          # streaming at runtime. Fail the release instead.
+          fail=0
+          for apk in apks/*.apk; do
+            case "$apk" in *-legacy-*) continue ;; esac
+            if ! unzip -l "$apk" | grep -q "libtorrserver.so"; then
+              echo "::error::$apk is missing libtorrserver.so — torrent streaming would be dead."
+              fail=1
+            else
+              echo "$apk contains libtorrserver.so"
+            fi
+          done
+          exit "$fail"
 
       - name: Build legacy-signed APK mirrors (in-place updates for old installs)
         env:
