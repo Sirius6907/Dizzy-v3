@@ -49,11 +49,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Pre-seed TorrServer binary (upstream mirror is gone)
+        shell: bash
+        run: |
+          # torrserver_flutter 0.0.6 downloads torrserver-windows-amd64.zip from
+          # ayman708-UX/torrserver_flutter, which no longer exists (HTTP 404);
+          # cmake_install then fails with "file INSTALL cannot find torrserver.exe".
+          # The plugin prefers $TORRSERVER_FLUTTER_LOCAL_BINARIES, so seed the
+          # official YouROK/TorrServer build under the filename it expects.
+          mkdir -p .torrserver-bin
+          curl -fSL "https://github.com/YouROK/TorrServer/releases/download/MatriX.147.2/TorrServer-windows-amd64.exe" \
+            -o .torrserver-bin/torrserver-windows-amd64.exe
+
       - name: Build Windows App
         # permission_handler_windows needs this on VS2022 17.11+ (MSVC 14.41+):
         # its <experimental/coroutine> include became a hard error (C2338).
         env:
           CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+          TORRSERVER_FLUTTER_LOCAL_BINARIES: ${{ github.workspace }}/.torrserver-bin
         run: flutter build windows --release --dart-define-from-file=.env
 
       - name: Install Inno Setup
@@ -67,7 +80,14 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $cleanVersion = "${{ github.ref_name }}".TrimStart('v')
+          $ref = "${{ github.ref_name }}"
+          if ($ref -match '^v\d') {
+            $cleanVersion = $ref.TrimStart('v')
+          } else {
+            # workflow_dispatch on a branch: take the app version from pubspec
+            # so the installer is never stamped "main".
+            $cleanVersion = (Select-String -Path "pubspec.yaml" -Pattern '^version:\s*([0-9]+\.[0-9]+\.[0-9]+)' | Select-Object -First 1).Matches[0].Groups[1].Value
+          }
           if ([string]::IsNullOrWhiteSpace($cleanVersion)) { $cleanVersion = "1.1.5" }
 
           $isccCmd = (Get-Command iscc.exe -ErrorAction SilentlyContinue)?.Source
@@ -368,7 +388,21 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Pre-seed TorrServer binary (upstream mirror is gone)
+        run: |
+          # torrserver_flutter 0.0.6 downloads torrserver-linux-amd64.tar.gz from
+          # ayman708-UX/torrserver_flutter, which no longer exists (HTTP 404);
+          # cmake_install then fails with "file INSTALL cannot find torrserver".
+          # The plugin prefers $TORRSERVER_FLUTTER_LOCAL_BINARIES, so seed the
+          # official YouROK/TorrServer build under the filename it expects.
+          mkdir -p .torrserver-bin
+          curl -fSL "https://github.com/YouROK/TorrServer/releases/download/MatriX.147.2/TorrServer-linux-amd64" \
+            -o .torrserver-bin/torrserver-linux-amd64
+          chmod +x .torrserver-bin/torrserver-linux-amd64
+
       - name: Build Linux Release
+        env:
+          TORRSERVER_FLUTTER_LOCAL_BINARIES: ${{ github.workspace }}/.torrserver-bin
         run: flutter build linux --release --dart-define-from-file=.env
 
       - name: Package as AppImage & Tar
