@@ -60,6 +60,8 @@ jobs:
           mkdir -p .torrserver-bin
           curl -fSL "https://github.com/YouROK/TorrServer/releases/download/MatriX.147.2/TorrServer-windows-amd64.exe" \
             -o .torrserver-bin/torrserver-windows-amd64.exe
+          # Release assets can be replaced under the same tag — pin the bytes.
+          echo "b38b60dae8d080cfb5ff8941c24b9168796521e576ddf2b7db8b9b20406b46c6  .torrserver-bin/torrserver-windows-amd64.exe" | sha256sum -c -
 
       - name: Build Windows App
         # permission_handler_windows needs this on VS2022 17.11+ (MSVC 14.41+):
@@ -187,6 +189,13 @@ jobs:
           curl -fSL "$base/TorrServer-android-arm7"  -o .torrserver-bin/torrserver-android-arm7
           curl -fSL "$base/TorrServer-android-386"   -o .torrserver-bin/torrserver-android-386
           chmod +x .torrserver-bin/*
+          # Release assets can be replaced under the same tag — pin the bytes.
+          sha256sum -c - <<'EOF'
+          52e365deb5e80d97b31fe67cc04a269cc7e750b906c42d28cee735d95bbbd02c  .torrserver-bin/torrserver-android-arm64
+          1a77717d960067c4c451494f3423aa31101d6deb7874d502ff5758e24cfbeb4b  .torrserver-bin/torrserver-android-amd64
+          be10bc7d073487fafc8d076774c4dabf517d13740f8c638aac920093fd7898cc  .torrserver-bin/torrserver-android-arm7
+          5a8b7def61731c96556fbbe137175f10322f6f4576676730cc98c45f4b842634  .torrserver-bin/torrserver-android-386
+          EOF
 
       - name: Restore release keystore (stable signing for OTA updates)
         shell: bash
@@ -436,6 +445,8 @@ jobs:
           curl -fSL "https://github.com/YouROK/TorrServer/releases/download/MatriX.147.2/TorrServer-linux-amd64" \
             -o .torrserver-bin/torrserver-linux-amd64
           chmod +x .torrserver-bin/torrserver-linux-amd64
+          # Release assets can be replaced under the same tag — pin the bytes.
+          echo "0c8810e25addf183e9337c1dd1d274c79f72a2947a0b5967d2412a888ce7ea0c  .torrserver-bin/torrserver-linux-amd64" | sha256sum -c -
 
       - name: Build Linux Release
         env:
