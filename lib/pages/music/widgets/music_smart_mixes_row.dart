@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:flutter/services.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../services/music/music_smart_mix_service.dart';
 import '../../../utils/perf/image_caps.dart';
@@ -10,10 +12,7 @@ import 'music_hoverable.dart';
 class MusicSmartMixesRow extends StatelessWidget {
   final List<SmartMixPlaylist> mixes;
 
-  const MusicSmartMixesRow({
-    super.key,
-    required this.mixes,
-  });
+  const MusicSmartMixesRow({super.key, required this.mixes});
 
   @override
   Widget build(BuildContext context) {
@@ -22,26 +21,34 @@ class MusicSmartMixesRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             children: [
-              Icon(Icons.auto_awesome_rounded, color: Color(0xFF1DB954), size: 20),
-              SizedBox(width: 8),
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: Color(0xFF1DB954),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Made For You',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: PrismInk.primary(
+                    AppThemeService.currentPalette.value.isLight,
+                  ),
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.3,
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Text(
                 'Smart Mixes',
                 style: TextStyle(
-                  color: Colors.white38,
+                  color: PrismInk.faint(
+                    AppThemeService.currentPalette.value.isLight,
+                  ),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -127,7 +134,11 @@ class MusicSmartMixesRow extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           shadows: [
-                            Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2)),
+                            Shadow(
+                              color: Colors.black54,
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                       ),

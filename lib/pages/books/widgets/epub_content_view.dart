@@ -41,13 +41,16 @@ class EpubContentView extends StatelessWidget {
               return {
                 'margin-bottom': '${settings.paragraphSpacing}px',
                 'line-height': '${settings.lineSpacing}',
-                'text-align': settings.textAlign == TextAlign.justify ? 'justify' : 'left',
+                'text-align': settings.textAlign == TextAlign.justify
+                    ? 'justify'
+                    : 'left',
                 if (settings.firstLineIndent) 'text-indent': '1.8em',
               };
             }
             if (tag == 'h1' || tag == 'h2' || tag == 'h3') {
               return {
-                'color': '#${settings.textColor.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+                'color':
+                    '#${settings.textColor.value.toRadixString(16).padLeft(8, '0').substring(2)}',
                 'margin-top': '${settings.paragraphSpacing * 1.6}px',
                 'margin-bottom': '${settings.paragraphSpacing}px',
                 'font-family': settings.fontFamily,
@@ -58,7 +61,8 @@ class EpubContentView extends StatelessWidget {
           customWidgetBuilder: (element) {
             final tag = element.localName?.toLowerCase();
             if (tag == 'img' || tag == 'image') {
-              final src = element.attributes['src'] ??
+              final src =
+                  element.attributes['src'] ??
                   element.attributes['xlink:href'] ??
                   element.attributes['l:href'] ??
                   element.attributes['href'] ??
@@ -104,10 +108,7 @@ class EpubContentView extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.memory(
-                bytes,
-                fit: BoxFit.contain,
-              ),
+              child: Image.memory(bytes, fit: BoxFit.contain),
             ),
           ),
         ),

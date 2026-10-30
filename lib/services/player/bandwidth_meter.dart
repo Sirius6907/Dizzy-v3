@@ -68,7 +68,8 @@ class BandwidthMeter {
 
   void _prune(DateTime now) {
     _samples.removeWhere(
-        (s) => now.difference(s.at).inSeconds > stableWindowSec + 4);
+      (s) => now.difference(s.at).inSeconds > stableWindowSec + 4,
+    );
     if (_samples.length > 40) {
       _samples.removeRange(0, _samples.length - 40);
     }
@@ -88,8 +89,7 @@ class BandwidthMeter {
   /// True when the window is full enough to trust (span ≥ 10s + samples).
   bool get isStable {
     if (_samples.length < minSamples + 1) return false; // +1 anchor
-    final span =
-        _samples.last.at.difference(_samples.first.at).inSeconds;
+    final span = _samples.last.at.difference(_samples.first.at).inSeconds;
     return span >= stableWindowSec && estimatedMbps != null;
   }
 

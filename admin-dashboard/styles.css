@@ -16,6 +16,10 @@
 
 @property --spin{syntax:'<angle>';initial-value:0deg;inherits:false}
 
+/* Author display rules (.nav-btn{display:flex}) outrank the UA [hidden]
+   rule, which left role-gated nav items and badges permanently visible. */
+[hidden]{display:none!important}
+
 :root{
   /* surfaces (warm-tinted) */
   --bg:#07060a;

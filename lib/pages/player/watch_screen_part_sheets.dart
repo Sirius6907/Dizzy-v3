@@ -46,14 +46,18 @@ extension _WatchScreenStateSheetsAndStates on _WatchScreenState {
                   children: [
                     Icon(
                       Icons.audiotrack_rounded,
-                      color: isActive ? const Color(0xFFB197FC) : Colors.white70,
+                      color: isActive
+                          ? const Color(0xFFB197FC)
+                          : Colors.white70,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       currentText,
                       style: TextStyle(
-                        color: isActive ? const Color(0xFFB197FC) : Colors.white,
+                        color: isActive
+                            ? const Color(0xFFB197FC)
+                            : Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -84,17 +88,28 @@ extension _WatchScreenStateSheetsAndStates on _WatchScreenState {
     );
 
     const double dialogWidth = 230.0;
-    final double spaceBelow = overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
+    final double spaceBelow =
+        overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
     final double spaceAbove = buttonOffset.dy - 16;
     final bool openAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
 
-    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(160.0, 420.0);
-    final double? topOffset = openAbove ? null : (buttonOffset.dy + button.size.height + 8);
-    final double? bottomOffset = openAbove ? (overlay.size.height - buttonOffset.dy + 8) : null;
+    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(
+      160.0,
+      420.0,
+    );
+    final double? topOffset = openAbove
+        ? null
+        : (buttonOffset.dy + button.size.height + 8);
+    final double? bottomOffset = openAbove
+        ? (overlay.size.height - buttonOffset.dy + 8)
+        : null;
 
     final double rawLeft = buttonOffset.dx;
     final double maxLeft = overlay.size.width - dialogWidth - 12.0;
-    final double leftOffset = rawLeft.clamp(12.0, maxLeft > 12.0 ? maxLeft : 12.0);
+    final double leftOffset = rawLeft.clamp(
+      12.0,
+      maxLeft > 12.0 ? maxLeft : 12.0,
+    );
 
     showGeneralDialog(
       context: context,
@@ -127,7 +142,10 @@ extension _WatchScreenStateSheetsAndStates on _WatchScreenState {
                     child: Container(
                       width: dialogWidth,
                       constraints: BoxConstraints(maxHeight: maxMenuHeight),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 6,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: const Color(0x26FFFFFF)),
@@ -146,13 +164,22 @@ extension _WatchScreenStateSheetsAndStates on _WatchScreenState {
                             ),
                             const SizedBox(height: 4),
                             _buildAudioDropdownItem('🌐 Multi-Audio', 'multi'),
-                            _buildAudioDropdownItem('🇺🇸 English / Orig', 'english'),
-                            _buildAudioDropdownItem('🇮🇳 Hindi / Indian', 'hindi'),
+                            _buildAudioDropdownItem(
+                              '🇺🇸 English / Orig',
+                              'english',
+                            ),
+                            _buildAudioDropdownItem(
+                              '🇮🇳 Hindi / Indian',
+                              'hindi',
+                            ),
                             _buildAudioDropdownItem('🇩🇪 German', 'german'),
                             _buildAudioDropdownItem('🇫🇷 French', 'french'),
                             _buildAudioDropdownItem('🇪🇸 Spanish', 'spanish'),
                             _buildAudioDropdownItem('🇷🇺 Russian', 'russian'),
-                            _buildAudioDropdownItem('🇯🇵 Japanese', 'japanese'),
+                            _buildAudioDropdownItem(
+                              '🇯🇵 Japanese',
+                              'japanese',
+                            ),
                             _buildAudioDropdownItem('🇮🇹 Italian', 'italian'),
                           ],
                         ),
@@ -200,7 +227,11 @@ extension _WatchScreenStateSheetsAndStates on _WatchScreenState {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: Color(0xFFB197FC), size: 18),
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFFB197FC),
+                size: 18,
+              ),
           ],
         ),
       ),

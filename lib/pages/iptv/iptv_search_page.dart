@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/iptv/hardcoded_channels.dart';
 import '../../widgets/iptv/iptv_channel_card.dart';
@@ -36,7 +37,8 @@ class _IptvSearchPageState extends State<IptvSearchPage> {
 
   List<HardcodedChannel> _filteredChannels() {
     return HardcodedChannels.all.where((c) {
-      final matchesCategory = _selectedCategory == 'All' || c.category == _selectedCategory;
+      final matchesCategory =
+          _selectedCategory == 'All' || c.category == _selectedCategory;
       if (!matchesCategory) return false;
       if (_query.trim().isEmpty) return true;
       final q = _query.toLowerCase();
@@ -50,6 +52,17 @@ class _IptvSearchPageState extends State<IptvSearchPage> {
   Widget build(BuildContext context) {
     final channels = _filteredChannels();
     final width = MediaQuery.sizeOf(context).width;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white54;
+    final fieldFill = isLight
+        ? PrismLight.sunken
+        : Colors.white.withValues(alpha: 0.08);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.15);
 
     // Responsive columns
     int crossAxisCount = 2;
@@ -64,32 +77,43 @@ class _IptvSearchPageState extends State<IptvSearchPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppThemeService.currentPalette.value.scaffoldBackgroundColor,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
+          icon: Icon(Icons.arrow_back_rounded, color: inkSoft),
           onPressed: () => Navigator.pop(context),
         ),
         title: Container(
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: fieldFill,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: hairline),
           ),
           child: TextField(
             controller: _searchCtrl,
             autofocus: true,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: TextStyle(color: ink, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Search 60+ live channels, leagues, networks…',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13.5),
-              prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF7C5CFF), size: 20),
+              hintStyle: TextStyle(
+                color: isLight ? PrismLight.inkFaint : Colors.white.withValues(alpha: 0.4),
+                fontSize: 13.5,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: PrismAccent.accent,
+                size: 20,
+              ),
               suffixIcon: _query.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 18),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: inkFaint,
+                        size: 18,
+                      ),
                       onPressed: () {
                         _searchCtrl.clear();
                         setState(() => _query = '');
@@ -121,25 +145,32 @@ class _IptvSearchPageState extends State<IptvSearchPage> {
                   onTap: () => setState(() => _selectedCategory = cat),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF7C5CFF)
-                          : Colors.white.withValues(alpha: 0.06),
+                          ? PrismAccent.accent
+                          : (isLight
+                                ? PrismLight.raised
+                                : Colors.white.withValues(alpha: 0.06)),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF7C5CFF)
-                            : Colors.white.withValues(alpha: 0.1),
+                        color: isSelected ? PrismAccent.accent : hairline,
                       ),
                     ),
                     child: Center(
                       child: Text(
                         cat,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: isSelected
+                              ? Colors.white
+                              : (isLight ? PrismLight.inkSoft : Colors.white70),
                           fontSize: 12.5,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
                         ),
                       ),
                     ),
@@ -152,8 +183,11 @@ class _IptvSearchPageState extends State<IptvSearchPage> {
           // Channel Grid
           Expanded(
             child: channels.isEmpty
-                ? const Center(
-                    child: Text('No channels match your search.', style: TextStyle(color: Colors.white54)),
+                ? Center(
+                    child: Text(
+                      'No channels match your search.',
+                      style: TextStyle(color: inkFaint),
+                    ),
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),

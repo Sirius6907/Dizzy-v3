@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/iptv/hardcoded_channels.dart';
 import '../../services/iptv/iptv_settings.dart';
@@ -31,8 +33,17 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
   Widget build(BuildContext context) {
     final ch = widget.channel;
     final palette = AppThemeService.currentPalette.value;
-    final primaryColor = ch.gradient.isNotEmpty ? ch.gradient.first : palette.primaryColor;
-    final secondaryColor = ch.gradient.length > 1 ? ch.gradient.last : palette.accentColor;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.52);
+    final primaryColor = ch.gradient.isNotEmpty
+        ? ch.gradient.first
+        : palette.primaryColor;
+    final secondaryColor = ch.gradient.length > 1
+        ? ch.gradient.last
+        : palette.accentColor;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -50,7 +61,9 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
           child: AnimatedScale(
             duration: const Duration(milliseconds: 170),
             curve: Curves.easeOutCubic,
-            scale: _pressed ? 0.96 : (_hovered ? IptvSettings.cardHoverZoom.value : 1.0),
+            scale: _pressed
+                ? 0.96
+                : (_hovered ? IptvSettings.cardHoverZoom.value : 1.0),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 170),
               curve: Curves.easeOutCubic,
@@ -73,15 +86,11 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                           ],
                           stops: const [0.0, 0.55, 1.0],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _hovered
-                                ? primaryColor.withValues(alpha: 0.45)
-                                : Colors.black.withValues(alpha: 0.35),
-                            blurRadius: _hovered ? 20 : 10,
-                            offset: Offset(0, _hovered ? 8 : 4),
-                          ),
-                        ],
+                        boxShadow: PrismFrame.poster(
+                          isLight: AppThemeService.currentPalette.value.isLight,
+                          hovered: _hovered,
+                          glow: primaryColor,
+                        ),
                         border: Border.all(
                           color: _hovered
                               ? primaryColor.withValues(alpha: 0.8)
@@ -111,11 +120,18 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                             // Channel Icon / Logo / Short text
                             Center(
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 28, 14, 16),
+                                padding: const EdgeInsets.fromLTRB(
+                                  14,
+                                  28,
+                                  14,
+                                  16,
+                                ),
                                 child: SizedBox(
                                   width: 130,
                                   height: 100,
-                                  child: ch.iconUrl != null && ch.iconUrl!.isNotEmpty
+                                  child:
+                                      ch.iconUrl != null &&
+                                          ch.iconUrl!.isNotEmpty
                                       ? CachedNetworkImage(
                                           imageUrl: ch.iconUrl!,
                                           fit: BoxFit.contain,
@@ -127,11 +143,14 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                                               height: 24,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                color: Colors.white.withValues(alpha: 0.3),
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.3,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                          errorWidget: (_, _, _) => _buildShortBadge(ch),
+                                          errorWidget: (_, _, _) =>
+                                              _buildShortBadge(ch),
                                         )
                                       : _buildShortBadge(ch),
                                 ),
@@ -144,12 +163,17 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                                 top: 10,
                                 left: 10,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withValues(alpha: 0.65),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: DizzyGlow.ember.withValues(alpha: 0.6),
+                                      color: DizzyGlow.ember.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       width: 0.8,
                                     ),
                                   ),
@@ -191,7 +215,10 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                                 top: 10,
                                 right: 10,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2.5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
@@ -235,11 +262,11 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                     ch.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.2,
-                      color: Colors.white,
+                      color: ink,
                     ),
                   ),
 
@@ -252,7 +279,7 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                           ch.category,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.52),
+                            color: inkSoft,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -262,7 +289,9 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                             width: 3.5,
                             height: 3.5,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
+                              color: isLight
+                                  ? PrismLight.inkFaint
+                                  : Colors.white.withValues(alpha: 0.3),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -272,7 +301,7 @@ class _IptvChannelCardState extends State<IptvChannelCard> {
                         'HD Live',
                         style: TextStyle(
                           fontSize: 12,
-                          color: primaryColor,
+                          color: PrismAccent.text(isLight),
                           fontWeight: FontWeight.w700,
                         ),
                       ),

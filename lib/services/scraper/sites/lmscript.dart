@@ -39,11 +39,14 @@ class LMScriptScraper extends StreamScraper {
 
       final client = http.Client();
       try {
-        final url = 'https://lmscript.xyz/v1/movies?filters[q]=${Uri.encodeComponent(title)}&expand=streams';
-        final res = await client.get(
-          Uri.parse(url),
-          headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-        ).timeout(const Duration(seconds: 8));
+        final url =
+            'https://lmscript.xyz/v1/movies?filters[q]=${Uri.encodeComponent(title)}&expand=streams';
+        final res = await client
+            .get(
+              Uri.parse(url),
+              headers: {'User-Agent': _ua, 'Accept': 'application/json'},
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (res.statusCode != 200) return;
         final data = jsonDecode(res.body);
@@ -54,13 +57,18 @@ class LMScriptScraper extends StreamScraper {
 
         if (tmdbId != null) {
           movie = items.firstWhere(
-            (it) => it is Map && ('${it['tmdb_prefix']}' == '$tmdbId' || '${it['tmdb_id']}' == '$tmdbId'),
+            (it) =>
+                it is Map &&
+                ('${it['tmdb_prefix']}' == '$tmdbId' ||
+                    '${it['tmdb_id']}' == '$tmdbId'),
             orElse: () => null,
           );
         }
 
         movie ??= items.firstWhere(
-          (it) => it is Map && it['title']?.toString().toLowerCase() == title.toLowerCase(),
+          (it) =>
+              it is Map &&
+              it['title']?.toString().toLowerCase() == title.toLowerCase(),
           orElse: () => items.first,
         );
 
@@ -84,9 +92,7 @@ class LMScriptScraper extends StreamScraper {
             headers: headers,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': headers,
-              },
+              'proxyHeaders': {'request': headers},
             },
           );
         }

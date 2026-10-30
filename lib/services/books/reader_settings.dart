@@ -2,23 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum ReaderTheme {
-  light,
-  sepia,
-  dark,
-  amoled,
-}
+enum ReaderTheme { light, sepia, dark, amoled }
 
-enum ReaderMode {
-  scroll,
-  paginated,
-}
+enum ReaderMode { scroll, paginated }
 
-enum MarginPreset {
-  compact,
-  balanced,
-  wide,
-}
+enum MarginPreset { compact, balanced, wide }
 
 class ReaderSettingsData {
   final double fontSize;
@@ -90,7 +78,8 @@ class ReaderSettingsData {
       textAlign: textAlign ?? this.textAlign,
       brightness: brightness ?? this.brightness,
       focusModeActive: focusModeActive ?? this.focusModeActive,
-      savedThemeBeforeFocus: savedThemeBeforeFocus ?? this.savedThemeBeforeFocus,
+      savedThemeBeforeFocus:
+          savedThemeBeforeFocus ?? this.savedThemeBeforeFocus,
     );
   }
 
@@ -213,7 +202,9 @@ class ReaderSettingsData {
         (m) => m.name == json['mode'],
         orElse: () => ReaderMode.scroll,
       ),
-      textAlign: json['textAlign'] == 'justify' ? TextAlign.justify : TextAlign.left,
+      textAlign: json['textAlign'] == 'justify'
+          ? TextAlign.justify
+          : TextAlign.left,
       brightness: (json['brightness'] as num?)?.toDouble() ?? 1.0,
     );
   }
@@ -248,37 +239,51 @@ class ReaderSettings {
   }
 
   static void updateFontSize(double size) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(fontSize: size.clamp(12.0, 36.0));
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      fontSize: size.clamp(12.0, 36.0),
+    );
     _save();
   }
 
   static void updateFontFamily(String family) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(fontFamily: family);
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      fontFamily: family,
+    );
     _save();
   }
 
   static void updateLineSpacing(double spacing) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(lineSpacing: spacing.clamp(1.2, 2.4));
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      lineSpacing: spacing.clamp(1.2, 2.4),
+    );
     _save();
   }
 
   static void updateLetterSpacing(double spacing) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(letterSpacing: spacing.clamp(-0.5, 1.5));
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      letterSpacing: spacing.clamp(-0.5, 1.5),
+    );
     _save();
   }
 
   static void updateParagraphSpacing(double spacing) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(paragraphSpacing: spacing.clamp(8.0, 36.0));
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      paragraphSpacing: spacing.clamp(8.0, 36.0),
+    );
     _save();
   }
 
   static void updateFirstLineIndent(bool indent) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(firstLineIndent: indent);
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      firstLineIndent: indent,
+    );
     _save();
   }
 
   static void updateMarginPreset(MarginPreset preset) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(marginPreset: preset);
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      marginPreset: preset,
+    );
     _save();
   }
 
@@ -298,7 +303,9 @@ class ReaderSettings {
   }
 
   static void updateBrightness(double brightness) {
-    settingsNotifier.value = settingsNotifier.value.copyWith(brightness: brightness.clamp(0.2, 1.0));
+    settingsNotifier.value = settingsNotifier.value.copyWith(
+      brightness: brightness.clamp(0.2, 1.0),
+    );
     _save();
   }
 
@@ -314,7 +321,9 @@ class ReaderSettings {
       // Deactivating Focus Mode: restore saved theme
       settingsNotifier.value = settingsNotifier.value.copyWith(
         focusModeActive: false,
-        theme: settingsNotifier.value.savedThemeBeforeFocus ?? settingsNotifier.value.theme,
+        theme:
+            settingsNotifier.value.savedThemeBeforeFocus ??
+            settingsNotifier.value.theme,
       );
     }
   }
@@ -323,7 +332,9 @@ class ReaderSettings {
     if (settingsNotifier.value.focusModeActive) {
       settingsNotifier.value = settingsNotifier.value.copyWith(
         focusModeActive: false,
-        theme: settingsNotifier.value.savedThemeBeforeFocus ?? settingsNotifier.value.theme,
+        theme:
+            settingsNotifier.value.savedThemeBeforeFocus ??
+            settingsNotifier.value.theme,
       );
     }
   }

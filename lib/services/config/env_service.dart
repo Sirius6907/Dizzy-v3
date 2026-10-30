@@ -16,15 +16,19 @@ class EnvService {
     if (_initialized) return;
     _initialized = true;
 
-    // 1. Try reading from root filesystem .env (Desktop / Local dev)
-    try {
-      final file = File('.env');
-      if (await file.exists()) {
-        final lines = await file.readAsLines();
-        _parseLines(lines);
-        return;
-      }
-    } catch (_) {}
+    // 1. Try reading a filesystem .env: working dir first, then next to the
+    // executable and its ancestors (a double-clicked desktop release runs
+    // with CWD = Release folder, which used to hide the repo `.env` and
+    // silently disable cloud features like Watch Together).
+    for (final path in _candidateEnvPaths()) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          _parseLines(await file.readAsLines());
+          return;
+        }
+      } catch (_) {}
+    }
 
     // 2. Try reading from rootBundle asset if bundled
     try {
@@ -38,6 +42,20 @@ class EnvService {
       _parseLines(content.split('\n'));
       return;
     } catch (_) {}
+  }
+
+  static List<String> _candidateEnvPaths() {
+    final paths = <String>['.env'];
+    try {
+      var dir = File(Platform.resolvedExecutable).parent;
+      for (var depth = 0; depth < 8; depth++) {
+        paths.add('${dir.path}${Platform.pathSeparator}.env');
+        final parent = dir.parent;
+        if (parent.path == dir.path) break;
+        dir = parent;
+      }
+    } catch (_) {}
+    return paths;
   }
 
   static void _parseLines(List<String> lines) {

@@ -8,17 +8,16 @@ ContinueWatchingItem item({
   int position = 100,
   int total = 1000,
   String? rawUrl,
-}) =>
-    ContinueWatchingItem(
-      id: id,
-      title: id,
-      type: 'movie',
-      positionSeconds: position,
-      totalDurationSeconds: total,
-      lastWatchedAt: at,
-      isTorrent: false,
-      rawUrl: rawUrl,
-    );
+}) => ContinueWatchingItem(
+  id: id,
+  title: id,
+  type: 'movie',
+  positionSeconds: position,
+  totalDurationSeconds: total,
+  lastWatchedAt: at,
+  isTorrent: false,
+  rawUrl: rawUrl,
+);
 
 void main() {
   group('S3A CloudSync mergeNewestWins', () {
@@ -53,7 +52,10 @@ void main() {
       final now = DateTime(2026, 9, 8);
       final all = List.generate(
         55,
-        (i) => item(id: 'tt$i', at: now.add(Duration(seconds: i))),
+        (i) => item(
+          id: 'tt$i',
+          at: now.add(Duration(seconds: i)),
+        ),
       );
       expect(CloudSyncService.mergeNewestWins(all, []), hasLength(50));
     });

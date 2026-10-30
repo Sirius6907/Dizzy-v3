@@ -11,29 +11,31 @@ StreamSource _src(String name, {String addon = 'test'}) {
 }
 
 void main() {
-  test('first alive source wins even when a dead source was offered first',
-      () async {
-    // Dead probe takes 3s (would serialize-kill old pipeline); alive 50ms.
-    final race = StreamProbeRace(
-      probeFn: (s) async {
-        if (s.name == 'dead') {
-          await Future.delayed(const Duration(milliseconds: 300));
-          return false;
-        }
-        await Future.delayed(const Duration(milliseconds: 50));
-        return true;
-      },
-    );
+  test(
+    'first alive source wins even when a dead source was offered first',
+    () async {
+      // Dead probe takes 3s (would serialize-kill old pipeline); alive 50ms.
+      final race = StreamProbeRace(
+        probeFn: (s) async {
+          if (s.name == 'dead') {
+            await Future.delayed(const Duration(milliseconds: 300));
+            return false;
+          }
+          await Future.delayed(const Duration(milliseconds: 50));
+          return true;
+        },
+      );
 
-    race.offer(_src('dead'));
-    race.offer(_src('alive-fast'));
+      race.offer(_src('dead'));
+      race.offer(_src('alive-fast'));
 
-    final winner = await race.winner;
-    expect(winner, isNotNull);
-    expect(winner!.name, 'alive-fast');
+      final winner = await race.winner;
+      expect(winner, isNotNull);
+      expect(winner!.name, 'alive-fast');
 
-    race.close();
-  });
+      race.close();
+    },
+  );
 
   test('winner is null when all sources are dead', () async {
     final race = StreamProbeRace(probeFn: (_) async => false);
@@ -49,33 +51,34 @@ void main() {
     expect(winner, isNull);
   });
 
-  test('verified sources continue arriving after winner (for manual list)',
-      () async {
-    final batches = <List<StreamSource>>[];
-    final race = StreamProbeRace(
-      probeFn: (_) async => true,
-      onVerifiedBatch: batches.add,
-      batchDelay: const Duration(milliseconds: 10),
-    );
+  test(
+    'verified sources continue arriving after winner (for manual list)',
+    () async {
+      final batches = <List<StreamSource>>[];
+      final race = StreamProbeRace(
+        probeFn: (_) async => true,
+        onVerifiedBatch: batches.add,
+        batchDelay: const Duration(milliseconds: 10),
+      );
 
-    race.offer(_src('a'));
-    await Future.delayed(const Duration(milliseconds: 30));
-    expect(batches.length, 1); // first batch flushed
-    expect(batches.first.length, 1);
+      race.offer(_src('a'));
+      await Future.delayed(const Duration(milliseconds: 30));
+      expect(batches.length, 1); // first batch flushed
+      expect(batches.first.length, 1);
 
-    race.offer(_src('b')); // after winner — still lands in UI list
-    await Future.delayed(const Duration(milliseconds: 30));
-    expect(race.verifiedSources.length, 2);
+      race.offer(_src('b')); // after winner — still lands in UI list
+      await Future.delayed(const Duration(milliseconds: 30));
+      expect(race.verifiedSources.length, 2);
 
-    // winner was first source
-    final winner = await race.winner;
-    expect(winner!.name, 'a');
+      // winner was first source
+      final winner = await race.winner;
+      expect(winner!.name, 'a');
 
-    race.close();
-  });
+      race.close();
+    },
+  );
 
-  test('probe concurrency is bounded — 100 offers never exceed cap',
-      () async {
+  test('probe concurrency is bounded — 100 offers never exceed cap', () async {
     var peakConcurrent = 0;
     var running = 0;
     final race = StreamProbeRace(
@@ -93,7 +96,10 @@ void main() {
       race.offer(_src('s$i'));
     }
     await Future.delayed(const Duration(milliseconds: 800));
-    expect(peakConcurrent, lessThanOrEqualTo(StreamProbeRace.maxConcurrentProbes));
+    expect(
+      peakConcurrent,
+      lessThanOrEqualTo(StreamProbeRace.maxConcurrentProbes),
+    );
     race.close(); // settle winner with no alive source found
     expect(await race.winner, isNull);
   });
@@ -117,23 +123,24 @@ void main() {
     expect(await race.winner, isNull);
   });
 
-  test('closeDrain waits for in-flight verified probes (no close-drop)',
-      () async {
-    final race = StreamProbeRace(
-      probeFn: (_) async {
-        await Future.delayed(const Duration(milliseconds: 60));
-        return true;
-      },
-    );
-    final winnerFuture = race.winner;
-    race.offer(_src('slow-but-alive'));
-    await Future.delayed(const Duration(milliseconds: 10));
-    race.closeDrain(); // scrape-done path: must NOT drop the probe
-    final winner =
-        await winnerFuture.timeout(const Duration(seconds: 5));
-    expect(winner, isNotNull);
-    expect(winner!.name, 'slow-but-alive');
-  });
+  test(
+    'closeDrain waits for in-flight verified probes (no close-drop)',
+    () async {
+      final race = StreamProbeRace(
+        probeFn: (_) async {
+          await Future.delayed(const Duration(milliseconds: 60));
+          return true;
+        },
+      );
+      final winnerFuture = race.winner;
+      race.offer(_src('slow-but-alive'));
+      await Future.delayed(const Duration(milliseconds: 10));
+      race.closeDrain(); // scrape-done path: must NOT drop the probe
+      final winner = await winnerFuture.timeout(const Duration(seconds: 5));
+      expect(winner, isNotNull);
+      expect(winner!.name, 'slow-but-alive');
+    },
+  );
 
   test('closeDrain settles null when probes are dead', () async {
     final race = StreamProbeRace(probeFn: (_) async => false);
@@ -141,8 +148,7 @@ void main() {
     race.offer(_src('dead1'));
     race.offer(_src('dead2'));
     race.closeDrain();
-    final winner =
-        await winnerFuture.timeout(const Duration(seconds: 5));
+    final winner = await winnerFuture.timeout(const Duration(seconds: 5));
     expect(winner, isNull);
   });
 
@@ -157,13 +163,9 @@ void main() {
     race.offer(_src('first'));
     race.closeDrain();
     race.offer(_src('late')); // must be ignored
-    final winner =
-        await winnerFuture.timeout(const Duration(seconds: 5));
+    final winner = await winnerFuture.timeout(const Duration(seconds: 5));
     expect(winner, isNotNull);
     expect(winner!.name, 'first');
-    expect(
-      race.verifiedSources.where((s) => s.name == 'late'),
-      isEmpty,
-    );
+    expect(race.verifiedSources.where((s) => s.name == 'late'), isEmpty);
   });
 }

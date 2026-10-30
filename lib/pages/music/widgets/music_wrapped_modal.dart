@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../design/prism_shadows.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../services/music/music_stats_service.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -58,13 +60,9 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
               borderRadius: BorderRadius.circular(32),
               gradient: _getSlideGradient(_currentSlide),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  blurRadius: 36,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+              boxShadow: PrismShadows.floating(
+                isLight: AppThemeService.currentPalette.value.isLight,
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(32),
@@ -102,9 +100,13 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                             return Expanded(
                               child: Container(
                                 height: 3.5,
-                                margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 2.5,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isPassed ? Colors.white : Colors.white24,
+                                  color: isPassed
+                                      ? Colors.white
+                                      : Colors.white24,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
@@ -117,7 +119,10 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black.withValues(alpha: 0.35),
                                 borderRadius: BorderRadius.circular(10),
@@ -125,7 +130,11 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent, size: 14),
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: Colors.amberAccent,
+                                    size: 14,
+                                  ),
                                   SizedBox(width: 4),
                                   Text(
                                     'DIZZY WRAPPED',
@@ -141,7 +150,11 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                             ),
                             const Spacer(),
                             IconButton(
-                              icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 22),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.white70,
+                                size: 22,
+                              ),
                               onPressed: () => Navigator.pop(context),
                             ),
                           ],
@@ -221,7 +234,11 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
         const SizedBox(height: 20),
         const Text(
           'You spent',
-          style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 6),
         Text(
@@ -246,7 +263,10 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
         Text(
           'Soundtracked with pristine lossless beats on Dizzy Music.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13.5),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 13.5,
+          ),
         ),
       ],
     );
@@ -260,12 +280,21 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
       children: [
         const Text(
           'YOUR TOP TRACKS',
-          style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2),
+          style: TextStyle(
+            color: Colors.white54,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 8),
         const Text(
           'On Repeat',
-          style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         const SizedBox(height: 16),
         if (top.isEmpty)
@@ -292,7 +321,11 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                     children: [
                       Text(
                         '#${idx + 1}',
-                        style: const TextStyle(color: Colors.amberAccent, fontSize: 16, fontWeight: FontWeight.w900),
+                        style: const TextStyle(
+                          color: Colors.amberAccent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       ClipRRect(
@@ -313,13 +346,20 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                           children: [
                             Text(
                               track.title,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               track.artist,
-                              style: const TextStyle(color: Colors.white60, fontSize: 11),
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -328,7 +368,11 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                       ),
                       Text(
                         '${track.playCount} plays',
-                        style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -348,12 +392,21 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
       children: [
         const Text(
           'FAVORITE ICONS',
-          style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2),
+          style: TextStyle(
+            color: Colors.white54,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 8),
         const Text(
           'Top Artists',
-          style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         const SizedBox(height: 16),
         if (artists.isEmpty)
@@ -371,7 +424,10 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
               itemBuilder: (context, idx) {
                 final a = artists[idx];
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(14),
@@ -380,20 +436,31 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
                     children: [
                       Text(
                         '#${idx + 1}',
-                        style: const TextStyle(color: Color(0xFF00D2EF), fontSize: 16, fontWeight: FontWeight.w900),
+                        style: const TextStyle(
+                          color: Color(0xFF00D2EF),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
                           a.key,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
                         '${a.value} spins',
-                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -413,7 +480,12 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
       children: [
         const Text(
           'YOUR MUSIC IDENTITY',
-          style: TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+          style: TextStyle(
+            color: Colors.white60,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -423,7 +495,11 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white24, width: 2),
           ),
-          child: const Icon(Icons.stars_rounded, size: 64, color: Color(0xFF1DB954)),
+          child: const Icon(
+            Icons.stars_rounded,
+            size: 64,
+            color: Color(0xFF1DB954),
+          ),
         ),
         const SizedBox(height: 20),
         Text(
@@ -450,19 +526,29 @@ class _MusicWrappedModalState extends State<MusicWrappedModal> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
             onPressed: () {
-              Clipboard.setData(ClipboardData(
-                text: 'My Dizzy Music Wrapped 🚀\nPersona: $persona\nTotal Time: ${stats.totalMinutes} mins\nStreamed on Dizzy Music',
-              ));
+              Clipboard.setData(
+                ClipboardData(
+                  text:
+                      'My Dizzy Music Wrapped 🚀\nPersona: $persona\nTotal Time: ${stats.totalMinutes} mins\nStreamed on Dizzy Music',
+                ),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Wrapped summary copied! Ready to share 🎉')),
+                const SnackBar(
+                  content: Text('Wrapped summary copied! Ready to share 🎉'),
+                ),
               );
             },
             icon: const Icon(Icons.share_rounded, size: 18),
-            label: const Text('Share My Wrapped', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Share My Wrapped',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],

@@ -66,7 +66,9 @@ class _PlayerLockButtonState extends State<PlayerLockButton> {
             ? Colors.redAccent.withValues(alpha: 0.35)
             : Colors.black.withValues(alpha: 0.35),
         border: Border.all(
-          color: armed ? Colors.redAccent : Colors.white.withValues(alpha: 0.25),
+          color: armed
+              ? Colors.redAccent
+              : Colors.white.withValues(alpha: 0.25),
           width: 1.2,
         ),
       ),
@@ -83,7 +85,9 @@ class _PlayerLockButtonState extends State<PlayerLockButton> {
               widget.isLocked
                   ? (armed ? Icons.lock_open_rounded : Icons.lock_rounded)
                   : Icons.lock_outline_rounded,
-              color: armed ? Colors.white : Colors.white.withValues(alpha: 0.85),
+              color: armed
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.85),
               size: 22,
             ),
           ),

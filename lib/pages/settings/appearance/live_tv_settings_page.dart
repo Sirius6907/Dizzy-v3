@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/home/home_page_settings.dart';
 import '../../../services/iptv/iptv_settings.dart';
@@ -15,11 +15,15 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.35);
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -42,7 +46,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -57,7 +61,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -72,7 +76,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -87,7 +91,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -102,7 +106,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -118,18 +122,33 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
   }
 
   Widget _buildHeroSpotlightCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final labelColor = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.8);
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final fieldColor = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final dividerColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+
     return ValueListenableBuilder<bool>(
       valueListenable: IptvSettings.enableSpotlight,
       builder: (context, enabled, _) {
         return Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
+            color: cardColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: enabled
                   ? palette.primaryColor.withValues(alpha: 0.35)
-                  : Colors.white.withValues(alpha: 0.08),
+                  : hairline,
             ),
           ),
           child: Column(
@@ -152,7 +171,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -161,13 +180,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Featured championship matches and top broadcast channels at the top',
-                          style: TextStyle(fontSize: 12, color: Colors.white54),
+                          style: TextStyle(fontSize: 12, color: inkSoft),
                         ),
                       ],
                     ),
@@ -185,7 +204,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
 
               if (enabled) ...[
                 const SizedBox(height: 16),
-                Divider(color: Colors.white.withValues(alpha: 0.06)),
+                Divider(color: dividerColor),
                 const SizedBox(height: 12),
 
                 // Style Selection
@@ -194,7 +213,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: labelColor,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -209,17 +228,21 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                         return ChoiceChip(
                           label: Text(style.label),
                           selected: isSelected,
-                          selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                          backgroundColor: DizzyVoid.voidB,
+                          selectedColor: palette.primaryColor.withValues(
+                            alpha: 0.25,
+                          ),
+                          backgroundColor: fieldColor,
                           labelStyle: TextStyle(
-                            color: isSelected ? palette.primaryColor : Colors.white70,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                            color: isSelected ? palette.primaryColor : inkSoft,
+                            fontWeight: isSelected
+                                ? FontWeight.w800
+                                : FontWeight.w500,
                             fontSize: 12,
                           ),
                           side: BorderSide(
                             color: isSelected
                                 ? palette.primaryColor.withValues(alpha: 0.6)
-                                : Colors.white.withValues(alpha: 0.08),
+                                : hairline,
                           ),
                           onSelected: (selected) {
                             if (selected) {
@@ -234,7 +257,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 ),
 
                 const SizedBox(height: 16),
-                Divider(color: Colors.white.withValues(alpha: 0.06)),
+                Divider(color: dividerColor),
                 const SizedBox(height: 12),
 
                 // Auto Rotate
@@ -243,7 +266,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                   builder: (context, autoRotate, _) {
                     return Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -252,13 +275,16 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                                 style: TextStyle(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: ink,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Automatically cycle through featured live events',
-                                style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: inkSoft,
+                                ),
                               ),
                             ],
                           ),
@@ -266,7 +292,8 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                         Switch.adaptive(
                           value: autoRotate,
                           activeColor: palette.primaryColor,
-                          onChanged: (val) => IptvSettings.setHeroAutoRotate(val),
+                          onChanged: (val) =>
+                              IptvSettings.setHeroAutoRotate(val),
                         ),
                       ],
                     );
@@ -292,7 +319,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                                   'Rotation Interval',
                                   style: TextStyle(
                                     fontSize: 12.5,
-                                    color: Colors.white.withValues(alpha: 0.7),
+                                    color: labelColor,
                                   ),
                                 ),
                                 Text(
@@ -309,7 +336,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                             SliderTheme(
                               data: SliderTheme.of(context).copyWith(
                                 activeTrackColor: palette.primaryColor,
-                                inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+                                inactiveTrackColor: hairline,
                                 thumbColor: palette.primaryColor,
                                 trackHeight: 3,
                               ),
@@ -318,7 +345,10 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                                 min: 3,
                                 max: 15,
                                 divisions: 12,
-                                onChanged: (val) => IptvSettings.setHeroRotateSeconds(val.round()),
+                                onChanged: (val) =>
+                                    IptvSettings.setHeroRotateSeconds(
+                                      val.round(),
+                                    ),
                               ),
                             ),
                           ],
@@ -336,12 +366,27 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
   }
 
   Widget _buildCardDensityCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final labelColor = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.8);
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final fieldColor = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final dividerColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +397,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -368,16 +413,18 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     label: Text(density.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: fieldColor,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected ? palette.primaryColor : inkSoft,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
                       color: isSelected
                           ? palette.primaryColor.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : hairline,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -392,7 +439,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           // Hover Zoom Slider
@@ -411,7 +458,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: labelColor,
                         ),
                       ),
                       Text(
@@ -428,7 +475,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: palette.primaryColor,
-                      inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+                      inactiveTrackColor: hairline,
                       thumbColor: palette.primaryColor,
                       trackHeight: 3,
                     ),
@@ -446,7 +493,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           // HD Badge Toggle
@@ -455,7 +502,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showHd, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -464,13 +511,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Display radiant live broadcast badge on channel corners',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),
@@ -486,7 +533,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           // Category Tag Toggle
@@ -495,7 +542,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showTag, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -504,13 +551,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Show category label below channel name',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),
@@ -530,15 +577,27 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
   }
 
   Widget _buildCategoryManagerCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final dividerColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+
     return ValueListenableBuilder<List<String>>(
       valueListenable: IptvSettings.visibleCategories,
       builder: (context, visibleList, _) {
         return Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
+            color: cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: hairline),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,7 +605,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -554,20 +613,23 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                         style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: ink,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         'Toggle visibility of Live TV rows',
-                        style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                        style: TextStyle(fontSize: 11.5, color: inkSoft),
                       ),
                     ],
                   ),
                   TextButton.icon(
                     onPressed: () => IptvSettings.resetCategories(),
                     icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: const Text('Reset All', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'Reset All',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     style: TextButton.styleFrom(
                       foregroundColor: palette.primaryColor,
                     ),
@@ -575,7 +637,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                 ],
               ),
               const SizedBox(height: 12),
-              Divider(color: Colors.white.withValues(alpha: 0.06)),
+              Divider(color: dividerColor),
               const SizedBox(height: 6),
 
               ...IptvSettings.defaultCategories.map((cat) {
@@ -587,7 +649,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: isVisible ? FontWeight.w700 : FontWeight.w500,
-                      color: isVisible ? Colors.white : Colors.white38,
+                      color: isVisible ? ink : inkFaint,
                     ),
                   ),
                   value: isVisible,
@@ -606,12 +668,27 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
   }
 
   Widget _buildPortalsModalCustomizerCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final labelColor = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.8);
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final fieldColor = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final dividerColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,7 +698,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -637,16 +714,18 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: fieldColor,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected ? palette.primaryColor : inkSoft,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
                       color: isSelected
                           ? palette.primaryColor.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : hairline,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -661,7 +740,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           ValueListenableBuilder<bool>(
@@ -669,7 +748,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showExpiry, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -678,13 +757,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Display subscription expiration tag on portal cards',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),
@@ -700,7 +779,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           ValueListenableBuilder<bool>(
@@ -708,7 +787,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showConn, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -717,13 +796,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Display current and max concurrent streaming connections',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),
@@ -731,7 +810,8 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                   Switch.adaptive(
                     value: showConn,
                     activeColor: palette.primaryColor,
-                    onChanged: (val) => IptvSettings.setShowPortalConnections(val),
+                    onChanged: (val) =>
+                        IptvSettings.setShowPortalConnections(val),
                   ),
                 ],
               );
@@ -739,7 +819,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           Text(
@@ -747,7 +827,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -760,16 +840,18 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     label: const Text('Xtream Panels'),
                     selected: tabIdx == 0,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: fieldColor,
                     labelStyle: TextStyle(
-                      color: tabIdx == 0 ? palette.primaryColor : Colors.white70,
-                      fontWeight: tabIdx == 0 ? FontWeight.w800 : FontWeight.w500,
+                      color: tabIdx == 0 ? palette.primaryColor : inkSoft,
+                      fontWeight: tabIdx == 0
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
                       color: tabIdx == 0
                           ? palette.primaryColor.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : hairline,
                     ),
                     onSelected: (selected) {
                       if (selected) IptvSettings.setDefaultPortalTab(0);
@@ -780,16 +862,18 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     label: const Text('M3U Playlists'),
                     selected: tabIdx == 1,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: fieldColor,
                     labelStyle: TextStyle(
-                      color: tabIdx == 1 ? palette.primaryColor : Colors.white70,
-                      fontWeight: tabIdx == 1 ? FontWeight.w800 : FontWeight.w500,
+                      color: tabIdx == 1 ? palette.primaryColor : inkSoft,
+                      fontWeight: tabIdx == 1
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
                       color: tabIdx == 1
                           ? palette.primaryColor.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : hairline,
                     ),
                     onSelected: (selected) {
                       if (selected) IptvSettings.setDefaultPortalTab(1);
@@ -805,12 +889,27 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
   }
 
   Widget _buildPortalBrowserCustomizerCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final labelColor = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.8);
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final fieldColor = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final dividerColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,7 +919,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -836,16 +935,18 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                     label: Text(l.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: fieldColor,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected ? palette.primaryColor : inkSoft,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
                       color: isSelected
                           ? palette.primaryColor.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : hairline,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -860,13 +961,15 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           ValueListenableBuilder<PortalBrowserLayout>(
             valueListenable: IptvSettings.browserLayout,
             builder: (context, layout, _) {
-              if (layout != PortalBrowserLayout.grid) return const SizedBox.shrink();
+              if (layout != PortalBrowserLayout.grid) {
+                return const SizedBox.shrink();
+              }
               return ValueListenableBuilder<int>(
                 valueListenable: IptvSettings.browserGridColumns,
                 builder: (context, cols, _) {
@@ -881,7 +984,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: labelColor,
                             ),
                           ),
                           Text(
@@ -898,7 +1001,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           activeTrackColor: palette.primaryColor,
-                          inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+                          inactiveTrackColor: hairline,
                           thumbColor: palette.primaryColor,
                           trackHeight: 3,
                         ),
@@ -907,11 +1010,12 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           min: 2,
                           max: 6,
                           divisions: 4,
-                          onChanged: (val) => IptvSettings.setBrowserGridColumns(val.round()),
+                          onChanged: (val) =>
+                              IptvSettings.setBrowserGridColumns(val.round()),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Divider(color: Colors.white.withValues(alpha: 0.06)),
+                      Divider(color: dividerColor),
                       const SizedBox(height: 12),
                     ],
                   );
@@ -934,7 +1038,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: labelColor,
                         ),
                       ),
                       Text(
@@ -951,7 +1055,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: palette.primaryColor,
-                      inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+                      inactiveTrackColor: hairline,
                       thumbColor: palette.primaryColor,
                       trackHeight: 3,
                     ),
@@ -969,7 +1073,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           ValueListenableBuilder<bool>(
@@ -977,7 +1081,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showLogos, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -986,13 +1090,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Display channel poster and logos in stream rows',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),
@@ -1008,7 +1112,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           ValueListenableBuilder<bool>(
@@ -1016,7 +1120,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showEpg, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1025,13 +1129,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Display current television guide title below channel',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),
@@ -1047,7 +1151,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.06)),
+          Divider(color: dividerColor),
           const SizedBox(height: 12),
 
           ValueListenableBuilder<bool>(
@@ -1055,7 +1159,7 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
             builder: (context, showCount, _) {
               return Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1064,13 +1168,13 @@ class _LiveTvSettingsPageState extends State<LiveTvSettingsPage> {
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Show number of available streams next to category names',
-                          style: TextStyle(fontSize: 11.5, color: Colors.white54),
+                          style: TextStyle(fontSize: 11.5, color: inkSoft),
                         ),
                       ],
                     ),

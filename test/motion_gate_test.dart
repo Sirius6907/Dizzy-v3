@@ -18,10 +18,7 @@ void main() {
         MotionGate.resolve(DizzyMotion.fast, reduceMotion: false),
         DizzyMotion.fast,
       );
-      expect(
-        MotionGate.page(reduceMotion: false),
-        DizzyMotion.slow,
-      );
+      expect(MotionGate.page(reduceMotion: false), DizzyMotion.slow);
     });
 
     test('reduced motion snaps to zero', () {

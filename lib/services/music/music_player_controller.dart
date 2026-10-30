@@ -19,7 +19,8 @@ import 'music_stats_service.dart';
 enum MusicRepeatMode { off, all, one }
 
 class MusicPlayerController extends ChangeNotifier {
-  static final MusicPlayerController instance = MusicPlayerController._internal();
+  static final MusicPlayerController instance =
+      MusicPlayerController._internal();
   MusicPlayerController._internal() {
     _initSettings();
   }
@@ -64,8 +65,12 @@ class MusicPlayerController extends ChangeNotifier {
   bool get isShuffle => _isShuffle;
   MusicRepeatMode get repeatMode => _repeatMode;
   bool get hasTrack => _currentTrack != null;
-  bool get hasNext => _playlist.isNotEmpty && (_repeatMode == MusicRepeatMode.all || _currentIndex < _playlist.length - 1);
-  bool get hasPrevious => _playlist.isNotEmpty && (_currentIndex > 0 || _position.inSeconds > 3);
+  bool get hasNext =>
+      _playlist.isNotEmpty &&
+      (_repeatMode == MusicRepeatMode.all ||
+          _currentIndex < _playlist.length - 1);
+  bool get hasPrevious =>
+      _playlist.isNotEmpty && (_currentIndex > 0 || _position.inSeconds > 3);
   LyricsData get currentLyrics => _currentLyrics;
   bool get isLoadingLyrics => _isLoadingLyrics;
   int get activeLyricIndex => _activeLyricIndex;
@@ -93,13 +98,18 @@ class MusicPlayerController extends ChangeNotifier {
   Future<void> setAudioSource(MusicAudioSource source) async {
     if (_audioSource == source) return;
     _audioSource = source;
-    _currentQualityLabel = source == MusicAudioSource.flac ? 'FLAC Hi-Res' : 'YouTube HQ';
+    _currentQualityLabel = source == MusicAudioSource.flac
+        ? 'FLAC Hi-Res'
+        : 'YouTube HQ';
     _isCurrentTrackLossless = source == MusicAudioSource.flac;
     notifyListeners();
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('music_audio_source', source == MusicAudioSource.flac ? 'flac' : 'youtube');
+      await prefs.setString(
+        'music_audio_source',
+        source == MusicAudioSource.flac ? 'flac' : 'youtube',
+      );
     } catch (_) {}
 
     // If a track is currently loaded/playing, reload it seamlessly with new source at current position
@@ -116,7 +126,8 @@ class MusicPlayerController extends ChangeNotifier {
     if (playlistQueue != null && playlistQueue.isNotEmpty) {
       _originalPlaylist = List<MusicTrack>.from(playlistQueue);
       if (_isShuffle) {
-        final rest = List<MusicTrack>.from(playlistQueue)..removeWhere((t) => t.id == track.id);
+        final rest = List<MusicTrack>.from(playlistQueue)
+          ..removeWhere((t) => t.id == track.id);
         rest.shuffle(Random());
         _playlist = [track, ...rest];
         _currentIndex = 0;
@@ -141,7 +152,63 @@ class MusicPlayerController extends ChangeNotifier {
 
   int _loadGeneration = 0;
 
-  Future<void> _loadAndPlayTrack(MusicTrack track, {Duration? startPosition}) async {
+  /// One long-lived audio [Player] for the whole session. Track switches just
+  /// call [Player.open] — constructing/disposing a Player per track churns
+  /// native decoders and was the biggest start-latency cost. Listeners attach
+  /// exactly once here, so none accumulate across tracks.
+  Player _ensurePlayer() {
+    final existing = _player;
+    if (existing != null) return existing;
+
+    final player = Player();
+    _player = player;
+    _subscriptions.addAll([
+      player.stream.playing.listen((playing) {
+        _isPlaying = playing;
+        _updateDiscordRpc(isPaused: !playing);
+        notifyListeners();
+      }),
+      player.stream.position.listen((pos) {
+        _position = pos;
+        _updateActiveLyricIndex();
+        _checkCrossfadeTransition(pos, _duration);
+        _checkPrecacheNext(pos, _duration);
+        notifyListeners();
+      }),
+      player.stream.duration.listen((dur) {
+        if (dur > Duration.zero) {
+          _duration = dur;
+          _isLoading = false;
+          _updateDiscordRpc();
+          notifyListeners();
+        }
+      }),
+      player.stream.completed.listen((completed) {
+        // Ignore completion from the outgoing media during a track swap.
+        if (completed && !_isLoading) {
+          _onTrackEnded();
+        }
+      }),
+      player.stream.error.listen((err) {
+        if (PlayerSettings.isNonFatalError(err)) {
+          debugPrint('[MusicPlayer] Ignored non-fatal error: $err');
+          return;
+        }
+        _isLoading = false;
+        _isPlaying = false;
+        _errorMessage = 'Could not load audio: $err';
+        debugPrint('Playback error for ${_currentTrack?.title}: $err');
+        DiscordRpcService.instance.clearToIdle();
+        notifyListeners();
+      }),
+    ]);
+    return player;
+  }
+
+  Future<void> _loadAndPlayTrack(
+    MusicTrack track, {
+    Duration? startPosition,
+  }) async {
     final currentGen = ++_loadGeneration;
     _currentTrack = track;
     _isLoading = true;
@@ -162,23 +229,19 @@ class MusicPlayerController extends ChangeNotifier {
     // Fetch lyrics asynchronously with generation check
     _fetchLyricsForTrack(track, currentGen);
 
-    // Dispose previous controller
-    for (final s in _subscriptions) {
-      s.cancel();
-    }
-    _subscriptions.clear();
-
-    if (_player != null) {
-      await _player!.dispose();
-      _player = null;
-    }
-
     if (currentGen != _loadGeneration) return;
 
     try {
-      final downloadedTrack = MusicDownloadService.instance.getDownloadedTrack(track.id);
-      final downloadedFile = downloadedTrack != null ? File(downloadedTrack.localAudioPath) : null;
-      final isOffline = downloadedFile != null && downloadedFile.existsSync() && downloadedFile.lengthSync() > 100;
+      final downloadedTrack = MusicDownloadService.instance.getDownloadedTrack(
+        track.id,
+      );
+      final downloadedFile = downloadedTrack != null
+          ? File(downloadedTrack.localAudioPath)
+          : null;
+      final isOffline =
+          downloadedFile != null &&
+          downloadedFile.existsSync() &&
+          downloadedFile.lengthSync() > 100;
 
       final Media media;
 
@@ -186,7 +249,8 @@ class MusicPlayerController extends ChangeNotifier {
         _currentQualityLabel = downloadedTrack.quality.contains('FLAC')
             ? 'FLAC Lossless (Offline)'
             : 'HQ Audio (Offline)';
-        _isCurrentTrackLossless = downloadedTrack.format.toLowerCase() == 'flac';
+        _isCurrentTrackLossless =
+            downloadedTrack.format.toLowerCase() == 'flac';
         media = Media(downloadedFile.path);
       } else {
         final streamResult = await MusicService.instance.getAudioStream(
@@ -203,67 +267,23 @@ class MusicPlayerController extends ChangeNotifier {
 
         final uri = Uri.parse(streamResult.url);
         final headers = streamResult.isLossless
-            ? (streamResult.userAgent != null ? {'User-Agent': streamResult.userAgent!} : <String, String>{})
+            ? (streamResult.userAgent != null
+                  ? {'User-Agent': streamResult.userAgent!}
+                  : <String, String>{})
             : YoutubeStreamHttp.streamHeaders(
                 streamResult.url,
                 userAgent: streamResult.userAgent,
               );
 
-        media = Media(
-          uri.toString(),
-          httpHeaders: headers,
-        );
+        media = Media(uri.toString(), httpHeaders: headers);
       }
 
       if (currentGen != _loadGeneration) return;
 
-      final player = Player();
+      final player = _ensurePlayer();
 
-      _subscriptions.addAll([
-        player.stream.playing.listen((playing) {
-          _isPlaying = playing;
-          _updateDiscordRpc(isPaused: !playing);
-          notifyListeners();
-        }),
-        player.stream.position.listen((pos) {
-          _position = pos;
-          _updateActiveLyricIndex();
-          _checkCrossfadeTransition(pos, _duration);
-          _checkPrecacheNext(pos, _duration);
-          notifyListeners();
-        }),
-        player.stream.duration.listen((dur) {
-          if (dur > Duration.zero) {
-            _duration = dur;
-            _isLoading = false;
-            _updateDiscordRpc();
-            notifyListeners();
-          }
-        }),
-        player.stream.completed.listen((completed) {
-          if (completed) {
-            _onTrackEnded();
-          }
-        }),
-        player.stream.error.listen((err) {
-          if (PlayerSettings.isNonFatalError(err)) {
-            debugPrint('[MusicPlayer] Ignored non-fatal error: $err');
-            return;
-          }
-          _isLoading = false;
-          _isPlaying = false;
-          _errorMessage = 'Could not load audio: $err';
-          debugPrint('Playback error for ${track.title}: $err');
-          DiscordRpcService.instance.clearToIdle();
-          notifyListeners();
-        }),
-      ]);
-
-      await player.open(media);
-      if (currentGen != _loadGeneration) {
-        await player.dispose();
-        return;
-      }
+      await player.open(media, play: false);
+      if (currentGen != _loadGeneration) return;
 
       await player.setVolume(_volume * 100.0);
 
@@ -271,7 +291,9 @@ class MusicPlayerController extends ChangeNotifier {
         await player.seek(startPosition);
       }
 
-      _player = player;
+      if (currentGen != _loadGeneration) return;
+      await player.play();
+
       _isLoading = false;
       _isPlaying = true;
       MusicEqualizerService.instance.applyFilters();
@@ -351,7 +373,8 @@ class MusicPlayerController extends ChangeNotifier {
     if (crossfadeSec <= 0.0) return;
 
     final remaining = dur - pos;
-    if (remaining.inMilliseconds <= (crossfadeSec * 1000) && remaining.inMilliseconds > 250) {
+    if (remaining.inMilliseconds <= (crossfadeSec * 1000) &&
+        remaining.inMilliseconds > 250) {
       if (hasNext || _repeatMode == MusicRepeatMode.all) {
         _isAutoAdvancing = true;
         _executeCrossfadeNext();
@@ -429,8 +452,8 @@ class MusicPlayerController extends ChangeNotifier {
     final target = position < Duration.zero
         ? Duration.zero
         : (_duration > Duration.zero && position > _duration
-            ? _duration
-            : position);
+              ? _duration
+              : position);
     _position = target;
     if (_player != null) {
       await _player!.seek(target);
@@ -451,7 +474,8 @@ class MusicPlayerController extends ChangeNotifier {
     _isShuffle = !_isShuffle;
     if (_isShuffle) {
       if (_currentTrack != null) {
-        final rest = List<MusicTrack>.from(_originalPlaylist)..removeWhere((t) => t.id == _currentTrack!.id);
+        final rest = List<MusicTrack>.from(_originalPlaylist)
+          ..removeWhere((t) => t.id == _currentTrack!.id);
         rest.shuffle(Random());
         _playlist = [_currentTrack!, ...rest];
         _currentIndex = 0;
@@ -561,7 +585,8 @@ class MusicPlayerController extends ChangeNotifier {
     _currentTrack = track;
     _currentIndex = _playlist.indexOf(track);
     _position = position;
-    _duration = duration ??
+    _duration =
+        duration ??
         (track.durationSeconds > 0
             ? Duration(seconds: track.durationSeconds)
             : Duration.zero);

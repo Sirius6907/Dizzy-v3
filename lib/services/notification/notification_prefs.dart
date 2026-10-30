@@ -8,6 +8,7 @@ library;
 /// The four channels the plan calls for (§2e).
 enum NotificationKind {
   update('updates'),
+  release('releases'),
   download('downloads'),
   social('social'),
   announcement('announcements');

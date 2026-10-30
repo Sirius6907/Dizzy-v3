@@ -37,12 +37,24 @@ class ReadingProgress {
       coverUrl: json['coverUrl']?.toString() ?? '',
       filePath: json['filePath']?.toString() ?? '',
       fileType: json['fileType']?.toString().toLowerCase() ?? 'epub',
-      chapterIndex: json['chapterIndex'] is int ? json['chapterIndex'] as int : int.tryParse('${json['chapterIndex']}') ?? 0,
-      scrollOffset: (json['scrollOffset'] is num) ? (json['scrollOffset'] as num).toDouble() : 0.0,
-      progressPercent: (json['progressPercent'] is num) ? (json['progressPercent'] as num).toDouble() : 0.0,
-      totalChapters: json['totalChapters'] is int ? json['totalChapters'] as int : int.tryParse('${json['totalChapters']}') ?? 1,
-      totalPages: json['totalPages'] is int ? json['totalPages'] as int : int.tryParse('${json['totalPages']}') ?? 1,
-      currentPage: json['currentPage'] is int ? json['currentPage'] as int : int.tryParse('${json['currentPage']}') ?? 1,
+      chapterIndex: json['chapterIndex'] is int
+          ? json['chapterIndex'] as int
+          : int.tryParse('${json['chapterIndex']}') ?? 0,
+      scrollOffset: (json['scrollOffset'] is num)
+          ? (json['scrollOffset'] as num).toDouble()
+          : 0.0,
+      progressPercent: (json['progressPercent'] is num)
+          ? (json['progressPercent'] as num).toDouble()
+          : 0.0,
+      totalChapters: json['totalChapters'] is int
+          ? json['totalChapters'] as int
+          : int.tryParse('${json['totalChapters']}') ?? 1,
+      totalPages: json['totalPages'] is int
+          ? json['totalPages'] as int
+          : int.tryParse('${json['totalPages']}') ?? 1,
+      currentPage: json['currentPage'] is int
+          ? json['currentPage'] as int
+          : int.tryParse('${json['currentPage']}') ?? 1,
       lastReadAt: json['lastReadAt'] != null
           ? DateTime.tryParse(json['lastReadAt'].toString()) ?? DateTime.now()
           : DateTime.now(),

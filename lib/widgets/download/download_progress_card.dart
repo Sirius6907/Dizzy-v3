@@ -77,7 +77,10 @@ class DownloadProgressCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      _EngineBadge(label: plan.engineLabel, color: scheme.primary),
+                      _EngineBadge(
+                        label: plan.engineLabel,
+                        color: scheme.primary,
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         _statusLine(),
@@ -85,7 +88,9 @@ class DownloadProgressCard extends StatelessWidget {
                           fontSize: 12.5,
                           color: isFailed
                               ? scheme.error
-                              : (isPaused ? Colors.amber : scheme.onSurfaceVariant),
+                              : (isPaused
+                                    ? Colors.amber
+                                    : scheme.onSurfaceVariant),
                         ),
                       ),
                     ],
@@ -110,7 +115,10 @@ class DownloadProgressCard extends StatelessWidget {
                 Text(task.sizeLabel, style: const TextStyle(fontSize: 11.5)),
                 Text(
                   '${DownloadProgressText.wholePercent(progress)}%',
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -135,13 +143,13 @@ class DownloadProgressCard extends StatelessWidget {
   /// One line, one voice — [DownloadProgressText] owns the wording so the
   /// card and any future summary cannot drift apart.
   String _statusLine() => DownloadProgressText.line(
-        progress: task.progressPercent,
-        speedLabel: task.speedLabel,
-        etaLabel: task.etaLabel,
-        isPaused: task.status == DownloadStatus.paused,
-        isFailed: task.status == DownloadStatus.failed,
-        error: task.error,
-      );
+    progress: task.progressPercent,
+    speedLabel: task.speedLabel,
+    etaLabel: task.etaLabel,
+    isPaused: task.status == DownloadStatus.paused,
+    isFailed: task.status == DownloadStatus.failed,
+    error: task.error,
+  );
 }
 
 class _ActionRow extends StatelessWidget {
@@ -202,7 +210,9 @@ class _ActionRow extends StatelessWidget {
   }
 
   Future<void> _openFolder(BuildContext context, DownloadTask task) async {
-    final opened = await OpenFileLocationHelper.openLocation(task.targetFilePath);
+    final opened = await OpenFileLocationHelper.openLocation(
+      task.targetFilePath,
+    );
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open the folder.')),
@@ -254,7 +264,11 @@ class _EngineBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }

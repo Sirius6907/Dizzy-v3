@@ -119,9 +119,7 @@ class _PanelShell extends StatelessWidget {
                     value: g,
                     label: labels[i],
                     height: faderHeight,
-                    onChanged: onBand == null
-                        ? null
-                        : (v) => onBand!(i, v),
+                    onChanged: onBand == null ? null : (v) => onBand!(i, v),
                   ),
                 );
               }),
@@ -145,9 +143,7 @@ class _LedDot extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
-        border: Border.all(
-          color: DizzyVoid.obsidian.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: DizzyVoid.obsidian.withValues(alpha: 0.4)),
       ),
     );
   }

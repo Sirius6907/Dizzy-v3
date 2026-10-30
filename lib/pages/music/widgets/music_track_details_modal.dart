@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -22,20 +22,29 @@ class MusicTrackDetailsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLossless = track.title.toLowerCase().contains('flac') ||
+    final isLossless =
+        track.title.toLowerCase().contains('flac') ||
         track.title.toLowerCase().contains('lossless');
-    final bitrate = isLossless ? '1,411 kbps (Lossless)' : '320 kbps (CBR High)';
-    final sampleRate = isLossless ? '48.0 kHz / 24-bit Studio' : '44.1 kHz / 16-bit';
-    final format = isLossless ? 'FLAC (Free Lossless Audio)' : 'MPEG-4 AAC / MP3';
-    final approxSizeMb = ((track.durationSeconds * (isLossless ? 1411 : 320)) / (8 * 1024)).toStringAsFixed(1);
+    final bitrate = isLossless
+        ? '1,411 kbps (Lossless)'
+        : '320 kbps (CBR High)';
+    final sampleRate = isLossless
+        ? '48.0 kHz / 24-bit Studio'
+        : '44.1 kHz / 16-bit';
+    final format = isLossless
+        ? 'FLAC (Free Lossless Audio)'
+        : 'MPEG-4 AAC / MP3';
+    final approxSizeMb =
+        ((track.durationSeconds * (isLossless ? 1411 : 320)) / (8 * 1024))
+            .toStringAsFixed(1);
 
     return PerformanceLiquidLens(
       style: PerformanceGlassStyles.sheet,
       child: Container(
         decoration: BoxDecoration(
-          color: DizzyVoid.voidB.withValues(alpha: 0.98),
+          gradient: PrismShadows.surfaceGradient(false),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          boxShadow: PrismShadows.floating(isLight: false),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Column(
@@ -70,7 +79,10 @@ class MusicTrackDetailsModal extends StatelessWidget {
                       width: 56,
                       height: 56,
                       color: Colors.white10,
-                      child: const Icon(Icons.music_note_rounded, color: Colors.white30),
+                      child: const Icon(
+                        Icons.music_note_rounded,
+                        color: Colors.white30,
+                      ),
                     ),
                   ),
                 ),
@@ -92,7 +104,10 @@ class MusicTrackDetailsModal extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         track.artist,
-                        style: const TextStyle(color: Colors.white60, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 13,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -123,17 +138,31 @@ class MusicTrackDetailsModal extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
                 children: [
-                  _buildSpecRow('Audio Codec / Format', format, isHighlight: isLossless),
+                  _buildSpecRow(
+                    'Audio Codec / Format',
+                    format,
+                    isHighlight: isLossless,
+                  ),
                   const Divider(color: Colors.white10, height: 16),
-                  _buildSpecRow('Stream Bitrate', bitrate, isHighlight: isLossless),
+                  _buildSpecRow(
+                    'Stream Bitrate',
+                    bitrate,
+                    isHighlight: isLossless,
+                  ),
                   const Divider(color: Colors.white10, height: 16),
                   _buildSpecRow('Sample Rate / Depth', sampleRate),
                   const Divider(color: Colors.white10, height: 16),
-                  _buildSpecRow('Channel Configuration', 'Stereo 2.0 (Direct Hardware Out)'),
+                  _buildSpecRow(
+                    'Channel Configuration',
+                    'Stereo 2.0 (Direct Hardware Out)',
+                  ),
                   const Divider(color: Colors.white10, height: 16),
                   _buildSpecRow('Est. Stream Size', '~$approxSizeMb MB'),
                   const Divider(color: Colors.white10, height: 16),
-                  _buildSpecRow('Target Loudness', '-14.0 LUFS (EBU R128 Norm)'),
+                  _buildSpecRow(
+                    'Target Loudness',
+                    '-14.0 LUFS (EBU R128 Norm)',
+                  ),
                 ],
               ),
             ),
@@ -146,16 +175,25 @@ class MusicTrackDetailsModal extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white70,
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () {
                   HapticFeedback.lightImpact();
-                  Clipboard.setData(ClipboardData(
-                    text: 'Title: ${track.title}\nArtist: ${track.artist}\nFormat: $format\nBitrate: $bitrate\nSample: $sampleRate',
-                  ));
+                  Clipboard.setData(
+                    ClipboardData(
+                      text:
+                          'Title: ${track.title}\nArtist: ${track.artist}\nFormat: $format\nBitrate: $bitrate\nSample: $sampleRate',
+                    ),
+                  );
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Audio specifications copied to clipboard! 📋')),
+                    const SnackBar(
+                      content: Text(
+                        'Audio specifications copied to clipboard! 📋',
+                      ),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),

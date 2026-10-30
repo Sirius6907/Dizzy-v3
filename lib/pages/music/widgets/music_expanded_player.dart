@@ -10,6 +10,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../services/music/music_settings.dart';
@@ -44,7 +45,8 @@ class MusicExpandedPlayer extends StatefulWidget {
   State<MusicExpandedPlayer> createState() => _MusicExpandedPlayerState();
 }
 
-class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTickerProviderStateMixin {
+class _MusicExpandedPlayerState extends State<MusicExpandedPlayer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _discAnimController;
 
   @override
@@ -64,7 +66,8 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     super.didUpdateWidget(oldWidget);
     if (widget.playerController.isPlaying && !_discAnimController.isAnimating) {
       _discAnimController.repeat();
-    } else if (!widget.playerController.isPlaying && _discAnimController.isAnimating) {
+    } else if (!widget.playerController.isPlaying &&
+        _discAnimController.isAnimating) {
       _discAnimController.stop();
     }
   }
@@ -101,7 +104,9 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
               scaleFactor: 1.1,
               child: IconButton(
                 icon: Icon(
-                  isDesktop ? Icons.close_rounded : Icons.keyboard_arrow_down_rounded,
+                  isDesktop
+                      ? Icons.close_rounded
+                      : Icons.keyboard_arrow_down_rounded,
                   color: Colors.white,
                   size: isDesktop ? 24 : 32,
                 ),
@@ -110,10 +115,14 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
             ),
             const Spacer(),
             InkWell(
-              onTap: () => MusicAudioSourceSelectorButton.showAudioSourceDialog(context),
+              onTap: () =>
+                  MusicAudioSourceSelectorButton.showAudioSourceDialog(context),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: widget.playerController.isCurrentTrackLossless
                       ? const Color(0xFF00D2EF).withValues(alpha: 0.15)
@@ -175,7 +184,16 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
 
         // Preset-based or Custom Arranged Body
         if (preset == MusicFullscreenPreset.customStudio)
-          ...order.map((key) => _buildCustomComponent(key, track, palette, seekStyle, artStyle, artSize))
+          ...order.map(
+            (key) => _buildCustomComponent(
+              key,
+              track,
+              palette,
+              seekStyle,
+              artStyle,
+              artSize,
+            ),
+          )
         else
           ..._buildPresetBody(preset, track, palette, seekStyle, artSize),
 
@@ -193,9 +211,7 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
               onTap: widget.onCollapse,
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.65),
-                ),
+                child: Container(color: Colors.black.withValues(alpha: 0.65)),
               ),
             ),
           ),
@@ -208,24 +224,19 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: DizzyVoid.voidB,
+                  gradient: PrismShadows.surfaceGradient(false),
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.75),
-                      blurRadius: 40,
-                      spreadRadius: 8,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
+                  boxShadow: PrismShadows.floating(isLight: false),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
                   child: MusicDynamicCanvasBackground(
                     track: track,
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 20.0,
+                      ),
                       child: playerBody,
                     ),
                   ),
@@ -248,7 +259,10 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
         track: track,
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 14.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 14.0,
+            ),
             child: playerBody,
           ),
         ),
@@ -266,11 +280,20 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     return [
       // Artwork Section with Gestures
       if (preset == MusicFullscreenPreset.vinylStudio)
-        _wrapArtworkGestures(_buildVinylDiscArtwork(track, artSize, palette), artSize)
+        _wrapArtworkGestures(
+          _buildVinylDiscArtwork(track, artSize, palette),
+          artSize,
+        )
       else if (preset == MusicFullscreenPreset.cyberWaveform)
-        _wrapArtworkGestures(_buildCyberWaveArtwork(track, artSize, palette), artSize)
+        _wrapArtworkGestures(
+          _buildCyberWaveArtwork(track, artSize, palette),
+          artSize,
+        )
       else if (preset == MusicFullscreenPreset.liquidGlassNeo)
-        _wrapArtworkGestures(_buildLiquidGlassArtwork(track, artSize, palette), artSize)
+        _wrapArtworkGestures(
+          _buildLiquidGlassArtwork(track, artSize, palette),
+          artSize,
+        )
       else
         _wrapArtworkGestures(_buildCinematicArtwork(track, artSize), artSize),
 
@@ -289,8 +312,8 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
         style: preset == MusicFullscreenPreset.cyberWaveform
             ? MusicSeekbarStyle.waveformEqualizer
             : (preset == MusicFullscreenPreset.liquidGlassNeo
-                ? MusicSeekbarStyle.liquidGlassSlider
-                : seekStyle),
+                  ? MusicSeekbarStyle.liquidGlassSlider
+                  : seekStyle),
         onSeek: (pos) => widget.playerController.seekTo(pos),
       ),
 
@@ -348,11 +371,18 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
             decoration: BoxDecoration(
               color: const Color(0xFF00D2EF).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFF00D2EF).withValues(alpha: 0.4)),
+              border: Border.all(
+                color: const Color(0xFF00D2EF).withValues(alpha: 0.4),
+              ),
             ),
             child: Text(
               '${widget.playerController.currentQualityLabel.toUpperCase()} • HI-RES LOSSLESS AUDIO',
-              style: const TextStyle(color: Color(0xFF00D2EF), fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+              style: const TextStyle(
+                color: Color(0xFF00D2EF),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
             ),
           ),
         );
@@ -380,25 +410,41 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
             children: [
               IconButton(
                 tooltip: 'Karaoke Lyrics',
-                icon: const Icon(Icons.format_quote_rounded, color: Colors.white70, size: 22),
+                icon: const Icon(
+                  Icons.format_quote_rounded,
+                  color: Colors.white70,
+                  size: 22,
+                ),
                 onPressed: widget.onLyricsTap ?? widget.onCollapse,
               ),
               const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Equalizer & 3D Spatial Audio',
-                icon: const Icon(Icons.tune_rounded, color: Colors.white70, size: 22),
+                icon: const Icon(
+                  Icons.tune_rounded,
+                  color: Colors.white70,
+                  size: 22,
+                ),
                 onPressed: () => MusicEqualizerModal.show(context),
               ),
               const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Queue & Up Next',
-                icon: const Icon(Icons.queue_music_rounded, color: Colors.white70, size: 22),
+                icon: const Icon(
+                  Icons.queue_music_rounded,
+                  color: Colors.white70,
+                  size: 22,
+                ),
                 onPressed: widget.onQueueTap,
               ),
               const SizedBox(width: 8),
               IconButton(
                 tooltip: 'Sleep Timer',
-                icon: const Icon(Icons.bedtime_rounded, color: Colors.white70, size: 22),
+                icon: const Icon(
+                  Icons.bedtime_rounded,
+                  color: Colors.white70,
+                  size: 22,
+                ),
                 onPressed: () => MusicSleepTimerModal.show(context),
               ),
             ],
@@ -412,11 +458,26 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
             children: [
               OutlinedButton.icon(
                 onPressed: widget.onQueueTap,
-                icon: Icon(Icons.queue_music_rounded, color: palette.primaryColor, size: 16),
-                label: const Text('Playing Queue', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                icon: Icon(
+                  Icons.queue_music_rounded,
+                  color: palette.primaryColor,
+                  size: 16,
+                ),
+                label: const Text(
+                  'Playing Queue',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.4)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  side: BorderSide(
+                    color: palette.primaryColor.withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ],
@@ -464,7 +525,9 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
           child: Padding(
             padding: const EdgeInsets.all(6.0),
             child: Icon(
-              widget.isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              widget.isSaved
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
               color: widget.isSaved ? const Color(0xFFFF4B72) : Colors.white70,
               size: 28,
             ),
@@ -490,7 +553,9 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
             padding: const EdgeInsets.all(8.0),
             child: Icon(
               Icons.shuffle_rounded,
-              color: widget.playerController.isShuffle ? palette.primaryColor : Colors.white38,
+              color: widget.playerController.isShuffle
+                  ? palette.primaryColor
+                  : Colors.white38,
               size: 24,
             ),
           ),
@@ -502,7 +567,11 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
           onTap: widget.playerController.playPrevious,
           child: const Padding(
             padding: EdgeInsets.all(8.0),
-            child: Icon(Icons.skip_previous_rounded, color: Colors.white, size: 36),
+            child: Icon(
+              Icons.skip_previous_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
         ),
         MusicInteractivePhysicsButton(
@@ -514,7 +583,10 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
               ? SizedBox(
                   width: 44,
                   height: 44,
-                  child: CircularProgressIndicator(color: palette.primaryColor, strokeWidth: 3),
+                  child: CircularProgressIndicator(
+                    color: palette.primaryColor,
+                    strokeWidth: 3,
+                  ),
                 )
               : _buildExpandedPlayButtonIcon(playBtnStyle, palette),
         ),
@@ -539,7 +611,9 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
               widget.playerController.repeatMode == MusicRepeatMode.one
                   ? Icons.repeat_one_rounded
                   : Icons.repeat_rounded,
-              color: widget.playerController.repeatMode != MusicRepeatMode.off ? palette.primaryColor : Colors.white38,
+              color: widget.playerController.repeatMode != MusicRepeatMode.off
+                  ? palette.primaryColor
+                  : Colors.white38,
               size: 24,
             ),
           ),
@@ -548,7 +622,10 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     );
   }
 
-  Widget _buildExpandedPlayButtonIcon(MusicPlayButtonStyle style, AppThemePalette palette) {
+  Widget _buildExpandedPlayButtonIcon(
+    MusicPlayButtonStyle style,
+    AppThemePalette palette,
+  ) {
     final isPlaying = widget.playerController.isPlaying;
     final icon = isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded;
 
@@ -559,7 +636,10 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
         decoration: BoxDecoration(
           color: palette.primaryColor.withValues(alpha: 0.3),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: palette.primaryColor.withValues(alpha: 0.5),
@@ -577,9 +657,14 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
         height: 64,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(colors: [palette.primaryColor, palette.accentColor]),
+          gradient: LinearGradient(
+            colors: [palette.primaryColor, palette.accentColor],
+          ),
           boxShadow: [
-            BoxShadow(color: palette.primaryColor.withValues(alpha: 0.6), blurRadius: 20),
+            BoxShadow(
+              color: palette.primaryColor.withValues(alpha: 0.6),
+              blurRadius: 20,
+            ),
           ],
         ),
         child: Icon(icon, color: Colors.white, size: 38),
@@ -592,20 +677,32 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
       height: 64,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [palette.primaryColor, palette.accentColor]),
+        gradient: LinearGradient(
+          colors: [palette.primaryColor, palette.accentColor],
+        ),
         boxShadow: [
-          BoxShadow(color: palette.primaryColor.withValues(alpha: 0.6), blurRadius: 22, spreadRadius: 2),
+          BoxShadow(
+            color: palette.primaryColor.withValues(alpha: 0.6),
+            blurRadius: 22,
+            spreadRadius: 2,
+          ),
         ],
       ),
       child: Icon(icon, color: Colors.white, size: 40),
     );
   }
 
-  Widget _buildVinylDiscArtwork(MusicTrack track, double size, AppThemePalette palette) {
+  Widget _buildVinylDiscArtwork(
+    MusicTrack track,
+    double size,
+    AppThemePalette palette,
+  ) {
     return AnimatedBuilder(
       animation: _discAnimController,
       builder: (context, child) => Transform.rotate(
-        angle: widget.playerController.isPlaying ? _discAnimController.value * 2 * math.pi : 0,
+        angle: widget.playerController.isPlaying
+            ? _discAnimController.value * 2 * math.pi
+            : 0,
         child: child,
       ),
       child: Container(
@@ -614,7 +711,10 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: DizzyVoid.surface1,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 4),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.18),
+            width: 4,
+          ),
           boxShadow: [
             BoxShadow(
               color: palette.primaryColor.withValues(alpha: 0.4),
@@ -640,7 +740,11 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     );
   }
 
-  Widget _buildCyberWaveArtwork(MusicTrack track, double size, AppThemePalette palette) {
+  Widget _buildCyberWaveArtwork(
+    MusicTrack track,
+    double size,
+    AppThemePalette palette,
+  ) {
     return Container(
       width: size,
       height: size,
@@ -667,7 +771,11 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     );
   }
 
-  Widget _buildLiquidGlassArtwork(MusicTrack track, double size, AppThemePalette palette) {
+  Widget _buildLiquidGlassArtwork(
+    MusicTrack track,
+    double size,
+    AppThemePalette palette,
+  ) {
     return PerformanceLiquidLens(
       style: PerformanceGlassStyles.sheet,
       child: Container(
@@ -714,7 +822,12 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     );
   }
 
-  Widget _buildCustomArtworkByStyle(MusicTrack track, double size, AppThemePalette palette, MusicArtworkStyle style) {
+  Widget _buildCustomArtworkByStyle(
+    MusicTrack track,
+    double size,
+    AppThemePalette palette,
+    MusicArtworkStyle style,
+  ) {
     if (style == MusicArtworkStyle.vinylSpinningDisc) {
       return _buildVinylDiscArtwork(track, size, palette);
     }
@@ -782,4 +895,3 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> with SingleTi
     );
   }
 }
-

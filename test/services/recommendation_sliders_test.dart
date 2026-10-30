@@ -13,44 +13,57 @@ class _TestHttpOverrides extends HttpOverrides {}
 void main() {
   HttpOverrides.global = _TestHttpOverrides();
 
-  test('Test BestSimilar recommendations for My List and Continue Watching', skip: liveSkip, () async {
-    // 1. Setup My List with a movie
-    MyListService.items.value = [
-      MyListItem(
-        imdbId: 'tt0137523',
-        title: 'Fight Club',
-        type: 'movie',
-        year: 1999,
-        addedAt: DateTime.now(),
-      ),
-    ];
+  test(
+    'Test BestSimilar recommendations for My List and Continue Watching',
+    skip: liveSkip,
+    () async {
+      // 1. Setup My List with a movie
+      MyListService.items.value = [
+        MyListItem(
+          imdbId: 'tt0137523',
+          title: 'Fight Club',
+          type: 'movie',
+          year: 1999,
+          addedAt: DateTime.now(),
+        ),
+      ];
 
-    // 2. Setup Continue Watching with a show
-    ContinueWatchingService.activeItems.value = [
-      ContinueWatchingItem(
-        id: 'tt13207736',
-        title: 'Severance',
-        type: 'series',
-        year: '2022',
-        positionSeconds: 500,
-        totalDurationSeconds: 3000,
-        lastWatchedAt: DateTime.now(),
-        isTorrent: false,
-      ),
-    ];
+      // 2. Setup Continue Watching with a show
+      ContinueWatchingService.activeItems.value = [
+        ContinueWatchingItem(
+          id: 'tt13207736',
+          title: 'Severance',
+          type: 'series',
+          year: '2022',
+          positionSeconds: 500,
+          totalDurationSeconds: 3000,
+          lastWatchedAt: DateTime.now(),
+          isTorrent: false,
+        ),
+      ];
 
-    HomePageSettings.enableSimilar.value = true;
+      HomePageSettings.enableSimilar.value = true;
 
-    final listSection = await HomePageSettings.fetchBestSimilarSection(forceRefresh: true);
-    print('List Section: ${listSection?.title} -> movies: ${listSection?.movies.length}');
-    expect(listSection != null, true);
-    expect(listSection!.title.contains('Fight Club'), true);
+      final listSection = await HomePageSettings.fetchBestSimilarSection(
+        forceRefresh: true,
+      );
+      print(
+        'List Section: ${listSection?.title} -> movies: ${listSection?.movies.length}',
+      );
+      expect(listSection != null, true);
+      expect(listSection!.title.contains('Fight Club'), true);
 
-    final watchingSection = await HomePageSettings.fetchContinueWatchingSimilarSection(forceRefresh: true);
-    print('Watching Section: ${watchingSection?.title} -> movies: ${watchingSection?.movies.length}');
-    expect(watchingSection != null, true);
-    expect(watchingSection!.title.contains('Severance'), true);
-  });
+      final watchingSection =
+          await HomePageSettings.fetchContinueWatchingSimilarSection(
+            forceRefresh: true,
+          );
+      print(
+        'Watching Section: ${watchingSection?.title} -> movies: ${watchingSection?.movies.length}',
+      );
+      expect(watchingSection != null, true);
+      expect(watchingSection!.title.contains('Severance'), true);
+    },
+  );
 
   test('Test Recommendation toggles disable fetching', () async {
     HomePageSettings.enableSimilar.value = false;
@@ -58,9 +71,27 @@ void main() {
     HomePageSettings.enableTraktRecommendations.value = false;
     HomePageSettings.enableSimklRecommendations.value = false;
 
-    expect(await HomePageSettings.fetchBestSimilarSection(forceRefresh: true), isNull);
-    expect(await HomePageSettings.fetchContinueWatchingSimilarSection(forceRefresh: true), isNull);
-    expect(await HomePageSettings.fetchTraktRecommendationsSection(forceRefresh: true), isNull);
-    expect(await HomePageSettings.fetchSimklRecommendationsSection(forceRefresh: true), isNull);
+    expect(
+      await HomePageSettings.fetchBestSimilarSection(forceRefresh: true),
+      isNull,
+    );
+    expect(
+      await HomePageSettings.fetchContinueWatchingSimilarSection(
+        forceRefresh: true,
+      ),
+      isNull,
+    );
+    expect(
+      await HomePageSettings.fetchTraktRecommendationsSection(
+        forceRefresh: true,
+      ),
+      isNull,
+    );
+    expect(
+      await HomePageSettings.fetchSimklRecommendationsSection(
+        forceRefresh: true,
+      ),
+      isNull,
+    );
   });
 }

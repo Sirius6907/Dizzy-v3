@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,10 +17,10 @@ import '../../design/dizzy_tokens.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/movie/movie_slider_section.dart';
 import '../../widgets/search/magnet_files_view.dart';
+import '../../services/taste/taste_event_service.dart';
 import '../ai/wewatch_quiz_page.dart';
 import '../player/player_screen.dart';
 import 'universal_spotlight_modal.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -30,7 +32,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  
+
   Timer? _debounce;
   bool _isLoading = false;
   List<MovieSection> _results = [];
@@ -169,7 +171,7 @@ class _SearchPageState extends State<SearchPage> {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    
+
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
       setState(() {
@@ -229,6 +231,12 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     _saveSearchHistory(trimmed);
+    TasteEventService.record(
+      TasteEventKind.search,
+      entityType: 'search',
+      title: trimmed,
+      lang: RegExp(r'[\u0900-\u097F]').hasMatch(trimmed) ? 'hi' : '',
+    );
 
     setState(() {
       _isLoading = true;
@@ -239,7 +247,7 @@ class _SearchPageState extends State<SearchPage> {
     try {
       final results = await AddonManager.instance.searchAll(trimmed);
       if (!mounted) return;
-      
+
       setState(() {
         _results = results;
         _isLoading = false;
@@ -267,33 +275,41 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
+    final topPadding = MediaQuery.paddingOf(context).top;
 
-    return GuideTrigger(
-      guideKey: 'spotlight',
-      steps: AppGuides.spotlight,
-      child: OfflineAwareScaffold(
-        backgroundColor: DizzyVoid.voidA,
-        extendBodyBehindAppBar: true,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(kToolbarHeight + 10),
-          child: ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+    return ValueListenableBuilder<AppThemePalette>(
+      valueListenable: AppThemeService.currentPalette,
+      builder: (context, palette, _) {
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+
+        return OfflineAwareScaffold(
+          backgroundColor: palette.scaffoldBackgroundColor,
+          extendBodyBehindAppBar: true,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+            child: _DarkAppBarBlur(
+              enabled: !isLight,
               child: Container(
                 padding: EdgeInsets.only(top: topPadding, bottom: 8),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      DizzyVoid.voidA.withValues(alpha: 0.90),
-                      DizzyVoid.voidA.withValues(alpha: 0.60),
-                    ],
-                  ),
+                  // Dark keeps the original translucent void scrim so the
+                  // restored BackdropFilter blur is visible; light is solid.
+                  gradient: isLight
+                      ? PrismShadows.surfaceGradient(true)
+                      : LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            DizzyVoid.voidA.withValues(alpha: 0.90),
+                            DizzyVoid.voidA.withValues(alpha: 0.60),
+                          ],
+                        ),
                   border: Border(
                     bottom: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.06),
                     ),
                   ),
                 ),
@@ -302,7 +318,7 @@ class _SearchPageState extends State<SearchPage> {
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-                      color: Colors.white,
+                      color: ink,
                       onPressed: () => Navigator.pop(context),
                     ),
                     Expanded(
@@ -311,18 +327,22 @@ class _SearchPageState extends State<SearchPage> {
                         child: Container(
                           height: 42,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
+                            color: isLight
+                                ? PrismLight.raisedBottom
+                                : Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: isLight
+                                  ? PrismLight.borderSubtle
+                                  : Colors.white.withValues(alpha: 0.1),
                             ),
                           ),
                           child: TextField(
                             controller: _searchController,
                             focusNode: _focusNode,
                             autofocus: true,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: ink,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -332,14 +352,18 @@ class _SearchPageState extends State<SearchPage> {
                             decoration: InputDecoration(
                               hintText: 'Search movies, series, or paste links',
                               hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.35),
+                                color: isLight
+                                    ? PrismLight.inkSoft
+                                    : Colors.white.withValues(alpha: 0.35),
                                 fontSize: 14,
                               ),
                               border: InputBorder.none,
-                              prefixIcon: const Icon(
+                              prefixIcon: Icon(
                                 Icons.search_rounded,
                                 size: 19,
-                                color: Colors.white38,
+                                color: isLight
+                                    ? PrismLight.inkSoft
+                                    : Colors.white38,
                               ),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -350,8 +374,13 @@ class _SearchPageState extends State<SearchPage> {
                                 children: [
                                   if (_searchController.text.isNotEmpty)
                                     IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 18),
-                                      color: Colors.white60,
+                                      icon: const Icon(
+                                        Icons.close_rounded,
+                                        size: 18,
+                                      ),
+                                      color: isLight
+                                          ? PrismLight.inkSoft
+                                          : Colors.white60,
                                       splashRadius: 18,
                                       onPressed: () {
                                         _searchController.clear();
@@ -360,40 +389,54 @@ class _SearchPageState extends State<SearchPage> {
                                     )
                                   else ...[
                                     ValueListenableBuilder<bool>(
-                                      valueListenable: HomePageSettings.enableAiQuiz,
+                                      valueListenable:
+                                          HomePageSettings.enableAiQuiz,
                                       builder: (context, aiQuizEnabled, _) {
-                                        if (!aiQuizEnabled) return const SizedBox.shrink();
+                                        if (!aiQuizEnabled) {
+                                          return const SizedBox.shrink();
+                                        }
                                         return IconButton(
                                           icon: Icon(
                                             Icons.auto_awesome_rounded,
                                             size: 17,
-                                            color: AppThemeService.currentPalette.value.primaryColor,
+                                            color: palette.primaryColor,
                                           ),
                                           tooltip: 'AI Taste Quiz',
                                           splashRadius: 18,
                                           onPressed: () {
                                             Navigator.push(
                                               context,
-                                              MaterialPageRoute(builder: (_) => const WeWatchQuizPage()),
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const WeWatchQuizPage(),
+                                              ),
                                             );
                                           },
                                         );
                                       },
                                     ),
                                     IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.travel_explore_rounded,
                                         size: 19,
-                                        color: Color(0xFF00E5FF),
+                                        color: isLight
+                                            ? palette.primaryColor
+                                            : const Color(0xFF00E5FF),
                                       ),
                                       tooltip: 'Universal Spotlight (Ctrl+K)',
                                       splashRadius: 18,
-                                      onPressed: () => UniversalSpotlightModal.show(context),
+                                      onPressed: () =>
+                                          UniversalSpotlightModal.show(context),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.content_paste_rounded, size: 17),
+                                      icon: const Icon(
+                                        Icons.content_paste_rounded,
+                                        size: 17,
+                                      ),
                                       tooltip: 'Paste from clipboard',
-                                      color: Colors.white54,
+                                      color: isLight
+                                          ? PrismLight.inkSoft
+                                          : Colors.white54,
                                       splashRadius: 18,
                                       onPressed: _pasteFromClipboard,
                                     ),
@@ -410,80 +453,86 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
           ),
-        ),
-        body: Stack(
-          children: [
-            if (_isMagnetMode && _magnetQuery.isNotEmpty)
-              MagnetFilesView(
-                key: ValueKey(_magnetQuery),
-                magnet: _magnetQuery,
-              )
-            else if (_isLoading)
-              const Center(
-                child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
-              )
-            else if (_lastQuery.isNotEmpty && _results.isEmpty)
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      size: 64,
-                      color: Colors.white.withValues(alpha: 0.2),
-                    ),
-                    const SizedBox(height: DizzySpace.md),
-                    Text(
-                      'No results for "$_lastQuery"',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: DizzyType.subtitle,
-                        fontWeight: DizzyType.wMedium,
+          body: Stack(
+            children: [
+              if (_isMagnetMode && _magnetQuery.isNotEmpty)
+                MagnetFilesView(
+                  key: ValueKey(_magnetQuery),
+                  magnet: _magnetQuery,
+                )
+              else if (_isLoading)
+                const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
+                )
+              else if (_lastQuery.isNotEmpty && _results.isEmpty)
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 64,
+                        color: isLight
+                            ? PrismLight.inkFaint
+                            : Colors.white.withValues(alpha: 0.2),
                       ),
-                    ),
-                    // Polish P6: 2nd tap = back to suggestions (Easy English).
-                    const SizedBox(height: DizzySpace.xs),
-                    const Text(
-                      'Check spelling, or try a shorter name.',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: DizzyType.body,
+                      const SizedBox(height: DizzySpace.md),
+                      Text(
+                        'No results for "$_lastQuery"',
+                        style: TextStyle(
+                          color: isLight
+                              ? PrismLight.inkSoft
+                              : Colors.white.withValues(alpha: 0.6),
+                          fontSize: DizzyType.subtitle,
+                          fontWeight: DizzyType.wMedium,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: DizzySpace.sm),
-                    TextButton(
-                      onPressed: () {
-                        _searchController.clear();
-                        _onSearchChanged('');
-                        _focusNode.requestFocus();
-                      },
-                      child: const Text('Try another search'),
-                    ),
-                  ],
-                ),
-              )
-            else if (_results.isNotEmpty)
-              ListView.builder(
-                clipBehavior: Clip.none,
-                padding: EdgeInsets.only(
-                  top: topPadding + kToolbarHeight + 40,
-                  bottom: 40 + MediaQuery.paddingOf(context).bottom,
-                ),
-                physics: const BouncingScrollPhysics(),
-                itemCount: _results.length,
-                itemBuilder: (context, index) {
-                  return MovieSliderSection(section: _results[index]);
-                },
-              )
-            else
-              _buildDiscoveryEmptyState(topPadding),
-          ],
-        ),
-      ),
+                      // Polish P6: 2nd tap = back to suggestions (Easy English).
+                      const SizedBox(height: DizzySpace.xs),
+                      Text(
+                        'Check spelling, or try a shorter name.',
+                        style: TextStyle(
+                          color: isLight ? PrismLight.inkSoft : Colors.white38,
+                          fontSize: DizzyType.body,
+                        ),
+                      ),
+                      const SizedBox(height: DizzySpace.sm),
+                      TextButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          _onSearchChanged('');
+                          _focusNode.requestFocus();
+                        },
+                        child: const Text('Try another search'),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_results.isNotEmpty)
+                ListView.builder(
+                  clipBehavior: Clip.none,
+                  padding: EdgeInsets.only(
+                    top: topPadding + kToolbarHeight + 40,
+                    bottom: 40 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    return MovieSliderSection(section: _results[index]);
+                  },
+                )
+              else
+                _buildDiscoveryEmptyState(topPadding, palette),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildDiscoveryEmptyState(double topPadding) {
+  Widget _buildDiscoveryEmptyState(double topPadding, AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
     return ListView(
       clipBehavior: Clip.none,
       padding: EdgeInsets.only(
@@ -500,23 +549,25 @@ class _SearchPageState extends State<SearchPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'RECENT SEARCHES',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white38,
+                    color: isLight ? PrismLight.inkSoft : Colors.white38,
                     letterSpacing: 1.1,
                   ),
                 ),
                 GestureDetector(
                   onTap: _clearSearchHistory,
-                  child: const Text(
+                  child: Text(
                     'Clear All',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF00E5FF),
+                      color: isLight
+                          ? PrismAccent.text(true)
+                          : const Color(0xFF00E5FF),
                     ),
                   ),
                 ),
@@ -534,19 +585,33 @@ class _SearchPageState extends State<SearchPage> {
                   button: true,
                   label: 'Search again for $query',
                   child: InputChip(
-                  label: Text(query),
-                  labelStyle: const TextStyle(color: Colors.white, fontSize: DizzyType.caption, fontWeight: DizzyType.wMedium),
-                  backgroundColor: Colors.white.withValues(alpha: 0.07),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-                  onPressed: () {
-                    _searchController.text = query;
-                    _performSearch(query);
-                  },
-                  onDeleted: () => _removeSearchHistory(query),
-                  deleteIconColor: Colors.white38,
-                  deleteIcon: const Icon(Icons.close_rounded, size: 14),
-                  shape: RoundedRectangleBorder(borderRadius: DizzyRadius.mdAll),
-                ),
+                    label: Text(query),
+                    labelStyle: TextStyle(
+                      color: ink,
+                      fontSize: DizzyType.caption,
+                      fontWeight: DizzyType.wMedium,
+                    ),
+                    backgroundColor: isLight
+                        ? PrismLight.raisedTop
+                        : Colors.white.withValues(alpha: 0.07),
+                    side: BorderSide(
+                      color: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.1),
+                    ),
+                    onPressed: () {
+                      _searchController.text = query;
+                      _performSearch(query);
+                    },
+                    onDeleted: () => _removeSearchHistory(query),
+                    deleteIconColor: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white38,
+                    deleteIcon: const Icon(Icons.close_rounded, size: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: DizzyRadius.mdAll,
+                    ),
+                  ),
                 );
               }).toList(),
             ),
@@ -557,14 +622,14 @@ class _SearchPageState extends State<SearchPage> {
         // Discover / Trending Content
         if (_suggestedSections.isNotEmpty) ...[
           const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               'TRENDING & SUGGESTED',
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
-                color: Colors.white38,
+                color: isLight ? PrismLight.inkSoft : Colors.white38,
                 letterSpacing: 1.1,
               ),
             ),
@@ -573,9 +638,34 @@ class _SearchPageState extends State<SearchPage> {
           ..._suggestedSections.map((sec) => MovieSliderSection(section: sec)),
         ] else if (_isLoadingSuggestions) ...[
           const SizedBox(height: 32),
-          const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7C5CFF))),
+          const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF7C5CFF),
+            ),
+          ),
         ],
       ],
+    );
+  }
+}
+
+/// Dark mode keeps the original frosted app-bar blur; light mode paints the
+/// opaque clay surface without a BackdropFilter (Prism has no blur shaders).
+class _DarkAppBarBlur extends StatelessWidget {
+  final bool enabled;
+  final Widget child;
+
+  const _DarkAppBarBlur({required this.enabled, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: child,
+      ),
     );
   }
 }

@@ -52,10 +52,7 @@ Future<int?> showSimklRatingDialog(BuildContext context) {
                   SizedBox(width: 8),
                   Text(
                     'Rate this item',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -111,6 +108,7 @@ Future<void> handleSimklMenuAction(
   BuildContext context,
   StremioMeta item,
   SimklItemMenuAction action, {
+
   /// Skips the rating dialog for [SimklItemMenuAction.rate] and submits this
   /// value directly — mirrors `handleTraktMenuAction`'s [presetRating], for
   /// the merged detail sheet's inline 1–10 strip.
@@ -243,7 +241,12 @@ List<SimklMenuOption> buildSimklMenuOptions({
   final String? current = status?.currentStatus;
   final int? currentRating = status?.rating;
 
-  SimklMenuOption moveOption(String value, String label, IconData icon, Color color) {
+  SimklMenuOption moveOption(
+    String value,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
     return SimklMenuOption(
       action: _statusMoveAction(value),
       icon: icon,

@@ -29,10 +29,12 @@ class HexaScraper extends StreamScraper {
 
   Future<String?> _getChallengeToken(http.Client client) async {
     try {
-      final res = await client.get(
-        Uri.parse('$_apiBase/enc-hexa'),
-        headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 6));
+      final res = await client
+          .get(
+            Uri.parse('$_apiBase/enc-hexa'),
+            headers: {'User-Agent': _ua, 'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -65,7 +67,9 @@ class HexaScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[HexaScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[HexaScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -84,25 +88,32 @@ class HexaScraper extends StreamScraper {
                 ? 'https://theemoviedb.$domain/api/tmdb/tv/$tmdbId/season/${season ?? 1}/episode/${episode ?? 1}/images'
                 : 'https://theemoviedb.$domain/api/tmdb/movie/$tmdbId/images';
 
-            final encRes = await client.get(
-              Uri.parse(url),
-              headers: {
-                'User-Agent': _ua,
-                'Referer': 'https://$domain/',
-                'Accept': 'text/plain',
-                'X-Fingerprint-Lite': 'e9136c41504646444',
-                'X-Api-Key': apiKey,
-                'X-Cap-Token': capToken,
-              },
-            ).timeout(const Duration(seconds: 10));
+            final encRes = await client
+                .get(
+                  Uri.parse(url),
+                  headers: {
+                    'User-Agent': _ua,
+                    'Referer': 'https://$domain/',
+                    'Accept': 'text/plain',
+                    'X-Fingerprint-Lite': 'e9136c41504646444',
+                    'X-Api-Key': apiKey,
+                    'X-Cap-Token': capToken,
+                  },
+                )
+                .timeout(const Duration(seconds: 10));
 
             if (encRes.statusCode != 200 || encRes.body.isEmpty) continue;
 
-            final decRes = await client.post(
-              Uri.parse('$_apiBase/dec-hexa'),
-              headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
-              body: jsonEncode({'text': encRes.body, 'key': apiKey}),
-            ).timeout(const Duration(seconds: 8));
+            final decRes = await client
+                .post(
+                  Uri.parse('$_apiBase/dec-hexa'),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': _ua,
+                  },
+                  body: jsonEncode({'text': encRes.body, 'key': apiKey}),
+                )
+                .timeout(const Duration(seconds: 8));
 
             if (decRes.statusCode == 200) {
               final decData = jsonDecode(decRes.body);
@@ -126,7 +137,8 @@ class HexaScraper extends StreamScraper {
           final streamUrl = src['url']?.toString();
           if (streamUrl == null || streamUrl.isEmpty) continue;
 
-          final sName = src['name']?.toString() ?? src['server']?.toString() ?? 'Server';
+          final sName =
+              src['name']?.toString() ?? src['server']?.toString() ?? 'Server';
           final quality = src['quality']?.toString() ?? '1080p';
 
           final headers = {
@@ -143,9 +155,7 @@ class HexaScraper extends StreamScraper {
             headers: headers,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': headers,
-              },
+              'proxyHeaders': {'request': headers},
             },
           );
         }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../design/dizzy_tokens.dart';
 import '../../services/settings/settings_search_helper.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../stats/stats_page.dart';
 import 'about_settings_page.dart';
 import 'addons_settings_page.dart';
@@ -22,11 +23,11 @@ import 'watch_party_page.dart';
 /// Search icon (AppBar) → type → tap result opens the page directly.
 class SettingsSearchDelegate extends SearchDelegate<WidgetBuilder?> {
   SettingsSearchDelegate()
-      : super(
-          searchFieldLabel: 'Find a setting…',
-          keyboardType: TextInputType.text,
-          textInputAction: TextInputAction.search,
-        );
+    : super(
+        searchFieldLabel: 'Find a setting…',
+        keyboardType: TextInputType.text,
+        textInputAction: TextInputAction.search,
+      );
 
   static final List<SettingSearchEntry> _entries = [
     SettingSearchEntry(
@@ -125,37 +126,39 @@ class SettingsSearchDelegate extends SearchDelegate<WidgetBuilder?> {
   @override
   ThemeData appBarTheme(BuildContext context) {
     final base = Theme.of(context);
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
     return base.copyWith(
-      appBarTheme: const AppBarTheme(
-        backgroundColor: DizzyVoid.voidB,
+      appBarTheme: AppBarTheme(
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: ink,
       ),
-      inputDecorationTheme: const InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme(
         border: InputBorder.none,
-        hintStyle: TextStyle(color: Colors.white38),
+        hintStyle: TextStyle(color: inkFaint),
       ),
     );
   }
 
   void _open(BuildContext context, SettingSearchEntry e) {
     close(context, null);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (ctx) => e.open(ctx)),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (ctx) => e.open(ctx)));
   }
 
   Widget _resultsList(BuildContext context, List<SettingSearchEntry> hits) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
     if (hits.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(DizzySpace.lg),
+          padding: const EdgeInsets.all(DizzySpace.lg),
           child: Text(
             'No setting found.\nTry a shorter word — like “video” or “sync”.',
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: DizzyType.body,
-            ),
+            style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
             textAlign: TextAlign.center,
           ),
         ),
@@ -164,37 +167,35 @@ class SettingsSearchDelegate extends SearchDelegate<WidgetBuilder?> {
     return ListView.separated(
       padding: const EdgeInsets.all(DizzySpace.md),
       itemCount: hits.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: DizzySpace.xs),
+      separatorBuilder: (_, __) => const SizedBox(height: DizzySpace.xs),
       itemBuilder: (ctx, i) {
         final e = hits[i];
         return Semantics(
           button: true,
           label: 'Open ${e.title}',
           child: ListTile(
-            leading: Icon(e.icon, color: Colors.white70),
+            leading: Icon(e.icon, color: inkSoft),
             title: Text(
               e.title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: ink,
                 fontSize: DizzyType.body,
                 fontWeight: DizzyType.wSemiBold,
               ),
             ),
             subtitle: Text(
               e.subtitle,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: DizzyType.caption,
-              ),
+              style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: DizzyRadius.mdAll,
               side: BorderSide(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: isLight
+                    ? PrismLight.borderSubtle
+                    : Colors.white.withValues(alpha: 0.08),
               ),
             ),
-            tileColor: DizzyVoid.surface1,
+            tileColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
             onTap: () => _open(context, e),
           ),
         );
@@ -212,18 +213,18 @@ class SettingsSearchDelegate extends SearchDelegate<WidgetBuilder?> {
 
   @override
   List<Widget> buildActions(BuildContext context) => [
-        if (query.isNotEmpty)
-          IconButton(
-            tooltip: 'Clear',
-            icon: const Icon(Icons.clear_rounded),
-            onPressed: () => query = '',
-          ),
-      ];
+    if (query.isNotEmpty)
+      IconButton(
+        tooltip: 'Clear',
+        icon: const Icon(Icons.clear_rounded),
+        onPressed: () => query = '',
+      ),
+  ];
 
   @override
   Widget buildLeading(BuildContext context) => IconButton(
-        tooltip: 'Back',
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => close(context, null),
-      );
+    tooltip: 'Back',
+    icon: const Icon(Icons.arrow_back_rounded),
+    onPressed: () => close(context, null),
+  );
 }

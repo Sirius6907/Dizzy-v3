@@ -125,7 +125,10 @@ class MusicLibraryService extends ChangeNotifier {
     }
   }
 
-  Future<void> removeTrackFromPlaylist(String playlistId, String trackId) async {
+  Future<void> removeTrackFromPlaylist(
+    String playlistId,
+    String trackId,
+  ) async {
     final idx = _userPlaylists.indexWhere((p) => p.id == playlistId);
     if (idx >= 0) {
       _userPlaylists[idx].tracks.removeWhere((t) => t.id == trackId);

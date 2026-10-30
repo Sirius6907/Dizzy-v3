@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import '../../errors/app_log.dart';
+import '../../config/env_service.dart';
 
 /// Scraper for All Movies Downloader (Films365) producing direct MP4 stream sources.
 class XDownloaderScraper extends StreamScraper {
@@ -10,8 +11,16 @@ class XDownloaderScraper extends StreamScraper {
   String get name => 'xdownloader';
 
   static const String _baseUrl = 'https://www.films365.org';
-  static const Map<String, String> _headers = {
-    'Authorization': 'Bearer 79a02956be35835728a044b11e2ae793149d45fb2c89cb6d029ec01aac19bfdb',
+
+  /// Rotating service credential — supplied at build time / `.env` only.
+  /// Empty means the upstream API refuses us, so fail closed and skip.
+  static const _compileBearer = String.fromEnvironment('FILMS365_BEARER');
+  static String get _bearer => _compileBearer.isNotEmpty
+      ? _compileBearer
+      : EnvService.get('FILMS365_BEARER');
+
+  static Map<String, String> get _headers => {
+    'Authorization': 'Bearer $_bearer',
     'Content-Type': 'application/json',
     'User-Agent': 'MovieDownloader/1.0',
   };
@@ -26,15 +35,18 @@ class XDownloaderScraper extends StreamScraper {
     String? imdbId,
   }) async {
     final sources = <StreamSource>[];
+    if (_bearer.isEmpty) return sources;
 
     try {
       // 1. Perform Search Query
       final searchUri = Uri.parse('$_baseUrl/api/mobile/search');
-      final searchResponse = await http.post(
-        searchUri,
-        headers: _headers,
-        body: jsonEncode({'query': title}),
-      );
+      final searchResponse = await http
+          .post(
+            searchUri,
+            headers: _headers,
+            body: jsonEncode({'query': title}),
+          )
+          .timeout(const Duration(seconds: 12));
 
       if (searchResponse.statusCode != 200) return sources;
 
@@ -42,7 +54,8 @@ class XDownloaderScraper extends StreamScraper {
       final resultsObj = searchJson['results'];
       if (resultsObj == null) return sources;
 
-      final List items = (resultsObj['all'] as List?) ??
+      final List items =
+          (resultsObj['all'] as List?) ??
           (resultsObj['movies'] as List?) ??
           (resultsObj['tvs'] as List?) ??
           [];
@@ -53,16 +66,23 @@ class XDownloaderScraper extends StreamScraper {
       final targetType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
 
       dynamic matchedItem;
-      final cleanSearchTitle = title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final cleanSearchTitle = title.toLowerCase().replaceAll(
+        RegExp(r'[^a-z0-9]'),
+        '',
+      );
 
       for (final item in items) {
         final itemType = item['type']?.toString();
         if (itemType != null && itemType != targetType) continue;
 
         final itemTitle = item['title']?.toString() ?? '';
-        final cleanItemTitle = itemTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+        final cleanItemTitle = itemTitle.toLowerCase().replaceAll(
+          RegExp(r'[^a-z0-9]'),
+          '',
+        );
 
-        if (cleanItemTitle == cleanSearchTitle || cleanItemTitle.contains(cleanSearchTitle)) {
+        if (cleanItemTitle == cleanSearchTitle ||
+            cleanItemTitle.contains(cleanSearchTitle)) {
           matchedItem = item;
           break;
         }
@@ -73,12 +93,17 @@ class XDownloaderScraper extends StreamScraper {
         orElse: () => items.first,
       );
 
-      final itemId = matchedItem['id']?.toString() ?? matchedItem['tmdbId']?.toString();
+      final itemId =
+          matchedItem['id']?.toString() ?? matchedItem['tmdbId']?.toString();
       if (itemId == null) return sources;
 
       // 2. Fetch Media Details by ID
-      final detailsUri = Uri.parse('$_baseUrl/api/mobile/details?id=$itemId&type=$targetType');
-      final detailsResponse = await http.get(detailsUri, headers: _headers);
+      final detailsUri = Uri.parse(
+        '$_baseUrl/api/mobile/details?id=$itemId&type=$targetType',
+      );
+      final detailsResponse = await http
+          .get(detailsUri, headers: _headers)
+          .timeout(const Duration(seconds: 12));
 
       if (detailsResponse.statusCode != 200) return sources;
 
@@ -86,7 +111,8 @@ class XDownloaderScraper extends StreamScraper {
       final data = detailsJson['data'];
       if (data == null) return sources;
 
-      final spoken = (data['spokenLanguages'] as List?)
+      final spoken =
+          (data['spokenLanguages'] as List?)
               ?.map((e) => e.toString().trim())
               .where((e) => e.isNotEmpty)
               .toList() ??
@@ -97,17 +123,21 @@ class XDownloaderScraper extends StreamScraper {
         final downloadUrl = data['downloadUrl']?.toString();
         final videoUrl = data['videoUrl']?.toString();
 
-        final streamUrl = (downloadUrl != null && downloadUrl.isNotEmpty) ? downloadUrl : videoUrl;
+        final streamUrl = (downloadUrl != null && downloadUrl.isNotEmpty)
+            ? downloadUrl
+            : videoUrl;
 
         if (streamUrl != null && streamUrl.isNotEmpty) {
           final safeUrl = Uri.parse(streamUrl).toString();
-          sources.add(StreamSource(
-            name: 'XDownloader',
-            addonName: 'xdownloader',
-            title: 'X-Downloader$langSuffix',
-            description: 'X-Downloader Direct MP4 Stream$langSuffix',
-            url: safeUrl,
-          ));
+          sources.add(
+            StreamSource(
+              name: 'XDownloader',
+              addonName: 'xdownloader',
+              title: 'X-Downloader$langSuffix',
+              description: 'X-Downloader Direct MP4 Stream$langSuffix',
+              url: safeUrl,
+            ),
+          );
         }
       } else {
         // TV Series
@@ -130,19 +160,23 @@ class XDownloaderScraper extends StreamScraper {
                 final epDownloadUrl = targetEpisode['downloadUrl']?.toString();
                 final epVideoUrl = targetEpisode['videoUrl']?.toString();
 
-                final streamUrl = (epDownloadUrl != null && epDownloadUrl.isNotEmpty)
+                final streamUrl =
+                    (epDownloadUrl != null && epDownloadUrl.isNotEmpty)
                     ? epDownloadUrl
                     : epVideoUrl;
 
                 if (streamUrl != null && streamUrl.isNotEmpty) {
                   final safeUrl = Uri.parse(streamUrl).toString();
-                  sources.add(StreamSource(
-                    name: 'XDownloader',
-                    addonName: 'xdownloader',
-                    title: 'X-Downloader$langSuffix',
-                    description: 'X-Downloader Direct MP4 Stream (S${season}E$episode)$langSuffix',
-                    url: safeUrl,
-                  ));
+                  sources.add(
+                    StreamSource(
+                      name: 'XDownloader',
+                      addonName: 'xdownloader',
+                      title: 'X-Downloader$langSuffix',
+                      description:
+                          'X-Downloader Direct MP4 Stream (S${season}E$episode)$langSuffix',
+                      url: safeUrl,
+                    ),
+                  );
                 }
               }
             }

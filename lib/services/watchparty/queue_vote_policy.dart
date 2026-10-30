@@ -48,12 +48,12 @@ class QueueOp {
   }
 
   Map<String, dynamic> toJson() => {
-        'type': type.name,
-        'itemId': itemId,
-        'index': index,
-        'voterId': voterId,
-        'seq': seq,
-      };
+    'type': type.name,
+    'itemId': itemId,
+    'index': index,
+    'voterId': voterId,
+    'seq': seq,
+  };
 
   /// A row we cannot read is dropped by the caller rather than applied
   /// half-way — a corrupt op must not shuffle somebody's queue.
@@ -114,20 +114,20 @@ class QueueEntry {
   }
 
   QueueEntry copyWith({Set<String>? voters}) => QueueEntry(
-        itemId: itemId,
-        title: title,
-        addedBy: addedBy,
-        voters: voters ?? this.voters,
-        addedSeq: addedSeq,
-      );
+    itemId: itemId,
+    title: title,
+    addedBy: addedBy,
+    voters: voters ?? this.voters,
+    addedSeq: addedSeq,
+  );
 
   Map<String, dynamic> toJson() => {
-        'itemId': itemId,
-        'title': title,
-        'addedBy': addedBy,
-        'voters': voters.toList(),
-        'addedSeq': addedSeq,
-      };
+    'itemId': itemId,
+    'title': title,
+    'addedBy': addedBy,
+    'voters': voters.toList(),
+    'addedSeq': addedSeq,
+  };
 
   static QueueEntry? fromJson(Map<String, dynamic> json) {
     final itemId = json['itemId']?.toString() ?? '';
@@ -141,7 +141,7 @@ class QueueEntry {
       voters: raw is List
           ? {
               for (final v in raw)
-                if ((v?.toString() ?? '').isNotEmpty) v.toString()
+                if ((v?.toString() ?? '').isNotEmpty) v.toString(),
             }
           : <String>{},
       addedSeq: seq is int ? seq : int.tryParse(seq?.toString() ?? '') ?? 0,
@@ -207,7 +207,10 @@ abstract final class QueueVotePolicy {
   /// Apply a whole op-log in order. Ops are sorted by [QueueOp.seq] first
   /// so two phones that received the same taps in a different order still
   /// end up with the same queue.
-  static List<QueueEntry> applyAll(List<QueueEntry> entries, List<QueueOp> ops) {
+  static List<QueueEntry> applyAll(
+    List<QueueEntry> entries,
+    List<QueueOp> ops,
+  ) {
     final ordered = List<QueueOp>.from(ops)
       ..sort((a, b) {
         final bySeq = a.seq.compareTo(b.seq);
@@ -231,12 +234,16 @@ abstract final class QueueVotePolicy {
       entries.isEmpty ? null : _sorted(entries).first;
 
   /// Everyone's votes rolled into one count.
-  static Map<String, int> tally(List<QueueEntry> entries) =>
-      {for (final e in entries) e.itemId: e.votes};
+  static Map<String, int> tally(List<QueueEntry> entries) => {
+    for (final e in entries) e.itemId: e.votes,
+  };
 
   /// True when [voterId] has already voted for [itemId].
-  static bool hasVoted(List<QueueEntry> entries, String itemId, String voterId) =>
-      entries.any((e) => e.itemId == itemId && e.voters.contains(voterId));
+  static bool hasVoted(
+    List<QueueEntry> entries,
+    String itemId,
+    String voterId,
+  ) => entries.any((e) => e.itemId == itemId && e.voters.contains(voterId));
 
   /// The line under the queue. Easy English, real numbers only.
   static String summaryLine(List<QueueEntry> entries) {

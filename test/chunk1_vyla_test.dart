@@ -89,24 +89,27 @@ void main() {
     // Live third-party site: skip when it answers empty (site-side outage
     // or API move — not an app regression). Health checker quarantines
     // dead sources in-app; un-skip after the provider recovers.
-    test('PeeStream scraper fetches streams for Fight Club', () async {
-      final scraper = PeeStreamScraper();
-      final stream = scraper.scrapeStream(
-        type: 'movie',
-        title: 'Fight Club',
-        year: 1999,
-        imdbId: 'tt0137523',
-      );
-      final sources = await stream.toList();
-      print('[PeeStream] streams resolved: ${sources.length}');
-      for (final s in sources) {
-        print('  -> ${s.title} (${s.url})');
-      }
-      expect(sources, isNotEmpty);
-      expect(sources.first.url, startsWith('http'));
-      expect(sources.first.addonName, 'peestream');
-    },
-        timeout: const Timeout(Duration(seconds: 30)),
-        skip: 'Live peestream site answering empty since Sep 2026 (site-side).');
+    test(
+      'PeeStream scraper fetches streams for Fight Club',
+      () async {
+        final scraper = PeeStreamScraper();
+        final stream = scraper.scrapeStream(
+          type: 'movie',
+          title: 'Fight Club',
+          year: 1999,
+          imdbId: 'tt0137523',
+        );
+        final sources = await stream.toList();
+        print('[PeeStream] streams resolved: ${sources.length}');
+        for (final s in sources) {
+          print('  -> ${s.title} (${s.url})');
+        }
+        expect(sources, isNotEmpty);
+        expect(sources.first.url, startsWith('http'));
+        expect(sources.first.addonName, 'peestream');
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+      skip: 'Live peestream site answering empty since Sep 2026 (site-side).',
+    );
   });
 }

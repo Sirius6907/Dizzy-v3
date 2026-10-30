@@ -17,6 +17,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../services/download/download_trash.dart';
 import '../../services/download/offline_hub_service.dart';
 import '../../services/download/storage_sweep.dart';
@@ -44,13 +46,20 @@ class StorageSweepSheet extends StatelessWidget {
     List<StorageSweepSuggestion>? suggestions,
     List<TrashEntry>? undoable,
   }) async {
-    final pending = suggestions ?? OfflineHubService.instance.storageSuggestions.value;
+    final pending =
+        suggestions ?? OfflineHubService.instance.storageSuggestions.value;
     final undos = undoable ?? const <TrashEntry>[];
     if (pending.isEmpty && undos.isEmpty) return;
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: (AppThemeService.currentPalette.value.isLight
+          ? PrismLight.bg
+          : PrismDark.bg),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) => StorageSweepSheet(
         suggestions: pending,
         undoable: undos,
@@ -73,8 +82,7 @@ class StorageSweepSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
-    final reclaimable =
-        suggestions.fold<int>(0, (sum, s) => sum + s.bytes);
+    final reclaimable = suggestions.fold<int>(0, (sum, s) => sum + s.bytes);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -91,13 +99,19 @@ class StorageSweepSheet extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 kStorageTightBody,
-                style: TextStyle(fontSize: 13.5, color: scheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
               if (suggestions.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Text(
                   'Freeing ${_bytes(reclaimable)} once the undo time is up.',
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
               if (suggestions.isNotEmpty) const SizedBox(height: 12),

@@ -3,6 +3,8 @@ import '../../../services/music/music_playlist_sharing_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -36,9 +38,13 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
             width: isMobile ? size.width - 24 : 720,
             height: isMobile ? size.height * 0.85 : 640,
             decoration: BoxDecoration(
-              color: DizzyVoid.surface1,
+              gradient: PrismShadows.surfaceGradient(
+                AppThemeService.currentPalette.value.isLight,
+              ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              boxShadow: PrismShadows.floating(
+                isLight: AppThemeService.currentPalette.value.isLight,
+              ),
             ),
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -76,7 +82,10 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Custom Playlist • ${tracks.length} tracks',
-                            style: const TextStyle(color: Colors.white54, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           if (tracks.isNotEmpty)
@@ -91,43 +100,72 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                   ),
-                                  onPressed: () => onPlayTrack(tracks.first, tracks),
-                                  icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                                  label: const Text('Play Playlist', style: TextStyle(color: Colors.white)),
+                                  onPressed: () =>
+                                      onPlayTrack(tracks.first, tracks),
+                                  icon: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  label: const Text(
+                                    'Play Playlist',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                 ),
                                 OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                                    side: BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                   ),
                                   onPressed: () {
-                                    MusicDownloadService.instance.queueTracks(tracks, collectionName: playlist.title);
+                                    MusicDownloadService.instance.queueTracks(
+                                      tracks,
+                                      collectionName: playlist.title,
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Added ${tracks.length} tracks from "${playlist.title}" to download queue'),
+                                        content: Text(
+                                          'Added ${tracks.length} tracks from "${playlist.title}" to download queue',
+                                        ),
                                         duration: const Duration(seconds: 2),
                                       ),
                                     );
                                   },
-                                  icon: const Icon(Icons.download_rounded, size: 18),
+                                  icon: const Icon(
+                                    Icons.download_rounded,
+                                    size: 18,
+                                  ),
                                   label: const Text('Download All'),
                                 ),
                                 const SizedBox(width: 8),
                                 OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                                    side: BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                   ),
                                   onPressed: () {
-                                    MusicPlaylistSharingService.showShareDialog(context, playlist);
+                                    MusicPlaylistSharingService.showShareDialog(
+                                      context,
+                                      playlist,
+                                    );
                                   },
-                                  icon: const Icon(Icons.share_rounded, size: 18),
+                                  icon: const Icon(
+                                    Icons.share_rounded,
+                                    size: 18,
+                                  ),
                                   label: const Text('Share / Export'),
                                 ),
                               ],
@@ -136,7 +174,10 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                      ),
                       onPressed: onClose,
                     ),
                   ],
@@ -154,7 +195,8 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
                         )
                       : ListView.separated(
                           itemCount: tracks.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final track = tracks[index];
                             return ListTile(
@@ -184,10 +226,16 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
                               ),
                               subtitle: Text(
                                 track.artist,
-                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
                               ),
                               trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.white38),
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.white38,
+                                ),
                                 onPressed: () => onRemoveTrack(track.id),
                               ),
                               onTap: () => onPlayTrack(track, tracks),
@@ -203,4 +251,3 @@ class MusicUserPlaylistDetailModal extends StatelessWidget {
     );
   }
 }
-

@@ -21,7 +21,8 @@ class ContinueWatchingItem {
   final DateTime lastWatchedAt;
 
   // Source fingerprint & resume specs
-  final String? addonName; // site key (e.g. 'flystream', 'vidsrc'), 'Dizzy' legacy, or external addon name
+  final String?
+  addonName; // site key (e.g. 'flystream', 'vidsrc'), 'Dizzy' legacy, or external addon name
   final bool isTorrent;
   final String? magnetUrl;
   final String? infoHash;
@@ -96,6 +97,27 @@ class ContinueWatchingItem {
     );
   }
 
+  /// Headers that carry credentials. They are re-obtainable when the source
+  /// is re-scraped, so they are never written to disk.
+  static const Set<String> _sensitiveHeaders = {
+    'authorization',
+    'cookie',
+    'x-api-key',
+    'proxy-authorization',
+  };
+
+  /// Keeps the useful headers, drops credentials and non-string values.
+  static Map<String, String>? _sanitizeHeaders(Object? raw) {
+    if (raw is! Map) return null;
+    final out = <String, String>{};
+    raw.forEach((key, value) {
+      final name = key.toString();
+      if (_sensitiveHeaders.contains(name.toLowerCase())) return;
+      if (value is String) out[name] = value;
+    });
+    return out.isEmpty ? null : out;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -121,7 +143,7 @@ class ContinueWatchingItem {
       'streamTitle': streamTitle,
       'streamDescription': streamDescription,
       'quality': quality,
-      'headers': headers,
+      'headers': _sanitizeHeaders(headers),
     };
   }
 
@@ -133,24 +155,39 @@ class ContinueWatchingItem {
       posterUrl: json['posterUrl']?.toString(),
       backdropUrl: json['backdropUrl']?.toString(),
       year: json['year']?.toString(),
-      season: json['season'] is int ? json['season'] : int.tryParse(json['season']?.toString() ?? ''),
-      episode: json['episode'] is int ? json['episode'] : int.tryParse(json['episode']?.toString() ?? ''),
+      season: json['season'] is int
+          ? json['season']
+          : int.tryParse(json['season']?.toString() ?? ''),
+      episode: json['episode'] is int
+          ? json['episode']
+          : int.tryParse(json['episode']?.toString() ?? ''),
       episodeTitle: json['episodeTitle']?.toString(),
       episodeId: json['episodeId']?.toString(),
-      positionSeconds: json['positionSeconds'] is int ? json['positionSeconds'] : int.tryParse(json['positionSeconds']?.toString() ?? '') ?? 0,
-      totalDurationSeconds: json['totalDurationSeconds'] is int ? json['totalDurationSeconds'] : int.tryParse(json['totalDurationSeconds']?.toString() ?? '') ?? 0,
-      lastWatchedAt: json['lastWatchedAt'] != null ? (DateTime.tryParse(json['lastWatchedAt'].toString()) ?? DateTime.now()) : DateTime.now(),
+      positionSeconds: json['positionSeconds'] is int
+          ? json['positionSeconds']
+          : int.tryParse(json['positionSeconds']?.toString() ?? '') ?? 0,
+      totalDurationSeconds: json['totalDurationSeconds'] is int
+          ? json['totalDurationSeconds']
+          : int.tryParse(json['totalDurationSeconds']?.toString() ?? '') ?? 0,
+      lastWatchedAt: json['lastWatchedAt'] != null
+          ? (DateTime.tryParse(json['lastWatchedAt'].toString()) ??
+                DateTime.now())
+          : DateTime.now(),
       addonName: json['addonName']?.toString() ?? 'Dizzy',
       isTorrent: json['isTorrent'] == true,
       magnetUrl: json['magnetUrl']?.toString(),
       infoHash: json['infoHash']?.toString(),
-      fileIdx: json['fileIdx'] is int ? json['fileIdx'] : int.tryParse(json['fileIdx']?.toString() ?? ''),
+      fileIdx: json['fileIdx'] is int
+          ? json['fileIdx']
+          : int.tryParse(json['fileIdx']?.toString() ?? ''),
       rawUrl: json['rawUrl']?.toString(),
       streamName: json['streamName']?.toString(),
       streamTitle: json['streamTitle']?.toString(),
       streamDescription: json['streamDescription']?.toString(),
       quality: json['quality']?.toString(),
-      headers: json['headers'] is Map ? Map<String, String>.from(json['headers']) : null,
+      // Sanitizes the map too, so legacy blobs with stored credentials get
+      // scrubbed the next time this row is written back.
+      headers: _sanitizeHeaders(json['headers']),
     );
   }
 

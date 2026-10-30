@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import 'package:flutter/services.dart';
 import '../../../services/music/music_listen_together_service.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -18,7 +18,8 @@ class MusicListenTogetherModal extends StatefulWidget {
   }
 
   @override
-  State<MusicListenTogetherModal> createState() => _MusicListenTogetherModalState();
+  State<MusicListenTogetherModal> createState() =>
+      _MusicListenTogetherModalState();
 }
 
 class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
@@ -54,9 +55,9 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
       style: PerformanceGlassStyles.sheet,
       child: Container(
         decoration: BoxDecoration(
-          color: DizzyVoid.surface1.withValues(alpha: 0.98),
+          gradient: PrismShadows.surfaceGradient(false),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          boxShadow: PrismShadows.floating(isLight: false),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Column(
@@ -84,7 +85,11 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                     color: const Color(0xFF00D2EF).withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.people_alt_rounded, color: Color(0xFF00D2EF), size: 22),
+                  child: const Icon(
+                    Icons.people_alt_rounded,
+                    color: Color(0xFF00D2EF),
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Column(
@@ -115,7 +120,9 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF00D2EF).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF00D2EF).withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: const Color(0xFF00D2EF).withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -124,7 +131,11 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.radio_rounded, color: Color(0xFF00D2EF), size: 20),
+                            const Icon(
+                              Icons.radio_rounded,
+                              color: Color(0xFF00D2EF),
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Room: $roomCode',
@@ -138,9 +149,14 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00D2EF).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF00D2EF,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -166,13 +182,21 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: roomCode));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Room code copied! Share with friends 🚀')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Room code copied! Share with friends 🚀',
+                                  ),
+                                ),
                               );
                             },
                             icon: const Icon(Icons.copy_rounded, size: 16),
@@ -182,9 +206,13 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                         const SizedBox(width: 10),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+                            backgroundColor: Colors.redAccent.withValues(
+                              alpha: 0.2,
+                            ),
                             foregroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: () {
                             HapticFeedback.mediumImpact();
@@ -210,7 +238,9 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: const Color(0xFF00D2EF),
-                          content: Text('Room $code created! Code copied to clipboard 🎧'),
+                          content: Text(
+                            'Room $code created! Code copied to clipboard 🎧',
+                          ),
                         ),
                       );
                     }
@@ -229,7 +259,11 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 22),
+                        Icon(
+                          Icons.add_circle_outline_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                         SizedBox(width: 10),
                         Text(
                           'Start Listening Room',
@@ -252,7 +286,14 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                   Expanded(child: Divider(color: Colors.white12)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text('OR JOIN A FRIEND', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'OR JOIN A FRIEND',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   Expanded(child: Divider(color: Colors.white12)),
                 ],
@@ -265,25 +306,42 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                   Expanded(
                     child: TextField(
                       controller: _codeController,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                       textCapitalization: TextCapitalization.characters,
                       decoration: InputDecoration(
                         hintText: 'Enter Room Code (e.g. DIZ-8219)',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13, letterSpacing: 0),
+                        hintStyle: const TextStyle(
+                          color: Colors.white30,
+                          fontSize: 13,
+                          letterSpacing: 0,
+                        ),
                         filled: true,
                         fillColor: Colors.white.withValues(alpha: 0.05),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                          borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                          borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: Color(0xFF00D2EF)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF00D2EF),
+                          ),
                         ),
                       ),
                     ),
@@ -293,8 +351,13 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D2EF),
                       foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
                     ),
                     onPressed: () async {
                       final code = _codeController.text.trim();
@@ -305,13 +368,18 @@ class _MusicListenTogetherModalState extends State<MusicListenTogetherModal> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: const Color(0xFF00D2EF),
-                              content: Text('Joined Room $code! Syncing music 🎶'),
+                              content: Text(
+                                'Joined Room $code! Syncing music 🎶',
+                              ),
                             ),
                           );
                         }
                       }
                     },
-                    child: const Text('Join', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Join',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),

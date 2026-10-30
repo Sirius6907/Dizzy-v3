@@ -12,8 +12,7 @@ abstract final class TvGate {
   const TvGate._();
 
   /// Overscan-safe margin — content never hides behind TV edges.
-  static const EdgeInsets kOverscan =
-      EdgeInsets.all(DizzySpace.lg);
+  static const EdgeInsets kOverscan = EdgeInsets.all(DizzySpace.lg);
 
   /// Keys that mean "press the focused thing" on remotes + keyboards.
   static bool isSelectKey(LogicalKeyboardKey key) =>
@@ -30,14 +29,11 @@ abstract final class TvGate {
       key == LogicalKeyboardKey.arrowDown;
 
   /// Visible focus ring for custom controls (10-foot must SEE focus).
-  static BoxDecoration focusRing({required bool focused}) =>
-      BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: focused
-              ? Colors.white
-              : Colors.white.withValues(alpha: 0.2),
-          width: focused ? 2.5 : 1.5,
-        ),
-      );
+  static BoxDecoration focusRing({required bool focused}) => BoxDecoration(
+    shape: BoxShape.circle,
+    border: Border.all(
+      color: focused ? Colors.white : Colors.white.withValues(alpha: 0.2),
+      width: focused ? 2.5 : 1.5,
+    ),
+  );
 }

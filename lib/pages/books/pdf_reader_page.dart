@@ -194,7 +194,11 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           tooltip: 'Back to Library',
                           onPressed: () => Navigator.of(context).pop(),
                         ),
@@ -229,19 +233,32 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 22),
+                          icon: const Icon(
+                            Icons.zoom_in_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                           tooltip: 'Zoom In',
                           onPressed: () => _pdfController.zoomUp(),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.zoom_out_rounded, color: Colors.white, size: 22),
+                          icon: const Icon(
+                            Icons.zoom_out_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                           tooltip: 'Zoom Out',
                           onPressed: () => _pdfController.zoomDown(),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 24),
+                          icon: const Icon(
+                            Icons.fullscreen_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                           tooltip: 'Fullscreen (F)',
-                          onPressed: () => WindowService.instance.toggleFullscreen(),
+                          onPressed: () =>
+                              WindowService.instance.toggleFullscreen(),
                         ),
                       ],
                     ),
@@ -276,10 +293,16 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 28),
+                          icon: const Icon(
+                            Icons.chevron_left_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                           tooltip: 'Previous Page',
                           onPressed: _currentPage > 1
-                              ? () => _pdfController.goToPage(pageNumber: _currentPage - 1)
+                              ? () => _pdfController.goToPage(
+                                  pageNumber: _currentPage - 1,
+                                )
                               : null,
                         ),
                         Expanded(
@@ -287,7 +310,8 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Page $_currentPage of $_pageCount',
@@ -312,8 +336,12 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                               SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
                                   trackHeight: 3,
-                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 6,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 14,
+                                  ),
                                   activeTrackColor: const Color(0xFF7C3AED),
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: const Color(0xFF7C3AED),
@@ -321,8 +349,12 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                                 child: Slider(
                                   value: _currentPage.toDouble(),
                                   min: 1,
-                                  max: _pageCount > 1 ? _pageCount.toDouble() : 1.0,
-                                  divisions: _pageCount > 1 ? _pageCount - 1 : 1,
+                                  max: _pageCount > 1
+                                      ? _pageCount.toDouble()
+                                      : 1.0,
+                                  divisions: _pageCount > 1
+                                      ? _pageCount - 1
+                                      : 1,
                                   onChanged: (val) {
                                     final target = val.round();
                                     _pdfController.goToPage(pageNumber: target);
@@ -333,10 +365,16 @@ class _PdfReaderPageState extends State<PdfReaderPage> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 28),
+                          icon: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                           tooltip: 'Next Page',
                           onPressed: _currentPage < _pageCount
-                              ? () => _pdfController.goToPage(pageNumber: _currentPage + 1)
+                              ? () => _pdfController.goToPage(
+                                  pageNumber: _currentPage + 1,
+                                )
                               : null,
                         ),
                       ],

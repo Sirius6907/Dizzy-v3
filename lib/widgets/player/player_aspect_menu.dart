@@ -7,12 +7,24 @@ class AspectOption {
   final String label;
   final BoxFit fit;
 
-  const AspectOption({required this.id, required this.label, required this.fit});
+  const AspectOption({
+    required this.id,
+    required this.label,
+    required this.fit,
+  });
 }
 
 const List<AspectOption> aspectOptions = [
-  AspectOption(id: 'fit', label: 'Fit to screen (Contain)', fit: BoxFit.contain),
-  AspectOption(id: 'cover', label: 'Fill screen (Crop/Zoom)', fit: BoxFit.cover),
+  AspectOption(
+    id: 'fit',
+    label: 'Fit to screen (Contain)',
+    fit: BoxFit.contain,
+  ),
+  AspectOption(
+    id: 'cover',
+    label: 'Fill screen (Crop/Zoom)',
+    fit: BoxFit.cover,
+  ),
   AspectOption(id: 'fill', label: 'Stretch to fill', fit: BoxFit.fill),
 ];
 
@@ -59,10 +71,14 @@ class PlayerAspectMenu extends StatelessWidget {
                     height: 38,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: isSelected ? PlayerTheme.raised : Colors.transparent,
+                      color: isSelected
+                          ? PlayerTheme.raised
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected ? PlayerTheme.edge : Colors.transparent,
+                        color: isSelected
+                            ? PlayerTheme.edge
+                            : Colors.transparent,
                         width: 1,
                       ),
                     ),
@@ -72,9 +88,13 @@ class PlayerAspectMenu extends StatelessWidget {
                         Text(
                           opt.label,
                           style: TextStyle(
-                            color: isSelected ? PlayerTheme.ink : PlayerTheme.inkMuted,
+                            color: isSelected
+                                ? PlayerTheme.ink
+                                : PlayerTheme.inkMuted,
                             fontSize: 13.5,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                           ),
                         ),
                         if (isSelected)

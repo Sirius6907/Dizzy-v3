@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -77,31 +78,83 @@ abstract final class HomePageSettings {
 
   static final ValueNotifier<bool> enableSpotlight = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> enableSimilar = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> enableWatchingSimilar = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> enableTraktRecommendations = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> enableSimklRecommendations = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableWatchingSimilar = ValueNotifier<bool>(
+    true,
+  );
+  static final ValueNotifier<bool> enableTraktRecommendations =
+      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableSimklRecommendations =
+      ValueNotifier<bool>(true);
   static final ValueNotifier<bool> enableCalendar = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> enableAiQuiz = ValueNotifier<bool>(true);
   static final ValueNotifier<SimilarSectionPosition> similarPosition =
       ValueNotifier<SimilarSectionPosition>(SimilarSectionPosition.top);
-  static final ValueNotifier<HeroStyle> heroStyle =
-      ValueNotifier<HeroStyle>(HeroStyle.immersive);
+  static final ValueNotifier<HeroStyle> heroStyle = ValueNotifier<HeroStyle>(
+    HeroStyle.immersive,
+  );
   static final ValueNotifier<bool> heroAutoRotate = ValueNotifier<bool>(true);
   static final ValueNotifier<int> heroRotateSeconds = ValueNotifier<int>(6);
   static final ValueNotifier<CardDensity> cardDensity =
       ValueNotifier<CardDensity>(CardDensity.standard);
   static final ValueNotifier<bool> showRating = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> ambientGlow = ValueNotifier<bool>(true);
-  static final ValueNotifier<double> cardHoverZoom = ValueNotifier<double>(1.08);
-  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(true);
+  static final ValueNotifier<double> cardHoverZoom = ValueNotifier<double>(
+    1.08,
+  );
+  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<AmbientLightPattern> ambientLightPattern =
       ValueNotifier<AmbientLightPattern>(AmbientLightPattern.dualOrbs);
   static final ValueNotifier<double> ambientLightIntensity =
       ValueNotifier<double>(0.22);
-  static final ValueNotifier<double> ambientLightSpeed =
-      ValueNotifier<double>(1.0);
+  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(
+    1.0,
+  );
 
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
+
+  // Slider setters fire on every tick. Coalesce their prefs writes so a drag
+  // does not hit the platform channel ~60 times; flush() writes the tail now.
+  static Timer? _writeTimer;
+  static final Map<String, Object> _pendingWrites = <String, Object>{};
+
+  static void _queueWrite(String key, Object value) {
+    _pendingWrites[key] = value;
+    _writeTimer?.cancel();
+    _writeTimer = Timer(const Duration(milliseconds: 300), () {
+      _writeTimer = null;
+      unawaited(_flushPendingWrites());
+    });
+  }
+
+  /// Writes any coalesced slider values immediately (call from `onChangeEnd`).
+  static Future<void> flush() async {
+    _writeTimer?.cancel();
+    _writeTimer = null;
+    await _flushPendingWrites();
+  }
+
+  static Future<void> _flushPendingWrites() async {
+    if (_pendingWrites.isEmpty) return;
+    final pending = Map<String, Object>.from(_pendingWrites);
+    _pendingWrites.clear();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final entry in pending.entries) {
+        final value = entry.value;
+        if (value is double) {
+          await prefs.setDouble(entry.key, value);
+        } else if (value is int) {
+          await prefs.setInt(entry.key, value);
+        } else if (value is bool) {
+          await prefs.setBool(entry.key, value);
+        }
+      }
+    } catch (e) {
+      debugPrint('[HomePageSettings] Failed to write settings: $e');
+    }
+  }
 
   // Cached recommendation sections to avoid scraping on every scroll
   static MovieSection? _cachedSimilarSection;
@@ -111,48 +164,110 @@ abstract final class HomePageSettings {
   static String? lastListSourceTitle;
 
   static Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    enableSpotlight.value = prefs.getBool(_keyEnableSpotlight) ?? true;
-    enableSimilar.value = prefs.getBool(_keyEnableSimilar) ?? true;
-    enableWatchingSimilar.value = prefs.getBool(_keyEnableWatchingSimilar) ?? true;
-    enableTraktRecommendations.value = prefs.getBool(_keyEnableTraktRec) ?? true;
-    enableSimklRecommendations.value = prefs.getBool(_keyEnableSimklRec) ?? true;
-    enableCalendar.value = prefs.getBool(_keyEnableCalendar) ?? true;
-    enableAiQuiz.value = prefs.getBool(_keyEnableAiQuiz) ?? true;
+    SharedPreferences prefs;
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (e) {
+      // Prefs unavailable must not abort boot; defaults are already in place.
+      debugPrint('[HomePageSettings] prefs unavailable, keeping defaults: $e');
+      return;
+    }
 
-    final posStr = prefs.getString(_keySimilarPosition);
+    // Every read is guarded: a stored type change throws in SharedPreferences
+    // and used to crash startup. Fall back to the default instead.
+    enableSpotlight.value = _readBool(prefs, _keyEnableSpotlight, true);
+    enableSimilar.value = _readBool(prefs, _keyEnableSimilar, true);
+    enableWatchingSimilar.value = _readBool(
+      prefs,
+      _keyEnableWatchingSimilar,
+      true,
+    );
+    enableTraktRecommendations.value = _readBool(
+      prefs,
+      _keyEnableTraktRec,
+      true,
+    );
+    enableSimklRecommendations.value = _readBool(
+      prefs,
+      _keyEnableSimklRec,
+      true,
+    );
+    enableCalendar.value = _readBool(prefs, _keyEnableCalendar, true);
+    enableAiQuiz.value = _readBool(prefs, _keyEnableAiQuiz, true);
+
+    final posStr = _readString(prefs, _keySimilarPosition);
     similarPosition.value = SimilarSectionPosition.values.firstWhere(
       (p) => p.name == posStr,
       orElse: () => SimilarSectionPosition.top,
     );
 
-    final heroStr = prefs.getString(_keyHeroStyle);
+    final heroStr = _readString(prefs, _keyHeroStyle);
     heroStyle.value = HeroStyle.values.firstWhere(
       (h) => h.name == heroStr,
       orElse: () => HeroStyle.immersive,
     );
 
-    heroAutoRotate.value = prefs.getBool(_keyHeroAutoRotate) ?? true;
-    heroRotateSeconds.value = prefs.getInt(_keyHeroRotateSeconds) ?? 6;
+    heroAutoRotate.value = _readBool(prefs, _keyHeroAutoRotate, true);
+    heroRotateSeconds.value = _readInt(prefs, _keyHeroRotateSeconds, 6);
 
-    final densityStr = prefs.getString(_keyCardDensity);
+    final densityStr = _readString(prefs, _keyCardDensity);
     cardDensity.value = CardDensity.values.firstWhere(
       (d) => d.name == densityStr,
       orElse: () => CardDensity.standard,
     );
 
-    showRating.value = prefs.getBool(_keyShowRating) ?? true;
-    ambientGlow.value = prefs.getBool(_keyAmbientGlow) ?? true;
-    cardHoverZoom.value = prefs.getDouble(_keyCardHoverZoom) ?? 1.08;
+    showRating.value = _readBool(prefs, _keyShowRating, true);
+    ambientGlow.value = _readBool(prefs, _keyAmbientGlow, true);
+    cardHoverZoom.value = _readDouble(prefs, _keyCardHoverZoom, 1.08);
 
-    enableAmbientLights.value = prefs.getBool(_keyEnableAmbientLights) ?? true;
-    final patternStr = prefs.getString(_keyAmbientPattern);
+    enableAmbientLights.value = _readBool(prefs, _keyEnableAmbientLights, true);
+    final patternStr = _readString(prefs, _keyAmbientPattern);
     ambientLightPattern.value = AmbientLightPattern.values.firstWhere(
       (p) => p.name == patternStr,
       orElse: () => AmbientLightPattern.dualOrbs,
     );
-    ambientLightIntensity.value = prefs.getDouble(_keyAmbientIntensity) ?? 0.22;
-    ambientLightSpeed.value = prefs.getDouble(_keyAmbientSpeed) ?? 1.0;
+    ambientLightIntensity.value = _readDouble(
+      prefs,
+      _keyAmbientIntensity,
+      0.22,
+    );
+    ambientLightSpeed.value = _readDouble(prefs, _keyAmbientSpeed, 1.0);
+  }
+
+  static bool _readBool(SharedPreferences prefs, String key, bool fallback) {
+    try {
+      return prefs.getBool(key) ?? fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  static int _readInt(SharedPreferences prefs, String key, int fallback) {
+    try {
+      return prefs.getInt(key) ?? fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  static double _readDouble(
+    SharedPreferences prefs,
+    String key,
+    double fallback,
+  ) {
+    try {
+      return prefs.getDouble(key) ?? fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  static String? _readString(SharedPreferences prefs, String key) {
+    try {
+      return prefs.getString(key);
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<void> setEnableAmbientLights(bool val) async {
@@ -162,7 +277,9 @@ abstract final class HomePageSettings {
     changeNotifier.value++;
   }
 
-  static Future<void> setAmbientLightPattern(AmbientLightPattern pattern) async {
+  static Future<void> setAmbientLightPattern(
+    AmbientLightPattern pattern,
+  ) async {
     ambientLightPattern.value = pattern;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyAmbientPattern, pattern.name);
@@ -171,15 +288,13 @@ abstract final class HomePageSettings {
 
   static Future<void> setAmbientLightIntensity(double val) async {
     ambientLightIntensity.value = val;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_keyAmbientIntensity, val);
+    _queueWrite(_keyAmbientIntensity, val);
     changeNotifier.value++;
   }
 
   static Future<void> setAmbientLightSpeed(double val) async {
     ambientLightSpeed.value = val;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_keyAmbientSpeed, val);
+    _queueWrite(_keyAmbientSpeed, val);
     changeNotifier.value++;
   }
 
@@ -283,8 +398,7 @@ abstract final class HomePageSettings {
 
   static Future<void> setCardHoverZoom(double zoom) async {
     cardHoverZoom.value = zoom;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_keyCardHoverZoom, zoom);
+    _queueWrite(_keyCardHoverZoom, zoom);
     changeNotifier.value++;
   }
 
@@ -314,29 +428,37 @@ abstract final class HomePageSettings {
       if (details == null || details.similar.isEmpty) return null;
 
       // Safety Guard: If source title is live-action, don't allow anime details
-      final isAnimeSource = type == 'anime' || sourceTitle.toLowerCase().contains('anime');
-      final isAnimeMatched = (details.genre?.toLowerCase().contains('animation') == true ||
+      final isAnimeSource =
+          type == 'anime' || sourceTitle.toLowerCase().contains('anime');
+      final isAnimeMatched =
+          (details.genre?.toLowerCase().contains('animation') == true ||
               details.genre?.toLowerCase().contains('anime') == true) &&
-          details.plotTags.any((t) =>
-              t.toLowerCase() == 'anime' ||
-              t.toLowerCase() == 'japanese animation' ||
-              t.toLowerCase() == 'manga adaptation');
+          details.plotTags.any(
+            (t) =>
+                t.toLowerCase() == 'anime' ||
+                t.toLowerCase() == 'japanese animation' ||
+                t.toLowerCase() == 'manga adaptation',
+          );
 
       if (!isAnimeSource && isAnimeMatched) {
-        debugPrint('[HomePageSettings] Skipping anime match for live-action: $sourceTitle');
+        debugPrint(
+          '[HomePageSettings] Skipping anime match for live-action: $sourceTitle',
+        );
         return null;
       }
 
       final movies = <Movie>[];
       for (final sim in details.similar.take(24)) {
-        movies.add(Movie(
-          id: 'bestsimilar_${sim.id}',
-          type: sim.isTv ? 'series' : 'movie',
-          name: sim.title,
-          poster: sim.thumbUrl,
-          year: sim.year?.toString(),
-          addonBaseUrl: 'https://v3-cinemeta.strem.io',
-        ));
+        movies.add(
+          Movie(
+            id: 'bestsimilar_${sim.id}',
+            type: sim.isTv ? 'series' : 'movie',
+            name: sim.title,
+            poster: sim.thumbUrl,
+            year: sim.year?.toString(),
+            addonBaseUrl: 'https://v3-cinemeta.strem.io',
+          ),
+        );
       }
 
       if (movies.isEmpty) return null;
@@ -357,13 +479,17 @@ abstract final class HomePageSettings {
         movies: movies,
       );
     } catch (e) {
-      debugPrint('[HomePageSettings] Failed to build similar section for "$sourceTitle": $e');
+      debugPrint(
+        '[HomePageSettings] Failed to build similar section for "$sourceTitle": $e',
+      );
       return null;
     }
   }
 
   /// Fetches a dynamic "Because you have [Title] on your list" section using BestSimilar
-  static Future<MovieSection?> fetchBestSimilarSection({bool forceRefresh = false}) async {
+  static Future<MovieSection?> fetchBestSimilarSection({
+    bool forceRefresh = false,
+  }) async {
     if (!enableSimilar.value) return null;
 
     final myList = MyListService.items.value;
@@ -424,8 +550,11 @@ abstract final class HomePageSettings {
     }
 
     // Pick a random item from Continue Watching
-    final candidates = List<ContinueWatchingItem>.from(active)..shuffle(Random());
-    final excluded = (excludeTitle ?? lastListSourceTitle ?? '').trim().toLowerCase();
+    final candidates = List<ContinueWatchingItem>.from(active)
+      ..shuffle(Random());
+    final excluded = (excludeTitle ?? lastListSourceTitle ?? '')
+        .trim()
+        .toLowerCase();
 
     for (final item in candidates) {
       if (excluded.isNotEmpty && item.title.trim().toLowerCase() == excluded) {
@@ -451,7 +580,9 @@ abstract final class HomePageSettings {
   }
 
   /// Fetches Trakt personalized recommendations if Trakt is authenticated and enabled
-  static Future<MovieSection?> fetchTraktRecommendationsSection({bool forceRefresh = false}) async {
+  static Future<MovieSection?> fetchTraktRecommendationsSection({
+    bool forceRefresh = false,
+  }) async {
     if (!enableTraktRecommendations.value) return null;
     if (!await TraktService.instance.isAuthenticated()) return null;
 
@@ -468,14 +599,16 @@ abstract final class HomePageSettings {
 
       final movies = <Movie>[];
       for (final item in res.items.take(24)) {
-        movies.add(Movie(
-          id: item.id,
-          type: item.type,
-          name: item.name,
-          poster: item.poster,
-          year: item.year,
-          addonBaseUrl: 'https://v3-cinemeta.strem.io',
-        ));
+        movies.add(
+          Movie(
+            id: item.id,
+            type: item.type,
+            name: item.name,
+            poster: item.poster,
+            year: item.year,
+            addonBaseUrl: 'https://v3-cinemeta.strem.io',
+          ),
+        );
       }
 
       if (movies.isEmpty) return null;
@@ -505,7 +638,9 @@ abstract final class HomePageSettings {
   }
 
   /// Fetches Simkl recommendations if Simkl is authenticated and enabled
-  static Future<MovieSection?> fetchSimklRecommendationsSection({bool forceRefresh = false}) async {
+  static Future<MovieSection?> fetchSimklRecommendationsSection({
+    bool forceRefresh = false,
+  }) async {
     if (!enableSimklRecommendations.value) return null;
     if (!await SimklService.instance.isAuthenticated()) return null;
 
@@ -514,20 +649,24 @@ abstract final class HomePageSettings {
     }
 
     try {
-      final res = await SimklListSource.instance.loadList(SimklSeeAllList.topRated);
+      final res = await SimklListSource.instance.loadList(
+        SimklSeeAllList.topRated,
+      );
 
       if (res.items.isEmpty) return null;
 
       final movies = <Movie>[];
       for (final item in res.items.take(24)) {
-        movies.add(Movie(
-          id: item.id,
-          type: item.type,
-          name: item.name,
-          poster: item.poster,
-          year: item.year,
-          addonBaseUrl: 'https://v3-cinemeta.strem.io',
-        ));
+        movies.add(
+          Movie(
+            id: item.id,
+            type: item.type,
+            name: item.name,
+            poster: item.poster,
+            year: item.year,
+            addonBaseUrl: 'https://v3-cinemeta.strem.io',
+          ),
+        );
       }
 
       if (movies.isEmpty) return null;

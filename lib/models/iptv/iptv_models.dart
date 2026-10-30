@@ -22,18 +22,18 @@ class IptvPortal {
   String get credKey => '$username|$password'.toLowerCase();
 
   Map<String, dynamic> toJson() => {
-        'url': url,
-        'username': username,
-        'password': password,
-        'source': source,
-      };
+    'url': url,
+    'username': username,
+    'password': password,
+    'source': source,
+  };
 
   factory IptvPortal.fromJson(Map<String, dynamic> j) => IptvPortal(
-        url: j['url'] as String? ?? '',
-        username: j['username'] as String? ?? '',
-        password: j['password'] as String? ?? '',
-        source: j['source'] as String? ?? '',
-      );
+    url: j['url'] as String? ?? '',
+    username: j['username'] as String? ?? '',
+    password: j['password'] as String? ?? '',
+    source: j['source'] as String? ?? '',
+  );
 }
 
 /// Portal that successfully authenticated against /player_api.php.

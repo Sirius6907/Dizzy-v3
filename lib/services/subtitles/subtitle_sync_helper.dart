@@ -5,10 +5,7 @@ class SyncPoint {
   final double t; // Original cue start time
   final double at; // Target playback timestamp when spoken
 
-  const SyncPoint({
-    required this.t,
-    required this.at,
-  });
+  const SyncPoint({required this.t, required this.at});
 
   double get delta => at - t;
 
@@ -43,7 +40,8 @@ class SubtitleSyncHelper {
       return d + nudge;
     }
 
-    final sorted = List<SyncPoint>.from(points)..sort((a, b) => a.t.compareTo(b.t));
+    final sorted = List<SyncPoint>.from(points)
+      ..sort((a, b) => a.t.compareTo(b.t));
     final a = sorted.first;
     final b = sorted.last;
     final d1 = a.at - a.t;

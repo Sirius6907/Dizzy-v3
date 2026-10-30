@@ -33,8 +33,15 @@ class VidCoreScraper extends StreamScraper {
 
     try {
       final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
-      final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-      AppLog.d('[VidCoreScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+      final tmdbId = await TmdbHelper.resolveTmdbId(
+        imdbId: imdbId,
+        title: title,
+        type: mediaType,
+        year: year,
+      );
+      AppLog.d(
+        '[VidCoreScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)',
+      );
       if (tmdbId == null) return sources;
 
       final seenUrls = <String>{};
@@ -45,7 +52,8 @@ class VidCoreScraper extends StreamScraper {
           'id': tmdbId.toString(),
           'type': mediaType,
           if (mediaType == 'tv' && season != null) 'season': season.toString(),
-          if (mediaType == 'tv' && episode != null) 'episode': episode.toString(),
+          if (mediaType == 'tv' && episode != null)
+            'episode': episode.toString(),
         };
 
         final initialData = await _fetchSourcesRound(base, params);
@@ -79,15 +87,25 @@ class VidCoreScraper extends StreamScraper {
     return sources;
   }
 
-  Future<Map<String, dynamic>?> _fetchSourcesRound(String base, Map<String, String> params) async {
+  Future<Map<String, dynamic>?> _fetchSourcesRound(
+    String base,
+    Map<String, String> params,
+  ) async {
     try {
-      final uri = Uri.parse('$base/api/sources').replace(queryParameters: params);
-      final res = await http.get(uri, headers: {
-        'User-Agent': _ua,
-        'Referer': '$base/embed/movie/${params['id'] ?? ''}',
-        'Origin': base,
-        'Accept': 'application/json',
-      }).timeout(const Duration(seconds: 10));
+      final uri = Uri.parse(
+        '$base/api/sources',
+      ).replace(queryParameters: params);
+      final res = await http
+          .get(
+            uri,
+            headers: {
+              'User-Agent': _ua,
+              'Referer': '$base/embed/movie/${params['id'] ?? ''}',
+              'Origin': base,
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
         return jsonDecode(res.body) as Map<String, dynamic>;
@@ -105,7 +123,11 @@ class VidCoreScraper extends StreamScraper {
   ) {
     for (final o in outerSources) {
       if (o is! Map) continue;
-      final label = o['label']?.toString() ?? o['provider']?.toString() ?? o['server']?.toString() ?? 'VidCore';
+      final label =
+          o['label']?.toString() ??
+          o['provider']?.toString() ??
+          o['server']?.toString() ??
+          'VidCore';
       if (o['label'] != null) skipped.add(o['label'].toString());
 
       List inners = [];
@@ -124,21 +146,25 @@ class VidCoreScraper extends StreamScraper {
         if (!url.startsWith('http')) continue;
 
         seenUrls.add(url);
-        final quality = s['quality']?.toString() ?? o['quality']?.toString() ?? 'Auto';
+        final quality =
+            s['quality']?.toString() ?? o['quality']?.toString() ?? 'Auto';
         final isHls = url.contains('.m3u8');
         final isDash = url.contains('.mpd');
 
-        sources.add(StreamSource(
-          name: 'VidCore',
-          addonName: 'vidcore',
-          title: 'VidCore $label · $quality',
-          description: isHls ? 'VidCore Direct HLS Stream' : (isDash ? 'VidCore Direct DASH Stream' : 'VidCore Direct VOD Stream'),
-          url: url,
-          headers: {
-            'User-Agent': _ua,
-            'Referer': '$apiBase/',
-          },
-        ));
+        sources.add(
+          StreamSource(
+            name: 'VidCore',
+            addonName: 'vidcore',
+            title: 'VidCore $label · $quality',
+            description: isHls
+                ? 'VidCore Direct HLS Stream'
+                : (isDash
+                      ? 'VidCore Direct DASH Stream'
+                      : 'VidCore Direct VOD Stream'),
+            url: url,
+            headers: {'User-Agent': _ua, 'Referer': '$apiBase/'},
+          ),
+        );
       }
     }
   }

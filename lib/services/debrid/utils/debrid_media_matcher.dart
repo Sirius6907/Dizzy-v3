@@ -73,7 +73,8 @@ class DebridMediaMatcher {
     final sizeGB = sizeBytes / (1024.0 * 1024.0 * 1024.0);
     score += (sizeGB * 25.0).clamp(0.0, 100.0);
 
-    if (sizeBytes < 25 * 1024 * 1024 && !_audioExts.any((ext) => lowerPath.endsWith(ext))) {
+    if (sizeBytes < 25 * 1024 * 1024 &&
+        !_audioExts.any((ext) => lowerPath.endsWith(ext))) {
       score -= 2000.0; // Stubs, previews, or sample files
     }
 
@@ -108,7 +109,9 @@ class DebridMediaMatcher {
       }
       // Secondary fallback patterns for uncommon naming schemes
       else {
-        final normalized = ParseTorrentTitle.normalizeTorrentTitle(rawPath).toLowerCase();
+        final normalized = ParseTorrentTitle.normalizeTorrentTitle(
+          rawPath,
+        ).toLowerCase();
         final sStr = season.toString().padLeft(2, '0');
         final eStr = episode.toString().padLeft(2, '0');
 
@@ -116,8 +119,17 @@ class DebridMediaMatcher {
           RegExp('s0*$season[ ._x-]*e0*$episode', caseSensitive: false),
           RegExp('0*$season[xX]0*$episode', caseSensitive: false),
           RegExp('s0*$season[ ._x-]+0*$episode', caseSensitive: false),
-          RegExp('(?:season|saison)[ ._x-]*0*$season.*(?:episode|ep|e)[ ._x-]*0*$episode', caseSensitive: false),
-          RegExp(r'\b0*' '$season' r'[- ._]+0*' '$episode' r'\b'),
+          RegExp(
+            '(?:season|saison)[ ._x-]*0*$season.*(?:episode|ep|e)[ ._x-]*0*$episode',
+            caseSensitive: false,
+          ),
+          RegExp(
+            r'\b0*'
+            '$season'
+            r'[- ._]+0*'
+            '$episode'
+            r'\b',
+          ),
         ];
 
         bool matchedFallback = false;
@@ -129,7 +141,10 @@ class DebridMediaMatcher {
         }
 
         if (matchedFallback ||
-            normalized.contains('s$sStr' 'e$eStr') ||
+            normalized.contains(
+              's$sStr'
+              'e$eStr',
+            ) ||
             normalized.contains('${season}x$eStr') ||
             normalized.contains('${sStr}x$eStr')) {
           score += 1100.0;
@@ -179,7 +194,8 @@ class DebridMediaMatcher {
     // Filter to media files
     final mediaFiles = files.where((f) {
       final n = name(f).toLowerCase();
-      final isMedia = _videoExts.any((ext) => n.endsWith(ext)) ||
+      final isMedia =
+          _videoExts.any((ext) => n.endsWith(ext)) ||
           _audioExts.any((ext) => n.endsWith(ext));
       return isMedia;
     }).toList();

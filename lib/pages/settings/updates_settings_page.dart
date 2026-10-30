@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../services/errors/app_error_log.dart';
 import '../../services/updater/app_updater_service.dart';
 import '../../services/updater/update_prefs.dart';
 import '../../services/updater/update_state_machine.dart';
 import '../../services/updater/update_stager.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/updater/release_notes_studio.dart';
 
 class UpdatesSettingsPage extends StatefulWidget {
@@ -145,18 +146,32 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.35);
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          icon: Icon(Icons.arrow_back_ios_rounded, size: 20, color: ink),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'App Updates & System',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 19,
+            color: ink,
+          ),
         ),
       ),
       body: Center(
@@ -170,11 +185,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                 padding: const EdgeInsets.only(bottom: 20),
                 child: Text(
                   'Keep Dizzy up to date with the latest features, security patches, and performance improvements.',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    height: 1.4,
-                  ),
+                  style: TextStyle(fontSize: 13.5, color: inkSoft, height: 1.4),
                 ),
               ),
 
@@ -195,7 +206,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                   return Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
+                      color: isLight ? PrismLight.raisedTop : PrismDark.raised,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: const Color(0xFF7C5CFF).withValues(alpha: 0.2),
@@ -228,10 +239,10 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                                 children: [
                                   Text(
                                     appName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                                      color: ink,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -240,8 +251,8 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                                     behavior: HitTestBehavior.opaque,
                                     child: Text(
                                       'Installed Version: v$version (Build $buildNumber)',
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        color: inkSoft,
                                         fontSize: 12.5,
                                       ),
                                     ),
@@ -302,7 +313,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -313,10 +324,12 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: DizzyVoid.surface1,
+                  color: isLight ? PrismLight.raisedTop : PrismDark.raised,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
                 child: Column(
@@ -328,19 +341,17 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                         setState(() => _autoDownload = v);
                         UpdatePrefs.setAutoDownload(v);
                       },
-                      title: const Text(
+                      title: Text(
                         'Download updates automatically',
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
+                          color: ink,
                         ),
                       ),
                       subtitle: Text(
                         'We fetch the update in the background — you just tap Install.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.45),
-                        ),
+                        style: TextStyle(fontSize: 12, color: inkSoft),
                       ),
                     ),
                     SwitchListTile.adaptive(
@@ -352,19 +363,17 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                               setState(() => _wifiOnly = v);
                               UpdatePrefs.setWifiOnly(v);
                             },
-                      title: const Text(
+                      title: Text(
                         'Wi-Fi only',
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
+                          color: _autoDownload ? ink : inkFaint,
                         ),
                       ),
                       subtitle: Text(
                         'Never download on mobile data.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.45),
-                        ),
+                        style: TextStyle(fontSize: 12, color: inkSoft),
                       ),
                     ),
                     SizedBox(
@@ -384,9 +393,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                                       'Downloading… ${(p * 100).round()}%',
                                       style: TextStyle(
                                         fontSize: 12.5,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.6,
-                                        ),
+                                        color: inkSoft,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -395,8 +402,11 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                                       child: LinearProgressIndicator(
                                         value: p <= 0 ? null : p,
                                         minHeight: 5,
-                                        backgroundColor: Colors.white
-                                            .withValues(alpha: 0.08),
+                                        backgroundColor: isLight
+                                            ? PrismLight.raisedBottom
+                                            : Colors.white.withValues(
+                                                alpha: 0.08,
+                                              ),
                                         color: const Color(0xFF7C5CFF),
                                       ),
                                     ),
@@ -420,8 +430,12 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                   icon: const Icon(Icons.download_rounded, size: 18),
                   label: const Text('Download update now'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF7C5CFF),
-                    side: const BorderSide(color: Color(0xFF7C5CFF)),
+                    foregroundColor: isLight ? ink : const Color(0xFF7C5CFF),
+                    side: BorderSide(
+                      color: isLight
+                          ? const Color(0xFF7C5CFF).withValues(alpha: 0.55)
+                          : const Color(0xFF7C5CFF),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -438,7 +452,7 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -469,12 +483,22 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
     required String title,
     required String subtitle,
   }) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -482,10 +506,12 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: isLight
+                  ? PrismLight.raisedBottom
+                  : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: Colors.white70, size: 20),
+            child: Icon(icon, color: inkSoft, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -494,20 +520,14 @@ class _UpdatesSettingsPageState extends State<UpdatesSettingsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: ink,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
-                ),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: inkSoft)),
               ],
             ),
           ),

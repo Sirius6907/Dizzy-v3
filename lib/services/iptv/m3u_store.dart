@@ -54,8 +54,9 @@ class M3uFetcher {
         .timeout(const Duration(seconds: 25));
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw HttpException(
-          'HTTP ${res.statusCode} while fetching playlist',
-          uri: uri);
+        'HTTP ${res.statusCode} while fetching playlist',
+        uri: uri,
+      );
     }
     final body = res.body;
     if (body.trim().isEmpty) {

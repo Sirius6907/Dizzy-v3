@@ -102,7 +102,10 @@ class MusicHeroBillboard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: DizzyGlow.violet,
                       borderRadius: BorderRadius.circular(DizzyRadius.md),
@@ -149,7 +152,9 @@ class MusicHeroBillboard extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: DizzyGlow.violet,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(DizzyRadius.xl),
+                              borderRadius: BorderRadius.circular(
+                                DizzyRadius.xl,
+                              ),
                             ),
                             padding: EdgeInsets.symmetric(
                               horizontal: isMobile ? 16 : 20,
@@ -157,10 +162,16 @@ class MusicHeroBillboard extends StatelessWidget {
                             ),
                           ),
                           onPressed: onPlayTap,
-                          icon: const Icon(Icons.play_arrow_rounded, color: DizzyVoid.bone),
+                          icon: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: DizzyVoid.bone,
+                          ),
                           label: const Text(
                             'Play Now',
-                            style: TextStyle(color: DizzyVoid.bone, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: DizzyVoid.bone,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -172,7 +183,9 @@ class MusicHeroBillboard extends StatelessWidget {
                             backgroundColor: DizzyVoid.surface2,
                           ),
                           icon: Icon(
-                            isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            isSaved
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
                             color: isSaved ? DizzyGlow.ember : DizzyVoid.bone,
                           ),
                           onPressed: onSaveTap,
@@ -185,7 +198,10 @@ class MusicHeroBillboard extends StatelessWidget {
                           style: IconButton.styleFrom(
                             backgroundColor: DizzyVoid.surface2,
                           ),
-                          icon: const Icon(Icons.playlist_add_rounded, color: DizzyVoid.bone),
+                          icon: const Icon(
+                            Icons.playlist_add_rounded,
+                            color: DizzyVoid.bone,
+                          ),
                           onPressed: onAddToPlaylistTap,
                         ),
                       ),
@@ -200,4 +216,3 @@ class MusicHeroBillboard extends StatelessWidget {
     );
   }
 }
-

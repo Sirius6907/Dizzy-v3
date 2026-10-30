@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/audiobook/audiobook_settings.dart';
@@ -29,9 +29,9 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -48,14 +48,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             children: [
-              // ── 1. Color Themes & Accents ──
-              _buildSectionHeader('COLOR THEMES & ACCENTS'),
-              const SizedBox(height: 12),
-              _buildThemesGrid(),
-
-              const SizedBox(height: 28),
-
-              // ── 2. Ambient Background Lighting ──
+              // ── 1. Ambient Background Lighting ──
               _buildSectionHeader('AMBIENT BACKGROUND LIGHTING & MOVING GLOWS'),
               const SizedBox(height: 12),
               _buildAmbientLightsCard(palette),
@@ -82,7 +75,9 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
               const SizedBox(height: 28),
 
               // ── 5. Make Your Custom Player Studio ──
-              _buildSectionHeader('MAKE YOUR CUSTOM AUDIOBOOK PLAYER (DRAG & DROP STUDIO)'),
+              _buildSectionHeader(
+                'MAKE YOUR CUSTOM AUDIOBOOK PLAYER (DRAG & DROP STUDIO)',
+              ),
               const SizedBox(height: 12),
               _buildCustomPlayerStudioCard(palette),
 
@@ -95,118 +90,33 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
   }
 
   Widget _buildSectionHeader(String title) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Text(
       title,
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: Colors.white.withValues(alpha: 0.35),
+        color: isLight
+            ? PrismLight.inkSoft
+            : Colors.white.withValues(alpha: 0.35),
         letterSpacing: 1.1,
       ),
     );
   }
 
-  // ── 1. Themes Grid ──
-  Widget _buildThemesGrid() {
-    return ValueListenableBuilder<AppThemePalette>(
-      valueListenable: AppThemeService.currentPalette,
-      builder: (context, current, _) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final w = constraints.maxWidth;
-            final int crossAxisCount = w < 400 ? 1 : (w < 700 ? 2 : 3);
-            final double childAspectRatio = w < 400 ? 4.2 : 2.6;
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: childAspectRatio,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemCount: AppThemeService.palettes.length,
-              itemBuilder: (context, index) {
-                final palette = AppThemeService.palettes[index];
-                final isSelected = palette.id == current.id;
-
-                return InkWell(
-                  onTap: () async {
-                    await AppThemeService.setPalette(palette);
-                    setState(() {});
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isSelected
-                            ? palette.primaryColor
-                            : Colors.white.withValues(alpha: 0.08),
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [palette.primaryColor, palette.accentColor],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              if (isSelected)
-                                BoxShadow(
-                                  color: palette.primaryColor.withValues(alpha: 0.4),
-                                  blurRadius: 10,
-                                  spreadRadius: 1,
-                                ),
-                            ],
-                          ),
-                          child: isSelected
-                              ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
-                              : null,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            palette.name,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ── 2. Ambient Lighting Card ──
+  // ── 1. Ambient Lighting Card ──
   Widget _buildAmbientLightsCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,28 +126,48 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, enabled, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Enable Moving Ambient Atmosphere',
-                  style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 subtitle: Text(
                   'Soft flowing glowing orbs and aurora waves themed to ${palette.name}',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
+                  style: TextStyle(
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.45),
+                    fontSize: 12,
+                  ),
                 ),
                 value: enabled,
                 activeColor: palette.primaryColor,
-                onChanged: (val) => AudiobookSettings.setEnableAmbientLights(val),
+                onChanged: (val) =>
+                    AudiobookSettings.setEnableAmbientLights(val),
               );
             },
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           const SizedBox(height: 12),
 
           Text(
             'Lighting Flow Pattern',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AmbientLightPattern>(
@@ -252,14 +182,24 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(p.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (selected) {
                       if (selected) AudiobookSettings.setAmbientLightPattern(p);
@@ -282,14 +222,32 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Glow Strength / Opacity', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
-                      Text('${(intensity * 100).round()}%', style: TextStyle(color: palette.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Glow Strength / Opacity',
+                        style: TextStyle(
+                          color: isLight
+                              ? PrismLight.ink
+                              : Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${(intensity * 100).round()}%',
+                        style: TextStyle(
+                          color: palette.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: palette.primaryColor,
-                      inactiveTrackColor: Colors.white12,
+                      inactiveTrackColor: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white12,
                       thumbColor: palette.primaryColor,
                       trackHeight: 3,
                     ),
@@ -298,7 +256,8 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                       min: 0.08,
                       max: 0.60,
                       divisions: 26,
-                      onChanged: (val) => AudiobookSettings.setAmbientLightIntensity(val),
+                      onChanged: (val) =>
+                          AudiobookSettings.setAmbientLightIntensity(val),
                     ),
                   ),
                 ],
@@ -316,14 +275,32 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Motion Drift Speed', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
-                      Text('${speed.toStringAsFixed(1)}x', style: TextStyle(color: palette.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Motion Drift Speed',
+                        style: TextStyle(
+                          color: isLight
+                              ? PrismLight.ink
+                              : Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${speed.toStringAsFixed(1)}x',
+                        style: TextStyle(
+                          color: palette.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: palette.primaryColor,
-                      inactiveTrackColor: Colors.white12,
+                      inactiveTrackColor: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white12,
                       thumbColor: palette.primaryColor,
                       trackHeight: 3,
                     ),
@@ -332,7 +309,8 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                       min: 0.2,
                       max: 3.0,
                       divisions: 14,
-                      onChanged: (val) => AudiobookSettings.setAmbientLightSpeed(val),
+                      onChanged: (val) =>
+                          AudiobookSettings.setAmbientLightSpeed(val),
                     ),
                   ),
                 ],
@@ -357,18 +335,34 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   const Positioned.fill(child: AnimatedAmbientBackground()),
                   Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.headphones_rounded, color: palette.primaryColor, size: 14),
+                          Icon(
+                            Icons.headphones_rounded,
+                            color: palette.primaryColor,
+                            size: 14,
+                          ),
                           const SizedBox(width: 6),
-                          const Text('Live Atmosphere Preview', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Live Atmosphere Preview',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -384,12 +378,17 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
 
   // ── 3. Discovery & Posters Config Card ──
   Widget _buildDiscoveryConfigCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,8 +398,21 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, enabled, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Hero Spotlight Carousel', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                subtitle: const Text('Featured bestselling audiobook showcase at the top of the hub', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                title: Text(
+                  'Show Hero Spotlight Carousel',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  'Featured bestselling audiobook showcase at the top of the hub',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.inkSoft : Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
                 value: enabled,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setEnableSpotlight(val),
@@ -413,20 +425,47 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show "Continue Listening" Carousel', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                subtitle: const Text('Quick resume cards with chapter progress bar and direct play', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                title: Text(
+                  'Show "Continue Listening" Carousel',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  'Quick resume cards with chapter progress bar and direct play',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.inkSoft : Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
-                onChanged: (val) => AudiobookSettings.setShowContinueListening(val),
+                onChanged: (val) =>
+                    AudiobookSettings.setShowContinueListening(val),
               );
             },
           ),
 
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           const SizedBox(height: 12),
 
-          Text('Audiobook Poster Card Density', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            'Audiobook Poster Card Density',
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AudiobookCardDensity>(
             valueListenable: AudiobookSettings.cardDensity,
@@ -440,14 +479,24 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(d.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (selected) {
                       if (selected) AudiobookSettings.setCardDensity(d);
@@ -465,7 +514,13 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Quick Genre & Category Badges', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Show Quick Genre & Category Badges',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setShowCategoryPills(val),
@@ -478,7 +533,13 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Audiobook Runtime / Total Duration', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Show Audiobook Runtime / Total Duration',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setShowDurationBadge(val),
@@ -491,7 +552,13 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Poster Card Hover Glow & Elevation', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Poster Card Hover Glow & Elevation',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setCardHoverGlow(val),
@@ -505,6 +572,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
 
   // ── 4. Player Presets Selector ──
   Widget _buildPlayerPresetSelector(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return ValueListenableBuilder<AudiobookPlayerPreset>(
       valueListenable: AudiobookSettings.selectedPlayerPreset,
       builder: (context, selectedPreset, _) {
@@ -514,41 +582,60 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: isSelected ? palette.primaryColor.withValues(alpha: 0.12) : DizzyVoid.surface1,
+                color: isSelected
+                    ? palette.primaryColor.withValues(alpha: 0.12)
+                    : (isLight ? PrismLight.raisedTop : PrismDark.raised),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
+                  color: isSelected
+                      ? palette.primaryColor
+                      : (isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.08)),
                   width: isSelected ? 2 : 1,
                 ),
               ),
               child: ListTile(
                 onTap: () => AudiobookSettings.setSelectedPlayerPreset(preset),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 leading: Container(
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.06),
+                    color: isSelected
+                        ? palette.primaryColor
+                        : (isLight
+                              ? PrismLight.raisedBottom
+                              : Colors.white.withValues(alpha: 0.06)),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     preset == AudiobookPlayerPreset.modernGlass
                         ? Icons.blur_on_rounded
                         : preset == AudiobookPlayerPreset.vinylStudio
-                            ? Icons.album_rounded
-                            : preset == AudiobookPlayerPreset.minimalCapsule
-                                ? Icons.view_compact_rounded
-                                : preset == AudiobookPlayerPreset.immersiveCanvas
-                                    ? Icons.fullscreen_rounded
-                                    : Icons.dashboard_customize_rounded,
-                    color: isSelected ? Colors.white : Colors.white70,
+                        ? Icons.album_rounded
+                        : preset == AudiobookPlayerPreset.minimalCapsule
+                        ? Icons.view_compact_rounded
+                        : preset == AudiobookPlayerPreset.immersiveCanvas
+                        ? Icons.fullscreen_rounded
+                        : Icons.dashboard_customize_rounded,
+                    color: isSelected
+                        ? Colors.white
+                        : (isLight ? PrismLight.inkSoft : Colors.white70),
                     size: 22,
                   ),
                 ),
                 title: Text(
                   preset.label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                    color: isSelected
+                        ? (isLight ? PrismLight.ink : Colors.white)
+                        : (isLight
+                              ? PrismLight.inkSoft
+                              : Colors.white.withValues(alpha: 0.9)),
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     fontSize: 14.5,
                   ),
@@ -556,7 +643,9 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                 subtitle: Text(
                   preset.description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),
@@ -570,25 +659,49 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const AudiobookPlayerStudioPage()),
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const AudiobookPlayerStudioPage(),
+                              ),
                             );
                           },
-                          icon: Icon(Icons.tune_rounded, size: 14, color: palette.primaryColor),
+                          icon: Icon(
+                            Icons.tune_rounded,
+                            size: 14,
+                            color: palette.primaryColor,
+                          ),
                           label: Text(
                             'Open Studio',
-                            style: TextStyle(color: palette.primaryColor, fontSize: 11.5, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: palette.primaryColor,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.5)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            side: BorderSide(
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
                     if (isSelected)
-                      Icon(Icons.check_circle_rounded, color: palette.primaryColor, size: 22),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: palette.primaryColor,
+                        size: 22,
+                      ),
                   ],
                 ),
               ),
@@ -601,6 +714,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
 
   // ── Enter Visual Player Studio Banner ──
   Widget _buildEnterPlayerStudioBanner(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -608,7 +722,7 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           colors: [
             palette.primaryColor.withValues(alpha: 0.28),
             palette.accentColor.withValues(alpha: 0.15),
-            DizzyVoid.surface1,
+            isLight ? PrismLight.raisedTop : PrismDark.raised,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -645,7 +759,11 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   ),
                 ],
               ),
-              child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 28),
+              child: const Icon(
+                Icons.dashboard_customize_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 18),
             Expanded(
@@ -654,10 +772,10 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                 children: [
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'Visual Custom Player Studio',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: isLight ? PrismLight.ink : Colors.white,
                           fontSize: 16.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.2,
@@ -665,14 +783,21 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: palette.primaryColor.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'FULL STUDIO',
-                          style: TextStyle(color: palette.primaryColor, fontSize: 9.5, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: palette.primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -681,7 +806,9 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   Text(
                     'Drag & drop layout elements, procedural waveform canvases, liquid glass buttons, and premade chapters panel in real-time.',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: isLight
+                          ? PrismLight.inkSoft
+                          : Colors.white.withValues(alpha: 0.7),
                       fontSize: 12.5,
                       height: 1.3,
                     ),
@@ -691,18 +818,33 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const AudiobookPlayerStudioPage()),
+                        MaterialPageRoute(
+                          builder: (_) => const AudiobookPlayerStudioPage(),
+                        ),
                       );
                     },
-                    icon: const Icon(Icons.tune_rounded, size: 18, color: Colors.white),
+                    icon: const Icon(
+                      Icons.tune_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                     label: const Text(
                       'Enter Custom Player Studio',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: palette.primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 11,
+                      ),
                       elevation: 4,
                       shadowColor: palette.primaryColor.withValues(alpha: 0.5),
                     ),
@@ -718,12 +860,17 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
 
   // ── 5. Make Your Custom Player Studio ──
   Widget _buildCustomPlayerStudioCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -734,7 +881,9 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             decoration: BoxDecoration(
               color: DizzyColors.bg,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: palette.primaryColor.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: palette.primaryColor.withValues(alpha: 0.3),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: palette.primaryColor.withValues(alpha: 0.15),
@@ -751,20 +900,38 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_fix_high_rounded, color: palette.primaryColor, size: 16),
+                        Icon(
+                          Icons.auto_fix_high_rounded,
+                          color: palette.primaryColor,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
-                        const Text('Interactive Studio Preview', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Interactive Studio Preview',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: palette.primaryColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         'LIVE',
-                        style: TextStyle(color: palette.primaryColor, fontSize: 10, fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                          color: palette.primaryColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ],
@@ -787,11 +954,20 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                           color: Colors.black,
                           border: Border.all(color: Colors.white24, width: 3),
                           boxShadow: [
-                            BoxShadow(color: palette.primaryColor.withValues(alpha: 0.35), blurRadius: 16),
+                            BoxShadow(
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.35,
+                              ),
+                              blurRadius: 16,
+                            ),
                           ],
                         ),
                         child: Center(
-                          child: Icon(Icons.graphic_eq_rounded, color: palette.primaryColor, size: 36),
+                          child: Icon(
+                            Icons.graphic_eq_rounded,
+                            color: palette.primaryColor,
+                            size: 36,
+                          ),
                         ),
                       );
                     }
@@ -806,11 +982,18 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
-                          BoxShadow(color: palette.primaryColor.withValues(alpha: 0.4), blurRadius: 16),
+                          BoxShadow(
+                            color: palette.primaryColor.withValues(alpha: 0.4),
+                            blurRadius: 16,
+                          ),
                         ],
                       ),
                       child: const Center(
-                        child: Icon(Icons.headphones_rounded, color: Colors.white, size: 36),
+                        child: Icon(
+                          Icons.headphones_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
                       ),
                     );
                   },
@@ -819,12 +1002,19 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                 const SizedBox(height: 12),
                 const Text(
                   'The Way of Kings',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Brandon Sanderson • Chapter 1: Stormblessed',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
+                  ),
                 ),
 
                 const SizedBox(height: 14),
@@ -851,11 +1041,18 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                   children: [
                     // Rewind 10s
                     IconButton(
-                      icon: const Icon(Icons.replay_10_rounded, color: Colors.white70, size: 24),
+                      icon: const Icon(
+                        Icons.replay_10_rounded,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
                       onPressed: () {
                         setState(() {
-                          final p = _previewPosition - const Duration(seconds: 10);
-                          _previewPosition = p < Duration.zero ? Duration.zero : p;
+                          final p =
+                              _previewPosition - const Duration(seconds: 10);
+                          _previewPosition = p < Duration.zero
+                              ? Duration.zero
+                              : p;
                         });
                       },
                     ),
@@ -866,8 +1063,14 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                       valueListenable: AudiobookSettings.customPlayButtonStyle,
                       builder: (context, playBtnStyle, _) {
                         return GestureDetector(
-                          onTap: () => setState(() => _previewIsPlaying = !_previewIsPlaying),
-                          child: _buildCustomPlayButtonWidget(playBtnStyle, palette, _previewIsPlaying),
+                          onTap: () => setState(
+                            () => _previewIsPlaying = !_previewIsPlaying,
+                          ),
+                          child: _buildCustomPlayButtonWidget(
+                            playBtnStyle,
+                            palette,
+                            _previewIsPlaying,
+                          ),
                         );
                       },
                     ),
@@ -876,11 +1079,18 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
 
                     // Forward 10s
                     IconButton(
-                      icon: const Icon(Icons.forward_10_rounded, color: Colors.white70, size: 24),
+                      icon: const Icon(
+                        Icons.forward_10_rounded,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
                       onPressed: () {
                         setState(() {
-                          final p = _previewPosition + const Duration(seconds: 10);
-                          _previewPosition = p > _previewDuration ? _previewDuration : p;
+                          final p =
+                              _previewPosition + const Duration(seconds: 10);
+                          _previewPosition = p > _previewDuration
+                              ? _previewDuration
+                              : p;
                         });
                       },
                     ),
@@ -891,20 +1101,31 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     InkWell(
                       onTap: () {
                         setState(() {
-                          _previewSpeed = _previewSpeed >= 2.0 ? 1.0 : _previewSpeed + 0.25;
+                          _previewSpeed = _previewSpeed >= 2.0
+                              ? 1.0
+                              : _previewSpeed + 0.25;
                         });
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                          ),
                         ),
                         child: Text(
                           '${_previewSpeed.toStringAsFixed(2)}x',
-                          style: TextStyle(color: palette.primaryColor, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: palette.primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -917,7 +1138,16 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           const SizedBox(height: 20),
 
           // ── Customize Seek Bar Style ──
-          Text('Seek Bar / Scrubber Style', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            'Seek Bar / Scrubber Style',
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AudiobookSeekbarStyle>(
             valueListenable: AudiobookSettings.customSeekbarStyle,
@@ -931,14 +1161,24 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (selected) {
                       if (selected) AudiobookSettings.setCustomSeekbarStyle(s);
@@ -952,7 +1192,16 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           const SizedBox(height: 16),
 
           // ── Customize Play / Pause Button Style ──
-          Text('Play / Pause Button Styling', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            'Play / Pause Button Styling',
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AudiobookPlayButtonStyle>(
             valueListenable: AudiobookSettings.customPlayButtonStyle,
@@ -966,17 +1215,29 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (selected) {
-                      if (selected) AudiobookSettings.setCustomPlayButtonStyle(s);
+                      if (selected) {
+                        AudiobookSettings.setCustomPlayButtonStyle(s);
+                      }
                     },
                   );
                 }).toList(),
@@ -987,7 +1248,16 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           const SizedBox(height: 16),
 
           // ── Customize Artwork Display ──
-          Text('Artwork Display Style', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            'Artwork Display Style',
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AudiobookArtworkStyle>(
             valueListenable: AudiobookSettings.customArtworkStyle,
@@ -1001,14 +1271,24 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(s.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (selected) {
                       if (selected) AudiobookSettings.setCustomArtworkStyle(s);
@@ -1022,7 +1302,16 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           const SizedBox(height: 16),
 
           // ── Hover & Touch Physics ──
-          Text('Button Hover & Touch Physics', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            'Button Hover & Touch Physics',
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AudiobookHoverEffect>(
             valueListenable: AudiobookSettings.customHoverEffect,
@@ -1036,14 +1325,24 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     label: Text(e.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (selected) {
                       if (selected) AudiobookSettings.setCustomHoverEffect(e);
@@ -1055,7 +1354,11 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
           ),
 
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           const SizedBox(height: 16),
 
           // ── Drag & Drop Component Arranger ──
@@ -1064,15 +1367,30 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             children: [
               Text(
                 'Player Layout Components (Drag to Arrange)',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13.5, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: isLight
+                      ? PrismLight.ink
+                      : Colors.white.withValues(alpha: 0.9),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              Icon(Icons.drag_indicator_rounded, color: palette.primaryColor, size: 18),
+              Icon(
+                Icons.drag_indicator_rounded,
+                color: palette.primaryColor,
+                size: 18,
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             'Hold and drag any block to reorder how controls appear inside your player',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.inkSoft
+                  : Colors.white.withValues(alpha: 0.5),
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 10),
 
@@ -1096,15 +1414,36 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
                     key: ValueKey(key),
                     margin: const EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(
-                      color: DizzyVoid.voidB,
+                      color: isLight
+                          ? PrismLight.raisedBottom
+                          : PrismDark.sunken,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(
+                        color: (isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.08)),
+                      ),
                     ),
                     child: ListTile(
                       dense: true,
-                      leading: Icon(icon, color: palette.primaryColor, size: 18),
-                      title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                      trailing: const Icon(Icons.drag_handle_rounded, color: Colors.white38, size: 18),
+                      leading: Icon(
+                        icon,
+                        color: palette.primaryColor,
+                        size: 18,
+                      ),
+                      title: Text(
+                        label,
+                        style: TextStyle(
+                          color: isLight ? PrismLight.ink : Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.drag_handle_rounded,
+                        color: isLight ? PrismLight.inkFaint : Colors.white38,
+                        size: 18,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -1119,7 +1458,13 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, enabled, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Liquid Glass Player Blur & Refraction', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Liquid Glass Player Blur & Refraction',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: enabled,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setEnableLiquidGlass(val),
@@ -1132,7 +1477,13 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Playback Speed Selector (0.5x - 2.5x)', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Show Playback Speed Selector (0.5x - 2.5x)',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setShowSpeedControl(val),
@@ -1145,7 +1496,13 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Skip Forward/Rewind Buttons (±10s)', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Show Skip Forward/Rewind Buttons (±10s)',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => AudiobookSettings.setShowSkip10Buttons(val),
@@ -1158,16 +1515,27 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             builder: (context, show, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Quick Chapters Sliding Drawer Button', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                title: Text(
+                  'Show Quick Chapters Sliding Drawer Button',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 13.5,
+                  ),
+                ),
                 value: show,
                 activeColor: palette.primaryColor,
-                onChanged: (val) => AudiobookSettings.setShowChaptersQuickButton(val),
+                onChanged: (val) =>
+                    AudiobookSettings.setShowChaptersQuickButton(val),
               );
             },
           ),
 
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           const SizedBox(height: 12),
 
           SizedBox(
@@ -1176,17 +1544,29 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AudiobookPlayerStudioPage()),
+                  MaterialPageRoute(
+                    builder: (_) => const AudiobookPlayerStudioPage(),
+                  ),
                 );
               },
-              icon: const Icon(Icons.dashboard_customize_rounded, size: 18, color: Colors.white),
+              icon: const Icon(
+                Icons.dashboard_customize_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
               label: const Text(
                 'Launch Full Custom Player Studio',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5, color: Colors.white),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13.5,
+                  color: Colors.white,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: palette.primaryColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 13),
               ),
             ),
@@ -1196,7 +1576,11 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
     );
   }
 
-  Widget _buildCustomPlayButtonWidget(AudiobookPlayButtonStyle style, AppThemePalette palette, bool isPlaying) {
+  Widget _buildCustomPlayButtonWidget(
+    AudiobookPlayButtonStyle style,
+    AppThemePalette palette,
+    bool isPlaying,
+  ) {
     final icon = isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded;
     final hoverEffect = AudiobookSettings.customHoverEffect.value;
 
@@ -1291,7 +1675,12 @@ class _AudiobookSettingsPageState extends State<AudiobookSettingsPage> {
             const SizedBox(width: 6),
             Text(
               isPlaying ? 'PAUSE' : 'PLAY',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.8),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                letterSpacing: 0.8,
+              ),
             ),
           ],
         ),

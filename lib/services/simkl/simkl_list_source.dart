@@ -182,7 +182,12 @@ class SimklListSource {
         '$kSimklApiBaseUrl/movies/genres/all/movies/all/all/rank',
       ),
     ]);
-    return _mergeThreeFlatLists(results, showIndex: 0, animeIndex: 1, movieIndex: 2);
+    return _mergeThreeFlatLists(
+      results,
+      showIndex: 0,
+      animeIndex: 1,
+      movieIndex: 2,
+    );
   }
 
   /// New & Upcoming: TV/anime premieres ("soon") merged with movies sorted by
@@ -199,7 +204,12 @@ class SimklListSource {
         '$kSimklApiBaseUrl/movies/genres/all/movies/all/all/release-date',
       ),
     ]);
-    return _mergeThreeFlatLists(results, showIndex: 0, animeIndex: 1, movieIndex: 2);
+    return _mergeThreeFlatLists(
+      results,
+      showIndex: 0,
+      animeIndex: 1,
+      movieIndex: 2,
+    );
   }
 
   /// Three independent public fetches merged by index. [failed] is true if

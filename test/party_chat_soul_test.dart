@@ -4,8 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('P11: chat soul (pure parts)', () {
     test('allowedEmoji is the server 8 (order matters for UI row)', () {
-      expect(PartyChatService.allowedEmoji,
-          ['❤️', '😂', '😮', '😢', '😡', '👍', '👏', '🎉']);
+      expect(PartyChatService.allowedEmoji, [
+        '❤️',
+        '😂',
+        '😮',
+        '😢',
+        '😡',
+        '👍',
+        '👏',
+        '🎉',
+      ]);
     });
 
     test('parseReactions: server shape → counts', () {
@@ -24,8 +32,13 @@ void main() {
       expect(PartyChatService.parseReactions({'👍': []}), isEmpty);
       expect(PartyChatService.parseReactions(null), isEmpty);
       expect(PartyChatService.parseReactions('junk'), isEmpty);
-      expect(PartyChatService.parseReactions({'x' * 20: ['u']}), isEmpty,
-          reason: 'overlong keys rejected');
+      expect(
+        PartyChatService.parseReactions({
+          'x' * 20: ['u'],
+        }),
+        isEmpty,
+        reason: 'overlong keys rejected',
+      );
     });
 
     test('message carries reply fields + counts, old JSON still fine', () {
@@ -39,7 +52,7 @@ void main() {
         'reply_preview': 'interval in 5 min',
         'reply_to_code': '1111111',
         'reactions': {
-          '❤️': ['u1', 'u2', 'u3']
+          '❤️': ['u1', 'u2', 'u3'],
         },
       });
       expect(m.replyToId, 'm0');

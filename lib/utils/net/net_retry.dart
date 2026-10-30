@@ -42,10 +42,11 @@ class NetRetry {
       } catch (e) {
         lastError = e;
         if (attempt == maxAttempts - 1 || !shouldRetry(e)) rethrow;
-        final jitter =
-            (backoffMs[attempt] * Random().nextDouble() * 0.25).toInt();
+        final jitter = (backoffMs[attempt] * Random().nextDouble() * 0.25)
+            .toInt();
         await Future.delayed(
-            Duration(milliseconds: backoffMs[attempt] + jitter));
+          Duration(milliseconds: backoffMs[attempt] + jitter),
+        );
       }
     }
     throw lastError ?? StateError('NetRetry exhausted without error');

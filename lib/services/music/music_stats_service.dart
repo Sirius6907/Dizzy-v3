@@ -49,7 +49,9 @@ class MusicStatsService {
   }
 
   Future<void> recordTrackPlay(MusicTrack track) async {
-    _totalMinutes += (track.durationSeconds > 0 ? (track.durationSeconds / 60).round() : 3);
+    _totalMinutes += (track.durationSeconds > 0
+        ? (track.durationSeconds / 60).round()
+        : 3);
     _trackCounts[track.id] = (_trackCounts[track.id] ?? 0) + 1;
     _artistCounts[track.artist] = (_artistCounts[track.artist] ?? 0) + 1;
 
@@ -79,7 +81,10 @@ class MusicStatsService {
     return entries.take(5).toList();
   }
 
-  List<({String id, String title, String artist, String coverUrl, int playCount})> get topTracks {
+  List<
+    ({String id, String title, String artist, String coverUrl, int playCount})
+  >
+  get topTracks {
     final entries = _trackCounts.entries.toList();
     entries.sort((a, b) => b.value.compareTo(a.value));
 

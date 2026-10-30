@@ -27,8 +27,10 @@ void main() {
     });
 
     test('hello is Easy English', () {
-      expect(KidsMode.hello('Ashu', isKids: true),
-          'Hi Ashu! Pick something fun.');
+      expect(
+        KidsMode.hello('Ashu', isKids: true),
+        'Hi Ashu! Pick something fun.',
+      );
       expect(KidsMode.hello('Ashu', isKids: false), 'Hi Ashu!');
     });
 

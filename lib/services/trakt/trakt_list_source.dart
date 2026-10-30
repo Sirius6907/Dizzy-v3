@@ -93,14 +93,15 @@ class TraktListChoice {
   final bool liked;
 
   const TraktListChoice.builtin(TraktSeeAllList list)
-      : builtin = list,
-        userList = null,
-        liked = false;
+    : builtin = list,
+      userList = null,
+      liked = false;
 
-  const TraktListChoice.userList(Map<String, dynamic> list,
-      {required this.liked})
-      : builtin = null,
-        userList = list;
+  const TraktListChoice.userList(
+    Map<String, dynamic> list, {
+    required this.liked,
+  }) : builtin = null,
+       userList = list;
 
   bool get isBuiltin => builtin != null;
   bool get isContinueWatching => builtin == TraktSeeAllList.continueWatching;
@@ -222,10 +223,12 @@ class TraktListSource {
     List<dynamic>? raw;
     try {
       raw = choice.liked
-          ? await TraktService.instance
-              .fetchLikedListItemsOrderedOrNull(choice.userList!)
-          : await TraktService.instance
-              .fetchCustomListItemsOrderedOrNull(choice.customListRef);
+          ? await TraktService.instance.fetchLikedListItemsOrderedOrNull(
+              choice.userList!,
+            )
+          : await TraktService.instance.fetchCustomListItemsOrderedOrNull(
+              choice.customListRef,
+            );
     } catch (_) {
       raw = null;
     }
@@ -235,10 +238,14 @@ class TraktListSource {
   }
 
   Future<List<dynamic>?> _safeFetchBuiltin(
-      TraktSeeAllList list, String contentType) async {
+    TraktSeeAllList list,
+    String contentType,
+  ) async {
     try {
-      return await TraktService.instance
-          .fetchListOrNull(list.apiValue, contentType);
+      return await TraktService.instance.fetchListOrNull(
+        list.apiValue,
+        contentType,
+      );
     } catch (_) {
       return null;
     }
@@ -248,22 +255,31 @@ class TraktListSource {
   /// (newest first); rank-ordered lists interleave (movie, show, …) so each side
   /// keeps its API rank and a top show isn't buried beneath every movie.
   List<StremioMeta> _mergeFetched(
-      TraktSeeAllList list, List<dynamic> movies, List<dynamic> shows) {
+    TraktSeeAllList list,
+    List<dynamic> movies,
+    List<dynamic> shows,
+  ) {
     final List<StremioMeta> ordered;
     if (list.isTimeOrdered) {
       final pairs = <({StremioMeta meta, int key})>[
         ..._pairedByTime(movies, inferredType: 'movie', episodeShaped: false),
-        ..._pairedByTime(shows,
-            inferredType: 'show',
-            episodeShaped: list == TraktSeeAllList.history),
+        ..._pairedByTime(
+          shows,
+          inferredType: 'show',
+          episodeShaped: list == TraktSeeAllList.history,
+        ),
       ];
       pairs.sort((a, b) => b.key.compareTo(a.key)); // newest first
       ordered = [for (final p in pairs) p.meta];
     } else {
-      final movieMetas =
-          TraktItemTransformer.transformList(movies, inferredType: 'movie');
-      final showMetas =
-          TraktItemTransformer.transformList(shows, inferredType: 'show');
+      final movieMetas = TraktItemTransformer.transformList(
+        movies,
+        inferredType: 'movie',
+      );
+      final showMetas = TraktItemTransformer.transformList(
+        shows,
+        inferredType: 'show',
+      );
       ordered = <StremioMeta>[];
       final maxLen = movieMetas.length > showMetas.length
           ? movieMetas.length
@@ -306,12 +322,16 @@ class TraktListSource {
           // and the transformer now stamps that onto the meta for the grid's
           // date sort. Dropping it left every show in History undated while
           // the movies beside them kept their date.
-          meta = TraktItemTransformer.transformItem(
-              {...r, 'type': 'show'},
-              inferredType: 'show');
+          meta = TraktItemTransformer.transformItem({
+            ...r,
+            'type': 'show',
+          }, inferredType: 'show');
         }
       } else {
-        meta = TraktItemTransformer.transformItem(r, inferredType: inferredType);
+        meta = TraktItemTransformer.transformItem(
+          r,
+          inferredType: inferredType,
+        );
       }
       if (meta == null) continue;
       out.add((meta: meta, key: _rowTime(r)));

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
@@ -11,10 +12,7 @@ import 'music_hoverable.dart';
 class MusicQueueDrawer extends StatefulWidget {
   final VoidCallback onClose;
 
-  const MusicQueueDrawer({
-    super.key,
-    required this.onClose,
-  });
+  const MusicQueueDrawer({super.key, required this.onClose});
 
   @override
   State<MusicQueueDrawer> createState() => _MusicQueueDrawerState();
@@ -52,21 +50,14 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
       child: Container(
         width: isMobile ? MediaQuery.sizeOf(context).width : 400,
         decoration: BoxDecoration(
-          color: DizzyVoid.voidB.withValues(alpha: 0.96),
+          gradient: PrismShadows.surfaceGradient(false),
           borderRadius: isMobile
               ? const BorderRadius.vertical(top: Radius.circular(28))
               : const BorderRadius.only(
                   topLeft: Radius.circular(28),
                   bottomLeft: Radius.circular(28),
                 ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.65),
-              blurRadius: 36,
-              offset: const Offset(-8, 0),
-            ),
-          ],
+          boxShadow: PrismShadows.floating(isLight: false),
         ),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         child: Column(
@@ -110,7 +101,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
                   onPressed: widget.onClose,
                 ),
               ],
@@ -165,16 +160,26 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                       alignment: Alignment.center,
                       child: Column(
                         children: [
-                          Icon(Icons.playlist_play_rounded, color: Colors.white.withValues(alpha: 0.15), size: 42),
+                          Icon(
+                            Icons.playlist_play_rounded,
+                            color: Colors.white.withValues(alpha: 0.15),
+                            size: 42,
+                          ),
                           const SizedBox(height: 8),
                           const Text(
                             'No more songs queued up',
-                            style: TextStyle(color: Colors.white38, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           const Text(
                             'Songs you play or add will appear here',
-                            style: TextStyle(color: Colors.white24, fontSize: 11),
+                            style: TextStyle(
+                              color: Colors.white24,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -218,7 +223,9 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                         child: Row(
                           children: [
                             Icon(
-                              _showHistory ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                              _showHistory
+                                  ? Icons.keyboard_arrow_down_rounded
+                                  : Icons.keyboard_arrow_right_rounded,
                               color: Colors.white54,
                               size: 18,
                             ),
@@ -251,13 +258,18 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
     );
   }
 
-  Widget _buildNowPlayingCard(MusicTrack track, MusicPlayerController controller) {
+  Widget _buildNowPlayingCard(
+    MusicTrack track,
+    MusicPlayerController controller,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF7C5CFF).withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.35)),
+        border: Border.all(
+          color: const Color(0xFF7C5CFF).withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         children: [
@@ -317,7 +329,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                 SizedBox(width: 4),
                 Text(
                   'Playing',
-                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -382,7 +398,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
           children: [
             // Delete from queue button
             IconButton(
-              icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.white38, size: 18),
+              icon: const Icon(
+                Icons.remove_circle_outline_rounded,
+                color: Colors.white38,
+                size: 18,
+              ),
               tooltip: 'Remove',
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -396,7 +416,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
               index: index,
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4.0),
-                child: Icon(Icons.drag_indicator_rounded, color: Colors.white38, size: 20),
+                child: Icon(
+                  Icons.drag_indicator_rounded,
+                  color: Colors.white38,
+                  size: 20,
+                ),
               ),
             ),
           ],
@@ -405,7 +429,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
     );
   }
 
-  Widget _buildHistoryItem(MusicTrack track, int originalIndex, MusicPlayerController controller) {
+  Widget _buildHistoryItem(
+    MusicTrack track,
+    int originalIndex,
+    MusicPlayerController controller,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
@@ -441,7 +469,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
         trailing: MusicHoverable(
           scaleFactor: 1.1,
           child: IconButton(
-            icon: const Icon(Icons.replay_rounded, color: Colors.white54, size: 18),
+            icon: const Icon(
+              Icons.replay_rounded,
+              color: Colors.white54,
+              size: 18,
+            ),
             tooltip: 'Replay now',
             onPressed: () {
               controller.jumpToQueueIndex(originalIndex);

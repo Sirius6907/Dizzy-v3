@@ -53,11 +53,13 @@ class MovieDetail {
       cast: _parseStringList(json['cast']),
       director: _parseStringList(json['director']),
       runtime: json['runtime']?.toString(),
-      links: (json['links'] as List<dynamic>?)
+      links:
+          (json['links'] as List<dynamic>?)
               ?.map((e) => Link.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      videos: (json['videos'] as List<dynamic>?)
+      videos:
+          (json['videos'] as List<dynamic>?)
               ?.map((e) => Video.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],

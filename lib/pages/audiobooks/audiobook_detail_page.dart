@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -15,11 +15,7 @@ class AudiobookDetailPage extends StatefulWidget {
   final Audiobook audiobook;
   final String? heroTag;
 
-  const AudiobookDetailPage({
-    super.key,
-    required this.audiobook,
-    this.heroTag,
-  });
+  const AudiobookDetailPage({super.key, required this.audiobook, this.heroTag});
 
   @override
   State<AudiobookDetailPage> createState() => _AudiobookDetailPageState();
@@ -54,7 +50,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
     });
 
     try {
-      final chapters = await AudiobookScraperService.instance.getChapters(widget.audiobook);
+      final chapters = await AudiobookScraperService.instance.getChapters(
+        widget.audiobook,
+      );
       if (mounted) {
         setState(() {
           _chapters = chapters;
@@ -73,7 +71,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
 
   void _playChapter(AudiobookChapter chapter) {
     if (_chapters == null || _chapters!.isEmpty) return;
-    final initialIndex = _chapters!.indexOf(chapter).clamp(0, _chapters!.length - 1);
+    final initialIndex = _chapters!
+        .indexOf(chapter)
+        .clamp(0, _chapters!.length - 1);
 
     Navigator.push(
       context,
@@ -96,6 +96,10 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
     final screenW = MediaQuery.sizeOf(context).width;
     final isMobile = screenW < 700;
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
 
     return Scaffold(
       backgroundColor: palette.scaffoldBackgroundColor,
@@ -124,7 +128,11 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: Container(color: Colors.black.withValues(alpha: 0.6)),
+              child: Container(
+                color: isLight
+                    ? palette.scaffoldBackgroundColor.withValues(alpha: 0.88)
+                    : Colors.black.withValues(alpha: 0.6),
+              ),
             ),
           ),
 
@@ -145,17 +153,21 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                        tooltip: 'Back',
+                        icon: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: ink,
+                        ),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          backgroundColor: panel,
                           padding: const EdgeInsets.all(12),
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Text(
+                      Text(
                         'Audiobook Details',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ink,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -186,7 +198,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                           children: [
                             _buildCoverImage(book, 200, 290),
                             const SizedBox(width: 32),
-                            Expanded(child: _buildDetails(book, isMobile, palette)),
+                            Expanded(
+                              child: _buildDetails(book, isMobile, palette),
+                            ),
                           ],
                         ),
                 ),
@@ -195,15 +209,22 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
               // Section Title
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 24,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.format_list_bulleted_rounded, color: palette.primaryColor, size: 20),
+                      Icon(
+                        Icons.format_list_bulleted_rounded,
+                        color: palette.primaryColor,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Chapters & Audio Files',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ink,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -218,7 +239,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
-                    child: CircularProgressIndicator(color: palette.primaryColor),
+                    child: CircularProgressIndicator(
+                      color: palette.primaryColor,
+                    ),
                   ),
                 )
               else if (_error != null)
@@ -232,12 +255,12 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                   ),
                 )
               else if (_chapters == null || _chapters!.isEmpty)
-                const SliverFillRemaining(
+                SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
                     child: Text(
                       'No playable chapters found.',
-                      style: TextStyle(color: Colors.white54, fontSize: 16),
+                      style: TextStyle(color: inkSoft, fontSize: 16),
                     ),
                   ),
                 )
@@ -250,17 +273,14 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                     24 + bottomInset,
                   ),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final chapter = _chapters![index];
-                        return _ChapterTile(
-                          chapter: chapter,
-                          palette: palette,
-                          onTap: () => _playChapter(chapter),
-                        );
-                      },
-                      childCount: _chapters!.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final chapter = _chapters![index];
+                      return _ChapterTile(
+                        chapter: chapter,
+                        palette: palette,
+                        onTap: () => _playChapter(chapter),
+                      );
+                    }, childCount: _chapters!.length),
                   ),
                 ),
             ],
@@ -271,6 +291,9 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
   }
 
   Widget _buildCoverImage(Audiobook book, double width, double height) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final wellIcon = isLight ? PrismLight.inkFaint : Colors.white38;
     return Container(
       width: width,
       height: height,
@@ -293,15 +316,23 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                 // P12: decode-capped (was full-res).
                 memCacheWidth: ImageCaps.kCardW,
                 maxWidthDiskCache: ImageCaps.kCardW,
-                placeholder: (_, __) => Container(color: DizzyVoid.surface1),
+                placeholder: (_, __) => Container(color: well),
                 errorWidget: (_, __, ___) => Container(
-                  color: DizzyVoid.surface1,
-                  child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white38),
+                  color: well,
+                  child: Icon(
+                    Icons.headphones_rounded,
+                    size: 64,
+                    color: wellIcon,
+                  ),
                 ),
               )
             : Container(
-                color: DizzyVoid.surface1,
-                child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white38),
+                color: well,
+                child: Icon(
+                  Icons.headphones_rounded,
+                  size: 64,
+                  color: wellIcon,
+                ),
               ),
       ),
     );
@@ -309,9 +340,13 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
 
   Widget _buildDetails(Audiobook book, bool isMobile, AppThemePalette palette) {
     final isTorrent = book.source.toLowerCase().contains('audiobookbay');
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
 
     return Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: isMobile
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -321,14 +356,21 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
                 : palette.primaryColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(6),
             border: isTorrent
-                ? Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.4), width: 0.8)
+                ? Border.all(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.4),
+                    width: 0.8,
+                  )
                 : null,
           ),
           child: Text(
             isTorrent ? 'AUDIOBOOKBAY (TORRENT)' : book.source.toUpperCase(),
             style: TextStyle(
-              color: isTorrent ? const Color(0xFFFFB74D) : palette.primaryColor,
-              fontSize: 10,
+              color: isTorrent
+                  ? (isLight
+                        ? PrismAccent.starTextLight
+                        : const Color(0xFFFFB74D))
+                  : PrismAccent.text(isLight),
+              fontSize: 11,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -340,7 +382,7 @@ class _AudiobookDetailPageState extends State<AudiobookDetailPage> {
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: Colors.white,
+            color: ink,
             fontSize: isMobile ? 18 : 24,
             fontWeight: FontWeight.bold,
             height: 1.2,
@@ -367,7 +409,8 @@ class _PlayFirstChapterButton extends StatefulWidget {
   });
 
   @override
-  State<_PlayFirstChapterButton> createState() => _PlayFirstChapterButtonState();
+  State<_PlayFirstChapterButton> createState() =>
+      _PlayFirstChapterButtonState();
 }
 
 class _PlayFirstChapterButtonState extends State<_PlayFirstChapterButton> {
@@ -399,14 +442,19 @@ class _PlayFirstChapterButtonState extends State<_PlayFirstChapterButton> {
               gradient: LinearGradient(
                 colors: _isHovered
                     ? [palette.primaryColor, palette.accentColor]
-                    : [palette.primaryColor.withValues(alpha: 0.9), palette.accentColor.withValues(alpha: 0.8)],
+                    : [
+                        palette.primaryColor.withValues(alpha: 0.9),
+                        palette.accentColor.withValues(alpha: 0.8),
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: palette.primaryColor.withValues(alpha: _isHovered ? 0.6 : 0.35),
+                  color: palette.primaryColor.withValues(
+                    alpha: _isHovered ? 0.6 : 0.35,
+                  ),
                   blurRadius: _isHovered ? 18 : 10,
                   spreadRadius: _isHovered ? 2 : 0,
                   offset: const Offset(0, 4),
@@ -459,6 +507,8 @@ class _ChapterTileState extends State<_ChapterTile> {
   Widget build(BuildContext context) {
     final chapter = widget.chapter;
     final palette = widget.palette;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
     final scale = _isPressed ? 0.98 : (_isHovered ? 1.015 : 1.0);
 
     return Padding(
@@ -480,13 +530,17 @@ class _ChapterTileState extends State<_ChapterTile> {
               duration: const Duration(milliseconds: 150),
               decoration: BoxDecoration(
                 color: _isHovered
-                    ? DizzyVoid.surface2
-                    : DizzyVoid.surface1.withValues(alpha: 0.7),
+                    ? (isLight ? PrismLight.raisedTop : PrismDark.raised)
+                    : (isLight
+                          ? PrismLight.raised.withValues(alpha: 0.7)
+                          : PrismDark.sunken.withValues(alpha: 0.7)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: _isHovered
                       ? palette.primaryColor.withValues(alpha: 0.5)
-                      : Colors.white.withValues(alpha: 0.08),
+                      : (isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.08)),
                   width: _isHovered ? 1.5 : 1.0,
                 ),
                 boxShadow: _isHovered
@@ -495,7 +549,7 @@ class _ChapterTileState extends State<_ChapterTile> {
                           color: palette.primaryColor.withValues(alpha: 0.25),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ]
                     : [],
               ),
@@ -515,15 +569,19 @@ class _ChapterTileState extends State<_ChapterTile> {
                         boxShadow: _isHovered
                             ? [
                                 BoxShadow(
-                                  color: palette.primaryColor.withValues(alpha: 0.5),
+                                  color: palette.primaryColor.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   blurRadius: 10,
-                                )
+                                ),
                               ]
                             : [],
                       ),
                       child: Icon(
                         Icons.play_arrow_rounded,
-                        color: _isHovered ? Colors.white : palette.primaryColor,
+                        color: _isHovered
+                            ? PrismAccent.onAccent
+                            : PrismAccent.text(isLight),
                         size: 24,
                       ),
                     ),
@@ -532,7 +590,7 @@ class _ChapterTileState extends State<_ChapterTile> {
                       child: Text(
                         chapter.title,
                         style: TextStyle(
-                          color: _isHovered ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                          color: _isHovered ? ink : ink.withValues(alpha: 0.9),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),

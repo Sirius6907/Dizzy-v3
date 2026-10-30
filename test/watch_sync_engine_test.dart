@@ -30,18 +30,24 @@ void main() {
     test('resync null inside tolerance, corrected outside', () {
       expect(
         WatchSyncEngine.resyncPosition(
-            guestPositionMs: 42000, targetPositionMs: 43000),
+          guestPositionMs: 42000,
+          targetPositionMs: 43000,
+        ),
         isNull,
       );
       expect(
         WatchSyncEngine.resyncPosition(
-            guestPositionMs: 42000, targetPositionMs: 44000),
+          guestPositionMs: 42000,
+          targetPositionMs: 44000,
+        ),
         44000,
       );
       // Clamped at zero, never negative.
       expect(
         WatchSyncEngine.resyncPosition(
-            guestPositionMs: 10000, targetPositionMs: -5000),
+          guestPositionMs: 10000,
+          targetPositionMs: -5000,
+        ),
         0,
       );
     });
@@ -64,8 +70,9 @@ void main() {
         speed: 1.0,
         hostSentAtMs: 999,
       );
-      final back =
-          WatchSyncMessage.fromJson(Map<String, dynamic>.from(msg.toJson()));
+      final back = WatchSyncMessage.fromJson(
+        Map<String, dynamic>.from(msg.toJson()),
+      );
       expect(back.isUsable, isTrue);
       expect(back.mediaRef, 'tmdb:movie:550');
       expect(back.positionMs, 42170);

@@ -257,12 +257,12 @@ class CalendarAiring {
 
   /// The row that means "no such episode on the calendar".
   static CalendarAiring missing() => CalendarAiring(
-        showTitle: '',
-        season: 0,
-        episode: 0,
-        episodeTitle: '',
-        airsAt: unknownAirTime,
-      );
+    showTitle: '',
+    season: 0,
+    episode: 0,
+    episodeTitle: '',
+    airsAt: unknownAirTime,
+  );
 
   /// True when [other] is the same episode of the same show, whatever
   /// spelling of the title and whatever air time.

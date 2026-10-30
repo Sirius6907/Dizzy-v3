@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 
 import '../settings/privacy_settings_page.dart';
@@ -18,8 +20,12 @@ class DeviceRevokedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -35,8 +41,7 @@ class DeviceRevokedScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: DizzyGlow.red.withValues(alpha: 0.12),
-                      border:
-                          Border.all(color: DizzyGlow.red, width: 2),
+                      border: Border.all(color: DizzyGlow.red, width: 2),
                     ),
                     child: const Icon(
                       Icons.phonelink_lock_rounded,
@@ -45,25 +50,21 @@ class DeviceRevokedScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: DizzySpace.lg),
-                  const Text(
+                  Text(
                     'This device was removed',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: DizzyVoid.bone,
+                      color: ink,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: DizzySpace.sm),
-                  const Text(
+                  Text(
                     'Someone removed this phone from the account. '
                     'Link again to continue watching where you left off.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: DizzyVoid.ash,
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
+                    style: TextStyle(color: inkSoft, fontSize: 14, height: 1.5),
                   ),
                   const SizedBox(height: DizzySpace.lg),
                   DizzyTactileButton(
@@ -82,8 +83,7 @@ class DeviceRevokedScreen extends StatelessWidget {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.link_rounded,
-                            color: Colors.white, size: 20),
+                        Icon(Icons.link_rounded, color: Colors.white, size: 20),
                         SizedBox(width: 8),
                         Text(
                           'Link this device again',
@@ -108,10 +108,10 @@ class DeviceRevokedScreen extends StatelessWidget {
                         tone: NotifyTone.info,
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       'Why am I seeing this?',
                       style: TextStyle(
-                        color: DizzyVoid.ash,
+                        color: inkSoft,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),

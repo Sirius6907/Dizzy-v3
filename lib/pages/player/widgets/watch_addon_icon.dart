@@ -13,7 +13,8 @@ class WatchAddonIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nameLower = addonName.trim().toLowerCase();
-    final isBuiltIn = nameLower == 'dizzy' ||
+    final isBuiltIn =
+        nameLower == 'dizzy' ||
         nameLower == 'dizzyhttp' ||
         nameLower.startsWith('builtin');
 
@@ -131,4 +132,3 @@ class WatchAddonIcon extends StatelessWidget {
     );
   }
 }
-

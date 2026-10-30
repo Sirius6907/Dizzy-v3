@@ -4,6 +4,7 @@ import 'package:dizzy/models/movie/movie_detail.dart';
 import 'package:dizzy/models/movie/video.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../design/prism_tokens.dart';
 import '../../models/download/download_task_model.dart';
 import '../../models/music/downloaded_music_track.dart';
 import '../../services/download/download_service.dart';
@@ -21,7 +22,6 @@ import '../../widgets/download/download_progress_card.dart';
 import '../../widgets/download/downloaded_media_card.dart';
 import '../../widgets/download/downloaded_music_tile.dart';
 import '../../widgets/download/storage_sweep_sheet.dart';
-import '../../widgets/guide/guide_card.dart';
 import '../player/player_screen.dart';
 
 class DownloadsPage extends StatefulWidget {
@@ -31,7 +31,8 @@ class DownloadsPage extends StatefulWidget {
   State<DownloadsPage> createState() => _DownloadsPageState();
 }
 
-class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProviderStateMixin {
+class _DownloadsPageState extends State<DownloadsPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   StorageSpaceInfo? _storageSpace;
   bool _isCleaningCache = false;
@@ -43,12 +44,6 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     MusicDownloadService.instance.addListener(_onMusicChanged);
     _loadStorageSpace();
     _bootOfflineHub();
-    // v1.2.0-T2.6: first-time Downloads guide (skipable, never nags).
-    // P7: the offline guide rides along — the queue in GuideCard stacks them.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      GuideCard.maybeShow(context, 'downloads', AppGuides.downloads);
-      GuideCard.maybeShow(context, 'offline', AppGuides.offline);
-    });
   }
 
   /// F2: bring the hub up, then ask the storage guard whether it has
@@ -60,7 +55,8 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     // space comes back without the user doing anything.
     await DownloadTrash.purgeExpired();
     if (!mounted) return;
-    final suggestions = await OfflineHubService.instance.refreshStorageSuggestions();
+    final suggestions = await OfflineHubService.instance
+        .refreshStorageSuggestions();
     final undoable = await DownloadTrash.undoableEntries();
     if (!mounted) return;
     await StorageSweepSheet.maybeShow(
@@ -111,9 +107,9 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cache clean failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Cache clean failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isCleaningCache = false);
@@ -131,7 +127,11 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     final file = File(task.targetFilePath);
     if (!file.existsSync()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File not found on disk. It may have been moved or deleted.')),
+        const SnackBar(
+          content: Text(
+            'File not found on disk. It may have been moved or deleted.',
+          ),
+        ),
       );
       return;
     }
@@ -207,6 +207,9 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     return ValueListenableBuilder<AppThemePalette>(
       valueListenable: AppThemeService.currentPalette,
       builder: (context, palette, _) {
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
         return OfflineAwareScaffold(
           backgroundColor: palette.scaffoldBackgroundColor,
           appBar: AppBar(
@@ -214,7 +217,8 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
             elevation: 0,
             surfaceTintColor: Colors.transparent,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+              icon: Icon(Icons.arrow_back_ios_rounded, color: ink, size: 20),
+              tooltip: 'Back',
               onPressed: () => Navigator.pop(context),
             ),
             title: Row(
@@ -234,12 +238,12 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Downloads',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: PrismType.title,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: ink,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -247,10 +251,11 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.folder_open_rounded, color: Colors.white, size: 22),
+                icon: Icon(Icons.folder_open_rounded, color: ink, size: 22),
                 tooltip: 'Open Downloads Folder',
                 onPressed: () async {
-                  final dir = await DownloadPathHelper.getDownloadsDirectoryPath();
+                  final dir =
+                      await DownloadPathHelper.getDownloadsDirectoryPath();
                   final opened = await OpenFileLocationHelper.openLocation(dir);
                   if (!opened && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -266,17 +271,27 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
               child: ValueListenableBuilder<List<DownloadTask>>(
                 valueListenable: DownloadService.instance.tasksNotifier,
                 builder: (context, tasks, _) {
-                  final activeCount = tasks.where((t) => !t.isCompleted && !t.isFailed).length;
-                  final completedCount = tasks.where((t) => t.isCompleted).length;
-                  final musicCount = MusicDownloadService.instance.downloadedTracks.length;
+                  final activeCount = tasks
+                      .where((t) => !t.isCompleted && !t.isFailed)
+                      .length;
+                  final completedCount = tasks
+                      .where((t) => t.isCompleted)
+                      .length;
+                  final musicCount =
+                      MusicDownloadService.instance.downloadedTracks.length;
 
                   return TabBar(
                     controller: _tabController,
                     indicatorColor: palette.primaryColor,
                     indicatorWeight: 3,
-                    labelColor: palette.primaryColor,
-                    unselectedLabelColor: Colors.white54,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                    labelColor: isLight
+                        ? PrismAccent.text(isLight)
+                        : palette.primaryColor,
+                    unselectedLabelColor: inkSoft,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5,
+                    ),
                     tabs: [
                       Tab(text: 'Active ($activeCount)'),
                       Tab(text: 'Video ($completedCount)'),
@@ -299,25 +314,32 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                     width: double.infinity,
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.4)),
+                        color: Colors.orange.withValues(alpha: 0.4),
+                      ),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.wifi_off_rounded,
-                            color: Colors.orange, size: 20),
-                        SizedBox(width: 10),
+                        const Icon(
+                          Icons.wifi_off_rounded,
+                          color: Colors.orange,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'No internet. Waiting… downloads continue when you are back.',
                             style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600),
+                              color: isLight ? ink : Colors.orange,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -329,10 +351,12 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                 child: ValueListenableBuilder<List<DownloadTask>>(
                   valueListenable: DownloadService.instance.tasksNotifier,
                   builder: (context, tasks, _) {
-                    final activeTasks =
-                        tasks.where((t) => !t.isCompleted).toList();
-                    final completedTasks =
-                        tasks.where((t) => t.isCompleted).toList();
+                    final activeTasks = tasks
+                        .where((t) => !t.isCompleted)
+                        .toList();
+                    final completedTasks = tasks
+                        .where((t) => t.isCompleted)
+                        .toList();
 
                     return TabBarView(
                       controller: _tabController,
@@ -341,7 +365,8 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                         _buildCompletedList(completedTasks, palette),
                         _buildMusicDownloadedList(palette),
                       ],
-                    );                  },
+                    );
+                  },
                 ),
               ),
             ],
@@ -352,27 +377,36 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
   }
 
   Widget _buildActiveList(List<DownloadTask> tasks, AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white24;
     if (tasks.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.download_done_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+            Icon(Icons.download_done_rounded, size: 64, color: inkFaint),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No active downloads',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: ink,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               'Media you download from the video player will show up here.',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+              style: TextStyle(fontSize: 13, color: inkSoft),
             ),
             // v1.2.0-T2.7: empty state always has 1 action (nani test).
             const SizedBox(height: 16),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF7C5CFF),
+                backgroundColor: palette.primaryColor,
+                foregroundColor: PrismAccent.onAccent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -387,7 +421,12 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        16 + PrismLayout.dockClearance(context),
+      ),
       itemCount: tasks.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -400,22 +439,33 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     );
   }
 
-  Widget _buildCompletedList(List<DownloadTask> tasks, AppThemePalette palette) {
+  Widget _buildCompletedList(
+    List<DownloadTask> tasks,
+    AppThemePalette palette,
+  ) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white24;
     if (tasks.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.folder_open_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+            Icon(Icons.folder_open_rounded, size: 64, color: inkFaint),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No downloaded media',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: ink,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               'Completed downloads will appear here for offline playback.',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+              style: TextStyle(fontSize: 13, color: inkSoft),
             ),
           ],
         ),
@@ -423,7 +473,12 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        16 + PrismLayout.dockClearance(context),
+      ),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 220,
         mainAxisSpacing: 14,
@@ -444,43 +499,60 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
   }
 
   Future<void> _openTaskFolder(DownloadTask task) async {
-    final opened = await OpenFileLocationHelper.openLocation(task.targetFilePath);
+    final opened = await OpenFileLocationHelper.openLocation(
+      task.targetFilePath,
+    );
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Folder: ${File(task.targetFilePath).parent.path}')),
+        SnackBar(
+          content: Text('Folder: ${File(task.targetFilePath).parent.path}'),
+        ),
       );
     }
   }
 
   Widget _buildStorageGauge(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
     final videoBytes = DownloadService.instance.tasksNotifier.value
         .where((t) => t.isCompleted)
         .fold<int>(0, (sum, t) {
-      try {
-        final f = File(t.targetFilePath);
-        return sum + (f.existsSync() ? f.lengthSync() : t.totalBytes);
-      } catch (_) {
-        return sum + t.totalBytes;
-      }
-    });
+          try {
+            final f = File(t.targetFilePath);
+            return sum + (f.existsSync() ? f.lengthSync() : t.totalBytes);
+          } catch (_) {
+            return sum + t.totalBytes;
+          }
+        });
     final musicBytes = MusicDownloadService.instance.totalDownloadedSizeBytes;
     final dizzyTotalBytes = videoBytes + musicBytes;
 
     final dizzyFormatted = formatDownloadBytes(dizzyTotalBytes);
-    final freeFormatted = _storageSpace != null ? _storageSpace!.freeFormatted : 'Free space checking…';
+    final freeFormatted = _storageSpace != null
+        ? _storageSpace!.freeFormatted
+        : 'Free space checking…';
 
     double usedRatio = 0.05;
     if (_storageSpace != null && _storageSpace!.totalBytes > 0) {
-      usedRatio = (dizzyTotalBytes / _storageSpace!.totalBytes).clamp(0.02, 1.0);
+      usedRatio = (dizzyTotalBytes / _storageSpace!.totalBytes).clamp(
+        0.02,
+        1.0,
+      );
     }
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF13151D),
+        color: panel,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,12 +562,16 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
             children: [
               Row(
                 children: [
-                  Icon(Icons.pie_chart_outline_rounded, size: 18, color: palette.primaryColor),
+                  Icon(
+                    Icons.pie_chart_outline_rounded,
+                    size: 18,
+                    color: palette.primaryColor,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Dizzy Storage: $dizzyFormatted',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: ink,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -504,8 +580,8 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
               ),
               Text(
                 freeFormatted,
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: inkSoft,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -519,7 +595,7 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
               height: 7,
               child: LinearProgressIndicator(
                 value: usedRatio,
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                backgroundColor: well,
                 valueColor: AlwaysStoppedAnimation<Color>(palette.primaryColor),
               ),
             ),
@@ -530,27 +606,40 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
             children: [
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  foregroundColor: const Color(0xFF00E5FF),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  foregroundColor: isLight ? ink : const Color(0xFF00E5FF),
                 ),
                 onPressed: _cleanCache,
                 icon: _isCleaningCache
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00E5FF)),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: isLight ? ink : const Color(0xFF00E5FF),
+                        ),
                       )
                     : const Icon(Icons.cleaning_services_rounded, size: 16),
-                label: const Text('Clean Cache', style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  'Clean Cache',
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
               const SizedBox(width: 8),
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  foregroundColor: Colors.white70,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  foregroundColor: inkSoft,
                 ),
                 onPressed: () async {
-                  final dir = await DownloadPathHelper.getDownloadsDirectoryPath();
+                  final dir =
+                      await DownloadPathHelper.getDownloadsDirectoryPath();
                   final opened = await OpenFileLocationHelper.openLocation(dir);
                   if (!opened && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -559,7 +648,10 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
                   }
                 },
                 icon: const Icon(Icons.folder_open_rounded, size: 16),
-                label: const Text('Export Downloads', style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  'Export Downloads',
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -568,30 +660,40 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     );
   }
 
-
   Widget _buildMusicDownloadedList(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white24;
     final tracks = MusicDownloadService.instance.downloadedTracks;
     if (tracks.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.music_off_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+            Icon(Icons.music_off_rounded, size: 64, color: inkFaint),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No offline music yet',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: ink,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               'Songs you download will show up here for offline listening.',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+              style: TextStyle(fontSize: 13, color: inkSoft),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF7C5CFF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: palette.primaryColor,
+                foregroundColor: PrismAccent.onAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: () => Navigator.maybePop(context),
               icon: const Icon(Icons.music_note_rounded, size: 18),
@@ -603,7 +705,12 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        14,
+        16,
+        14 + PrismLayout.dockClearance(context),
+      ),
       itemCount: tracks.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
@@ -624,7 +731,8 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
     final ok = await DizzyDialogs.confirm(
       context,
       title: 'Delete Music Download',
-      line: 'Are you sure you want to delete "${track.title}" from offline storage?',
+      line:
+          'Are you sure you want to delete "${track.title}" from offline storage?',
       confirmLabel: 'Delete',
       danger: true,
     );
@@ -634,5 +742,4 @@ class _DownloadsPageState extends State<DownloadsPage> with SingleTickerProvider
       if (mounted) setState(() {});
     }
   }
-
 }

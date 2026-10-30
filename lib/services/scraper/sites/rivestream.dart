@@ -65,24 +65,32 @@ class RiveStreamScraper extends StreamScraper {
         );
 
         if (tmdbId == null || tmdbId <= 0) {
-          AppLog.d('[RiveStreamScraper] Could not resolve TMDb ID for "$title"');
+          AppLog.d(
+            '[RiveStreamScraper] Could not resolve TMDb ID for "$title"',
+          );
           controller.close();
           return;
         }
 
         AppLog.d(
-            '[RiveStreamScraper] Starting concurrent scrape for "$title" (tmdb: $tmdbId, S:${season}E:$episode)');
+          '[RiveStreamScraper] Starting concurrent scrape for "$title" (tmdb: $tmdbId, S:${season}E:$episode)',
+        );
 
         // Discover active providers dynamically, fallback if timeout
         List<String> providers = _fallbackProviders;
         try {
           final pRes = await http
-              .get(Uri.parse('$_apiBase/api/providers'), headers: _defaultHeaders)
+              .get(
+                Uri.parse('$_apiBase/api/providers'),
+                headers: _defaultHeaders,
+              )
               .timeout(const Duration(seconds: 3));
           if (pRes.statusCode == 200) {
             final pData = jsonDecode(pRes.body);
             if (pData is Map && pData['data'] is List) {
-              providers = (pData['data'] as List).map((e) => e.toString()).toList();
+              providers = (pData['data'] as List)
+                  .map((e) => e.toString())
+                  .toList();
             } else if (pData is List) {
               providers = pData.map((e) => e.toString()).toList();
             }
@@ -137,7 +145,9 @@ class RiveStreamScraper extends StreamScraper {
               if (src is! Map) continue;
 
               final rawUrl = (src['url'] ?? '').toString().trim();
-              if (rawUrl.isEmpty || !rawUrl.startsWith('http') || seenUrls.contains(rawUrl)) {
+              if (rawUrl.isEmpty ||
+                  !rawUrl.startsWith('http') ||
+                  seenUrls.contains(rawUrl)) {
                 continue;
               }
               seenUrls.add(rawUrl);
@@ -204,11 +214,7 @@ class RiveStreamScraper extends StreamScraper {
       description: description,
       url: url,
       addonName: 'rivestream',
-      headers: {
-        'User-Agent': _ua,
-        'Referer': _referer,
-        'Origin': _origin,
-      },
+      headers: {'User-Agent': _ua, 'Referer': _referer, 'Origin': _origin},
       behaviorHints: {
         'notWebReady': false,
         'proxyHeaders': {

@@ -26,9 +26,9 @@ class AnimeLibraryService extends ChangeNotifier {
       .where((item) => item.status == AnimeWatchStatus.completed)
       .toList();
   List<AnimeWatchlistItem> get recentHistory => List.unmodifiable(
-        _progressMap.values.toList()
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
-      );
+    _progressMap.values.toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
+  );
 
   Future<void> init() async {
     if (_isInitialized) return;
@@ -117,15 +117,15 @@ class AnimeLibraryService extends ChangeNotifier {
     required int durationSeconds,
   }) async {
     final status = _watchlist
-            .firstWhere(
-              (i) => i.anime.id == anime.id,
-              orElse: () => AnimeWatchlistItem(
-                anime: anime,
-                status: AnimeWatchStatus.watching,
-                updatedAt: DateTime.now(),
-              ),
-            )
-            .status;
+        .firstWhere(
+          (i) => i.anime.id == anime.id,
+          orElse: () => AnimeWatchlistItem(
+            anime: anime,
+            status: AnimeWatchStatus.watching,
+            updatedAt: DateTime.now(),
+          ),
+        )
+        .status;
 
     final item = AnimeWatchlistItem(
       anime: anime,
@@ -162,8 +162,9 @@ class AnimeLibraryService extends ChangeNotifier {
   Future<void> _saveHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final list =
-          _progressMap.values.map((i) => jsonEncode(i.toJson())).toList();
+      final list = _progressMap.values
+          .map((i) => jsonEncode(i.toJson()))
+          .toList();
       await prefs.setStringList(_historyKey, list);
     } catch (_) {}
   }

@@ -176,8 +176,12 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
   void _saveProgress() {
     if (_bookData == null) return;
     final total = _bookData!.totalChapters;
-    final percent = total > 0 ? ((_currentChapterIndex + 1) / total).clamp(0.0, 1.0) : 0.0;
-    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    final percent = total > 0
+        ? ((_currentChapterIndex + 1) / total).clamp(0.0, 1.0)
+        : 0.0;
+    final offset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0.0;
 
     final progress = ReadingProgress(
       md5: widget.book.md5,
@@ -185,7 +189,9 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
       author: widget.book.displayAuthor,
       coverUrl: widget.book.coverUrl,
       filePath: widget.file.path,
-      fileType: widget.book.bookFiletype.isNotEmpty ? widget.book.bookFiletype : 'epub',
+      fileType: widget.book.bookFiletype.isNotEmpty
+          ? widget.book.bookFiletype
+          : 'epub',
       chapterIndex: _currentChapterIndex,
       scrollOffset: offset,
       progressPercent: percent,
@@ -199,7 +205,9 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
   }
 
   Uint8List? _getComicPageImage() {
-    if (_bookData == null || _currentChapterIndex >= _bookData!.chapters.length) return null;
+    if (_bookData == null || _currentChapterIndex >= _bookData!.chapters.length) {
+      return null;
+    }
     final ch = _bookData!.chapters[_currentChapterIndex];
 
     final key = 'page_$_currentChapterIndex.jpg';
@@ -208,7 +216,10 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
     final chImg = _bookData!.resolveImage(ch.href, ch.href);
     if (chImg != null) return chImg;
 
-    final imgMatch = RegExp(r'<img[^>]+(?:src|href)="([^"]+)"', caseSensitive: false).firstMatch(ch.htmlContent);
+    final imgMatch = RegExp(
+      r'<img[^>]+(?:src|href)="([^"]+)"',
+      caseSensitive: false,
+    ).firstMatch(ch.htmlContent);
     if (imgMatch != null) {
       final src = imgMatch.group(1)!;
       final resolved = _bookData!.resolveImage(src, ch.href);
@@ -225,9 +236,14 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
   }
 
   String _getSamplePreviewText() {
-    if (_bookData == null || _currentChapterIndex >= _bookData!.chapters.length) return '';
+    if (_bookData == null || _currentChapterIndex >= _bookData!.chapters.length) {
+      return '';
+    }
     final ch = _bookData!.chapters[_currentChapterIndex];
-    final plain = ch.htmlContent.replaceAll(RegExp(r'<[^>]*>'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    final plain = ch.htmlContent
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     if (plain.length > 200) {
       return '${plain.substring(0, 195)}...';
     }
@@ -271,13 +287,19 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
       valueListenable: ReaderSettings.settingsNotifier,
       builder: (context, settings, _) {
         final comicImage = _getComicPageImage();
-        final isComicMode = comicImage != null &&
+        final isComicMode =
+            comicImage != null &&
             (widget.book.isComic ||
                 _bookData!.chapters[_currentChapterIndex].wordCount == 0 ||
-                _bookData!.chapters[_currentChapterIndex].htmlContent.contains('<img'));
+                _bookData!.chapters[_currentChapterIndex].htmlContent.contains(
+                  '<img',
+                ));
 
         // If Focus Mode is active on text books
-        if (settings.focusModeActive && !isComicMode && _bookData != null && _bookData!.chapters.isNotEmpty) {
+        if (settings.focusModeActive &&
+            !isComicMode &&
+            _bookData != null &&
+            _bookData!.chapters.isNotEmpty) {
           return FocusModeView(
             book: _bookData!,
             chapter: _bookData!.chapters[_currentChapterIndex],
@@ -294,7 +316,9 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
 
         final total = _bookData?.totalChapters ?? 1;
         final current = _currentChapterIndex + 1;
-        final overallProgress = total > 0 ? (current / total).clamp(0.0, 1.0) : 0.0;
+        final overallProgress = total > 0
+            ? (current / total).clamp(0.0, 1.0)
+            : 0.0;
 
         return Focus(
           focusNode: _readerFocusNode,
@@ -302,7 +326,9 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
           onKeyEvent: _handleKeyEvent,
           child: Scaffold(
             key: _scaffoldKey,
-            backgroundColor: isComicMode ? Colors.black : settings.backgroundColor,
+            backgroundColor: isComicMode
+                ? Colors.black
+                : settings.backgroundColor,
             drawer: _buildTocDrawer(settings),
             body: MouseRegion(
               onHover: (_) => _onUserActivity(),
@@ -314,45 +340,51 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
                     child: _loading
                         ? _buildSkeletonLoading(settings)
                         : _error != null
-                            ? _buildErrorState(settings)
-                            : _bookData == null || _bookData!.chapters.isEmpty
-                                ? _buildEmptyState(settings)
-                                : isComicMode
-                                    ? ComicReaderView(
-                                        imageBytes: comicImage,
-                                        pageTitle: _bookData!.chapters[_currentChapterIndex].title,
-                                        onNextPage: _currentChapterIndex < _bookData!.chapters.length - 1
-                                            ? () => _goToChapter(_currentChapterIndex + 1)
-                                            : null,
-                                        onPrevPage: _currentChapterIndex > 0
-                                            ? () => _goToChapter(_currentChapterIndex - 1)
-                                            : null,
-                                        onToggleControls: _toggleChrome,
-                                        showControls: _showChrome,
-                                      )
-                                    : GestureDetector(
-                                        behavior: HitTestBehavior.translucent,
-                                        onTap: _toggleChrome,
-                                        child: Align(
-                                          alignment: Alignment.topCenter,
-                                          child: ConstrainedBox(
-                                            constraints: const BoxConstraints(maxWidth: 780),
-                                            child: SingleChildScrollView(
-                                              controller: _scrollController,
-                                              physics: const BouncingScrollPhysics(),
-                                              padding: const EdgeInsets.only(
-                                                top: 76,
-                                                bottom: 96,
-                                              ),
-                                              child: EpubContentView(
-                                                book: _bookData!,
-                                                chapter: _bookData!.chapters[_currentChapterIndex],
-                                                settings: settings,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                        ? _buildErrorState(settings)
+                        : _bookData == null || _bookData!.chapters.isEmpty
+                        ? _buildEmptyState(settings)
+                        : isComicMode
+                        ? ComicReaderView(
+                            imageBytes: comicImage,
+                            pageTitle:
+                                _bookData!.chapters[_currentChapterIndex].title,
+                            onNextPage:
+                                _currentChapterIndex <
+                                    _bookData!.chapters.length - 1
+                                ? () => _goToChapter(_currentChapterIndex + 1)
+                                : null,
+                            onPrevPage: _currentChapterIndex > 0
+                                ? () => _goToChapter(_currentChapterIndex - 1)
+                                : null,
+                            onToggleControls: _toggleChrome,
+                            showControls: _showChrome,
+                          )
+                        : GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTap: _toggleChrome,
+                            child: Align(
+                              alignment: Alignment.topCenter,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 780,
+                                ),
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.only(
+                                    top: 76,
+                                    bottom: 96,
+                                  ),
+                                  child: EpubContentView(
+                                    book: _bookData!,
+                                    chapter: _bookData!
+                                        .chapters[_currentChapterIndex],
+                                    settings: settings,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                   ),
 
                   // ── In-App Brightness Dimmer Layer ──
@@ -360,7 +392,9 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
                     Positioned.fill(
                       child: IgnorePointer(
                         child: Container(
-                          color: Colors.black.withValues(alpha: 1.0 - settings.brightness),
+                          color: Colors.black.withValues(
+                            alpha: 1.0 - settings.brightness,
+                          ),
                         ),
                       ),
                     ),
@@ -372,11 +406,15 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
                     right: 0,
                     child: AnimatedSlide(
                       offset: _showChrome ? Offset.zero : const Offset(0, -0.2),
-                      duration: reduceMotion ? Duration.zero : ReaderTokens.motionChrome,
+                      duration: reduceMotion
+                          ? Duration.zero
+                          : ReaderTokens.motionChrome,
                       curve: ReaderTokens.curveChrome,
                       child: AnimatedOpacity(
                         opacity: _showChrome ? 1.0 : 0.0,
-                        duration: reduceMotion ? Duration.zero : ReaderTokens.motionChrome,
+                        duration: reduceMotion
+                            ? Duration.zero
+                            : ReaderTokens.motionChrome,
                         curve: ReaderTokens.curveChrome,
                         child: IgnorePointer(
                           ignoring: !_showChrome,
@@ -403,11 +441,15 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
                     right: 0,
                     child: AnimatedSlide(
                       offset: _showChrome ? Offset.zero : const Offset(0, 0.2),
-                      duration: reduceMotion ? Duration.zero : ReaderTokens.motionChrome,
+                      duration: reduceMotion
+                          ? Duration.zero
+                          : ReaderTokens.motionChrome,
                       curve: ReaderTokens.curveChrome,
                       child: AnimatedOpacity(
                         opacity: _showChrome ? 1.0 : 0.0,
-                        duration: reduceMotion ? Duration.zero : ReaderTokens.motionChrome,
+                        duration: reduceMotion
+                            ? Duration.zero
+                            : ReaderTokens.motionChrome,
                         curve: ReaderTokens.curveChrome,
                         child: IgnorePointer(
                           ignoring: !_showChrome,
@@ -428,52 +470,57 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
                   ),
 
                   // ── Custom Scroll Track (Desktop Only) ──
-                  if (!isComicMode && !_loading && _error == null && _bookData != null && MediaQuery.sizeOf(context).width > 800)
+                  if (!isComicMode &&
+                      !_loading &&
+                      _error == null &&
+                      _bookData != null &&
+                      MediaQuery.sizeOf(context).width > 800)
                     Positioned(
                       right: 24,
                       bottom: 40,
                       child: CustomScrollTrack(controller: _scrollController),
                     ),
 
-                // ── Hairline Progress Bar Pinned to Absolute Bottom (Always Visible) ──
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Stack(
-                    children: [
-                      // 2px track in 12% opacity
-                      Container(
-                        height: 2.0,
-                        color: settings.textColor.withValues(alpha: 0.12),
-                      ),
-                      // 2px active indicator
-                      FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: overallProgress,
-                        child: Container(
+                  // ── Hairline Progress Bar Pinned to Absolute Bottom (Always Visible) ──
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Stack(
+                      children: [
+                        // 2px track in 12% opacity
+                        Container(
                           height: 2.0,
-                          color: settings.accentColor,
+                          color: settings.textColor.withValues(alpha: 0.12),
                         ),
-                      ),
-                    ],
+                        // 2px active indicator
+                        FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: overallProgress,
+                          child: Container(
+                            height: 2.0,
+                            color: settings.accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // TOP CHROME (56px Height + 24px Gradient Scrim)
   // ──────────────────────────────────────────────────────────────────────────
 
   Widget _buildTopChrome(ReaderSettingsData settings, bool isComicMode) {
-    final chapterTitle = _bookData != null && _currentChapterIndex < _bookData!.chapters.length
+    final chapterTitle =
+        _bookData != null && _currentChapterIndex < _bookData!.chapters.length
         ? _bookData!.chapters[_currentChapterIndex].title
         : widget.book.displayTitle;
 
@@ -492,21 +539,29 @@ class _EpubReaderPageState extends State<EpubReaderPage> {
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: ReaderTokens.space16),
-decoration: BoxDecoration(
-            color: settings.surfaceColor.withValues(alpha: 0.96),
-            border: Border(bottom: BorderSide(color: settings.borderColor)),
-            boxShadow: DizzyShadow.card,
-          ),
+        decoration: BoxDecoration(
+          color: settings.surfaceColor.withValues(alpha: 0.96),
+          border: Border(bottom: BorderSide(color: settings.borderColor)),
+          boxShadow: DizzyShadow.card,
+        ),
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded, color: settings.textColor, size: 18),
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: settings.textColor,
+                size: 18,
+              ),
               tooltip: 'Back to Library',
               onPressed: () => Navigator.of(context).pop(),
             ),
             const SizedBox(width: ReaderTokens.space4),
             IconButton(
-              icon: Icon(Icons.menu_book_rounded, color: settings.textColor, size: 20),
+              icon: Icon(
+                Icons.menu_book_rounded,
+                color: settings.textColor,
+                size: 20,
+              ),
               tooltip: 'Table of Contents (T)',
               onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             ),
@@ -532,7 +587,9 @@ decoration: BoxDecoration(
               IconButton(
                 icon: Icon(
                   Icons.center_focus_strong_rounded,
-                  color: settings.focusModeActive ? settings.accentColor : settings.textColor,
+                  color: settings.focusModeActive
+                      ? settings.accentColor
+                      : settings.textColor,
                   size: 20,
                 ),
                 tooltip: 'Focus Mode (Line-by-Line)',
@@ -542,7 +599,11 @@ decoration: BoxDecoration(
                 },
               ),
               IconButton(
-                icon: Icon(Icons.tune_rounded, color: settings.textColor, size: 20),
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: settings.textColor,
+                  size: 20,
+                ),
                 tooltip: 'Appearance & Customization',
                 onPressed: () => ReaderCustomizationSheet.show(
                   context,
@@ -552,7 +613,11 @@ decoration: BoxDecoration(
             ],
 
             IconButton(
-              icon: Icon(Icons.fullscreen_rounded, color: settings.textColor, size: 22),
+              icon: Icon(
+                Icons.fullscreen_rounded,
+                color: settings.textColor,
+                size: 22,
+              ),
               tooltip: 'Toggle Fullscreen (F)',
               onPressed: () => WindowService.instance.toggleFullscreen(),
             ),
@@ -567,7 +632,9 @@ decoration: BoxDecoration(
   // ──────────────────────────────────────────────────────────────────────────
 
   Widget _buildBottomChrome(ReaderSettingsData settings) {
-    if (_bookData == null || _bookData!.totalChapters == 0) return const SizedBox.shrink();
+    if (_bookData == null || _bookData!.totalChapters == 0) {
+      return const SizedBox.shrink();
+    }
 
     final total = _bookData!.totalChapters;
     final current = _currentChapterIndex + 1;
@@ -592,21 +659,29 @@ decoration: BoxDecoration(
       child: Container(
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: ReaderTokens.space16),
-decoration: BoxDecoration(
-            color: settings.surfaceColor.withValues(alpha: 0.96),
-            border: Border(top: BorderSide(color: settings.borderColor)),
-            boxShadow: DizzyShadow.card,
-          ),
+        decoration: BoxDecoration(
+          color: settings.surfaceColor.withValues(alpha: 0.96),
+          border: Border(top: BorderSide(color: settings.borderColor)),
+          boxShadow: DizzyShadow.card,
+        ),
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.chevron_left_rounded, color: settings.textColor, size: 26),
+              icon: Icon(
+                Icons.chevron_left_rounded,
+                color: settings.textColor,
+                size: 26,
+              ),
               tooltip: 'Previous Chapter (Left Arrow)',
-              onPressed: _currentChapterIndex > 0 ? () => _goToChapter(_currentChapterIndex - 1) : null,
+              onPressed: _currentChapterIndex > 0
+                  ? () => _goToChapter(_currentChapterIndex - 1)
+                  : null,
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: ReaderTokens.space8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ReaderTokens.space8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -632,9 +707,15 @@ decoration: BoxDecoration(
               ),
             ),
             IconButton(
-              icon: Icon(Icons.chevron_right_rounded, color: settings.textColor, size: 26),
+              icon: Icon(
+                Icons.chevron_right_rounded,
+                color: settings.textColor,
+                size: 26,
+              ),
               tooltip: 'Next Chapter (Right Arrow)',
-              onPressed: _currentChapterIndex < total - 1 ? () => _goToChapter(_currentChapterIndex + 1) : null,
+              onPressed: _currentChapterIndex < total - 1
+                  ? () => _goToChapter(_currentChapterIndex + 1)
+                  : null,
             ),
           ],
         ),
@@ -697,7 +778,11 @@ decoration: BoxDecoration(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.auto_stories_outlined, color: Colors.redAccent, size: 48),
+            const Icon(
+              Icons.auto_stories_outlined,
+              color: Colors.redAccent,
+              size: 48,
+            ),
             const SizedBox(height: ReaderTokens.space16),
             Text(
               _error ?? 'Unable to open book',
@@ -717,10 +802,7 @@ decoration: BoxDecoration(
                   child: const Text('Back to Library'),
                 ),
                 const SizedBox(width: ReaderTokens.space12),
-                FilledButton(
-                  onPressed: _loadBook,
-                  child: const Text('Retry'),
-                ),
+                FilledButton(onPressed: _loadBook, child: const Text('Retry')),
               ],
             ),
           ],
@@ -736,7 +818,11 @@ decoration: BoxDecoration(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.library_books_rounded, color: settings.secondaryTextColor, size: 48),
+            Icon(
+              Icons.library_books_rounded,
+              color: settings.secondaryTextColor,
+              size: 48,
+            ),
             const SizedBox(height: ReaderTokens.space16),
             Text(
               'No readable chapters found.',
@@ -772,7 +858,11 @@ decoration: BoxDecoration(
               ),
               child: Row(
                 children: [
-                  Icon(Icons.format_list_bulleted_rounded, color: settings.accentColor, size: 20),
+                  Icon(
+                    Icons.format_list_bulleted_rounded,
+                    color: settings.accentColor,
+                    size: 20,
+                  ),
                   const SizedBox(width: ReaderTokens.space12),
                   Text(
                     'Table of Contents',
@@ -802,7 +892,8 @@ decoration: BoxDecoration(
                       itemCount: toc.length,
                       itemBuilder: (context, idx) {
                         final item = toc[idx];
-                        final isSelected = item.chapterIndex == _currentChapterIndex;
+                        final isSelected =
+                            item.chapterIndex == _currentChapterIndex;
 
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(
@@ -814,8 +905,12 @@ decoration: BoxDecoration(
                             style: TextStyle(
                               fontFamily: ReaderTokens.uiFont,
                               fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? settings.accentColor : settings.secondaryTextColor,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? settings.accentColor
+                                  : settings.secondaryTextColor,
                             ),
                           ),
                           title: Text(
@@ -823,14 +918,22 @@ decoration: BoxDecoration(
                             style: TextStyle(
                               fontFamily: ReaderTokens.uiFont,
                               fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? settings.accentColor : settings.textColor,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? settings.accentColor
+                                  : settings.textColor,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: isSelected
-                              ? Icon(Icons.check_circle_rounded, color: settings.accentColor, size: 18)
+                              ? Icon(
+                                  Icons.check_circle_rounded,
+                                  color: settings.accentColor,
+                                  size: 18,
+                                )
                               : null,
                           onTap: () {
                             Navigator.of(context).pop();

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
@@ -31,24 +32,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  // Get screen dimensions
-  int screen_width = GetSystemMetrics(SM_CXSCREEN);
-  int screen_height = GetSystemMetrics(SM_CYSCREEN);
+  // Win32Window::Create takes logical units, so the work area has to be
+  // converted to DIPs first. Comparing 1440x900 against physical metrics
+  // made the window taller than the screen on any scaled (>100%) display,
+  // which pushed the dock and app-bar actions off-screen.
+  RECT work_area{};
+  ::SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
+  const double dpi_scale = ::GetDpiForSystem() / 96.0;
+  const int work_width = static_cast<int>(
+      (work_area.right - work_area.left) / dpi_scale);
+  const int work_height = static_cast<int>(
+      (work_area.bottom - work_area.top) / dpi_scale);
 
-  // Set preferred size, but cap it to 90% of the screen size if the screen is smaller
-  int window_width = 1440;
-  int window_height = 900;
+  // Preferred size, capped to 90% of the usable work area.
+  int window_width = std::min(1440, static_cast<int>(work_width * 0.9));
+  int window_height = std::min(900, static_cast<int>(work_height * 0.9));
 
-  if (window_width > screen_width * 0.9) {
-    window_width = static_cast<int>(screen_width * 0.9);
-  }
-  if (window_height > screen_height * 0.9) {
-    window_height = static_cast<int>(screen_height * 0.9);
-  }
-
-  // Center the window on screen
-  int origin_x = (screen_width - window_width) / 2;
-  int origin_y = (screen_height - window_height) / 2;
+  // Center the window inside the work area (logical units).
+  int origin_x = static_cast<int>(work_area.left / dpi_scale) +
+                 (work_width - window_width) / 2;
+  int origin_y = static_cast<int>(work_area.top / dpi_scale) +
+                 (work_height - window_height) / 2;
 
   Win32Window::Point origin(origin_x, origin_y);
   Win32Window::Size size(window_width, window_height);

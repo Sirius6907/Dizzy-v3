@@ -36,7 +36,10 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
               _isLoadingSources
                   ? 'Searching sources...'
                   : '${filtered.length} source${filtered.length == 1 ? '' : 's'} found',
-              style: const TextStyle(color: WatchColors.textTertiary, fontSize: 12),
+              style: const TextStyle(
+                color: WatchColors.textTertiary,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -48,7 +51,12 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
             spacing: 6,
             runSpacing: 6,
             children: [
-              _buildTypeChip('all', 'All (${_sources.length})', Icons.apps_rounded, null),
+              _buildTypeChip(
+                'all',
+                'All (${_sources.length})',
+                Icons.apps_rounded,
+                null,
+              ),
               _buildTypeChip(
                 'debrid',
                 '⚡ Debrid (${_sources.where((s) => s.isDebrid).length})',
@@ -93,31 +101,21 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
     );
   }
 
-  Widget _buildTypeChip(String typeKey, String label, IconData icon, Color? color) {
+  Widget _buildTypeChip(
+    String typeKey,
+    String label,
+    IconData icon,
+    Color? color,
+  ) {
     final isSelected = _selectedTypeFilter == typeKey;
-    final activeColor = color ?? WatchColors.accent;
-
-    return ChoiceChip(
-      label: Text(label),
+    return PrismChip(
+      label: label,
+      icon: icon,
       selected: isSelected,
-      selectedColor: activeColor.withValues(alpha: 0.25),
-      backgroundColor: DizzyVoid.surface1,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.white70,
-        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-        fontSize: 11.5,
-      ),
-      side: BorderSide(
-        color: isSelected ? activeColor : Colors.white.withValues(alpha: 0.1),
-        width: isSelected ? 1.5 : 1.0,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _selectedTypeFilter = typeKey;
-          });
-        }
+      onTap: () {
+        setState(() {
+          _selectedTypeFilter = typeKey;
+        });
       },
     );
   }
@@ -241,17 +239,28 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
       ancestor: overlay,
     );
     const double dialogWidth = 230.0;
-    final double spaceBelow = overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
+    final double spaceBelow =
+        overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
     final double spaceAbove = buttonOffset.dy - 16;
     final bool openAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
 
-    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(160.0, 420.0);
-    final double? topOffset = openAbove ? null : (buttonOffset.dy + button.size.height + 8);
-    final double? bottomOffset = openAbove ? (overlay.size.height - buttonOffset.dy + 8) : null;
+    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(
+      160.0,
+      420.0,
+    );
+    final double? topOffset = openAbove
+        ? null
+        : (buttonOffset.dy + button.size.height + 8);
+    final double? bottomOffset = openAbove
+        ? (overlay.size.height - buttonOffset.dy + 8)
+        : null;
 
     final double rawLeft = buttonOffset.dx;
     final double maxLeft = overlay.size.width - dialogWidth - 12.0;
-    final double leftOffset = rawLeft.clamp(12.0, maxLeft > 12.0 ? maxLeft : 12.0);
+    final double leftOffset = rawLeft.clamp(
+      12.0,
+      maxLeft > 12.0 ? maxLeft : 12.0,
+    );
 
     showGeneralDialog(
       context: context,
@@ -315,11 +324,17 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
                                 color: Colors.white.withValues(alpha: 0.1),
                               ),
                               const SizedBox(height: 4),
-                              _buildSeederDropdownItem('Most Seeds (High to Low)', 'most'),
+                              _buildSeederDropdownItem(
+                                'Most Seeds (High to Low)',
+                                'most',
+                              ),
                               _buildSeederDropdownItem('50+ Seeds', '50+'),
                               _buildSeederDropdownItem('20+ Seeds', '20+'),
                               _buildSeederDropdownItem('5+ Seeds', '5+'),
-                              _buildSeederDropdownItem('Active Seeds (>0)', '1+'),
+                              _buildSeederDropdownItem(
+                                'Active Seeds (>0)',
+                                '1+',
+                              ),
                             ],
                           ),
                         ),
@@ -367,7 +382,11 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18),
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFF10B981),
+                size: 18,
+              ),
           ],
         ),
       ),
@@ -445,17 +464,28 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
       ancestor: overlay,
     );
     const double dialogWidth = 230.0;
-    final double spaceBelow = overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
+    final double spaceBelow =
+        overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
     final double spaceAbove = buttonOffset.dy - 16;
     final bool openAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
 
-    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(160.0, 420.0);
-    final double? topOffset = openAbove ? null : (buttonOffset.dy + button.size.height + 8);
-    final double? bottomOffset = openAbove ? (overlay.size.height - buttonOffset.dy + 8) : null;
+    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(
+      160.0,
+      420.0,
+    );
+    final double? topOffset = openAbove
+        ? null
+        : (buttonOffset.dy + button.size.height + 8);
+    final double? bottomOffset = openAbove
+        ? (overlay.size.height - buttonOffset.dy + 8)
+        : null;
 
     final double rawLeft = buttonOffset.dx;
     final double maxLeft = overlay.size.width - dialogWidth - 12.0;
-    final double leftOffset = rawLeft.clamp(12.0, maxLeft > 12.0 ? maxLeft : 12.0);
+    final double leftOffset = rawLeft.clamp(
+      12.0,
+      maxLeft > 12.0 ? maxLeft : 12.0,
+    );
 
     showGeneralDialog(
       context: context,
@@ -522,7 +552,10 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
                               _buildSizeDropdownItem('< 1 GB', '<1gb'),
                               _buildSizeDropdownItem('1 GB – 5 GB', '1-5gb'),
                               _buildSizeDropdownItem('5 GB – 15 GB', '5-15gb'),
-                              _buildSizeDropdownItem('15 GB – 30 GB', '15-30gb'),
+                              _buildSizeDropdownItem(
+                                '15 GB – 30 GB',
+                                '15-30gb',
+                              ),
                               _buildSizeDropdownItem('> 30 GB', '>30gb'),
                               const SizedBox(height: 4),
                               Container(
@@ -530,8 +563,14 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
                                 color: Colors.white.withValues(alpha: 0.1),
                               ),
                               const SizedBox(height: 4),
-                              _buildSizeDropdownItem('Largest First', 'largest'),
-                              _buildSizeDropdownItem('Smallest First', 'smallest'),
+                              _buildSizeDropdownItem(
+                                'Largest First',
+                                'largest',
+                              ),
+                              _buildSizeDropdownItem(
+                                'Smallest First',
+                                'smallest',
+                              ),
                             ],
                           ),
                         ),
@@ -654,17 +693,28 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
     );
 
     const double dialogWidth = 230.0;
-    final double spaceBelow = overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
+    final double spaceBelow =
+        overlay.size.height - (buttonOffset.dy + button.size.height + 8) - 16;
     final double spaceAbove = buttonOffset.dy - 16;
     final bool openAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
 
-    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(160.0, 420.0);
-    final double? topOffset = openAbove ? null : (buttonOffset.dy + button.size.height + 8);
-    final double? bottomOffset = openAbove ? (overlay.size.height - buttonOffset.dy + 8) : null;
+    final double maxMenuHeight = (openAbove ? spaceAbove : spaceBelow).clamp(
+      160.0,
+      420.0,
+    );
+    final double? topOffset = openAbove
+        ? null
+        : (buttonOffset.dy + button.size.height + 8);
+    final double? bottomOffset = openAbove
+        ? (overlay.size.height - buttonOffset.dy + 8)
+        : null;
 
     final double rawLeft = buttonOffset.dx;
     final double maxLeft = overlay.size.width - dialogWidth - 12.0;
-    final double leftOffset = rawLeft.clamp(12.0, maxLeft > 12.0 ? maxLeft : 12.0);
+    final double leftOffset = rawLeft.clamp(
+      12.0,
+      maxLeft > 12.0 ? maxLeft : 12.0,
+    );
 
     showGeneralDialog(
       context: context,
@@ -687,10 +737,7 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
                   curve: Curves.easeOut,
                   builder: (context, value, child) {
                     return Transform.translate(
-                      offset: Offset(
-                        0,
-                        (openAbove ? 10 : -10) * (1 - value),
-                      ),
+                      offset: Offset(0, (openAbove ? 10 : -10) * (1 - value)),
                       child: Opacity(
                         opacity: value.clamp(0.0, 1.0),
                         child: child,
@@ -810,5 +857,4 @@ extension _WatchScreenStateSourcesPanel on _WatchScreenState {
         return 'All Audio';
     }
   }
-
 }

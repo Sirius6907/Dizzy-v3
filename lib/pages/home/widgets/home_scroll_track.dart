@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../design/prism_shadows.dart';
+import '../../../design/prism_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import 'home_hover_arrow.dart';
 
@@ -70,6 +72,7 @@ class HomeScrollTrackState extends State<HomeScrollTrack> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
     final thumbPosition = _thumbFraction * (_trackHeight - _thumbHeight);
 
     return MouseRegion(
@@ -81,10 +84,12 @@ class HomeScrollTrackState extends State<HomeScrollTrack> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: BoxDecoration(
-            color: const Color(0xF01A1D27),
+            gradient: PrismShadows.surfaceGradient(palette.isLight),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: Colors.white.withOpacity(0.12),
+              color: palette.isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.12),
               width: 1.5,
             ),
           ),
@@ -110,7 +115,9 @@ class HomeScrollTrackState extends State<HomeScrollTrack> {
                     height: _trackHeight,
                     width: 6, // Visual track
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: palette.isLight
+                          ? PrismLight.inkFaint.withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Stack(
@@ -124,18 +131,13 @@ class HomeScrollTrackState extends State<HomeScrollTrack> {
                           child: Container(
                             height: _thumbHeight,
                             decoration: BoxDecoration(
-                              color: AppThemeService
-                                  .currentPalette
-                                  .value
-                                  .primaryColor,
+                              color: palette.primaryColor,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppThemeService
-                                      .currentPalette
-                                      .value
-                                      .primaryColor
-                                      .withOpacity(0.6),
+                                  color: palette.primaryColor.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   blurRadius: 12,
                                   spreadRadius: 2,
                                 ),
@@ -160,4 +162,3 @@ class HomeScrollTrackState extends State<HomeScrollTrack> {
     );
   }
 }
-

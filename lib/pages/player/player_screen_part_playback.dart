@@ -40,11 +40,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // 3. Active playback protection:
     // Only routine non-fatal hiccups during ongoing playback (where media has actively loaded and progressed)
     // should be suppressed. Startup errors where media has not loaded must trigger error handling.
-    final bool hasActivelyProgressed = _duration > Duration.zero &&
+    final bool hasActivelyProgressed =
+        _duration > Duration.zero &&
         (_position > Duration.zero || _player.state.position > Duration.zero) &&
         (_isPlaying || _player.state.playing);
 
-    final bool isFatalOpenFailure = lower.contains('failed to open') ||
+    final bool isFatalOpenFailure =
+        lower.contains('failed to open') ||
         lower.contains('cannot open') ||
         lower.contains('could not open') ||
         lower.contains('failed to recognize file format') ||
@@ -58,41 +60,51 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // ACTIVE playback with buffer headroom must not trigger a source switch —
     // mpv's cache keeps playing while the demuxer retries. Only switch when
     // the blip comes with zero buffer headroom (true death).
-    final bool isTransientNetBlip = lower.contains('timed out') ||
+    final bool isTransientNetBlip =
+        lower.contains('timed out') ||
         lower.contains('timeout') ||
         lower.contains('connection reset') ||
         lower.contains('connection closed') ||
         lower.contains('averror_eof') ||
         lower.contains('end of file');
-    final bufferHeadroom = (_buffered?.inMilliseconds ?? 0) -
+    final bufferHeadroom =
+        (_buffered?.inMilliseconds ?? 0) -
         _player.state.position.inMilliseconds;
 
-    if (hasActivelyProgressed && (!isFatalOpenFailure ||
-        (isTransientNetBlip && bufferHeadroom > 3000))) {
-      AppLog.d('[PlayerScreen WARNING] Ignored player warning during active playback: $errorMsg');
+    if (hasActivelyProgressed &&
+        (!isFatalOpenFailure ||
+            (isTransientNetBlip && bufferHeadroom > 3000))) {
+      AppLog.d(
+        '[PlayerScreen WARNING] Ignored player warning during active playback: $errorMsg',
+      );
       return;
     }
 
     // 4. Critical error on dead stream — try silent failover FIRST if a
     // ranked backup chain exists; fall back to source picker when exhausted.
-    AppLog.d('[PlayerScreen ERROR] Critical player error on dead stream: $errorMsg');
+    AppLog.d(
+      '[PlayerScreen ERROR] Critical player error on dead stream: $errorMsg',
+    );
 
     // F1: poison the chain first, then let the gate pick the replacement.
     _playGate.markDead(_currentSource);
-    if (_failoverChain.where((s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s))).isNotEmpty &&
+    if (_failoverChain
+            .where(
+              (s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s)),
+            )
+            .isNotEmpty &&
         PlayerSettings.autoFailover.value) {
-      _attemptSilentFailover(reason: 'error: ${errorMsg.substring(0, errorMsg.length > 60 ? 60 : errorMsg.length)}');
+      _attemptSilentFailover(
+        reason:
+            'error: ${errorMsg.substring(0, errorMsg.length > 60 ? 60 : errorMsg.length)}',
+      );
       return;
     }
 
-    if (_currentEpisode != null && widget.detail?.videos.isNotEmpty == true) {
-      setState(() {
-        _isLoading = false;
-        _showSourcesPanel = true;
-        _sourcesEpisode = _currentEpisode;
-        _sourcesErrorMessage =
-            '${PlaybackBrain.easyErrorMessage(errorMsg)} Please pick another video below.';
-      });
+    if (_sourcesPanelAvailable) {
+      _openSourcesPanelWithError(
+        '${PlaybackBrain.easyErrorMessage(errorMsg)} Please pick another source below.',
+      );
       return;
     }
 
@@ -103,7 +115,10 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
   }
 
   void _applyVolume(double vol, {bool showHud = false, bool persist = true}) {
-    final clamped = ((vol * 100).round() / 100.0).clamp(0.0, PlayerVolumeControl.maxVolume);
+    final clamped = ((vol * 100).round() / 100.0).clamp(
+      0.0,
+      PlayerVolumeControl.maxVolume,
+    );
     setState(() {
       _volume = clamped;
       _isMuted = clamped == 0;
@@ -159,9 +174,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     _player.playOrPause();
     // v1.2.0-T2.8: host action → immediate broadcast (no 500ms wait).
     if (PartySession.instance.inParty) {
-      unawaited(_partySession?.sendAction(
-        _player.state.playing ? 'pause' : 'play',
-      ));
+      unawaited(
+        _partySession?.sendAction(_player.state.playing ? 'pause' : 'play'),
+      );
     }
     _startHideControlsTimer();
   }
@@ -182,15 +197,19 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     _player.seek(clamped);
     // v1.2.0-T2.8: host seek → immediate broadcast so guests jump together.
     if (PartySession.instance.inParty) {
-      unawaited(_partySession?.sendAction(
-        'seek',
-        positionMs: clamped.inMilliseconds,
-      ));
+      unawaited(
+        _partySession?.sendAction('seek', positionMs: clamped.inMilliseconds),
+      );
     }
     _startHideControlsTimer();
   }
 
   void _toggleEpisodesPanel() {
+    // Movies have no episode list — the same control opens Sources instead.
+    if (widget.detail?.videos.isNotEmpty != true) {
+      _toggleSourcesPanel();
+      return;
+    }
     setState(() {
       _showEpisodesPanel = !_showEpisodesPanel;
       if (_showEpisodesPanel) {
@@ -200,6 +219,63 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         _showTextSyncOverlay = false;
         _showControls = true;
       }
+    });
+  }
+
+  /// True when a source picker can actually offer alternatives: an episode
+  /// list, verified backups, or a detail payload the panel can re-scrape.
+  bool get _sourcesPanelAvailable =>
+      widget.detail != null ||
+      _failoverChain.isNotEmpty ||
+      (widget.failoverSources?.isNotEmpty ?? false);
+
+  /// Movies arrive without a Video; the panel still needs one for ids/titles.
+  Video get _sourcesPanelEpisode {
+    final ep = _currentEpisode;
+    if (ep != null) return ep;
+    return Video(
+      id: widget.detail?.id ?? widget.title,
+      title: widget.detail?.name ?? _currentTitle,
+    );
+  }
+
+  void _toggleSourcesPanel() {
+    setState(() {
+      _showSourcesPanel = !_showSourcesPanel;
+      if (_showSourcesPanel) {
+        _sourcesEpisode = _sourcesPanelEpisode;
+        _showEpisodesPanel = false;
+        _activeMenu = null;
+        _showSubSyncBar = false;
+        _showTextSyncOverlay = false;
+        _showControls = true;
+      }
+    });
+  }
+
+  /// Player-held sources for the panel's instant paint — only when the panel
+  /// targets the episode that is actually playing (a newly picked episode has
+  /// its own unknown list and must scrape).
+  List<StreamSource>? get _sourcesSeed {
+    final target = _sourcesEpisode;
+    final current = _currentEpisode;
+    if (target != null &&
+        current != null &&
+        (target.season != current.season ||
+            target.episode != current.episode)) {
+      return null;
+    }
+    return _failoverChain.isNotEmpty
+        ? [_currentSource, ..._failoverChain]
+        : widget.failoverSources;
+  }
+
+  void _openSourcesPanelWithError(String? message) {
+    setState(() {
+      _isLoading = false;
+      _showSourcesPanel = true;
+      _sourcesEpisode = _sourcesPanelEpisode;
+      _sourcesErrorMessage = message;
     });
   }
 
@@ -254,7 +330,8 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       final sNum = newEpisode.season ?? 1;
       _currentTitle = '$showName - S${sNum}E$epNum ${newEpisode.title}';
       _isLoading = true;
-      _statusMessage = 'Buffering S$sNum:E$epNum - ${newEpisode.title.isNotEmpty ? newEpisode.title : "Episode $epNum"}...';
+      _statusMessage =
+          'Buffering S$sNum:E$epNum - ${newEpisode.title.isNotEmpty ? newEpisode.title : "Episode $epNum"}...';
       _showEpisodesPanel = false;
       _showSourcesPanel = false;
       _activeMenu = null;
@@ -286,7 +363,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       final showName = widget.detail?.name ?? widget.title;
       final skipData = await SkipSegmentsService.instance.fetchSkipSegments(
         tmdbId: detail?.tmdbId,
-        imdbId: (detail != null && detail.id.startsWith('tt')) ? detail.id : null,
+        imdbId: (detail != null && detail.id.startsWith('tt'))
+            ? detail.id
+            : null,
         title: showName,
         year: int.tryParse(detail?.year ?? ''),
         type: detail?.type ?? (_currentEpisode != null ? 'tv' : 'movie'),
@@ -337,7 +416,8 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                    'Skipped ${t[0].toUpperCase()}${t.substring(1)} ⏭️'),
+                  'Skipped ${t[0].toUpperCase()}${t.substring(1)} ⏭️',
+                ),
                 duration: const Duration(seconds: 2),
               ),
             );
@@ -417,12 +497,18 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         case ResourceLevel.normal:
           // P3/P9: restore PROFILE buffers — never hardcode 150MB here
           // (that re-blows the phone budget on every de-escalation).
-          await platform.setProperty('demuxer-max-bytes',
-              '${PlayerSettings.demuxerMaxBytesMB * 1024 * 1024}');
-          await platform.setProperty('demuxer-max-back-bytes',
-              '${PlayerSettings.demuxerMaxBytesMB * 1024 * 1024 ~/ 3}');
           await platform.setProperty(
-              'demuxer-readahead-secs', '${PlayerSettings.readaheadSecs}');
+            'demuxer-max-bytes',
+            '${PlayerSettings.demuxerMaxBytesMB * 1024 * 1024}',
+          );
+          await platform.setProperty(
+            'demuxer-max-back-bytes',
+            '${PlayerSettings.demuxerMaxBytesMB * 1024 * 1024 ~/ 3}',
+          );
+          await platform.setProperty(
+            'demuxer-readahead-secs',
+            '${PlayerSettings.readaheadSecs}',
+          );
           await platform.setProperty('vd-lavc-skiploopfilter', '0');
           await platform.setProperty('vd-lavc-skipidct', '0');
           await platform.setProperty('vd-lavc-skipframe', '0');
@@ -430,14 +516,20 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         case ResourceLevel.caution:
           // Trim caches & buffers ~50%.
           await platform.setProperty('demuxer-max-bytes', '78643200'); // 75MB
-          await platform.setProperty('demuxer-max-back-bytes', '25165824'); // 24MB
+          await platform.setProperty(
+            'demuxer-max-back-bytes',
+            '25165824',
+          ); // 24MB
           await platform.setProperty('demuxer-readahead-secs', '8');
           await platform.setProperty('vd-lavc-skiploopfilter', 'all');
         case ResourceLevel.critical:
           // Minimum viable playback: tiny buffers, skip all loop filters,
           // software-ish decode budget, no Anime4K shader VRAM.
           await platform.setProperty('demuxer-max-bytes', '31457280'); // 30MB
-          await platform.setProperty('demuxer-max-back-bytes', '10485760'); // 10MB
+          await platform.setProperty(
+            'demuxer-max-back-bytes',
+            '10485760',
+          ); // 10MB
           await platform.setProperty('demuxer-readahead-secs', '4');
           await platform.setProperty('vd-lavc-skiploopfilter', 'all');
           await platform.setProperty('vd-lavc-skipidct', 'all');
@@ -467,7 +559,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       if (!mounted || _failoverInProgress) return;
       // v1.1.9: chain still ranking → wait (max ~3s), don't fire blind.
       if (_failoverReady != null && _failoverChain.isEmpty) {
-        unawaited(_failoverReady!.timeout(const Duration(seconds: 3), onTimeout: () {}));
+        unawaited(
+          _failoverReady!.timeout(const Duration(seconds: 3), onTimeout: () {}),
+        );
         return;
       }
       final stalled = DateTime.now().difference(_lastProgressAt);
@@ -479,8 +573,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       // justifies losing the buffered progress to switch sources.
       final shouldPlay = _isPlaying && _duration > Duration.zero;
       final seekGrace = DateTime.now().difference(_lastSeekAt).inSeconds < 8;
-      if (shouldPlay && !seekGrace && !_isBuffering && stalled.inSeconds >= 10) {
-        AppLog.d('[Failover] stall detected: ${stalled.inSeconds}s no progress, not buffering');
+      if (shouldPlay &&
+          !seekGrace &&
+          !_isBuffering &&
+          stalled.inSeconds >= 10) {
+        AppLog.d(
+          '[Failover] stall detected: ${stalled.inSeconds}s no progress, not buffering',
+        );
         _attemptSilentFailover(reason: 'stall');
       }
     });
@@ -490,7 +589,8 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       _lastGoodTimer = Timer(const Duration(seconds: 30), () {
         if (!mounted) return;
         // 30s of healthy playback on this source → record last-good.
-        if (_isPlaying && _player.state.position > const Duration(seconds: 25)) {
+        if (_isPlaying &&
+            _player.state.position > const Duration(seconds: 25)) {
           _recordLastGoodSource();
           _lastGoodRecorded = true;
         }
@@ -506,11 +606,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     final episodeKey = (ep != null)
         ? '$titleKey:S${ep.season}E${ep.episode}'
         : null;
-    unawaited(LastGoodSourceStore.record(
-      titleKey: titleKey,
-      episodeKey: episodeKey,
-      source: _currentSource,
-    ));
+    unawaited(
+      LastGoodSourceStore.record(
+        titleKey: titleKey,
+        episodeKey: episodeKey,
+        source: _currentSource,
+      ),
+    );
   }
 
   /// Silently switches to the next best-ranked backup source.
@@ -526,15 +628,17 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     );
     if (next == null) {
       _failoverChain = [];
-      setState(() => _showSourcesPanel = true); // let the user decide now
+      _openSourcesPanelWithError(null); // let the user decide now
       return;
     }
 
     _failoverInProgress = true;
     final savedPos = _player.state.position;
 
-    AppLog.d('[Failover] $reason → switching to ${next.name ?? next.addonName} '
-        '(switch ${_playGate.switches})');
+    AppLog.d(
+      '[Failover] $reason → switching to ${next.name ?? next.addonName} '
+      '(switch ${_playGate.switches})',
+    );
 
     unawaited(() async {
       try {
@@ -548,10 +652,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         _resumeAtOverride = savedPos > Duration.zero ? savedPos : null;
         await _initStream();
         _resumeAtOverride = null;
-        if (savedPos > Duration.zero && _player.state.position < savedPos) {
-          // Fallback: only if the open didn't land at the position.
-          await _player.seek(savedPos);
-        }
+        await _ensureResumePosition(savedPos);
         if (mounted) {
           // F1: one Easy-English line, no source names / no tech words.
           // The real reason went to the admin log above.
@@ -565,13 +666,53 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         }
       } catch (e) {
         AppLog.d('[Failover] switch failed: $e');
-        if (mounted) setState(() => _showSourcesPanel = true);
+        if (mounted) _openSourcesPanelWithError(null);
       } finally {
         _resumeAtOverride = null;
         _failoverInProgress = false;
         if (mounted) _armPlaybackGuards();
       }
     }());
+  }
+
+  /// Media(start:) already carries [savedPos], but mpv reports position 0 for
+  /// the first frames after open. Reading state immediately false-negatives
+  /// and fires a redundant seek, so wait for the first real position/duration
+  /// signal (3s cap) and seek at most once — only if the open missed it.
+  Future<void> _ensureResumePosition(Duration savedPos) async {
+    if (savedPos <= Duration.zero) return;
+
+    final signal = Completer<void>();
+    void check(Object? _) {
+      if (signal.isCompleted) return;
+      if (_player.state.position > Duration.zero ||
+          _player.state.duration > Duration.zero) {
+        signal.complete();
+      }
+    }
+
+    final posSub = _player.stream.position.listen(check);
+    final durSub = _player.stream.duration.listen(check);
+    try {
+      await signal.future.timeout(const Duration(seconds: 3), onTimeout: () {});
+    } finally {
+      await posSub.cancel();
+      await durSub.cancel();
+    }
+
+    if (!mounted) return;
+    if (_player.state.position <= Duration.zero &&
+        _player.state.duration > Duration.zero) {
+      // Let an in-flight Media(start:) land before intervening.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+    }
+    final state = _player.state;
+    if (state.duration > Duration.zero &&
+        state.position < savedPos &&
+        savedPos <= state.duration + const Duration(seconds: 5)) {
+      await _player.seek(savedPos);
+    }
   }
 
   // ── P7: Manual quality (+ P8 auto) ─────────────────────────────────
@@ -621,8 +762,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // AV1 even while the governor is still calm. AV1 remains a fallback.
     final capability = SmartQualityPolicy.liveCapability();
     final ranked = [_currentSource, ..._failoverChain]
-        .where((s) =>
-            !_failedFingerprints.contains(SourceRanker.fingerprint(s)))
+        .where(
+          (s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s)),
+        )
         .toList();
     final match = SmartQualityPolicy.pickProgressive(
       ranked: ranked,
@@ -676,21 +818,21 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     unawaited(() async {
       try {
         final res = await http
-            .get(Uri.parse(url),
-                headers: _currentSource.headers ?? const {})
+            .get(Uri.parse(url), headers: _currentSource.headers ?? const {})
             .timeout(const Duration(seconds: 8));
         if (res.statusCode != 200 || !mounted) return;
         final parsed = HlsRenditionParser.parseMaster(res.body, url);
         if (parsed.isEmpty) return;
         if (SourceRanker.fingerprint(_currentSource) != fp) return;
         setState(
-            () => _currentSource = _currentSource.copyWith(renditions: parsed));
+          () => _currentSource = _currentSource.copyWith(renditions: parsed),
+        );
         AppLog.d(
-            '[Renditions] attached ${parsed.length} to ${_currentSource.addonName}');
+          '[Renditions] attached ${parsed.length} to ${_currentSource.addonName}',
+        );
       } catch (_) {
         // P15: silent-but-logged (background network) — playback untouched.
-        unawaited(AppErrorLog.log(
-            code: 'renditions_fetch', screen: 'player'));
+        unawaited(AppErrorLog.log(code: 'renditions_fetch', screen: 'player'));
       } finally {
         _renditionsFetching = false;
       }
@@ -714,8 +856,8 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     final aheadSec =
         (buf.inMilliseconds - _player.state.position.inMilliseconds) / 1000.0;
     if (aheadSec < 0) return;
-    final assumed = QualityChoice.fromBadge(_currentSource.quality)
-            ?.maxBitrate ??
+    final assumed =
+        QualityChoice.fromBadge(_currentSource.quality)?.maxBitrate ??
         BandwidthMeter.fallbackBitrateBps;
     _bandwidthMeter.addSample(
       at: DateTime.now(),
@@ -795,8 +937,11 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
   /// Switches the player to [nextEp] using verified [source] without
   /// leaving the player route (reuses the in-player episode switch path).
   /// [prefetched]=true (countdown path) → guests get the `ready:true` mark.
-  void _switchToEpisodeVideo(Video nextEp, StreamSource source,
-      {bool prefetched = false}) {
+  void _switchToEpisodeVideo(
+    Video nextEp,
+    StreamSource source, {
+    bool prefetched = false,
+  }) {
     if (!mounted) return;
 
     setState(() {
@@ -824,6 +969,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // Binge chain continues: re-arm the gated prefetch for THIS
     // episode's successor (fires at 25%/3min into the new episode).
     _prefetchStarted = false;
+    _tastePlayLogged = false;
   }
 
   void _savePlaybackProgress() {
@@ -832,6 +978,19 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     final pos = _player.state.position.inSeconds;
     final dur = _player.state.duration.inSeconds;
     if (dur <= 0) return;
+
+    // Taste log: 30s in means it was really watched, not a mis-tap.
+    final detail = widget.detail!;
+    if (!_tastePlayLogged && pos >= 30) {
+      _tastePlayLogged = true;
+      TasteEventService.record(
+        TasteEventKind.play,
+        entityType: detail.type.toLowerCase() == 'series' ? 'tv' : 'movie',
+        entityId: detail.id,
+        title: detail.name,
+        genres: detail.genres,
+      );
+    }
 
     ContinueWatchingService.saveProgress(
       detail: widget.detail!,
@@ -850,8 +1009,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     final poster = widget.backdropUrl ?? detail?.poster ?? detail?.background;
 
     final type = (detail?.type ?? '').toLowerCase();
-    final isAnime = type == 'anime' || (detail == null && _currentTitle.toLowerCase().contains('episode') && episode != null);
-    final isSeries = type == 'series' || type == 'tv' || (!isAnime && episode != null);
+    final isAnime =
+        type == 'anime' ||
+        (detail == null &&
+            _currentTitle.toLowerCase().contains('episode') &&
+            episode != null);
+    final isSeries =
+        type == 'series' || type == 'tv' || (!isAnime && episode != null);
 
     if (isAnime) {
       DiscordRpcService.instance.setWatchingAnime(
@@ -895,7 +1059,8 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     if (_isLocked) return; // lock mode: single taps ignored
     final now = DateTime.now();
     if (_lastScreenTapTime != null &&
-        now.difference(_lastScreenTapTime!) < const Duration(milliseconds: 280)) {
+        now.difference(_lastScreenTapTime!) <
+            const Duration(milliseconds: 280)) {
       _lastScreenTapTime = null;
       WindowService.instance.toggleFullscreen();
     } else {
@@ -928,5 +1093,4 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     setState(() => _playbackRate = rate);
     _player.setRate(rate);
   }
-
 }

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../services/anime_arabic/anime_arabic_service.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -16,10 +17,39 @@ class _Space {
 }
 
 class _Palette {
-  static Color get bg => AppThemeService.currentPalette.value.scaffoldBackgroundColor;
-  static Color get surface => AppThemeService.currentPalette.value.cardBackgroundColor;
+  static Color get bg =>
+      AppThemeService.currentPalette.value.scaffoldBackgroundColor;
+  static Color get surface =>
+      AppThemeService.currentPalette.value.cardBackgroundColor;
   static Color get accent => AppThemeService.currentPalette.value.primaryColor;
   static const gold = DizzyGlow.gold;
+
+  static bool get isLight => AppThemeService.currentPalette.value.isLight;
+
+  /// Content sits on an opaque clay sheet, so readable text is ink in light
+  /// mode (white stays for dark clay).
+  static Color get ink => isLight ? PrismLight.ink : Colors.white;
+  static Color get inkSoft => isLight ? PrismLight.inkSoft : Colors.white70;
+  static Color get muted => isLight ? PrismLight.inkSoft : Colors.white54;
+  static Color get faint => isLight ? PrismLight.inkFaint : Colors.white38;
+
+  /// Raised tile / chip fill.
+  static Color get panel => isLight ? PrismLight.raisedTop : PrismDark.raised;
+  static Color get border =>
+      isLight ? PrismLight.borderSubtle : PrismDark.borderSubtle;
+
+  /// Carved input / sunken fill.
+  static Color get field =>
+      isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+
+  static Color get star => isLight ? PrismAccent.starTextLight : gold;
+
+  /// Accent for *text* on clay; the raw accent is below AA at small sizes.
+  static Color get accentText => PrismAccent.text(isLight);
+
+  /// Selected-tile wash; kept faint in light so accent text stays readable.
+  static Color get accentTint =>
+      accent.withValues(alpha: isLight ? 0.12 : 0.25);
 }
 
 class AnimeArabicDetailsPage extends StatefulWidget {
@@ -37,7 +67,7 @@ class AnimeArabicDetailsPage extends StatefulWidget {
 }
 
 class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
-  with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   final AnimeArabicService _service = AnimeArabicService.instance;
 
   ArabicAnimeDetails? _details;
@@ -75,13 +105,10 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
       curve: Curves.easeOut,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
 
     _animController.forward();
     _recsScrollController.addListener(_updateRecsScrollButtons);
@@ -190,7 +217,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenSize = MediaQuery.sizeOf(context);
+    final screenWidth = screenSize.width;
     final isDesktop = screenWidth > 900;
     final isMobile = screenWidth < 600;
 
@@ -198,198 +226,254 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
     final coverUrl = _details?.displayCover ?? widget.anime.cover ?? '';
     final title = _details?.title ?? widget.anime.title;
 
+    // Artwork is clipped to a hero band; every section below it sits on an
+    // opaque clay sheet so ink stays legible in both themes.
+    final heroHeight = (screenSize.height * (isDesktop ? 0.46 : 0.4)).clamp(
+      300.0,
+      520.0,
+    );
+    final overlap = isDesktop ? 110.0 : 64.0;
+    final hPad = isDesktop ? 60.0 : (isMobile ? 16.0 : 32.0);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: AnimatedAmbientBackground(
         child: Stack(
           children: [
-          // 1. Dynamic Ambient Glowing Backdrop
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: isMobile ? 400 : 550,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (backdropUrl.isNotEmpty)
-                  CachedNetworkImage(
-                    imageUrl: backdropUrl,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                    memCacheWidth: 1280,
-                    maxWidthDiskCache: 1280,
+            // 1. Ambient artwork, clipped to the hero band
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: heroHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (backdropUrl.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: backdropUrl,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      memCacheWidth: 1280,
+                      maxWidthDiskCache: 1280,
+                    ),
+                  // Cinematic blur & dark gradients
+                  BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(color: Colors.transparent),
                   ),
-                // Cinematic blur & dark gradients
-                BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(color: Colors.transparent),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        _Palette.bg.withValues(alpha: 0.3),
-                        _Palette.bg.withValues(alpha: 0.75),
-                        _Palette.bg,
-                      ],
-                      stops: const [0.0, 0.6, 1.0],
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          _Palette.bg.withValues(alpha: 0.3),
+                          _Palette.bg.withValues(alpha: 0.75),
+                          _Palette.bg,
+                        ],
+                        stops: const [0.0, 0.6, 1.0],
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.topCenter,
-                      radius: 1.2,
-                      colors: [
-                        _Palette.accent.withValues(alpha: 0.18),
-                        Colors.transparent,
-                      ],
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment.topCenter,
+                        radius: 1.2,
+                        colors: [
+                          _Palette.accent.withValues(alpha: 0.18),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // 2. Main Scrollable Content
-          SafeArea(
-            bottom: false,
-            child: _loading && _details == null
-                ? Center(child: CircularProgressIndicator(color: _Palette.accent))
-                : _error != null && _details == null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
-                            const SizedBox(height: 16),
-                            Text(_error!, style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: _Palette.accent),
-                              onPressed: _loadDetails,
-                              child: const Text('Retry'),
+            // 2. Main Scrollable Content
+            SafeArea(
+              bottom: false,
+              child: _loading && _details == null
+                  ? Center(
+                      child: CircularProgressIndicator(color: _Palette.accent),
+                    )
+                  : _error != null && _details == null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: Colors.redAccent,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _error!,
+                            style: TextStyle(
+                              color: _Palette.inkSoft,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _Palette.accent,
+                              foregroundColor: PrismAccent.onAccent,
+                            ),
+                            onPressed: _loadDetails,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: CustomScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          slivers: [
+                            // Space above the sheet; the artwork band shows
+                            // through here and under the floating top bar.
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: heroHeight - overlap),
+                            ),
+
+                            // Opaque clay sheet: readable content lives
+                            // here, never directly on the artwork.
+                            SliverToBoxAdapter(
+                              child: Container(
+                                constraints: BoxConstraints(
+                                  minHeight:
+                                      screenSize.height -
+                                      (heroHeight - overlap),
+                                ),
+                                padding: EdgeInsets.only(
+                                  top: _Space.md,
+                                  bottom:
+                                      24.0 +
+                                      MediaQuery.paddingOf(context).bottom,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _Palette.bg,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(PrismRadius.xl),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.24,
+                                      ),
+                                      blurRadius: 28,
+                                      offset: const Offset(0, -10),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Main Hero Info Section
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: hPad,
+                                      ),
+                                      child: isMobile
+                                          ? _buildMobileHero(coverUrl, title)
+                                          : _buildDesktopHero(coverUrl, title),
+                                    ),
+
+                                    const SizedBox(height: _Space.xl),
+
+                                    // Episodes Section
+                                    if (_details != null &&
+                                        _details!.episodes.isNotEmpty)
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: hPad,
+                                        ),
+                                        child: _buildEpisodesSection(),
+                                      ),
+
+                                    const SizedBox(height: _Space.xl),
+
+                                    // Related Anime Rail
+                                    if (_details != null &&
+                                        _details!.related.isNotEmpty)
+                                      Padding(
+                                        padding: EdgeInsets.only(left: hPad),
+                                        child: _buildRelatedSection(),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                      )
-                    : FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: CustomScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            slivers: [
-                              // App Bar Space
-                              const SliverToBoxAdapter(child: SizedBox(height: 60)),
-
-                              // Main Hero Info Section
-                              SliverToBoxAdapter(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isDesktop ? 60 : (isMobile ? 16 : 32),
-                                    vertical: _Space.md,
-                                  ),
-                                  child: isMobile
-                                      ? _buildMobileHero(coverUrl, title)
-                                      : _buildDesktopHero(coverUrl, title),
-                                ),
-                              ),
-
-                              const SliverToBoxAdapter(child: SizedBox(height: _Space.xl)),
-
-                              // Episodes Section
-                              if (_details != null && _details!.episodes.isNotEmpty)
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isDesktop ? 60 : (isMobile ? 16 : 32),
-                                    ),
-                                    child: _buildEpisodesSection(),
-                                  ),
-                                ),
-
-                              const SliverToBoxAdapter(child: SizedBox(height: _Space.xl)),
-
-                              // Related Anime Rail
-                              if (_details != null && _details!.related.isNotEmpty)
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      left: isDesktop ? 60 : (isMobile ? 16 : 32),
-                                      bottom: 60,
-                                    ),
-                                    child: _buildRelatedSection(),
-                                  ),
-                                ),
-
-                              SliverToBoxAdapter(
-                                child: SizedBox(height: 60.0 + MediaQuery.paddingOf(context).bottom),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-          ),
-
-          // 3. Floating Glass Back Button & Title Bar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: ClipRRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.paddingOf(context).top + 8,
-                    bottom: 12,
-                    left: 20,
-                    right: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _Palette.bg.withValues(alpha: 0.65),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.06),
                       ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
+            ),
+
+            // 3. Floating Glass Back Button & Title Bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.paddingOf(context).top + 8,
+                      bottom: 12,
+                      left: 20,
+                      right: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      // Nearly opaque in light so the bar reads as clay over
+                      // the artwork instead of washing the title out.
+                      color: _Palette.bg.withValues(
+                        alpha: _Palette.isLight ? 0.92 : 0.65,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                      border: Border(
+                        bottom: BorderSide(color: _Palette.border),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'رجوع',
+                          icon: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: _Palette.ink,
+                            size: 20,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _Palette.ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -446,7 +530,11 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                 maxWidthDiskCache: 500,
                 errorWidget: (_, __, ___) => Container(
                   color: _Palette.surface,
-                  child: const Icon(Icons.broken_image_rounded, color: Colors.white24, size: 40),
+                  child: Icon(
+                    Icons.broken_image_rounded,
+                    color: _Palette.faint,
+                    size: 40,
+                  ),
                 ),
               )
             : Container(color: _Palette.surface),
@@ -467,8 +555,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _Palette.ink,
             fontSize: 26,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
@@ -484,21 +572,26 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
           children: [
             if (rating != null && rating.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: _Palette.gold.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _Palette.gold.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: _Palette.gold.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded, color: _Palette.gold, size: 16),
+                    Icon(Icons.star_rounded, color: _Palette.star, size: 16),
                     const SizedBox(width: 4),
                     Text(
                       rating,
-                      style: const TextStyle(
-                        color: _Palette.gold,
+                      style: TextStyle(
+                        color: _Palette.star,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -507,10 +600,10 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                 ),
               ),
             if (year != null && year.isNotEmpty)
-              _buildPill(year, Colors.white.withValues(alpha: 0.1), Colors.white70),
-            _buildPill(status, _Palette.accent.withValues(alpha: 0.2), _Palette.accent),
+              _buildPill(year, _Palette.panel, _Palette.inkSoft),
+            _buildPill(status, _Palette.accentTint, _Palette.accentText),
             if (studio != null && studio.isNotEmpty)
-              _buildPill(studio, Colors.white.withValues(alpha: 0.08), Colors.white60),
+              _buildPill(studio, _Palette.field, _Palette.inkSoft),
           ],
         ),
 
@@ -523,16 +616,19 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
             runSpacing: 8,
             children: genres.map((g) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: _Palette.panel,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  border: Border.all(color: _Palette.border),
                 ),
                 child: Text(
                   g,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: _Palette.inkSoft,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -547,7 +643,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
         if (_details != null && _details!.episodes.isNotEmpty)
           Builder(
             builder: (_) {
-              final targetEpNum = _highlightedEpisode ?? _details!.episodes.first.number;
+              final targetEpNum =
+                  _highlightedEpisode ?? _details!.episodes.first.number;
               final targetEp = _details!.episodes.firstWhere(
                 (e) => e.number == targetEpNum,
                 orElse: () => _details!.episodes.first,
@@ -555,9 +652,14 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
               return ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _Palette.accent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  foregroundColor: PrismAccent.onAccent,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   elevation: 8,
                   shadowColor: _Palette.accent.withValues(alpha: 0.5),
                 ),
@@ -565,7 +667,10 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                 icon: const Icon(Icons.play_arrow_rounded, size: 24),
                 label: Text(
                   'مشاهدة الحلقة $targetEpNum',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
                 ),
               );
             },
@@ -581,22 +686,26 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
               Text(
                 description,
                 maxLines: _isSynopsisExpanded ? null : 3,
-                overflow: _isSynopsisExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                overflow: _isSynopsisExpanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: _Palette.inkSoft,
                   fontSize: 14,
                   height: 1.5,
                 ),
               ),
               if (description.length > 140)
                 GestureDetector(
-                  onTap: () => setState(() => _isSynopsisExpanded = !_isSynopsisExpanded),
+                  onTap: () => setState(
+                    () => _isSynopsisExpanded = !_isSynopsisExpanded,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
                       _isSynopsisExpanded ? 'عرض أقل' : 'عرض المزيد',
                       style: TextStyle(
-                        color: _Palette.accent,
+                        color: _Palette.accentText,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -618,7 +727,11 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
       ),
       child: Text(
         text,
-        style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 12),
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -642,8 +755,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
             const SizedBox(width: 10),
             Text(
               'الحلقات ($totalEpisodes)',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: _Palette.ink,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -659,16 +772,19 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                   controller: _jumpEpController,
                   keyboardType: TextInputType.number,
                   onSubmitted: _jumpToEpisode,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: TextStyle(color: _Palette.ink, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'اذهب لرقم...',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 12),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    hintStyle: TextStyle(color: _Palette.muted, fontSize: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.06),
+                    fillColor: _Palette.field,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      borderSide: BorderSide(color: _Palette.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -692,7 +808,10 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final batchStart = index * _chunkSize + 1;
-                final batchEnd = ((index + 1) * _chunkSize).clamp(1, totalEpisodes);
+                final batchEnd = ((index + 1) * _chunkSize).clamp(
+                  1,
+                  totalEpisodes,
+                );
                 final isSelected = index == _selectedEpisodeBatch;
 
                 return InkWell(
@@ -702,23 +821,26 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                   }),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? _Palette.accent.withValues(alpha: 0.25)
-                          : Colors.white.withValues(alpha: 0.05),
+                      color: isSelected ? _Palette.accentTint : _Palette.panel,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected
-                            ? _Palette.accent
-                            : Colors.white.withValues(alpha: 0.08),
+                        color: isSelected ? _Palette.accent : _Palette.border,
                       ),
                     ),
                     child: Text(
                       '$batchStart - $batchEnd',
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.white60,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected
+                            ? _Palette.accentText
+                            : _Palette.inkSoft,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         fontSize: 13,
                       ),
                     ),
@@ -768,7 +890,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
   }
 
   Widget _buildEpisodeCard(ArabicEpisode episode, bool isHighlighted) {
-    final thumb = episode.thumb ?? _details?.displayBanner ?? widget.anime.cover ?? '';
+    final thumb =
+        episode.thumb ?? _details?.displayBanner ?? widget.anime.cover ?? '';
 
     return Material(
       color: Colors.transparent,
@@ -780,9 +903,7 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
             color: _Palette.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isHighlighted
-                  ? _Palette.accent
-                  : Colors.white.withValues(alpha: 0.08),
+              color: isHighlighted ? _Palette.accent : _Palette.border,
               width: isHighlighted ? 2 : 1,
             ),
             boxShadow: isHighlighted
@@ -790,7 +911,7 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                     BoxShadow(
                       color: _Palette.accent.withValues(alpha: 0.35),
                       blurRadius: 12,
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -805,7 +926,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                   memCacheWidth: 500,
                   memCacheHeight: 750,
                   maxWidthDiskCache: 500,
-                  errorWidget: (_, __, ___) => Container(color: _Palette.surface),
+                  errorWidget: (_, __, ___) =>
+                      Container(color: _Palette.surface),
                 ),
               Container(
                 decoration: BoxDecoration(
@@ -826,7 +948,10 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: _Palette.accent,
                         borderRadius: BorderRadius.circular(6),
@@ -834,7 +959,7 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                       child: Text(
                         'EP ${episode.number}',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: PrismAccent.onAccent,
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
                         ),
@@ -843,7 +968,9 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        episode.title.isNotEmpty ? episode.title : 'الحلقة ${episode.number}',
+                        episode.title.isNotEmpty
+                            ? episode.title
+                            : 'الحلقة ${episode.number}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -864,7 +991,11 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                     color: Colors.black.withValues(alpha: 0.6),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ],
@@ -887,10 +1018,10 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
             children: [
               Icon(Icons.recommend_rounded, color: _Palette.accent, size: 22),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'أنميات ذات صلة',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: _Palette.ink,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
@@ -936,16 +1067,23 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                                   width: 130,
                                   height: 180,
                                   color: _Palette.surface,
-                                  child: (item.cover != null && item.cover!.isNotEmpty)
+                                  child:
+                                      (item.cover != null &&
+                                          item.cover!.isNotEmpty)
                                       ? CachedNetworkImage(
                                           imageUrl: item.cover!,
                                           fit: BoxFit.cover,
                                           memCacheWidth: 260,
                                           maxWidthDiskCache: 260,
-                                          errorWidget: (_, __, ___) =>
-                                              const Icon(Icons.movie_rounded, color: Colors.white24),
+                                          errorWidget: (_, __, ___) => Icon(
+                                            Icons.movie_rounded,
+                                            color: _Palette.faint,
+                                          ),
                                         )
-                                      : const Icon(Icons.movie_rounded, color: Colors.white24),
+                                      : Icon(
+                                          Icons.movie_rounded,
+                                          color: _Palette.faint,
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -953,8 +1091,8 @@ class _AnimeArabicDetailsPageState extends State<AnimeArabicDetailsPage>
                                 item.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: _Palette.ink,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),

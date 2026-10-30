@@ -5,6 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/anime/anime_media.dart';
@@ -143,8 +146,25 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
     final size = MediaQuery.sizeOf(context);
     final isMobile = size.width < 750;
 
-    final modalWidth = isMobile ? size.width - 16 : math.min(size.width * 0.94, 980.0);
-    final modalHeight = isMobile ? size.height * 0.94 : math.min(size.height * 0.94, 820.0);
+    // Clay-aware surface tokens: the panel is pale in light mode, so the body
+    // must use ink tokens there instead of the dark-theme whites.
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : DizzyVoid.surface1;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.surface2;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+
+    final modalWidth = isMobile
+        ? size.width - 16
+        : math.min(size.width * 0.94, 980.0);
+    final modalHeight = isMobile
+        ? size.height * 0.94
+        : math.min(size.height * 0.94, 820.0);
 
     final totalEps = _computedTotalEpisodes;
     final totalBatches = (totalEps / _chunkSize).ceil().clamp(1, 9999);
@@ -154,7 +174,8 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
       focusNode: _keyboardFocusNode,
       autofocus: true,
       onKeyEvent: (event) {
-        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
           widget.onClose();
         }
       },
@@ -171,16 +192,9 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                   width: modalWidth,
                   height: modalHeight,
                   decoration: BoxDecoration(
-                    color: DizzyVoid.voidB,
+                    gradient: PrismShadows.surfaceGradient(isLight),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.75),
-                        blurRadius: 40,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
+                    boxShadow: PrismShadows.floating(isLight: isLight),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
@@ -199,9 +213,8 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                 // P12: modal backdrop capped.
                                 memCacheWidth: ImageCaps.kBackdrop,
                                 maxWidthDiskCache: ImageCaps.kBackdrop,
-                                errorWidget: (_, __, ___) => Container(
-                                  color: DizzyVoid.surface1,
-                                ),
+                                errorWidget: (_, __, ___) =>
+                                    Container(color: DizzyVoid.surface1),
                               ),
                             ),
                             Positioned.fill(
@@ -266,17 +279,29 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                     children: [
                                       if (_anime.averageScore > 0)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 3,
+                                          ),
                                           decoration: BoxDecoration(
                                             gradient: const LinearGradient(
-                                              colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                                              colors: [
+                                                Color(0xFFFFB300),
+                                                Color(0xFFFF8F00),
+                                              ],
                                             ),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Icon(Icons.star_rounded, color: Colors.black, size: 13),
+                                              const Icon(
+                                                Icons.star_rounded,
+                                                color: Colors.black,
+                                                size: 13,
+                                              ),
                                               const SizedBox(width: 3),
                                               Text(
                                                 _anime.formattedScore,
@@ -290,47 +315,66 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                           ),
                                         ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF7C5CFF),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Text(
                                           _anime.formattedFormat.toUpperCase(),
                                           style: const TextStyle(
                                             color: Colors.white,
-                                            fontSize: 10,
+                                            fontSize: 11,
                                             fontWeight: FontWeight.w900,
                                           ),
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Text(
                                           _anime.formattedStatus,
                                           style: const TextStyle(
                                             color: Colors.white,
-                                            fontSize: 10,
+                                            fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
                                       if (_anime.seasonYear > 0)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 3,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.08),
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Text(
                                             '${_anime.seasonYear}',
                                             style: const TextStyle(
                                               color: Colors.white70,
-                                              fontSize: 10,
+                                              fontSize: 11,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -379,19 +423,32 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                 children: [
                                   _HoverScale(
                                     onTap: () {
-                                      final epToPlay = watchItem?.lastWatchedEpisode ?? 1;
-                                      widget.onPlayEpisode(_anime, epToPlay, _isDub);
+                                      final epToPlay =
+                                          watchItem?.lastWatchedEpisode ?? 1;
+                                      widget.onPlayEpisode(
+                                        _anime,
+                                        epToPlay,
+                                        _isDub,
+                                      );
                                     },
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 12,
+                                      ),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
-                                          colors: [Color(0xFF7C5CFF), Color(0xFF633DFF)],
+                                          colors: [
+                                            Color(0xFF7C5CFF),
+                                            Color(0xFF633DFF),
+                                          ],
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF7C5CFF).withValues(alpha: 0.35),
+                                            color: const Color(
+                                              0xFF7C5CFF,
+                                            ).withValues(alpha: 0.35),
                                             blurRadius: 16,
                                             offset: const Offset(0, 4),
                                           ),
@@ -400,10 +457,17 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                                          const Icon(
+                                            Icons.play_arrow_rounded,
+                                            color: Colors.white,
+                                            size: 22,
+                                          ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            watchItem != null && watchItem.lastWatchedEpisode > 0
+                                            watchItem != null &&
+                                                    watchItem
+                                                            .lastWatchedEpisode >
+                                                        0
                                                 ? 'Resume Ep ${watchItem.lastWatchedEpisode}'
                                                 : 'Play Ep 1',
                                             style: const TextStyle(
@@ -421,42 +485,66 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                   // Watchlist Status Popup
                                   PopupMenuButton<AnimeWatchStatus>(
                                     onSelected: (status) {
-                                      library.setWatchlistStatus(_anime, status);
+                                      library.setWatchlistStatus(
+                                        _anime,
+                                        status,
+                                      );
                                       setState(() {});
                                     },
-                                    color: DizzyVoid.surface1,
+                                    color: panel,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
-                                      side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                      side: BorderSide(color: hairline),
                                     ),
                                     itemBuilder: (context) => [
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: AnimeWatchStatus.watching,
-                                        child: Text('Watching', style: TextStyle(color: Colors.white)),
+                                        child: Text(
+                                          'Watching',
+                                          style: TextStyle(color: ink),
+                                        ),
                                       ),
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: AnimeWatchStatus.planToWatch,
-                                        child: Text('Plan to Watch', style: TextStyle(color: Colors.white)),
+                                        child: Text(
+                                          'Plan to Watch',
+                                          style: TextStyle(color: ink),
+                                        ),
                                       ),
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: AnimeWatchStatus.completed,
-                                        child: Text('Completed', style: TextStyle(color: Colors.white)),
+                                        child: Text(
+                                          'Completed',
+                                          style: TextStyle(color: ink),
+                                        ),
                                       ),
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: AnimeWatchStatus.dropped,
-                                        child: Text('Dropped', style: TextStyle(color: Colors.white54)),
+                                        child: Text(
+                                          'Dropped',
+                                          style: TextStyle(
+                                            color: isLight
+                                                ? PrismLight.inkSoft
+                                                : Colors.white54,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                     child: _HoverScale(
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 11,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(14),
+                                          color: hairline,
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                           border: Border.all(
                                             color: watchItem != null
                                                 ? const Color(0xFF00D294)
-                                                : Colors.white12,
+                                                : hairline,
                                           ),
                                         ),
                                         child: Row(
@@ -465,29 +553,43 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                             Icon(
                                               watchItem != null
                                                   ? Icons.check_circle_rounded
-                                                  : Icons.bookmark_outline_rounded,
+                                                  : Icons
+                                                        .bookmark_outline_rounded,
                                               color: watchItem != null
-                                                  ? const Color(0xFF00D294)
-                                                  : Colors.white70,
+                                                  ? (isLight
+                                                        ? PrismAccent
+                                                              .successTextLight
+                                                        : const Color(
+                                                            0xFF00D294,
+                                                          ))
+                                                  : inkSoft,
                                               size: 16,
                                             ),
                                             const SizedBox(width: 6),
                                             Text(
                                               watchItem != null
-                                                  ? watchItem.status.name.toUpperCase()
+                                                  ? watchItem.status.name
+                                                        .toUpperCase()
                                                   : 'ADD TO LIST',
                                               style: TextStyle(
                                                 color: watchItem != null
-                                                    ? const Color(0xFF00D294)
-                                                    : Colors.white70,
+                                                    ? (isLight
+                                                          ? PrismAccent
+                                                                .successTextLight
+                                                          : const Color(
+                                                              0xFF00D294,
+                                                            ))
+                                                    : inkSoft,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w800,
                                               ),
                                             ),
                                             const SizedBox(width: 4),
-                                            const Icon(
+                                            Icon(
                                               Icons.arrow_drop_down_rounded,
-                                              color: Colors.white54,
+                                              color: isLight
+                                                  ? PrismLight.inkSoft
+                                                  : Colors.white54,
                                               size: 18,
                                             ),
                                           ],
@@ -502,25 +604,36 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                   Container(
                                     padding: const EdgeInsets.all(3),
                                     decoration: BoxDecoration(
-                                      color: DizzyVoid.surface1,
+                                      color: panel,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                      border: Border.all(color: hairline),
                                     ),
                                     child: Row(
                                       children: [
                                         GestureDetector(
-                                          onTap: () => setState(() => _isDub = false),
+                                          onTap: () =>
+                                              setState(() => _isDub = false),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 180),
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: !_isDub ? const Color(0xFF7C5CFF) : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(9),
+                                            duration: const Duration(
+                                              milliseconds: 180,
                                             ),
-                                            child: const Text(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: !_isDub
+                                                  ? const Color(0xFF7C5CFF)
+                                                  : Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(9),
+                                            ),
+                                            child: Text(
                                               'SUB',
                                               style: TextStyle(
-                                                color: Colors.white,
+                                                color: !_isDub
+                                                    ? Colors.white
+                                                    : ink,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w900,
                                               ),
@@ -528,18 +641,29 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                           ),
                                         ),
                                         GestureDetector(
-                                          onTap: () => setState(() => _isDub = true),
+                                          onTap: () =>
+                                              setState(() => _isDub = true),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 180),
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: _isDub ? const Color(0xFF7C5CFF) : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(9),
+                                            duration: const Duration(
+                                              milliseconds: 180,
                                             ),
-                                            child: const Text(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _isDub
+                                                  ? const Color(0xFF7C5CFF)
+                                                  : Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(9),
+                                            ),
+                                            child: Text(
                                               'DUB',
                                               style: TextStyle(
-                                                color: Colors.white,
+                                                color: _isDub
+                                                    ? Colors.white
+                                                    : ink,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w900,
                                               ),
@@ -557,8 +681,8 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                 const SizedBox(height: 18),
                                 Text(
                                   _anime.description,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
+                                  style: TextStyle(
+                                    color: inkSoft,
                                     fontSize: 13,
                                     height: 1.5,
                                   ),
@@ -574,15 +698,23 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                   children: _anime.genres
                                       .map(
                                         (g) => Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.06),
-                                            borderRadius: BorderRadius.circular(14),
-                                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                            color: hairline,
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(color: hairline),
                                           ),
                                           child: Text(
                                             g,
-                                            style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                            style: TextStyle(
+                                              color: inkSoft,
+                                              fontSize: 11,
+                                            ),
                                           ),
                                         ),
                                       )
@@ -591,7 +723,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                               ],
 
                               const SizedBox(height: 24),
-                              const Divider(color: Colors.white10),
+                              Divider(color: hairline),
                               const SizedBox(height: 14),
 
                               // ─── EPISODES HEADER & 50-CHUNK PAGINATION + JUMP FIELD ───
@@ -604,10 +736,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Episodes',
                                         style: TextStyle(
-                                          color: Colors.white,
+                                          color: ink,
                                           fontSize: 18,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -615,7 +747,12 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                       const SizedBox(width: 8),
                                       Text(
                                         '($totalEps total)',
-                                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                                        style: TextStyle(
+                                          color: isLight
+                                              ? PrismLight.inkSoft
+                                              : Colors.white54,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -629,25 +766,44 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                         width: 130,
                                         height: 34,
                                         decoration: BoxDecoration(
-                                          color: DizzyVoid.surface1,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.white12),
+                                          color: panel,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(color: hairline),
                                         ),
                                         child: TextField(
                                           controller: _jumpEpController,
                                           keyboardType: TextInputType.number,
                                           textInputAction: TextInputAction.go,
                                           onSubmitted: _jumpToEpisode,
-                                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                                          style: TextStyle(
+                                            color: ink,
+                                            fontSize: 12,
+                                          ),
                                           decoration: InputDecoration(
                                             hintText: 'Jump to ep #',
-                                            hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                                            hintStyle: TextStyle(
+                                              color: inkFaint,
+                                              fontSize: 11,
+                                            ),
                                             border: InputBorder.none,
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 10,
+                                                ),
                                             suffixIcon: IconButton(
                                               padding: EdgeInsets.zero,
-                                              icon: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF7C5CFF), size: 16),
-                                              onPressed: () => _jumpToEpisode(_jumpEpController.text),
+                                              tooltip: 'Jump to episode',
+                                              icon: const Icon(
+                                                Icons.arrow_forward_rounded,
+                                                color: Color(0xFF7C5CFF),
+                                                size: 16,
+                                              ),
+                                              onPressed: () => _jumpToEpisode(
+                                                _jumpEpController.text,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -657,9 +813,17 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
 
                                       // Prev Batch Arrow
                                       IconButton(
-                                        icon: const Icon(Icons.chevron_left_rounded, color: Colors.white70, size: 20),
+                                        tooltip: 'Previous episodes',
+                                        icon: Icon(
+                                          Icons.chevron_left_rounded,
+                                          color: inkSoft,
+                                          size: 20,
+                                        ),
                                         onPressed: currentBatchSafe > 0
-                                            ? () => setState(() => _selectedEpisodeBatch = currentBatchSafe - 1)
+                                            ? () => setState(
+                                                () => _selectedEpisodeBatch =
+                                                    currentBatchSafe - 1,
+                                              )
                                             : null,
                                       ),
 
@@ -667,36 +831,54 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                       if (totalBatches > 1)
                                         Container(
                                           height: 34,
-                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: DizzyVoid.surface1,
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.4)),
+                                            color: panel,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(
+                                                0xFF7C5CFF,
+                                              ).withValues(alpha: 0.4),
+                                            ),
                                           ),
                                           child: DropdownButton<int>(
                                             value: currentBatchSafe,
                                             underline: const SizedBox.shrink(),
-                                            dropdownColor: DizzyVoid.surface1,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            dropdownColor: panel,
+                                            style: TextStyle(
+                                              color: ink,
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
                                             ),
-                                            icon: const Icon(Icons.expand_more_rounded, color: Color(0xFF7C5CFF), size: 16),
-                                            items: List.generate(
-                                              totalBatches,
-                                              (idx) {
-                                                final start = idx * _chunkSize + 1;
-                                                final end = math.min((idx + 1) * _chunkSize, totalEps);
-                                                return DropdownMenuItem(
-                                                  value: idx,
-                                                  child: Text('$start – $end'),
-                                                );
-                                              },
+                                            icon: const Icon(
+                                              Icons.expand_more_rounded,
+                                              color: Color(0xFF7C5CFF),
+                                              size: 16,
                                             ),
+                                            items: List.generate(totalBatches, (
+                                              idx,
+                                            ) {
+                                              final start =
+                                                  idx * _chunkSize + 1;
+                                              final end = math.min(
+                                                (idx + 1) * _chunkSize,
+                                                totalEps,
+                                              );
+                                              return DropdownMenuItem(
+                                                value: idx,
+                                                child: Text('$start – $end'),
+                                              );
+                                            }),
                                             onChanged: (val) {
                                               if (val != null) {
-                                                setState(() => _selectedEpisodeBatch = val);
+                                                setState(
+                                                  () => _selectedEpisodeBatch =
+                                                      val,
+                                                );
                                               }
                                             },
                                           ),
@@ -704,9 +886,18 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
 
                                       // Next Batch Arrow
                                       IconButton(
-                                        icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 20),
-                                        onPressed: currentBatchSafe < totalBatches - 1
-                                            ? () => setState(() => _selectedEpisodeBatch = currentBatchSafe + 1)
+                                        tooltip: 'Next episodes',
+                                        icon: Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: inkSoft,
+                                          size: 20,
+                                        ),
+                                        onPressed:
+                                            currentBatchSafe < totalBatches - 1
+                                            ? () => setState(
+                                                () => _selectedEpisodeBatch =
+                                                    currentBatchSafe + 1,
+                                              )
                                             : null,
                                       ),
                                     ],
@@ -720,17 +911,20 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                               _buildEpisodeGrid(
                                 totalEps,
                                 currentBatchSafe * _chunkSize,
-                                math.min((currentBatchSafe + 1) * _chunkSize, totalEps),
+                                math.min(
+                                  (currentBatchSafe + 1) * _chunkSize,
+                                  totalEps,
+                                ),
                                 watchItem?.lastWatchedEpisode,
                               ),
 
                               // Characters & Voice Cast
                               if (_anime.characters.isNotEmpty) ...[
                                 const SizedBox(height: 32),
-                                const Text(
+                                Text(
                                   'Characters & Voice Cast',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: ink,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -742,7 +936,8 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                     scrollDirection: Axis.horizontal,
                                     physics: const BouncingScrollPhysics(),
                                     itemCount: _anime.characters.length,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 14),
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(width: 14),
                                     itemBuilder: (context, index) {
                                       final char = _anime.characters[index];
                                       return _HoverScale(
@@ -751,27 +946,38 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                           child: Column(
                                             children: [
                                               ClipRRect(
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                                 child: CachedNetworkImage(
                                                   imageUrl: char.imageLarge,
                                                   width: 85,
                                                   height: 85,
                                                   fit: BoxFit.cover,
                                                   // P12: capped thumb.
-                                                  memCacheWidth: ImageCaps.kThumb,
-                                                  memCacheHeight: ImageCaps.kThumb,
-                                                  maxWidthDiskCache: ImageCaps.kThumb,
-                                                  errorWidget: (_, __, ___) => Container(
-                                                    color: DizzyVoid.surface2,
-                                                    child: const Icon(Icons.person_rounded, color: Colors.white24),
-                                                  ),
+                                                  memCacheWidth:
+                                                      ImageCaps.kThumb,
+                                                  memCacheHeight:
+                                                      ImageCaps.kThumb,
+                                                  maxWidthDiskCache:
+                                                      ImageCaps.kThumb,
+                                                  errorWidget: (_, __, ___) =>
+                                                      Container(
+                                                        color: well,
+                                                        child: Icon(
+                                                          Icons.person_rounded,
+                                                          color: isLight
+                                                              ? PrismLight
+                                                                    .inkFaint
+                                                              : Colors.white24,
+                                                        ),
+                                                      ),
                                                 ),
                                               ),
                                               const SizedBox(height: 6),
                                               Text(
                                                 char.nameFull,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: ink,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -781,7 +987,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                               ),
                                               Text(
                                                 char.role,
-                                                style: const TextStyle(color: Colors.white38, fontSize: 9),
+                                                style: TextStyle(
+                                                  color: inkFaint,
+                                                  fontSize: 11,
+                                                ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 textAlign: TextAlign.center,
@@ -798,10 +1007,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                               // Franchise & Relations (Clickable with Hover Scale)
                               if (_anime.relations.isNotEmpty) ...[
                                 const SizedBox(height: 32),
-                                const Text(
+                                Text(
                                   'Franchise & Relations',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: ink,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -813,12 +1022,15 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                     scrollDirection: Axis.horizontal,
                                     physics: const BouncingScrollPhysics(),
                                     itemCount: _anime.relations.length,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 14),
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(width: 14),
                                     itemBuilder: (context, index) {
                                       final rel = _anime.relations[index];
                                       return _HoverScale(
                                         onTap: () async {
-                                          final media = await AnilistService.instance.fetchAnimeDetails(rel.id);
+                                          final media = await AnilistService
+                                              .instance
+                                              .fetchAnimeDetails(rel.id);
                                           if (media != null) {
                                             widget.onNavigateToAnime(media);
                                           }
@@ -826,31 +1038,51 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                         child: SizedBox(
                                           width: 105,
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               ClipRRect(
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                                 child: CachedNetworkImage(
                                                   imageUrl: rel.coverUrl,
                                                   width: 105,
                                                   height: 125,
                                                   fit: BoxFit.cover,
                                                   // P12: capped thumb.
-                                                  memCacheWidth: ImageCaps.kThumb,
-                                                  memCacheHeight: ImageCaps.kThumb,
-                                                  maxWidthDiskCache: ImageCaps.kThumb,
-                                                  errorWidget: (_, __, ___) => Container(
-                                                    color: DizzyVoid.surface2,
-                                                    child: const Icon(Icons.movie_creation_outlined, color: Colors.white24),
-                                                  ),
+                                                  memCacheWidth:
+                                                      ImageCaps.kThumb,
+                                                  memCacheHeight:
+                                                      ImageCaps.kThumb,
+                                                  maxWidthDiskCache:
+                                                      ImageCaps.kThumb,
+                                                  errorWidget: (_, __, ___) =>
+                                                      Container(
+                                                        color: well,
+                                                        child: Icon(
+                                                          Icons
+                                                              .movie_creation_outlined,
+                                                          color: isLight
+                                                              ? PrismLight
+                                                                    .inkFaint
+                                                              : Colors.white24,
+                                                        ),
+                                                      ),
                                                 ),
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                rel.relationType.replaceAll('_', ' '),
-                                                style: const TextStyle(
-                                                  color: Color(0xFF7C5CFF),
-                                                  fontSize: 9,
+                                                rel.relationType.replaceAll(
+                                                  '_',
+                                                  ' ',
+                                                ),
+                                                style: TextStyle(
+                                                  color: isLight
+                                                      ? PrismAccent.text(
+                                                          isLight,
+                                                        )
+                                                      : const Color(0xFF7C5CFF),
+                                                  fontSize: 11,
                                                   fontWeight: FontWeight.w900,
                                                 ),
                                                 maxLines: 1,
@@ -858,8 +1090,8 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                               ),
                                               Text(
                                                 rel.title,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: ink,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -878,10 +1110,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                               // Recommendations / You May Also Like (Clickable with Hover Scale)
                               if (_anime.recommendations.isNotEmpty) ...[
                                 const SizedBox(height: 32),
-                                const Text(
+                                Text(
                                   'You May Also Like',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: ink,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -893,38 +1125,53 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                                     scrollDirection: Axis.horizontal,
                                     physics: const BouncingScrollPhysics(),
                                     itemCount: _anime.recommendations.length,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 14),
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(width: 14),
                                     itemBuilder: (context, index) {
                                       final rec = _anime.recommendations[index];
                                       return _HoverScale(
-                                        onTap: () => widget.onNavigateToAnime(rec),
+                                        onTap: () =>
+                                            widget.onNavigateToAnime(rec),
                                         child: SizedBox(
                                           width: 115,
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               ClipRRect(
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                                 child: CachedNetworkImage(
                                                   imageUrl: rec.coverUrl,
                                                   width: 115,
                                                   height: 140,
                                                   fit: BoxFit.cover,
                                                   // P12: capped thumb.
-                                                  memCacheWidth: ImageCaps.kThumb,
-                                                  memCacheHeight: ImageCaps.kThumb,
-                                                  maxWidthDiskCache: ImageCaps.kThumb,
-                                                  errorWidget: (_, __, ___) => Container(
-                                                    color: DizzyVoid.surface2,
-                                                    child: const Icon(Icons.movie_creation_outlined, color: Colors.white24),
-                                                  ),
+                                                  memCacheWidth:
+                                                      ImageCaps.kThumb,
+                                                  memCacheHeight:
+                                                      ImageCaps.kThumb,
+                                                  maxWidthDiskCache:
+                                                      ImageCaps.kThumb,
+                                                  errorWidget: (_, __, ___) =>
+                                                      Container(
+                                                        color: well,
+                                                        child: Icon(
+                                                          Icons
+                                                              .movie_creation_outlined,
+                                                          color: isLight
+                                                              ? PrismLight
+                                                                    .inkFaint
+                                                              : Colors.white24,
+                                                        ),
+                                                      ),
                                                 ),
                                               ),
                                               const SizedBox(height: 6),
                                               Text(
                                                 rec.displayTitle,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: ink,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -955,7 +1202,10 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
     );
   }
 
-  Widget _buildHeaderIconButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildHeaderIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return _HoverScale(
       onTap: onTap,
       child: ClipRRect(
@@ -985,6 +1235,14 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
     final count = endIndex - startIndex;
     if (count <= 0) return const SizedBox.shrink();
 
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.surface2;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1009,19 +1267,21 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
               color: isHighlighted
                   ? const Color(0xFFEF4444).withValues(alpha: 0.30)
                   : isCurrent
-                      ? const Color(0xFF7C5CFF).withValues(alpha: 0.35)
-                      : (isWatched
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : DizzyVoid.surface1),
+                  ? const Color(0xFF7C5CFF).withValues(alpha: 0.35)
+                  : (isWatched
+                        ? (isLight
+                              ? PrismLight.raisedBottom
+                              : Colors.white.withValues(alpha: 0.08))
+                        : well),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isHighlighted
                     ? const Color(0xFFEF4444)
                     : isCurrent
-                        ? const Color(0xFF7C5CFF)
-                        : (isWatched
-                            ? Colors.white24
-                            : Colors.white.withValues(alpha: 0.08)),
+                    ? const Color(0xFF7C5CFF)
+                    : (isWatched
+                          ? (isLight ? PrismLight.borderSubtle : Colors.white24)
+                          : hairline),
                 width: (isCurrent || isHighlighted) ? 1.5 : 1,
               ),
             ),
@@ -1030,12 +1290,16 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
                 '$epNum',
                 style: TextStyle(
                   color: isHighlighted
-                      ? const Color(0xFFEF4444)
+                      ? (isLight
+                            ? PrismAccent.text(isLight)
+                            : const Color(0xFFEF4444))
                       : isCurrent
-                          ? const Color(0xFF7C5CFF)
-                          : (isWatched ? Colors.white70 : Colors.white),
+                      ? (isLight ? ink : const Color(0xFF7C5CFF))
+                      : (isWatched ? inkSoft : ink),
                   fontSize: 13,
-                  fontWeight: (isCurrent || isHighlighted) ? FontWeight.w900 : FontWeight.bold,
+                  fontWeight: (isCurrent || isHighlighted)
+                      ? FontWeight.w900
+                      : FontWeight.bold,
                 ),
               ),
             ),
@@ -1063,19 +1327,16 @@ class _HoverScaleState extends State<_HoverScale> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
-      cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           transform: Matrix4.identity()
-            ..scaleByDouble(
-              _hover ? 1.04 : 1.0,
-              _hover ? 1.04 : 1.0,
-              1.0,
-              1.0,
-            ),
+            ..scaleByDouble(_hover ? 1.04 : 1.0, _hover ? 1.04 : 1.0, 1.0, 1.0),
           transformAlignment: Alignment.center,
           child: widget.child,
         ),

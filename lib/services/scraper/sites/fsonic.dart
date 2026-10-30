@@ -39,10 +39,12 @@ class FSonicScraper extends StreamScraper {
     try {
       final client = http.Client();
       try {
-        final sRes = await client.get(
-          Uri.parse('$_baseUrl/movie/search/${Uri.encodeComponent(title)}'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final sRes = await client
+            .get(
+              Uri.parse('$_baseUrl/movie/search/${Uri.encodeComponent(title)}'),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (sRes.statusCode != 200) return;
         final sHtml = sRes.body;
@@ -66,28 +68,33 @@ class FSonicScraper extends StreamScraper {
 
         if (watchSlug == null) return;
 
-        final wRes = await client.get(
-          Uri.parse('$_baseUrl$watchSlug'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final wRes = await client
+            .get(Uri.parse('$_baseUrl$watchSlug'), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (wRes.statusCode != 200) return;
         final wHtml = wRes.body;
 
-        final match = RegExp(r'''init\('([^']+)',\s*(?:'[^']*',\s*)?'([^']+)'\)''').firstMatch(wHtml);
+        final match = RegExp(
+          r'''init\('([^']+)',\s*(?:'[^']*',\s*)?'([^']+)'\)''',
+        ).firstMatch(wHtml);
         if (match == null || match.group(1) == null) return;
 
         final token = match.group(1)!;
         final trailer = match.group(2) ?? '';
 
-        final jsonRes = await client.get(
-          Uri.parse('$_baseUrl/api/source/$token?trailer=$trailer&type=watch'),
-          headers: {
-            ..._headers,
-            'Accept': 'application/json, text/plain, */*',
-            'Referer': '$_baseUrl$watchSlug',
-          },
-        ).timeout(const Duration(seconds: 8));
+        final jsonRes = await client
+            .get(
+              Uri.parse(
+                '$_baseUrl/api/source/$token?trailer=$trailer&type=watch',
+              ),
+              headers: {
+                ..._headers,
+                'Accept': 'application/json, text/plain, */*',
+                'Referer': '$_baseUrl$watchSlug',
+              },
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (jsonRes.statusCode != 200) return;
         final json = jsonDecode(jsonRes.body);
@@ -108,7 +115,9 @@ class FSonicScraper extends StreamScraper {
           for (final item in group) {
             if (item is! Map || item['src'] == null) continue;
             final rawSrc = item['src'].toString();
-            final srcUrl = rawSrc.startsWith('http') ? rawSrc : '$_fshareBase$rawSrc';
+            final srcUrl = rawSrc.startsWith('http')
+                ? rawSrc
+                : '$_fshareBase$rawSrc';
 
             if (seen.add(srcUrl)) {
               final quality = item['quality']?.toString() ?? '1080';
@@ -127,10 +136,7 @@ class FSonicScraper extends StreamScraper {
                 isHls ? 'HLS' : 'MP4',
               ];
 
-              final reqHeaders = {
-                ..._headers,
-                'Referer': '$_fshareBase/',
-              };
+              final reqHeaders = {..._headers, 'Referer': '$_fshareBase/'};
 
               yield StreamSource(
                 name: 'FSonic',
@@ -141,9 +147,7 @@ class FSonicScraper extends StreamScraper {
                 headers: reqHeaders,
                 behaviorHints: {
                   'notWebReady': false,
-                  'proxyHeaders': {
-                    'request': reqHeaders,
-                  },
+                  'proxyHeaders': {'request': reqHeaders},
                 },
               );
             }

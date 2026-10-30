@@ -5,12 +5,12 @@ import 'package:dizzy/services/watchparty/party_playback_session.dart';
 import 'package:dizzy/services/watchparty/watch_sync_engine.dart';
 
 WatchPartyRoom _room(String id) => WatchPartyRoom(
-      roomId: id,
-      title: 'Test Party',
-      mediaRef: 'tmdb:movie:550',
-      isPrivate: false,
-      status: 'lobby',
-    );
+  roomId: id,
+  title: 'Test Party',
+  mediaRef: 'tmdb:movie:550',
+  isPrivate: false,
+  status: 'lobby',
+);
 
 void main() {
   group('PartySession transitions', () {
@@ -105,7 +105,8 @@ void main() {
         hostSentAtMs: 1,
       );
       final back = WatchSyncMessage.fromJson(
-          Map<String, dynamic>.from(msg.toJson()));
+        Map<String, dynamic>.from(msg.toJson()),
+      );
       expect(back.isUsable, isTrue);
       expect(back.mediaTitle, 'Show');
       expect(back.season, 1);
@@ -173,13 +174,12 @@ void main() {
       int positionMs = 90000,
       bool playing = true,
       int sentAt = 1000,
-    }) =>
-        WatchSyncMessage(
-          mediaRef: 'tmdb:movie:550',
-          positionMs: positionMs,
-          playing: playing,
-          hostSentAtMs: sentAt,
-        );
+    }) => WatchSyncMessage(
+      mediaRef: 'tmdb:movie:550',
+      positionMs: positionMs,
+      playing: playing,
+      hostSentAtMs: sentAt,
+    );
 
     test('far guest seeks to host, play state follows', () {
       final r = PartyPlaybackSession.sameTitleResync(

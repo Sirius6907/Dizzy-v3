@@ -12,13 +12,38 @@ import '../net/retry_policy.dart';
 class MetadataService {
   MetadataService._();
 
-  static final Map<String, List<Movie>> _catalogCache = {};
-  static final Map<String, MovieDetail> _metaCache = {};
+  static const Duration _cacheTtl = Duration(minutes: 10);
+  static const int _maxCacheEntries = 120;
+
+  static final Map<String, _CacheEntry<List<Movie>>> _catalogCache = {};
+  static final Map<String, _CacheEntry<MovieDetail>> _metaCache = {};
 
   /// Clear the memory cache (e.g. when addons change)
   static void clearCache() {
     _catalogCache.clear();
     _metaCache.clear();
+  }
+
+  /// TTL + LRU read: expired entries are dropped, hits are re-inserted so the
+  /// oldest key is genuinely the least recently used one.
+  static T? _cacheRead<T>(Map<String, _CacheEntry<T>> cache, String key) {
+    final hit = cache.remove(key);
+    if (hit == null) return null;
+    if (DateTime.now().difference(hit.at) > _cacheTtl) return null;
+    cache[key] = hit;
+    return hit.value;
+  }
+
+  static void _cacheWrite<T>(
+    Map<String, _CacheEntry<T>> cache,
+    String key,
+    T value,
+  ) {
+    cache.remove(key);
+    if (cache.length >= _maxCacheEntries) {
+      cache.remove(cache.keys.first);
+    }
+    cache[key] = _CacheEntry<T>(value, DateTime.now());
   }
 
   // ── Manifest ──────────────────────────────────────────────────────────
@@ -39,9 +64,7 @@ class MetadataService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to fetch manifest (${response.statusCode})',
-      );
+      throw Exception('Failed to fetch manifest (${response.statusCode})');
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -58,9 +81,12 @@ class MetadataService {
     String? genre,
     int? skip,
   }) async {
-    final effectiveBaseUrl = (baseUrl.trim().isEmpty || !baseUrl.startsWith('http'))
+    final effectiveBaseUrl =
+        (baseUrl.trim().isEmpty || !baseUrl.startsWith('http'))
         ? 'https://v3-cinemeta.strem.io'
-        : (baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl);
+        : (baseUrl.endsWith('/')
+              ? baseUrl.substring(0, baseUrl.length - 1)
+              : baseUrl);
 
     final extra = <String>[];
     if (genre != null) {
@@ -73,14 +99,15 @@ class MetadataService {
     final extraPath = extra.isNotEmpty ? '/${extra.join("&")}' : '';
     final url = '$effectiveBaseUrl/catalog/$type/$catalogId$extraPath.json';
 
-    if (_catalogCache.containsKey(url)) {
-      return List.from(_catalogCache[url]!);
+    final cached = _cacheRead(_catalogCache, url);
+    if (cached != null) {
+      return List.from(cached);
     }
 
     final response = await DizzyNet.instance.get(
       Uri.parse(url),
       headers: {'Accept': 'application/json'},
-      policy: RetryPolicy.patient,
+      policy: RetryPolicy.quick,
       screen: 'discover',
       code: 'addon_catalog',
     );
@@ -93,11 +120,14 @@ class MetadataService {
     final metas = decoded['metas'] as List<dynamic>? ?? [];
 
     final result = metas
-        .map((item) => Movie.fromJson(item as Map<String, dynamic>, effectiveBaseUrl))
+        .map(
+          (item) =>
+              Movie.fromJson(item as Map<String, dynamic>, effectiveBaseUrl),
+        )
         .where((movie) => movie.id.isNotEmpty && movie.name.isNotEmpty)
         .toList();
 
-    _catalogCache[url] = result;
+    _cacheWrite(_catalogCache, url, result);
     return List.from(result);
   }
 
@@ -110,16 +140,21 @@ class MetadataService {
     required String catalogId,
     required String query,
   }) async {
-    final effectiveBaseUrl = (baseUrl.trim().isEmpty || !baseUrl.startsWith('http'))
+    final effectiveBaseUrl =
+        (baseUrl.trim().isEmpty || !baseUrl.startsWith('http'))
         ? 'https://v3-cinemeta.strem.io'
-        : (baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl);
+        : (baseUrl.endsWith('/')
+              ? baseUrl.substring(0, baseUrl.length - 1)
+              : baseUrl);
 
     final encoded = Uri.encodeComponent(query);
-    final url = '$effectiveBaseUrl/catalog/$type/$catalogId/search=$encoded.json';
+    final url =
+        '$effectiveBaseUrl/catalog/$type/$catalogId/search=$encoded.json';
 
     // We can cache searches too!
-    if (_catalogCache.containsKey(url)) {
-      return List.from(_catalogCache[url]!);
+    final cached = _cacheRead(_catalogCache, url);
+    if (cached != null) {
+      return List.from(cached);
     }
 
     final response = await DizzyNet.instance.get(
@@ -129,20 +164,23 @@ class MetadataService {
       code: 'addon_search',
     );
     if (response.statusCode != 200) return [];
-    
+
     final bodyStr = response.body.trim();
     if (bodyStr.isEmpty) return [];
 
     try {
       final decoded = jsonDecode(bodyStr) as Map<String, dynamic>;
       final metas = decoded['metas'] as List<dynamic>? ?? [];
-      
+
       final result = metas
-          .map((item) => Movie.fromJson(item as Map<String, dynamic>, effectiveBaseUrl))
+          .map(
+            (item) =>
+                Movie.fromJson(item as Map<String, dynamic>, effectiveBaseUrl),
+          )
           .where((movie) => movie.id.isNotEmpty && movie.name.isNotEmpty)
           .toList();
-          
-      _catalogCache[url] = result;
+
+      _cacheWrite(_catalogCache, url, result);
       return List.from(result);
     } catch (e) {
       return [];
@@ -157,25 +195,29 @@ class MetadataService {
     required String type,
     required String imdbId,
   }) async {
-    final effectiveBaseUrl = (baseUrl.trim().isEmpty || !baseUrl.startsWith('http'))
+    final effectiveBaseUrl =
+        (baseUrl.trim().isEmpty || !baseUrl.startsWith('http'))
         ? 'https://v3-cinemeta.strem.io'
-        : (baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl);
+        : (baseUrl.endsWith('/')
+              ? baseUrl.substring(0, baseUrl.length - 1)
+              : baseUrl);
 
     final encodedId = Uri.encodeComponent(imdbId);
     final url = '$effectiveBaseUrl/meta/$type/$encodedId.json';
 
-    if (_metaCache.containsKey(url)) {
-      return _metaCache[url];
+    final cached = _cacheRead(_metaCache, url);
+    if (cached != null) {
+      return cached;
     }
 
     final response = await DizzyNet.instance.get(
       Uri.parse(url),
-      policy: RetryPolicy.patient,
+      policy: RetryPolicy.quick,
       screen: 'details',
       code: 'addon_meta',
     );
     if (response.statusCode != 200) return null;
-    
+
     final bodyStr = response.body.trim();
     if (bodyStr.isEmpty) return null;
 
@@ -184,9 +226,9 @@ class MetadataService {
       final meta = decoded['meta'] as Map<String, dynamic>?;
 
       if (meta == null) return null;
-      
+
       final result = MovieDetail.fromJson(meta);
-      _metaCache[url] = result;
+      _cacheWrite(_metaCache, url, result);
       return result;
     } catch (e) {
       return null;
@@ -203,7 +245,8 @@ class MetadataService {
     final query = title.trim();
     if (query.isEmpty) return null;
 
-    final targetBaseUrl = (preferredBaseUrl != null &&
+    final targetBaseUrl =
+        (preferredBaseUrl != null &&
             preferredBaseUrl.startsWith('http') &&
             !preferredBaseUrl.contains('bestsimilar'))
         ? preferredBaseUrl
@@ -215,10 +258,18 @@ class MetadataService {
 
     // Search both types to compare candidates across series and movie catalogs
     final results = await Future.wait([
-      search(baseUrl: targetBaseUrl, type: firstType, catalogId: 'top', query: query)
-          .catchError((_) => <Movie>[]),
-      search(baseUrl: targetBaseUrl, type: secondType, catalogId: 'top', query: query)
-          .catchError((_) => <Movie>[]),
+      search(
+        baseUrl: targetBaseUrl,
+        type: firstType,
+        catalogId: 'top',
+        query: query,
+      ).catchError((_) => <Movie>[]),
+      search(
+        baseUrl: targetBaseUrl,
+        type: secondType,
+        catalogId: 'top',
+        query: query,
+      ).catchError((_) => <Movie>[]),
     ]);
 
     final allCandidates = <Movie>[...results[0], ...results[1]];
@@ -253,7 +304,8 @@ class MetadataService {
       }
 
       if (type != null) {
-        final isCTv = (c.type == 'series' || c.type == 'tv' || c.type == 'anime');
+        final isCTv =
+            (c.type == 'series' || c.type == 'tv' || c.type == 'anime');
         if (isCTv == isPreferredTv) {
           score += 20;
         }
@@ -278,4 +330,11 @@ class MetadataService {
 
     return bestMatch;
   }
+}
+
+/// Cached value plus the moment it was stored, so entries can expire.
+class _CacheEntry<T> {
+  final T value;
+  final DateTime at;
+  const _CacheEntry(this.value, this.at);
 }

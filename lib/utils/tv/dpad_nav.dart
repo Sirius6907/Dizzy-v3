@@ -99,12 +99,9 @@ class _DpadFocusRingState extends State<DpadFocusRing> {
     return FocusableActionDetector(
       onShowFocusHighlight: (v) => setState(() => _focused = v),
       shortcuts: const {
-        SingleActivator(LogicalKeyboardKey.enter):
-            ActivateIntent(),
-        SingleActivator(LogicalKeyboardKey.numpadEnter):
-            ActivateIntent(),
-        SingleActivator(LogicalKeyboardKey.gameButtonA):
-            ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
       },
       actions: {
         ActivateIntent: CallbackAction<ActivateIntent>(
@@ -119,9 +116,7 @@ class _DpadFocusRingState extends State<DpadFocusRing> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _focused
-                ? const Color(0xFF00E5FF)
-                : Colors.transparent,
+            color: _focused ? const Color(0xFF00E5FF) : Colors.transparent,
             width: _focused ? 2.5 : 1.5,
           ),
           boxShadow: _focused

@@ -42,7 +42,8 @@ class DizzyRotaryDial extends StatefulWidget {
 class _DizzyRotaryDialState extends State<DizzyRotaryDial> {
   int _lastDetent = -1;
 
-  double get _range => (widget.max - widget.min) <= 0 ? 1.0 : widget.max - widget.min;
+  double get _range =>
+      (widget.max - widget.min) <= 0 ? 1.0 : widget.max - widget.min;
 
   double get _normalized =>
       ((widget.value - widget.min) / _range).clamp(0.0, 1.0);
@@ -70,9 +71,8 @@ class _DizzyRotaryDialState extends State<DizzyRotaryDial> {
     final raw = widget.min + normalized * _range;
     // Snap to detents.
     final step = _stepValue();
-    final snapped =
-        (widget.min + ((raw - widget.min) / step).round() * step)
-            .clamp(widget.min, widget.max);
+    final snapped = (widget.min + ((raw - widget.min) / step).round() * step)
+        .clamp(widget.min, widget.max);
     final detent = ((snapped - widget.min) / step).round();
     if (detent != _lastDetent) {
       _lastDetent = detent;
@@ -179,7 +179,11 @@ class _RotaryDialPainter extends CustomPainter {
       ringPaint
         ..color = ringColors[i]
         ..strokeWidth = 1.2;
-      canvas.drawCircle(center, r - 6 - i * ((r - 14) / ringColors.length), ringPaint);
+      canvas.drawCircle(
+        center,
+        r - 6 - i * ((r - 14) / ringColors.length),
+        ringPaint,
+      );
     }
 
     // Tick marks around the outer bezel: -135°..+135° measured from top.
@@ -191,7 +195,8 @@ class _RotaryDialPainter extends CustomPainter {
       final t = i / (tickCount - 1); // 0..1
       final angleDeg = -135.0 + t * 270.0;
       final rad = (angleDeg - 90.0) * math.pi / 180.0;
-      final isMajor = i % math.max(1, (tickCount / 4).round()) == 0 ||
+      final isMajor =
+          i % math.max(1, (tickCount / 4).round()) == 0 ||
           i == 0 ||
           i == tickCount - 1;
       final inner = r - (isMajor ? 12.0 : 9.0);
@@ -227,8 +232,16 @@ class _RotaryDialPainter extends CustomPainter {
       ..color = accent
       ..strokeWidth = 3.0;
     canvas.drawLine(
-      center + Offset(math.cos(pointerRad) * (capR * 0.25), math.sin(pointerRad) * (capR * 0.25)),
-      center + Offset(math.cos(pointerRad) * (capR - 4), math.sin(pointerRad) * (capR - 4)),
+      center +
+          Offset(
+            math.cos(pointerRad) * (capR * 0.25),
+            math.sin(pointerRad) * (capR * 0.25),
+          ),
+      center +
+          Offset(
+            math.cos(pointerRad) * (capR - 4),
+            math.sin(pointerRad) * (capR - 4),
+          ),
       pointerPaint,
     );
 

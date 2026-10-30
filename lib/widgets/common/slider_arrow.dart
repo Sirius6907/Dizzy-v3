@@ -6,17 +6,14 @@ class SliderArrow extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const SliderArrow({
-    super.key,
-    required this.icon,
-    required this.onTap,
-  });
+  const SliderArrow({super.key, required this.icon, required this.onTap});
 
   @override
   State<SliderArrow> createState() => _SliderArrowState();
 }
 
-class _SliderArrowState extends State<SliderArrow> with SingleTickerProviderStateMixin {
+class _SliderArrowState extends State<SliderArrow>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   bool _isPressed = false;
 
@@ -24,7 +21,7 @@ class _SliderArrowState extends State<SliderArrow> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     // Dynamic scale based on interaction state
     final scale = _isPressed ? 0.90 : (_isHovered ? 1.08 : 1.0);
-    
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() {
@@ -66,7 +63,7 @@ class _SliderArrowState extends State<SliderArrow> with SingleTickerProviderStat
                             color: Colors.black.withOpacity(0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ]
                       : [],
                 ),

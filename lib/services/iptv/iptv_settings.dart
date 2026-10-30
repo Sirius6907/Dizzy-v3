@@ -64,16 +64,21 @@ abstract final class IptvSettings {
 
   // Live TV Values
   static final ValueNotifier<bool> enableSpotlight = ValueNotifier<bool>(true);
-  static final ValueNotifier<HeroStyle> heroStyle =
-      ValueNotifier<HeroStyle>(HeroStyle.immersive);
+  static final ValueNotifier<HeroStyle> heroStyle = ValueNotifier<HeroStyle>(
+    HeroStyle.immersive,
+  );
   static final ValueNotifier<bool> heroAutoRotate = ValueNotifier<bool>(true);
   static final ValueNotifier<int> heroRotateSeconds = ValueNotifier<int>(7);
   static final ValueNotifier<CardDensity> cardDensity =
       ValueNotifier<CardDensity>(CardDensity.standard);
-  static final ValueNotifier<double> cardHoverZoom = ValueNotifier<double>(1.06);
+  static final ValueNotifier<double> cardHoverZoom = ValueNotifier<double>(
+    1.06,
+  );
   static final ValueNotifier<bool> showHdBadge = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showCategoryTag = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<List<String>> visibleCategories =
       ValueNotifier<List<String>>(List.from(defaultCategories));
 
@@ -81,7 +86,9 @@ abstract final class IptvSettings {
   static final ValueNotifier<PortalCardStyle> portalCardStyle =
       ValueNotifier<PortalCardStyle>(PortalCardStyle.rich);
   static final ValueNotifier<bool> showPortalExpiry = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showPortalConnections = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showPortalConnections = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<int> defaultPortalTab = ValueNotifier<int>(0);
   static final ValueNotifier<CatalogSource> defaultScrapeSource =
       ValueNotifier<CatalogSource>(CatalogSource.cloudVault);
@@ -92,8 +99,12 @@ abstract final class IptvSettings {
   static final ValueNotifier<int> browserGridColumns = ValueNotifier<int>(4);
   static final ValueNotifier<bool> showStreamLogos = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showEpgSnippet = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showCategoryCount = ValueNotifier<bool>(true);
-  static final ValueNotifier<double> sidebarWidth = ValueNotifier<double>(260.0);
+  static final ValueNotifier<bool> showCategoryCount = ValueNotifier<bool>(
+    true,
+  );
+  static final ValueNotifier<double> sidebarWidth = ValueNotifier<double>(
+    260.0,
+  );
 
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
 
@@ -135,7 +146,8 @@ abstract final class IptvSettings {
       orElse: () => PortalCardStyle.rich,
     );
     showPortalExpiry.value = prefs.getBool(_keyShowPortalExpiry) ?? true;
-    showPortalConnections.value = prefs.getBool(_keyShowPortalConnections) ?? true;
+    showPortalConnections.value =
+        prefs.getBool(_keyShowPortalConnections) ?? true;
     defaultPortalTab.value = prefs.getInt(_keyDefaultPortalTab) ?? 0;
 
     final scrapeSrcStr = prefs.getString(_keyDefaultScrapeSource);

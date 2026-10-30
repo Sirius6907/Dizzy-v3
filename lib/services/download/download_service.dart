@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../models/download/download_task_model.dart';
 import '../../models/stream/stream_model.dart';
+import '../../utils/download/atomic_file_swap.dart';
 import '../../utils/download/download_path_helper.dart';
 import '../../utils/perf/storage_guard.dart';
 import '../../utils/platform/storage_space_helper.dart';
@@ -251,7 +252,17 @@ class DownloadService {
       final content = await file.readAsString();
       if (content.isEmpty) return;
 
-      final List<dynamic> jsonList = jsonDecode(content);
+      final List<dynamic> jsonList;
+      try {
+        jsonList = jsonDecode(content) as List<dynamic>;
+      } catch (e) {
+        // Never start empty over an unreadable file: move it aside first so
+        // the next successful save cannot wipe recoverable task data.
+        final stamp = DateTime.now().millisecondsSinceEpoch;
+        await file.rename('${file.path}.corrupt-$stamp');
+        debugPrint('[DownloadService] Corrupt task store moved aside: $e');
+        return;
+      }
       final tasks = <DownloadTask>[];
 
       for (final item in jsonList) {
@@ -286,14 +297,28 @@ class DownloadService {
     }
   }
 
+  // Serializes saves. Several fire-and-forget persists (progress ticks,
+  // terminal flushes) used to interleave and could leave a torn file.
+  Future<void> _persistChain = Future.value();
+
   Future<void> _persistTasks() async {
     try {
       final file = await _getStorageFile();
+      // Snapshot at execution time: a queued save always writes the newest state.
       final jsonList = tasksNotifier.value.map((t) => t.toJson()).toList();
-      await file.writeAsString(jsonEncode(jsonList));
+      final tmp = File('${file.path}.tmp');
+      await tmp.writeAsString(jsonEncode(jsonList), flush: true);
+      await promoteFile(tmp, file.path);
     } catch (e) {
       debugPrint('[DownloadService] Failed to persist tasks: $e');
     }
+  }
+
+  /// Queues a save behind every earlier save (strictly serialized).
+  Future<void> _persistNow() {
+    final next = _persistChain.then((_) => _persistTasks());
+    _persistChain = next.catchError((Object _) {});
+    return _persistChain;
   }
 
   // v1.1.9 (Task 15): trailing-edge debounced persist (750ms). Per-tick
@@ -306,12 +331,12 @@ class DownloadService {
     if (immediate) {
       _persistDebounce?.cancel();
       _persistDebounce = null;
-      unawaited(_persistTasks());
+      unawaited(_persistNow());
       return;
     }
     _persistDebounce ??= Timer(_persistDebounceWindow, () {
       _persistDebounce = null;
-      unawaited(_persistTasks());
+      unawaited(_persistNow());
     });
   }
 
@@ -553,7 +578,7 @@ class DownloadService {
 
     current.insert(0, task);
     tasksNotifier.value = current;
-    await _persistTasks();
+    await _persistNow();
 
     // P11: full disk → fail fast with Easy English (never a half-written
     // file, never a stuck "downloading 0%" task heating the radio).
@@ -793,13 +818,17 @@ class DownloadService {
 
       int totalContentLength = response.contentLength;
       int totalBytes = task.totalBytes;
+      // null = unknown length (chunked transfer): no completeness check possible.
+      int? expectedBytes;
 
       if (isPartial) {
         totalBytes =
             existingBytes + (totalContentLength > 0 ? totalContentLength : 0);
+        if (totalContentLength > 0) expectedBytes = totalBytes;
       } else if (isOk) {
         existingBytes = 0; // Server did not accept Range, restarting from 0
         totalBytes = totalContentLength > 0 ? totalContentLength : 0;
+        if (totalContentLength > 0) expectedBytes = totalBytes;
       }
 
       // Check available disk space
@@ -857,10 +886,31 @@ class DownloadService {
           _httpSubscriptions.remove(task.id);
           _httpRequests.remove(task.id);
 
-          // Rename .part to targetFilePath
-          final finalFile = File(task.targetFilePath);
-          if (await finalFile.exists()) await finalFile.delete();
-          await partFile.rename(task.targetFilePath);
+          // A short read (server closed early) must never be promoted to a
+          // playable file — keep the .part so the next attempt can Range on.
+          final expected = expectedBytes;
+          final onDisk = await partFile.length();
+          final shortRead =
+              (expected != null && receivedSoFar != expected) ||
+              onDisk != receivedSoFar;
+          if (shortRead) {
+            if (_canceledOrPausedTaskIds.contains(task.id)) return;
+            _updateTask(
+              task.copyWith(
+                status: DownloadStatus.failed,
+                receivedBytes: onDisk,
+                totalBytes: expected ?? (totalBytes > 0 ? totalBytes : onDisk),
+                speedBytesPerSec: 0.0,
+                etaSeconds: null,
+                error: DownloadErrorText.easyText('E_UNKNOWN'),
+              ),
+            );
+            return;
+          }
+
+          // Promote .part to the target without ever leaving neither copy:
+          // an existing playable file is moved aside and restored on failure.
+          await promoteFile(partFile, task.targetFilePath);
 
           _updateTask(
             task.copyWith(
@@ -984,7 +1034,7 @@ class DownloadService {
     final current = List<DownloadTask>.from(tasksNotifier.value)
       ..removeWhere((t) => t.id == taskId);
     tasksNotifier.value = current;
-    await _persistTasks();
+    await _persistNow();
     _updateWakelockState();
   }
 }

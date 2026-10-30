@@ -3,11 +3,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home_page_settings.dart';
 
 enum MusicMiniPlayerPreset {
-  floatingGlassIsland('Floating Glass Island', 'Sleek floating glassmorphic dock with ambient glow and lossless badge'),
-  compactPill('Compact Neon Capsule', 'Streamlined compact rounded pill with essential playback controls'),
-  gradientWave('Gradient Wave Dock', 'Dynamic audio frequency gradient wave background with glowing controls'),
-  minimalistLine('Minimalist Edge Rail', 'Ultra-thin edge-to-edge floating sleek rail'),
-  customStudio('Custom Drag & Drop Mini Player', 'Your fully customized, arranged and styled mini player');
+  floatingGlassIsland(
+    'Floating Glass Island',
+    'Sleek floating glassmorphic dock with ambient glow and lossless badge',
+  ),
+  compactPill(
+    'Compact Neon Capsule',
+    'Streamlined compact rounded pill with essential playback controls',
+  ),
+  gradientWave(
+    'Gradient Wave Dock',
+    'Dynamic audio frequency gradient wave background with glowing controls',
+  ),
+  minimalistLine(
+    'Minimalist Edge Rail',
+    'Ultra-thin edge-to-edge floating sleek rail',
+  ),
+  customStudio(
+    'Custom Drag & Drop Mini Player',
+    'Your fully customized, arranged and styled mini player',
+  );
 
   final String label;
   final String description;
@@ -15,11 +30,26 @@ enum MusicMiniPlayerPreset {
 }
 
 enum MusicFullscreenPreset {
-  vinylStudio('Vinyl Turntable Studio', 'Rotating 33rpm vinyl disc with tonearm and warm studio atmosphere'),
-  cyberWaveform('Cyberpunk Wave Visualizer', 'Real-time animated audio visualizer canvas with neon glow'),
-  liquidGlassNeo('Liquid Glass Sanctuary', 'Deep optical refraction glass sheets powered by liquid_glass_easy'),
-  cinematicArtwork('Cinematic Poster Focus', 'Massive edge-to-edge immersive album art with blurred atmosphere'),
-  customStudio('Custom Drag & Drop Full Player', 'Your fully customized, arranged and styled fullscreen player');
+  vinylStudio(
+    'Vinyl Turntable Studio',
+    'Rotating 33rpm vinyl disc with tonearm and warm studio atmosphere',
+  ),
+  cyberWaveform(
+    'Cyberpunk Wave Visualizer',
+    'Real-time animated audio visualizer canvas with neon glow',
+  ),
+  liquidGlassNeo(
+    'Liquid Glass Sanctuary',
+    'Deep optical refraction glass sheets powered by liquid_glass_easy',
+  ),
+  cinematicArtwork(
+    'Cinematic Poster Focus',
+    'Massive edge-to-edge immersive album art with blurred atmosphere',
+  ),
+  customStudio(
+    'Custom Drag & Drop Full Player',
+    'Your fully customized, arranged and styled fullscreen player',
+  );
 
   final String label;
   final String description;
@@ -27,11 +57,26 @@ enum MusicFullscreenPreset {
 }
 
 enum MusicSeekbarStyle {
-  waveformEqualizer('Dynamic Audio Waveform Canvas', 'Procedural animated waveform bars with live equalizer scrubbing'),
-  neonGradient('Neon Gradient Progress Bar', 'Multi-color vibrant linear gradient scrubber with glowing tip'),
-  liquidGlassSlider('Liquid Glass Track Slider', 'Refractive frosted glass slider track with smooth thumb'),
-  standardSlider('Precision Tactile Slider', 'Tactile interactive glass track with timecode readouts'),
-  radialDial('Radial Circular Ring Dial', 'Radial circular dial scrubber for compact modern interfaces');
+  waveformEqualizer(
+    'Dynamic Audio Waveform Canvas',
+    'Procedural animated waveform bars with live equalizer scrubbing',
+  ),
+  neonGradient(
+    'Neon Gradient Progress Bar',
+    'Multi-color vibrant linear gradient scrubber with glowing tip',
+  ),
+  liquidGlassSlider(
+    'Liquid Glass Track Slider',
+    'Refractive frosted glass slider track with smooth thumb',
+  ),
+  standardSlider(
+    'Precision Tactile Slider',
+    'Tactile interactive glass track with timecode readouts',
+  ),
+  radialDial(
+    'Radial Circular Ring Dial',
+    'Radial circular dial scrubber for compact modern interfaces',
+  );
 
   final String label;
   final String description;
@@ -97,40 +142,54 @@ abstract final class MusicSettings {
   static const _keyComponentOrderMini = 'music_component_order_mini';
 
   // Fullscreen Player Keys
-  static const _keySelectedFullscreenPreset = 'music_selected_fullscreen_preset';
+  static const _keySelectedFullscreenPreset =
+      'music_selected_fullscreen_preset';
   static const _keyCustomSeekbarStyle = 'music_custom_seekbar_style';
   static const _keyCustomPlayButtonStyle = 'music_custom_play_button_style';
   static const _keyCustomHoverEffect = 'music_custom_hover_effect';
   static const _keyCustomArtworkStyle = 'music_custom_artwork_style';
-  static const _keyComponentOrderFullscreen = 'music_component_order_fullscreen';
+  static const _keyComponentOrderFullscreen =
+      'music_component_order_fullscreen';
   static const _keyEnableLiquidGlass = 'music_enable_liquid_glass';
   static const _keyShowLyricsDrawer = 'music_show_lyrics_drawer';
   static const _keyShowQueueDrawer = 'music_show_queue_drawer';
 
   // Atmosphere Notifiers
-  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<AmbientLightPattern> ambientLightPattern =
       ValueNotifier<AmbientLightPattern>(AmbientLightPattern.dualOrbs);
-  static final ValueNotifier<double> ambientLightIntensity = ValueNotifier<double>(0.22);
-  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(1.0);
+  static final ValueNotifier<double> ambientLightIntensity =
+      ValueNotifier<double>(0.22);
+  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(
+    1.0,
+  );
 
   // Discovery Notifiers
   static final ValueNotifier<bool> enableSpotlight = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showTrendingArtists = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showTrendingArtists = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<MusicCardDensity> cardDensity =
       ValueNotifier<MusicCardDensity>(MusicCardDensity.standard);
-  static final ValueNotifier<bool> showLosslessBadge = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showLosslessBadge = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<bool> cardHoverGlow = ValueNotifier<bool>(true);
 
   // Mini Player Notifiers
   static final ValueNotifier<MusicMiniPlayerPreset> selectedMiniPreset =
-      ValueNotifier<MusicMiniPlayerPreset>(MusicMiniPlayerPreset.floatingGlassIsland);
-  static final ValueNotifier<List<String>> componentOrderMini = ValueNotifier<List<String>>([
-    'artwork',
-    'trackInfo',
-    'mainControls',
-    'extraActions',
-  ]);
+      ValueNotifier<MusicMiniPlayerPreset>(
+        MusicMiniPlayerPreset.floatingGlassIsland,
+      );
+  static final ValueNotifier<List<String>> componentOrderMini =
+      ValueNotifier<List<String>>([
+        'artwork',
+        'trackInfo',
+        'mainControls',
+        'extraActions',
+      ]);
 
   // Fullscreen Player Notifiers
   static final ValueNotifier<MusicFullscreenPreset> selectedFullscreenPreset =
@@ -143,21 +202,29 @@ abstract final class MusicSettings {
       ValueNotifier<MusicHoverEffect>(MusicHoverEffect.glassRipple);
   static final ValueNotifier<MusicArtworkStyle> customArtworkStyle =
       ValueNotifier<MusicArtworkStyle>(MusicArtworkStyle.vinylSpinningDisc);
-  static final ValueNotifier<bool> enableLiquidGlass = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableLiquidGlass = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<bool> showLyricsDrawer = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showQueueDrawer = ValueNotifier<bool>(true);
-  static final ValueNotifier<double> crossfadeSeconds = ValueNotifier<double>(3.0);
-  static final ValueNotifier<bool> enableGaplessPlayback = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> enableSmartVolumeNormalization = ValueNotifier<bool>(true);
-  static final ValueNotifier<List<String>> componentOrderFullscreen = ValueNotifier<List<String>>([
-    'artwork',
-    'title',
-    'qualityBadge',
-    'seekbar',
-    'mainControls',
-    'secondaryControls',
-    'extraActions',
-  ]);
+  static final ValueNotifier<double> crossfadeSeconds = ValueNotifier<double>(
+    3.0,
+  );
+  static final ValueNotifier<bool> enableGaplessPlayback = ValueNotifier<bool>(
+    true,
+  );
+  static final ValueNotifier<bool> enableSmartVolumeNormalization =
+      ValueNotifier<bool>(true);
+  static final ValueNotifier<List<String>> componentOrderFullscreen =
+      ValueNotifier<List<String>>([
+        'artwork',
+        'title',
+        'qualityBadge',
+        'seekbar',
+        'mainControls',
+        'secondaryControls',
+        'extraActions',
+      ]);
 
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
 
@@ -245,7 +312,9 @@ abstract final class MusicSettings {
     _notify();
   }
 
-  static Future<void> setAmbientLightPattern(AmbientLightPattern pattern) async {
+  static Future<void> setAmbientLightPattern(
+    AmbientLightPattern pattern,
+  ) async {
     ambientLightPattern.value = pattern;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyAmbientPattern, pattern.name);
@@ -294,14 +363,18 @@ abstract final class MusicSettings {
     _notify();
   }
 
-  static Future<void> setSelectedMiniPreset(MusicMiniPlayerPreset preset) async {
+  static Future<void> setSelectedMiniPreset(
+    MusicMiniPlayerPreset preset,
+  ) async {
     selectedMiniPreset.value = preset;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySelectedMiniPreset, preset.name);
     _notify();
   }
 
-  static Future<void> setSelectedFullscreenPreset(MusicFullscreenPreset preset) async {
+  static Future<void> setSelectedFullscreenPreset(
+    MusicFullscreenPreset preset,
+  ) async {
     selectedFullscreenPreset.value = preset;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySelectedFullscreenPreset, preset.name);
@@ -315,7 +388,9 @@ abstract final class MusicSettings {
     _notify();
   }
 
-  static Future<void> setCustomPlayButtonStyle(MusicPlayButtonStyle style) async {
+  static Future<void> setCustomPlayButtonStyle(
+    MusicPlayButtonStyle style,
+  ) async {
     customPlayButtonStyle.value = style;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyCustomPlayButtonStyle, style.name);
@@ -358,7 +433,10 @@ abstract final class MusicSettings {
     _notify();
   }
 
-  static Future<void> reorderFullscreenComponents(int oldIndex, int newIndex) async {
+  static Future<void> reorderFullscreenComponents(
+    int oldIndex,
+    int newIndex,
+  ) async {
     var index = newIndex;
     if (oldIndex < index) {
       index -= 1;
@@ -402,7 +480,12 @@ abstract final class MusicSettings {
     showLosslessBadge.value = true;
     cardHoverGlow.value = true;
     selectedMiniPreset.value = MusicMiniPlayerPreset.floatingGlassIsland;
-    componentOrderMini.value = ['artwork', 'trackInfo', 'mainControls', 'extraActions'];
+    componentOrderMini.value = [
+      'artwork',
+      'trackInfo',
+      'mainControls',
+      'extraActions',
+    ];
     selectedFullscreenPreset.value = MusicFullscreenPreset.vinylStudio;
     customSeekbarStyle.value = MusicSeekbarStyle.waveformEqualizer;
     customPlayButtonStyle.value = MusicPlayButtonStyle.liquidGlassNeo;

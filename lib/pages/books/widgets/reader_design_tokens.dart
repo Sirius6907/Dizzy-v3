@@ -30,12 +30,24 @@ class ReaderTokens {
   static const double radius24 = 24.0;
   static const double radius32 = 32.0;
 
-  static const BorderRadius rounded4 = BorderRadius.all(Radius.circular(radius4));
-  static const BorderRadius rounded8 = BorderRadius.all(Radius.circular(radius8));
-  static const BorderRadius rounded12 = BorderRadius.all(Radius.circular(radius12));
-  static const BorderRadius rounded16 = BorderRadius.all(Radius.circular(radius16));
-  static const BorderRadius rounded24 = BorderRadius.all(Radius.circular(radius24));
-  static const BorderRadius rounded32 = BorderRadius.all(Radius.circular(radius32));
+  static const BorderRadius rounded4 = BorderRadius.all(
+    Radius.circular(radius4),
+  );
+  static const BorderRadius rounded8 = BorderRadius.all(
+    Radius.circular(radius8),
+  );
+  static const BorderRadius rounded12 = BorderRadius.all(
+    Radius.circular(radius12),
+  );
+  static const BorderRadius rounded16 = BorderRadius.all(
+    Radius.circular(radius16),
+  );
+  static const BorderRadius rounded24 = BorderRadius.all(
+    Radius.circular(radius24),
+  );
+  static const BorderRadius rounded32 = BorderRadius.all(
+    Radius.circular(radius32),
+  );
 
   // ──────────────────────────────────────────────────────────────────────────
   // 3. ELEVATION & CUSTOM SOFT SHADOWS

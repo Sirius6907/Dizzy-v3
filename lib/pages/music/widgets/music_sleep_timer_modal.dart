@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import 'package:flutter/services.dart';
 import '../../../services/music/music_sleep_timer_service.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -50,9 +50,9 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
       style: PerformanceGlassStyles.sheet,
       child: Container(
         decoration: BoxDecoration(
-          color: DizzyVoid.surface1.withValues(alpha: 0.98),
+          gradient: PrismShadows.surfaceGradient(false),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          boxShadow: PrismShadows.floating(isLight: false),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Column(
@@ -80,7 +80,11 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
                     color: const Color(0xFF7C5CFF).withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.bedtime_rounded, color: Color(0xFFB57CFF), size: 22),
+                  child: const Icon(
+                    Icons.bedtime_rounded,
+                    color: Color(0xFFB57CFF),
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Column(
@@ -113,7 +117,14 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
                         ),
                       );
                     },
-                    child: const Text('Turn Off', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Turn Off',
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -126,11 +137,17 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF7C5CFF).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: const Color(0xFF7C5CFF).withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.hourglass_bottom_rounded, color: Color(0xFF7C5CFF), size: 24),
+                    const Icon(
+                      Icons.hourglass_bottom_rounded,
+                      color: Color(0xFF7C5CFF),
+                      size: 24,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -149,7 +166,10 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
                           const SizedBox(height: 2),
                           const Text(
                             'Gentle 20-second volume fade enabled ✨',
-                            style: TextStyle(color: Colors.white54, fontSize: 11),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -169,15 +189,30 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
               isEndSong: true,
             ),
             const SizedBox(height: 6),
-            _buildTimerTile(label: '5 minutes', duration: const Duration(minutes: 5)),
+            _buildTimerTile(
+              label: '5 minutes',
+              duration: const Duration(minutes: 5),
+            ),
             const SizedBox(height: 6),
-            _buildTimerTile(label: '15 minutes', duration: const Duration(minutes: 15)),
+            _buildTimerTile(
+              label: '15 minutes',
+              duration: const Duration(minutes: 15),
+            ),
             const SizedBox(height: 6),
-            _buildTimerTile(label: '30 minutes', duration: const Duration(minutes: 30)),
+            _buildTimerTile(
+              label: '30 minutes',
+              duration: const Duration(minutes: 30),
+            ),
             const SizedBox(height: 6),
-            _buildTimerTile(label: '45 minutes', duration: const Duration(minutes: 45)),
+            _buildTimerTile(
+              label: '45 minutes',
+              duration: const Duration(minutes: 45),
+            ),
             const SizedBox(height: 6),
-            _buildTimerTile(label: '1 hour', duration: const Duration(hours: 1)),
+            _buildTimerTile(
+              label: '1 hour',
+              duration: const Duration(hours: 1),
+            ),
           ],
         ),
       ),
@@ -219,7 +254,11 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
           ),
           child: Row(
             children: [
-              Icon(icon ?? Icons.timer_outlined, color: Colors.white54, size: 18),
+              Icon(
+                icon ?? Icons.timer_outlined,
+                color: Colors.white54,
+                size: 18,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -227,16 +266,30 @@ class _MusicSleepTimerModalState extends State<MusicSleepTimerModal> {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: 2),
-                      Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 18),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white24,
+                size: 18,
+              ),
             ],
           ),
         ),

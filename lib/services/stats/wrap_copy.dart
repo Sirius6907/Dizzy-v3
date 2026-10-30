@@ -24,4 +24,13 @@ abstract final class WrapCopy {
   /// Empty taste-profile line.
   static String emptyTaste() =>
       'Watch something and your taste profile builds here.';
+
+  /// Weekly recap line — last seven days only.
+  static String weekLine(int titles, int minutes, int finished) {
+    if (titles <= 0)
+      return 'No watches in the last 7 days — start one tonight.';
+    final titleWord = titles == 1 ? 'title' : 'titles';
+    final doneWord = finished == 1 ? '1 finished' : '$finished finished';
+    return '$minutes min watched · $titles $titleWord · $doneWord';
+  }
 }

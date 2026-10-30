@@ -20,9 +20,28 @@ class CineSuScraper extends StreamScraper {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
   static const _nD = '4860ac8bfddb';
-  static const _aD = '224eff10e662e9635c9f671cf46351dcd69af42b1edd56f5e5fa21751f44b9c8';
-  static const _ls = [17, 91, 203, 44, 8, 177, 62, 239, 119, 3, 154, 81, 28, 210, 101, 7];
-  static const _wa = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  static const _aD =
+      '224eff10e662e9635c9f671cf46351dcd69af42b1edd56f5e5fa21751f44b9c8';
+  static const _ls = [
+    17,
+    91,
+    203,
+    44,
+    8,
+    177,
+    62,
+    239,
+    119,
+    3,
+    154,
+    81,
+    28,
+    210,
+    101,
+    7,
+  ];
+  static const _wa =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
   static int _ab(int e) {
     var t = e & 0xFFFFFFFF;
@@ -40,7 +59,10 @@ class CineSuScraper extends StreamScraper {
     var a = 2166136261;
     for (var s = 0; s < r; s++) {
       a ^= t[s % t.length];
-      a = _ab((a + _ls[s % _ls.length] + ((2654435761 * s) & 0xFFFFFFFF)) & 0xFFFFFFFF);
+      a = _ab(
+        (a + _ls[s % _ls.length] + ((2654435761 * s) & 0xFFFFFFFF)) &
+            0xFFFFFFFF,
+      );
       n[s] = a & 255;
     }
     return n;
@@ -75,7 +97,9 @@ class CineSuScraper extends StreamScraper {
     i[1] = (a.length >> 8) & 255;
     var o = (2654435769 ^ a.length) & 0xFFFFFFFF;
     for (var l = 0; l < a.length; l++) {
-      o = _ab((o + sArr[l % sArr.length] + _ls[l % _ls.length] + l) & 0xFFFFFFFF);
+      o = _ab(
+        (o + sArr[l % sArr.length] + _ls[l % _ls.length] + l) & 0xFFFFFFFF,
+      );
       i[l + 2] = (a[l] ^ (255 & o)) ^ sArr[(7 * l + 3) % sArr.length];
     }
 
@@ -103,7 +127,9 @@ class CineSuScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[CineSuScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[CineSuScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -124,9 +150,7 @@ class CineSuScraper extends StreamScraper {
         headers: headers,
         behaviorHints: {
           'notWebReady': false,
-          'proxyHeaders': {
-            'request': headers,
-          },
+          'proxyHeaders': {'request': headers},
         },
       );
     } catch (e) {

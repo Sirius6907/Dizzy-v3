@@ -154,7 +154,9 @@ class A111477Scraper extends StreamScraper {
 
                   final source = StreamSource(
                     name: rawName.isNotEmpty ? rawName : '111477',
-                    title: rawTitle.isNotEmpty ? rawTitle : '111477 • Direct Stream',
+                    title: rawTitle.isNotEmpty
+                        ? rawTitle
+                        : '111477 • Direct Stream',
                     description: rawTitle,
                     url: url,
                     addonName: 'a111477',
@@ -206,4 +208,3 @@ class _CacheEntry {
 
   _CacheEntry({required this.sources, required this.timestamp});
 }
-

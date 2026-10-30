@@ -1,4 +1,3 @@
-
 import 'package:dizzy/models/subtitle/subtitle_model.dart';
 import './providers/subdl_provider.dart';
 import './providers/subtitlecat_provider.dart';
@@ -29,19 +28,23 @@ class SubtitleService {
     int? episode,
     int? year,
   }) async {
-    final futures = _providers.map((p) => p.search(
-      movieName,
-      imdbId: imdbId,
-      season: season,
-      episode: episode,
-      year: year,
-    ));
-    
+    final futures = _providers.map(
+      (p) => p.search(
+        movieName,
+        imdbId: imdbId,
+        season: season,
+        episode: episode,
+        year: year,
+      ),
+    );
+
     // Wait for all providers to finish (or fail)
-    final results = await Future.wait(futures.map((f) => f.catchError((_) => <SubtitleVariant>[])));
-    
+    final results = await Future.wait(
+      futures.map((f) => f.catchError((_) => <SubtitleVariant>[])),
+    );
+
     final List<SubtitleVariant> allVariants = results.expand((x) => x).toList();
-    
+
     if (allVariants.isEmpty) return [];
 
     // Group by language
@@ -52,7 +55,7 @@ class SubtitleService {
 
     // Sort languages alphabetically
     final sortedKeys = grouped.keys.toList()..sort((a, b) => a.compareTo(b));
-    
+
     return sortedKeys.map((lang) {
       return SubtitleLanguageGroup(language: lang, variants: grouped[lang]!);
     }).toList();

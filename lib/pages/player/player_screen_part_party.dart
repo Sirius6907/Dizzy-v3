@@ -42,9 +42,11 @@ extension _PlayerScreenStatePartySync on _PlayerScreenState {
           return;
         }
         final title = (msg.mediaTitle ?? '').trim();
-        _partyToast(title.isEmpty
-            ? 'Host switched movie — open it to rejoin sync.'
-            : 'Host is playing $title — opening it for you…');
+        _partyToast(
+          title.isEmpty
+              ? 'Host switched movie — open it to rejoin sync.'
+              : 'Host is playing $title — opening it for you…',
+        );
       },
     );
     _partySession!.start();
@@ -78,13 +80,15 @@ extension _PlayerScreenStatePartySync on _PlayerScreenState {
     final ref = _partyRefForCurrent();
     if (ref == null || ref == s.mediaRef) return; // no-op: same title
     final ep = _currentEpisode ?? widget.episode;
-    unawaited(_partySession!.announceMedia(
-      ref: ref,
-      title: _currentTitle,
-      season: ep?.season,
-      episode: ep?.episode,
-      prefetchReady: prefetchReady,
-    ));
+    unawaited(
+      _partySession!.announceMedia(
+        ref: ref,
+        title: _currentTitle,
+        season: ep?.season,
+        episode: ep?.episode,
+        prefetchReady: prefetchReady,
+      ),
+    );
   }
 
   /// P10: countdown just appeared → the next episode is ~5s away. Tell
@@ -101,17 +105,22 @@ extension _PlayerScreenStatePartySync on _PlayerScreenState {
       ref = PartySession.imdbRef(d.id);
     } else {
       ref = PartySession.tvRef(
-          d.tmdbId ?? d.id, nextEp.season ?? 1, nextEp.episode ?? 1);
+        d.tmdbId ?? d.id,
+        nextEp.season ?? 1,
+        nextEp.episode ?? 1,
+      );
     }
     if (ref == s.mediaRef) return;
-    unawaited(_partySession!.announceMedia(
-      ref: ref,
-      title: _currentTitle,
-      season: nextEp.season,
-      episode: nextEp.episode,
-      prefetchReady: true,
-      previewOnly: true,
-    ));
+    unawaited(
+      _partySession!.announceMedia(
+        ref: ref,
+        title: _currentTitle,
+        season: nextEp.season,
+        episode: nextEp.episode,
+        prefetchReady: true,
+        previewOnly: true,
+      ),
+    );
   }
 
   void _partyToast(String msg) {
@@ -138,10 +147,9 @@ extension _PlayerScreenStatePartySync on _PlayerScreenState {
               vertical: DizzySpace.xs - 1,
             ),
             decoration: BoxDecoration(
-              color: (isHost
-                      ? const Color(0xFFE5484D)
-                      : const Color(0xFF7C5CFF))
-                  .withValues(alpha: 0.92),
+              color:
+                  (isHost ? const Color(0xFFE5484D) : const Color(0xFF7C5CFF))
+                      .withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -159,5 +167,4 @@ extension _PlayerScreenStatePartySync on _PlayerScreenState {
       ),
     );
   }
-
 }

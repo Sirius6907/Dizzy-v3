@@ -45,7 +45,10 @@ class _CustomScrollTrackState extends State<CustomScrollTrack> {
     if (max <= 0) return;
 
     setState(() {
-      _thumbFraction = (widget.controller.position.pixels / max).clamp(0.0, 1.0);
+      _thumbFraction = (widget.controller.position.pixels / max).clamp(
+        0.0,
+        1.0,
+      );
     });
   }
 
@@ -55,8 +58,10 @@ class _CustomScrollTrackState extends State<CustomScrollTrack> {
     if (max <= 0) return;
 
     final usableTrack = widget.length - _thumbSize;
-    final delta = widget.axis == Axis.vertical ? details.delta.dy : details.delta.dx;
-    
+    final delta = widget.axis == Axis.vertical
+        ? details.delta.dy
+        : details.delta.dx;
+
     setState(() {
       _thumbFraction += delta / usableTrack;
       _thumbFraction = _thumbFraction.clamp(0.0, 1.0);
@@ -68,10 +73,10 @@ class _CustomScrollTrackState extends State<CustomScrollTrack> {
   void _scroll(double direction) {
     if (!widget.controller.hasClients) return;
     // For horizontal PageView, scroll by the viewport dimension instead of raw pixels, or 400 for lists
-    final offsetStep = widget.axis == Axis.horizontal 
+    final offsetStep = widget.axis == Axis.horizontal
         ? widget.controller.position.viewportDimension
         : 400.0;
-    
+
     final target = widget.controller.position.pixels + (direction * offsetStep);
     widget.controller.animateTo(
       target.clamp(0.0, widget.controller.position.maxScrollExtent),
@@ -97,15 +102,20 @@ class _CustomScrollTrackState extends State<CustomScrollTrack> {
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               padding: EdgeInsets.symmetric(
-                vertical: isVert ? 16 : 8, 
-                horizontal: isVert ? 8 : 16
+                vertical: isVert ? 16 : 8,
+                horizontal: isVert ? 8 : 16,
               ),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.5),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.5,
+                ),
               ),
-              child: isVert ? _buildVerticalLayout(thumbPosition) : _buildHorizontalLayout(thumbPosition),
+              child: isVert
+                  ? _buildVerticalLayout(thumbPosition)
+                  : _buildHorizontalLayout(thumbPosition),
             ),
           ),
         ),
@@ -154,19 +164,31 @@ class _CustomScrollTrackState extends State<CustomScrollTrack> {
   Widget _buildTrackDragArea(double thumbPosition, bool isVert) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onVerticalDragStart: isVert ? (_) => setState(() => _isDragging = true) : null,
+      onVerticalDragStart: isVert
+          ? (_) => setState(() => _isDragging = true)
+          : null,
       onVerticalDragUpdate: isVert ? _onDragUpdate : null,
-      onVerticalDragEnd: isVert ? (_) => setState(() => _isDragging = false) : null,
-      onVerticalDragCancel: isVert ? () => setState(() => _isDragging = false) : null,
-      
-      onHorizontalDragStart: !isVert ? (_) => setState(() => _isDragging = true) : null,
+      onVerticalDragEnd: isVert
+          ? (_) => setState(() => _isDragging = false)
+          : null,
+      onVerticalDragCancel: isVert
+          ? () => setState(() => _isDragging = false)
+          : null,
+
+      onHorizontalDragStart: !isVert
+          ? (_) => setState(() => _isDragging = true)
+          : null,
       onHorizontalDragUpdate: !isVert ? _onDragUpdate : null,
-      onHorizontalDragEnd: !isVert ? (_) => setState(() => _isDragging = false) : null,
-      onHorizontalDragCancel: !isVert ? () => setState(() => _isDragging = false) : null,
-      
+      onHorizontalDragEnd: !isVert
+          ? (_) => setState(() => _isDragging = false)
+          : null,
+      onHorizontalDragCancel: !isVert
+          ? () => setState(() => _isDragging = false)
+          : null,
+
       child: Container(
         height: isVert ? widget.length : 24, // Wider hit area
-        width: isVert ? 24 : widget.length, 
+        width: isVert ? 24 : widget.length,
         alignment: Alignment.center,
         child: Container(
           height: isVert ? widget.length : 6, // Visual track
@@ -233,8 +255,13 @@ class _HoverArrowState extends State<_HoverArrow> {
           height: 38,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _isHovering ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+            color: _isHovering
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.05),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
           ),
           child: Icon(
             widget.icon,

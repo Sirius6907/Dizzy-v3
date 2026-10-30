@@ -72,10 +72,10 @@ abstract final class RoomInviteService {
 
   /// The line shown after a share. Easy English, no jargon.
   static String resultLine(ShareResult result) => switch (result) {
-        ShareResult.sheet => 'Sent. They just tap the code.',
-        ShareResult.clipboard => 'Copied. Send it any way you like.',
-        ShareResult.failed => 'Code is on screen. Read it out loud.',
-      };
+    ShareResult.sheet => 'Sent. They just tap the code.',
+    ShareResult.clipboard => 'Copied. Send it any way you like.',
+    ShareResult.failed => 'Code is on screen. Read it out loud.',
+  };
 }
 
 /// F4 — "they just opened it": what a guest should do the moment a room
@@ -135,7 +135,10 @@ abstract final class GuestAutoOpenPolicy {
 
   /// A guest who has been in the room already does not re-announce: a
   /// late heartbeat must not steal the screen.
-  static bool shouldAnnounce(WatchSyncMessage msg, {required bool alreadyInRoom}) {
+  static bool shouldAnnounce(
+    WatchSyncMessage msg, {
+    required bool alreadyInRoom,
+  }) {
     if (alreadyInRoom) return false;
     return msg.mediaRef.trim().isNotEmpty;
   }

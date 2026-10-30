@@ -33,7 +33,8 @@ class MusicTrack {
         ? json['artist'] as Map<String, dynamic>
         : {};
 
-    String cover = albumData['cover_xl']?.toString() ??
+    String cover =
+        albumData['cover_xl']?.toString() ??
         albumData['cover_big']?.toString() ??
         albumData['cover_medium']?.toString() ??
         albumData['cover_small']?.toString() ??
@@ -53,23 +54,24 @@ class MusicTrack {
 
     return MusicTrack(
       id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ??
+      title:
+          json['title']?.toString() ??
           json['title_short']?.toString() ??
           'Unknown Track',
-      artist: artistData['name']?.toString() ??
+      artist:
+          artistData['name']?.toString() ??
           json['artist']?.toString() ??
           'Unknown Artist',
-      artistId: artistData['id']?.toString() ??
-          json['artistId']?.toString() ??
-          '',
-      album: albumData['title']?.toString() ??
+      artistId:
+          artistData['id']?.toString() ?? json['artistId']?.toString() ?? '',
+      album:
+          albumData['title']?.toString() ??
           json['album']?.toString() ??
           'Single',
-      albumId: albumData['id']?.toString() ??
-          json['albumId']?.toString() ??
-          '',
+      albumId: albumData['id']?.toString() ?? json['albumId']?.toString() ?? '',
       coverUrl: cover,
-      durationSeconds: int.tryParse(
+      durationSeconds:
+          int.tryParse(
             json['duration']?.toString() ??
                 json['durationSeconds']?.toString() ??
                 '',
@@ -86,18 +88,18 @@ class MusicTrack {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'artist': artist,
-        'artistId': artistId,
-        'album': album,
-        'albumId': albumId,
-        'coverUrl': coverUrl,
-        'durationSeconds': durationSeconds,
-        'explicit': explicit,
-        if (previewUrl != null) 'previewUrl': previewUrl,
-        if (trackNumber != null) 'trackNumber': trackNumber,
-      };
+    'id': id,
+    'title': title,
+    'artist': artist,
+    'artistId': artistId,
+    'album': album,
+    'albumId': albumId,
+    'coverUrl': coverUrl,
+    'durationSeconds': durationSeconds,
+    'explicit': explicit,
+    if (previewUrl != null) 'previewUrl': previewUrl,
+    if (trackNumber != null) 'trackNumber': trackNumber,
+  };
 
   String get formattedDuration {
     if (durationSeconds <= 0) return '--:--';
@@ -151,7 +153,8 @@ class MusicArtist {
   });
 
   factory MusicArtist.fromJson(Map<String, dynamic> json) {
-    String pic = json['picture_xl']?.toString() ??
+    String pic =
+        json['picture_xl']?.toString() ??
         json['picture_big']?.toString() ??
         json['picture_medium']?.toString() ??
         json['picture_small']?.toString() ??
@@ -165,14 +168,16 @@ class MusicArtist {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Artist',
       pictureUrl: pic,
-      fanCount: int.tryParse(
+      fanCount:
+          int.tryParse(
             json['nb_fan']?.toString() ??
                 json['nbFan']?.toString() ??
                 json['fanCount']?.toString() ??
                 '',
           ) ??
           0,
-      albumCount: int.tryParse(
+      albumCount:
+          int.tryParse(
             json['nb_album']?.toString() ??
                 json['nbAlbum']?.toString() ??
                 json['albumCount']?.toString() ??
@@ -183,12 +188,12 @@ class MusicArtist {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'pictureUrl': pictureUrl,
-        'fanCount': fanCount,
-        'albumCount': albumCount,
-      };
+    'id': id,
+    'name': name,
+    'pictureUrl': pictureUrl,
+    'fanCount': fanCount,
+    'albumCount': albumCount,
+  };
 }
 
 class MusicAlbum {
@@ -216,7 +221,8 @@ class MusicAlbum {
     final artistData = json['artist'] is Map<String, dynamic>
         ? json['artist'] as Map<String, dynamic>
         : {};
-    String cover = json['cover_xl']?.toString() ??
+    String cover =
+        json['cover_xl']?.toString() ??
         json['cover_big']?.toString() ??
         json['cover_medium']?.toString() ??
         json['cover_small']?.toString() ??
@@ -244,17 +250,19 @@ class MusicAlbum {
     return MusicAlbum(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Album',
-      artistName: artistData['name']?.toString() ??
+      artistName:
+          artistData['name']?.toString() ??
           json['artistName']?.toString() ??
           'Unknown Artist',
-      artistId: artistData['id']?.toString() ??
-          json['artistId']?.toString() ??
-          '',
+      artistId:
+          artistData['id']?.toString() ?? json['artistId']?.toString() ?? '',
       coverUrl: cover,
-      releaseDate: json['release_date']?.toString() ??
+      releaseDate:
+          json['release_date']?.toString() ??
           json['releaseDate']?.toString() ??
           '',
-      trackCount: int.tryParse(
+      trackCount:
+          int.tryParse(
             json['nb_tracks']?.toString() ??
                 json['nbTracks']?.toString() ??
                 json['trackCount']?.toString() ??
@@ -266,15 +274,15 @@ class MusicAlbum {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'artistName': artistName,
-        'artistId': artistId,
-        'coverUrl': coverUrl,
-        'releaseDate': releaseDate,
-        'trackCount': trackCount,
-        'tracks': tracks.map((t) => t.toJson()).toList(),
-      };
+    'id': id,
+    'title': title,
+    'artistName': artistName,
+    'artistId': artistId,
+    'coverUrl': coverUrl,
+    'releaseDate': releaseDate,
+    'trackCount': trackCount,
+    'tracks': tracks.map((t) => t.toJson()).toList(),
+  };
 }
 
 class MusicPlaylist {
@@ -300,10 +308,11 @@ class MusicPlaylist {
     final creatorData = json['creator'] is Map<String, dynamic>
         ? json['creator'] as Map<String, dynamic>
         : (json['user'] is Map<String, dynamic>
-            ? json['user'] as Map<String, dynamic>
-            : {});
+              ? json['user'] as Map<String, dynamic>
+              : {});
 
-    String cover = json['picture_xl']?.toString() ??
+    String cover =
+        json['picture_xl']?.toString() ??
         json['picture_big']?.toString() ??
         json['picture_medium']?.toString() ??
         json['picture_small']?.toString() ??
@@ -333,14 +342,16 @@ class MusicPlaylist {
       title: json['title']?.toString() ?? 'Playlist',
       description: json['description']?.toString() ?? '',
       coverUrl: cover,
-      trackCount: int.tryParse(
+      trackCount:
+          int.tryParse(
             json['nb_tracks']?.toString() ??
                 json['nbTracks']?.toString() ??
                 json['trackCount']?.toString() ??
                 '',
           ) ??
           parsedTracks.length,
-      creatorName: creatorData['name']?.toString() ??
+      creatorName:
+          creatorData['name']?.toString() ??
           json['creatorName']?.toString() ??
           'Deezer',
       tracks: parsedTracks,
@@ -348,14 +359,14 @@ class MusicPlaylist {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'coverUrl': coverUrl,
-        'trackCount': trackCount,
-        'creatorName': creatorName,
-        'tracks': tracks.map((t) => t.toJson()).toList(),
-      };
+    'id': id,
+    'title': title,
+    'description': description,
+    'coverUrl': coverUrl,
+    'trackCount': trackCount,
+    'creatorName': creatorName,
+    'tracks': tracks.map((t) => t.toJson()).toList(),
+  };
 }
 
 class MusicGenre {
@@ -370,7 +381,8 @@ class MusicGenre {
   });
 
   factory MusicGenre.fromJson(Map<String, dynamic> json) {
-    String pic = json['picture_xl']?.toString() ??
+    String pic =
+        json['picture_xl']?.toString() ??
         json['picture_big']?.toString() ??
         json['picture_medium']?.toString() ??
         json['picture_small']?.toString() ??
@@ -387,25 +399,22 @@ class MusicGenre {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'pictureUrl': pictureUrl,
-      };
+    'id': id,
+    'name': name,
+    'pictureUrl': pictureUrl,
+  };
 }
 
 class SyncedLyricLine {
   final Duration timestamp;
   final String text;
 
-  const SyncedLyricLine({
-    required this.timestamp,
-    required this.text,
-  });
+  const SyncedLyricLine({required this.timestamp, required this.text});
 
   Map<String, dynamic> toJson() => {
-        'timestampMs': timestamp.inMilliseconds,
-        'text': text,
-      };
+    'timestampMs': timestamp.inMilliseconds,
+    'text': text,
+  };
 
   factory SyncedLyricLine.fromJson(Map<String, dynamic> json) =>
       SyncedLyricLine(
@@ -428,11 +437,11 @@ class LyricsData {
   });
 
   static LyricsData empty() => const LyricsData(
-        trackId: '',
-        isSynced: false,
-        plainLyrics: '',
-        syncedLines: [],
-      );
+    trackId: '',
+    isSynced: false,
+    plainLyrics: '',
+    syncedLines: [],
+  );
 
   int activeLineIndex(Duration position) {
     if (!isSynced || syncedLines.isEmpty) return -1;
@@ -484,20 +493,14 @@ class MusicAlbumDetails {
   final MusicAlbum album;
   final List<MusicTrack> tracks;
 
-  const MusicAlbumDetails({
-    required this.album,
-    required this.tracks,
-  });
+  const MusicAlbumDetails({required this.album, required this.tracks});
 }
 
 class MusicPlaylistDetails {
   final MusicPlaylist playlist;
   final List<MusicTrack> tracks;
 
-  const MusicPlaylistDetails({
-    required this.playlist,
-    required this.tracks,
-  });
+  const MusicPlaylistDetails({required this.playlist, required this.tracks});
 }
 
 class UserPlaylist {
@@ -518,7 +521,8 @@ class UserPlaylist {
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'My Playlist',
       createdAt: json['createdAt']?.toString() ?? '',
-      tracks: (json['tracks'] as List<dynamic>?)
+      tracks:
+          (json['tracks'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map((t) => MusicTrack.fromJson(t))
               .toList() ??
@@ -527,9 +531,9 @@ class UserPlaylist {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'createdAt': createdAt,
-        'tracks': tracks.map((t) => t.toJson()).toList(),
-      };
+    'id': id,
+    'title': title,
+    'createdAt': createdAt,
+    'tracks': tracks.map((t) => t.toJson()).toList(),
+  };
 }

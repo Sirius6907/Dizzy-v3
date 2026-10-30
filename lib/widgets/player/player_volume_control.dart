@@ -42,7 +42,9 @@ class _PlayerVolumeControlState extends State<PlayerVolumeControl> {
 
   Color _getBoostColor() {
     if (widget.volume <= 1.0) return Colors.white;
-    if (widget.volume > 1.75) return const Color(0xFFFF3D00); // Deep Flame Orange/Red
+    if (widget.volume > 1.75) {
+      return const Color(0xFFFF3D00); // Deep Flame Orange/Red
+    }
     return const Color(0xFFFF8A00); // Amber/Orange
   }
 
@@ -77,7 +79,10 @@ class _PlayerVolumeControlState extends State<PlayerVolumeControl> {
       onPointerSignal: (pointerSignal) {
         if (pointerSignal is PointerScrollEvent) {
           final delta = pointerSignal.scrollDelta.dy < 0 ? 0.05 : -0.05;
-          final next = (widget.volume + delta).clamp(0.0, PlayerVolumeControl.maxVolume);
+          final next = (widget.volume + delta).clamp(
+            0.0,
+            PlayerVolumeControl.maxVolume,
+          );
           widget.onVolumeChanged((next * 100).round() / 100.0);
         }
       },
@@ -93,7 +98,9 @@ class _PlayerVolumeControlState extends State<PlayerVolumeControl> {
               iconSize: 22,
               icon: Icon(
                 _getVolumeIcon(),
-                color: isBoosting ? boostColor : (widget.isMuted ? PlayerTheme.inkSubtle : Colors.white),
+                color: isBoosting
+                    ? boostColor
+                    : (widget.isMuted ? PlayerTheme.inkSubtle : Colors.white),
               ),
               tooltip: widget.isMuted ? 'Unmute' : 'Mute',
               onPressed: widget.onToggleMute,
@@ -104,7 +111,8 @@ class _PlayerVolumeControlState extends State<PlayerVolumeControl> {
             // Volume Slider Track
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onHorizontalDragUpdate: (e) => _updateFromPosition(e.localPosition.dx),
+              onHorizontalDragUpdate: (e) =>
+                  _updateFromPosition(e.localPosition.dx),
               onTapDown: (e) => _updateFromPosition(e.localPosition.dx),
               child: Container(
                 width: _trackWidth,
@@ -142,22 +150,28 @@ class _PlayerVolumeControlState extends State<PlayerVolumeControl> {
                       width: _trackWidth * fillFraction,
                       decoration: BoxDecoration(
                         gradient: isBoosting
-                          ? LinearGradient(
-                              colors: [
-                                Colors.white,
-                                const Color(0xFFFF8A00),
-                                if (widget.volume > 1.75) const Color(0xFFFF3D00),
-                              ],
-                            )
-                          : null,
-                        color: isBoosting ? null : Colors.white.withValues(alpha: 0.9),
+                            ? LinearGradient(
+                                colors: [
+                                  Colors.white,
+                                  const Color(0xFFFF8A00),
+                                  if (widget.volume > 1.75)
+                                    const Color(0xFFFF3D00),
+                                ],
+                              )
+                            : null,
+                        color: isBoosting
+                            ? null
+                            : Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
 
                     // Thumb dot
                     Positioned(
-                      left: (_trackWidth * fillFraction - 6).clamp(0.0, _trackWidth - 12),
+                      left: (_trackWidth * fillFraction - 6).clamp(
+                        0.0,
+                        _trackWidth - 12,
+                      ),
                       child: Container(
                         width: 12,
                         height: 12,
@@ -166,7 +180,9 @@ class _PlayerVolumeControlState extends State<PlayerVolumeControl> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: isBoosting ? boostColor.withValues(alpha: 0.6) : Colors.black54,
+                              color: isBoosting
+                                  ? boostColor.withValues(alpha: 0.6)
+                                  : Colors.black54,
                               blurRadius: isBoosting ? 6 : 4,
                               spreadRadius: isBoosting ? 1 : 0,
                               offset: const Offset(0, 1),

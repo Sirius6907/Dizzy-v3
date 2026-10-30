@@ -130,7 +130,13 @@ class QualityService {
   /// True when [url] is an HLS master playlist (query/fragment ignored).
   static bool isHlsUrl(String? url) {
     if (url == null || url.isEmpty) return false;
-    return url.toLowerCase().split('?').first.split('#').first.endsWith('.m3u8');
+    return url
+        .toLowerCase()
+        .split('?')
+        .first
+        .split('#')
+        .first
+        .endsWith('.m3u8');
   }
 
   /// HUD toast after applying. Auto gets the reassuring suffix.

@@ -11,7 +11,7 @@ void main() {
         'resources': ['catalog', 'meta', 'stream'],
         'types': ['movie', 'series'],
         'catalogs': [
-          {'type': 'movie', 'id': 'top', 'name': 'Top Movies'}
+          {'type': 'movie', 'id': 'top', 'name': 'Top Movies'},
         ],
       };
       final manifest = AddonManifest.fromJson(json);
@@ -35,8 +35,10 @@ void main() {
             'type': 'movie',
             'id': 'search',
             'name': 'Search',
-            'extra': [{'name': 'search', 'isRequired': false}],
-          }
+            'extra': [
+              {'name': 'search', 'isRequired': false},
+            ],
+          },
         ],
       };
       final manifest = AddonManifest.fromJson(json);
@@ -56,7 +58,7 @@ void main() {
             'id': 'genre',
             'name': 'By Genre',
             'genres': ['Action', 'Comedy', 'Drama'],
-          }
+          },
         ],
       };
       final manifest = AddonManifest.fromJson(json);
@@ -104,10 +106,18 @@ void main() {
 
     test('disabled addon serializes correctly', () {
       final manifest = AddonManifest.fromJson({
-        'id': 'test.addon', 'name': 'Test', 'version': '0.1.0',
-        'resources': [], 'types': [], 'catalogs': [],
+        'id': 'test.addon',
+        'name': 'Test',
+        'version': '0.1.0',
+        'resources': [],
+        'types': [],
+        'catalogs': [],
       });
-      final addon = InstalledAddon(baseUrl: 'https://x.com', manifest: manifest, enabled: false);
+      final addon = InstalledAddon(
+        baseUrl: 'https://x.com',
+        manifest: manifest,
+        enabled: false,
+      );
       final json = addon.toJson();
       expect(json['enabled'], false);
     });

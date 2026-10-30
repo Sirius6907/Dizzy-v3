@@ -54,8 +54,9 @@ class EpubSplitter {
       total += c;
     }
 
-    final originalName = _basename(epub.path)
-        .replaceAll(RegExp(r'\.epub$', caseSensitive: false), '');
+    final originalName = _basename(
+      epub.path,
+    ).replaceAll(RegExp(r'\.epub$', caseSensitive: false), '');
 
     if (total <= maxWordsPerPart || perFileCounts.length < 2) {
       return [
@@ -83,10 +84,12 @@ class EpubSplitter {
 
     final part1Idrefs = spineInfo.spineIdrefs.sublist(0, splitIdx);
     final part2Idrefs = spineInfo.spineIdrefs.sublist(splitIdx);
-    final part1Words =
-        perFileCounts.sublist(0, splitIdx).fold<int>(0, (a, b) => a + b);
-    final part2Words =
-        perFileCounts.sublist(splitIdx).fold<int>(0, (a, b) => a + b);
+    final part1Words = perFileCounts
+        .sublist(0, splitIdx)
+        .fold<int>(0, (a, b) => a + b);
+    final part2Words = perFileCounts
+        .sublist(splitIdx)
+        .fold<int>(0, (a, b) => a + b);
 
     final part1Bytes = _rebuildEpub(originalBytes, spineInfo, part1Idrefs);
     final part2Bytes = _rebuildEpub(originalBytes, spineInfo, part2Idrefs);
@@ -159,8 +162,9 @@ class EpubSplitter {
       throw Exception('Not a valid EPUB (missing META-INF/container.xml)');
     }
     final containerDoc = XmlDocument.parse(_decode(container));
-    final rootfile =
-        containerDoc.findAllElements('rootfile', namespace: '*').first;
+    final rootfile = containerDoc
+        .findAllElements('rootfile', namespace: '*')
+        .first;
     final opfPath = rootfile.getAttribute('full-path');
     if (opfPath == null) throw Exception('container.xml missing full-path');
 

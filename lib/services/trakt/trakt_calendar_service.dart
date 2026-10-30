@@ -4,10 +4,8 @@ import '../../models/trakt/trakt_calendar_entry.dart';
 import 'trakt_service.dart';
 
 /// Chunk fetcher signature — injected for tests, defaults to the real TraktService.
-typedef TraktChunkFetcher = Future<List<TraktCalendarEntry>> Function(
-  DateTime chunkStart,
-  int days,
-);
+typedef TraktChunkFetcher =
+    Future<List<TraktCalendarEntry>> Function(DateTime chunkStart, int days);
 
 /// Service that fetches Trakt upcoming episodes in 33-day chunks and caches
 /// them in memory with a 15-minute TTL.
@@ -19,14 +17,14 @@ class TraktCalendarService {
     fetcher: _defaultFetcher,
   );
 
-  TraktCalendarService._({required TraktChunkFetcher fetcher}) : _fetcher = fetcher;
+  TraktCalendarService._({required TraktChunkFetcher fetcher})
+    : _fetcher = fetcher;
 
   /// Test-only constructor that injects a fake fetcher.
   @visibleForTesting
   factory TraktCalendarService.forTesting({
     required TraktChunkFetcher fetcher,
-  }) =>
-      TraktCalendarService._(fetcher: fetcher);
+  }) => TraktCalendarService._(fetcher: fetcher);
 
   static const int _chunkDays = 33;
   static const Duration _ttl = Duration(minutes: 15);
@@ -86,9 +84,7 @@ class TraktCalendarService {
     }
 
     // Fetch in parallel; getChunk handles cache + errors internally
-    final chunkResults = await Future.wait(
-      chunkStarts.map((s) => getChunk(s)),
-    );
+    final chunkResults = await Future.wait(chunkStarts.map((s) => getChunk(s)));
 
     // Flatten, de-dupe, filter to [start, end]
     final startDay = DateTime(start.year, start.month, start.day);
@@ -138,9 +134,7 @@ class TraktCalendarService {
   @visibleForTesting
   void debugExpireAllCacheEntries() {
     final expired = DateTime.now().subtract(_ttl + const Duration(seconds: 1));
-    _chunkCache.updateAll(
-      (key, chunk) => _CachedChunk(chunk.entries, expired),
-    );
+    _chunkCache.updateAll((key, chunk) => _CachedChunk(chunk.entries, expired));
   }
 
   static String _cacheKey(DateTime aligned) =>

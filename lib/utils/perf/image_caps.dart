@@ -25,6 +25,5 @@ abstract final class ImageCaps {
   static const int kPage = 1280;
 
   /// Clamp any requested decode width into the safe range.
-  static int capWidth(int requested) =>
-      requested.clamp(kThumb, kBackdrop);
+  static int capWidth(int requested) => requested.clamp(kThumb, kBackdrop);
 }

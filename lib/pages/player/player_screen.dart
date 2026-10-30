@@ -9,7 +9,6 @@ import 'package:http/http.dart' as http;
 import 'package:media_kit_video/media_kit_video.dart' as mk;
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:dizzy/models/movie/video.dart';
 import 'package:dizzy/models/movie/movie_detail.dart';
@@ -30,6 +29,7 @@ import '../../services/player/playback_brain.dart';
 import '../../services/player/quality_service.dart';
 import '../../services/player/smart_quality_policy.dart';
 import '../../services/player/auto_skip_policy.dart';
+import '../../services/taste/taste_event_service.dart';
 import '../../services/player/audio_track_preference.dart';
 import '../../services/player/dub_mode_service.dart';
 import '../../services/player/bandwidth_meter.dart';
@@ -41,6 +41,7 @@ import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/player/player_glass.dart';
 import '../../widgets/player/player_top_bar.dart';
 import '../../widgets/player/player_transport.dart';
+import '../../widgets/player/player_more_sheet.dart';
 import '../../widgets/player/player_speed_menu.dart';
 import '../../services/window/window_service.dart';
 import '../../models/player/skip_segment_model.dart';
@@ -72,7 +73,6 @@ import '../../services/system/resource_governor.dart';
 import '../../utils/perf/storage_guard.dart';
 import '../../widgets/player/next_episode_countdown.dart';
 import '../../services/errors/app_log.dart';
-import '../../services/theme/app_theme_service.dart';
 import '../../design/dizzy_tokens.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 part 'player_screen_part_party.dart';
@@ -89,6 +89,7 @@ class PlayerScreen extends StatefulWidget {
   final MovieDetail? detail;
   final Video? episode;
   final Duration? initialPosition;
+
   /// Verified backup sources (from the probe race), used for silent
   /// failover when the current source stalls or dies mid-play.
   final List<StreamSource>? failoverSources;
@@ -111,15 +112,21 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen>
     with SingleTickerProviderStateMixin {
-  late final Player _player = Player(configuration: PlayerSettings.getMediaKitPlayerConfiguration());
+  late final Player _player = Player(
+    configuration: PlayerSettings.getMediaKitPlayerConfiguration(),
+  );
   late final mk.VideoController _videoController = mk.VideoController(
     _player,
     configuration: PlayerSettings.getVideoControllerConfiguration(),
   );
   final List<StreamSubscription> _subscriptions = [];
 
-  final ValueNotifier<Duration> _positionNotifier = ValueNotifier<Duration>(Duration.zero);
-  final ValueNotifier<Duration?> _bufferNotifier = ValueNotifier<Duration?>(null);
+  final ValueNotifier<Duration> _positionNotifier = ValueNotifier<Duration>(
+    Duration.zero,
+  );
+  final ValueNotifier<Duration?> _bufferNotifier = ValueNotifier<Duration?>(
+    null,
+  );
 
   bool _isLoading = true;
   bool _isPlaying = false;
@@ -135,6 +142,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     _lastProgressPosition = target;
     _lastProgressAt = DateTime.now();
   }
+
   String _statusMessage = 'Initializing...';
   bool _showControls = true;
   bool _isHoveringUI = false;
@@ -144,7 +152,8 @@ class _PlayerScreenState extends State<PlayerScreen>
   late AnimationController _logoAnimController;
 
   // Active Menu / Popover
-  String? _activeMenu; // 'subtitle' | 'audio' | 'quality' | 'speed' | 'aspect' | 'style' | null
+  String?
+  _activeMenu; // 'subtitle' | 'audio' | 'quality' | 'speed' | 'aspect' | 'style' | null
   bool _showSubSyncBar = false;
   bool _showTextSyncOverlay = false;
 
@@ -166,8 +175,6 @@ class _PlayerScreenState extends State<PlayerScreen>
   bool _isMuted = false;
   bool _showVolumeHud = false;
   Timer? _volumeHudTimer;
-  // Polish P4: first-run gesture hints (once per device).
-  bool _showGestureHints = false;
   double _playbackRate = 1.0;
   BoxFit _videoFit = BoxFit.contain;
   List<PlayerAudioTrack> _audioTracks = [];
@@ -178,6 +185,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   // Lock mode (v1.1.8) — swallows all player-area input when locked.
   bool _isLocked = false;
   int _selectedAudioTrackIndex = 0;
+
   /// F1: the language-tag audio auto-select fires once per source. Reset on
   /// every episode/source switch so each new media gets its own decision,
   /// and never re-fires after the user has picked a track by hand.
@@ -226,9 +234,11 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Sources verified by the probe race that opened this player, ranked
   /// best→worst. Used to silently switch when the current source stalls.
   List<StreamSource> _failoverChain = [];
+
   /// Completes when the ranked chain is ready (v1.1.9: stall watchdog waits
   /// for this so an early stall never fires with zero backups).
   Future<void>? _failoverReady;
+
   /// F1: the single source of truth for "which source is dead" and "how
   /// many switches are left". Owns the failed-fingerprint set and the
   /// switch cap, so the ranker, the quality picker and the failover path
@@ -237,22 +247,29 @@ class _PlayerScreenState extends State<PlayerScreen>
     autoplayEnabled: () => PlayerSettings.autoplayFirstVerified.value,
     autoFailover: () => PlayerSettings.autoFailover.value,
   );
+
   /// Live view of the gate's dead-source set (this-session only).
   Set<String> get _failedFingerprints => _playGate.deadFingerprints;
   bool _failoverInProgress = false;
   Timer? _stallWatchdog;
   Duration _lastProgressPosition = Duration.zero;
   DateTime _lastProgressAt = DateTime.now();
+
   /// Failover resume override — passed straight into Media(start:) so the
   /// backup source opens AT the saved position (no seek-after-open race on
   /// slow networks where mpv would drop the seek fired before media load).
   Duration? _resumeAtOverride;
+
   /// 30s of stable playback on current source → record last-good + start prefetch
   Timer? _lastGoodTimer;
   bool _lastGoodRecorded = false;
   DateTime? _lastScreenTapTime;
+
   /// Phase 5 gate: prefetch starts only after 25%/3min threshold.
   bool _prefetchStarted = false;
+
+  /// One taste event per title/episode per session — progress ticks a lot.
+  bool _tastePlayLogged = false;
 
   @override
   void initState() {
@@ -262,25 +279,24 @@ class _PlayerScreenState extends State<PlayerScreen>
     _currentTitle = widget.title;
     // v1.1.9: restore last-used volume (persisted via PlayerSettings).
     _volume = PlayerSettings.lastVolume.value.clamp(
-        0.0, PlayerVolumeControl.maxVolume);
+      0.0,
+      PlayerVolumeControl.maxVolume,
+    );
     if (_volume == 0) _volume = 1.0;
 
     // P7: restore saved quality choice (per-device, Auto default).
-    unawaited(_qualityService.load().then((c) {
-      if (mounted) setState(() => _qualityChoice = c);
-    }));
-
-    // Polish P4: gesture hints once per device (Easy English, dismissable).
-    unawaited(SharedPreferences.getInstance().then((prefs) {
-      if (mounted && !(prefs.getBool('player_gesture_hints_seen') ?? false)) {
-        setState(() => _showGestureHints = true);
-      }
-    }));
+    unawaited(
+      _qualityService.load().then((c) {
+        if (mounted) setState(() => _qualityChoice = c);
+      }),
+    );
 
     // P5: 5s quality probe — was 2s. A speed check every 2s keeps the
     // radio awake + burns CPU for the whole 40min session.
-    _autoQualityTimer =
-        Timer.periodic(const Duration(seconds: 5), (_) => _autoQualityTick());
+    _autoQualityTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _autoQualityTick(),
+    );
 
     // Build the ranked failover chain (Phase 3.2): backups exclude the
     // primary source, ordered by SourceRanker with persisted history.
@@ -309,7 +325,9 @@ class _PlayerScreenState extends State<PlayerScreen>
             failedThisSession: _failedFingerprints,
           ),
         );
-        AppLog.d('[Failover] chain ready: ${_failoverChain.length} backups ranked');
+        AppLog.d(
+          '[Failover] chain ready: ${_failoverChain.length} backups ranked',
+        );
       }();
     }
 
@@ -364,7 +382,8 @@ class _PlayerScreenState extends State<PlayerScreen>
             !PlayerSettings.dataSaver.value &&
             StorageGuard.prefetchAllowed) {
           final dur = _player.state.duration;
-          final watched25 = dur.inSeconds >= 4 &&
+          final watched25 =
+              dur.inSeconds >= 4 &&
               pos.inSeconds >= (dur.inSeconds * 0.25).ceil();
           final elapsed3min = pos.inSeconds >= 180;
           if (watched25 || elapsed3min) {
@@ -391,7 +410,9 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (isBuffering) {
           _lastProgressAt = DateTime.now();
         }
-        if (_wasBuffering && !isBuffering && PlayerSettings.autoResyncOnStall.value) {
+        if (_wasBuffering &&
+            !isBuffering &&
+            PlayerSettings.autoResyncOnStall.value) {
           try {
             if (PlayerSettings.hardwareAudioClock.value) {
               final np = _player.platform as dynamic;
@@ -437,9 +458,18 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// gets thin callbacks into media_kit — nothing else in init changes.
   static String cleanMediaTitle(String raw) {
     var name = raw;
-    name = name.replaceAll(RegExp(r'\.(mkv|mp4|avi|webm|ts|mov|m4v|srt|vtt)$', caseSensitive: false), '');
+    name = name.replaceAll(
+      RegExp(r'\.(mkv|mp4|avi|webm|ts|mov|m4v|srt|vtt)$', caseSensitive: false),
+      '',
+    );
     name = name.replaceAll(RegExp(r'[._]'), ' ');
-    name = name.replaceAll(RegExp(r'\b(2160p|1080p|720p|480p|4k|uhd|ds4k|webrip|web-dl|bluray|brrip|h264|x264|h265|x265|hevc|10bit|ddp5\.1|dd5\.1|atmos|aac|ac3|dts|flac|remux|hdr|dv|proper|repack|hdtv)\b', caseSensitive: false), ' ');
+    name = name.replaceAll(
+      RegExp(
+        r'\b(2160p|1080p|720p|480p|4k|uhd|ds4k|webrip|web-dl|bluray|brrip|h264|x264|h265|x265|hevc|10bit|ddp5\.1|dd5\.1|atmos|aac|ac3|dts|flac|remux|hdr|dv|proper|repack|hdtv)\b',
+        caseSensitive: false,
+      ),
+      ' ',
+    );
     name = name.replaceAll(RegExp(r'-[a-zA-Z0-9]+$'), '');
     return name.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
@@ -512,11 +542,17 @@ class _PlayerScreenState extends State<PlayerScreen>
             if (event is KeyDownEvent) {
               if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
                   event.logicalKey == LogicalKeyboardKey.audioVolumeUp) {
-                _applyVolume((_volume + 0.05).clamp(0.0, PlayerVolumeControl.maxVolume), showHud: true);
+                _applyVolume(
+                  (_volume + 0.05).clamp(0.0, PlayerVolumeControl.maxVolume),
+                  showHud: true,
+                );
                 return KeyEventResult.handled;
               } else if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
                   event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
-                _applyVolume((_volume - 0.05).clamp(0.0, PlayerVolumeControl.maxVolume), showHud: true);
+                _applyVolume(
+                  (_volume - 0.05).clamp(0.0, PlayerVolumeControl.maxVolume),
+                  showHud: true,
+                );
                 return KeyEventResult.handled;
               } else if (event.logicalKey == LogicalKeyboardKey.keyM) {
                 _toggleMute(showHud: true);
@@ -547,7 +583,10 @@ class _PlayerScreenState extends State<PlayerScreen>
             onPointerSignal: (pointerSignal) {
               if (pointerSignal is PointerScrollEvent) {
                 final delta = pointerSignal.scrollDelta.dy < 0 ? 0.05 : -0.05;
-                final next = (_volume + delta).clamp(0.0, PlayerVolumeControl.maxVolume);
+                final next = (_volume + delta).clamp(
+                  0.0,
+                  PlayerVolumeControl.maxVolume,
+                );
                 _applyVolume((next * 100).round() / 100.0, showHud: true);
               }
             },
@@ -607,5 +646,4 @@ class _PlayerScreenState extends State<PlayerScreen>
       ),
     );
   }
-
 }

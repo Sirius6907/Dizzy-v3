@@ -25,12 +25,21 @@ class MusicEqualizerService {
   static const String _keySpatializer = 'eq_spatializer';
 
   final ValueNotifier<bool> isEnabled = ValueNotifier<bool>(false);
-  final ValueNotifier<MusicEqPreset> currentPreset = ValueNotifier<MusicEqPreset>(MusicEqPreset.flat);
-  final ValueNotifier<double> bassBoostLevel = ValueNotifier<double>(0.0); // 0.0 to 1.0
+  final ValueNotifier<MusicEqPreset> currentPreset =
+      ValueNotifier<MusicEqPreset>(MusicEqPreset.flat);
+  final ValueNotifier<double> bassBoostLevel = ValueNotifier<double>(
+    0.0,
+  ); // 0.0 to 1.0
   final ValueNotifier<bool> enable3dSpatializer = ValueNotifier<bool>(false);
 
   // 5 Frequency Bands (60Hz, 250Hz, 1kHz, 4kHz, 16kHz) in dB (-12.0 to +12.0)
-  final ValueNotifier<List<double>> bandGains = ValueNotifier<List<double>>([0.0, 0.0, 0.0, 0.0, 0.0]);
+  final ValueNotifier<List<double>> bandGains = ValueNotifier<List<double>>([
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+  ]);
 
   static const Map<MusicEqPreset, List<double>> presetGains = {
     MusicEqPreset.flat: [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -59,7 +68,10 @@ class MusicEqualizerService {
 
       final savedBands = <double>[];
       for (int i = 0; i < 5; i++) {
-        savedBands.add(prefs.getDouble('$_keyBands$i') ?? (presetGains[currentPreset.value]?[i] ?? 0.0));
+        savedBands.add(
+          prefs.getDouble('$_keyBands$i') ??
+              (presetGains[currentPreset.value]?[i] ?? 0.0),
+        );
       }
       bandGains.value = savedBands;
 

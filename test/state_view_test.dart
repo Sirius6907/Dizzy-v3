@@ -73,9 +73,7 @@ void main() {
       expect(retried, isTrue);
     });
 
-    testWidgets('DizzyStateView empty variant renders action', (
-      tester,
-    ) async {
+    testWidgets('DizzyStateView empty variant renders action', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -90,8 +88,10 @@ void main() {
         ),
       );
       expect(find.text('Nothing here'), findsOneWidget);
-      expect(find.text('No downloads yet. Explore and add some you love.'),
-          findsOneWidget);
+      expect(
+        find.text('No downloads yet. Explore and add some you love.'),
+        findsOneWidget,
+      );
       expect(find.text('Explore'), findsOneWidget);
     });
   });

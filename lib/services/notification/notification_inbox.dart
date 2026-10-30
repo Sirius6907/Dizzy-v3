@@ -59,11 +59,15 @@ class NotificationInbox {
   NotificationInbox._();
 
   static const String kStorageKey = 'notification_inbox_v1';
+  static const String kClearedKey = 'notification_cleared_at_v1';
   static const int maxItems = 50;
   static const int maxUnreadBadge = 99;
 
   static final ValueNotifier<List<InboxItem>> items =
       ValueNotifier<List<InboxItem>>(<InboxItem>[]);
+
+  /// Server history older than this is already dismissed by the user.
+  static int clearedAtMs = 0;
 
   static bool _loaded = false;
 
@@ -107,6 +111,7 @@ class NotificationInbox {
     try {
       final prefs = await SharedPreferences.getInstance();
       items.value = decode(prefs.getString(kStorageKey));
+      clearedAtMs = prefs.getInt(kClearedKey) ?? 0;
     } catch (e) {
       debugPrint('[Inbox] load failed (soft): $e');
     }
@@ -148,12 +153,20 @@ class NotificationInbox {
 
   static Future<void> clear() async {
     items.value = <InboxItem>[];
+    clearedAtMs = DateTime.now().millisecondsSinceEpoch;
     await _persist();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(kClearedKey, clearedAtMs);
+    } catch (e) {
+      debugPrint('[Inbox] clear watermark failed (soft): $e');
+    }
   }
 
   @visibleForTesting
   static void resetForTest({List<InboxItem>? seed}) {
     _loaded = seed == null;
     items.value = seed ?? <InboxItem>[];
+    clearedAtMs = 0;
   }
 }

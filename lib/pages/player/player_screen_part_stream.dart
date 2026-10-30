@@ -25,8 +25,11 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       final rawUrl = _currentSource.url;
 
       // Handle offline downloaded file playback directly
-      if (rawUrl != null && (File(rawUrl).existsSync() || _currentSource.name == 'Downloaded')) {
-        AppLog.d('[PlayerScreen] Initializing offline local file playback: $rawUrl');
+      if (rawUrl != null &&
+          (File(rawUrl).existsSync() || _currentSource.name == 'Downloaded')) {
+        AppLog.d(
+          '[PlayerScreen] Initializing offline local file playback: $rawUrl',
+        );
         await PlayerSettings.applyPreOpenProperties(_player);
         await _player.open(Media(rawUrl), play: true);
         await PlayerSettings.applyPostOpenProperties(_player);
@@ -38,7 +41,8 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
 
       final infoHash = _currentSource.infoHash;
       final isMagnetUrl = rawUrl != null && rawUrl.startsWith('magnet:');
-      final isTorrent = (infoHash != null && infoHash.isNotEmpty) || isMagnetUrl;
+      final isTorrent =
+          (infoHash != null && infoHash.isNotEmpty) || isMagnetUrl;
 
       if (isTorrent) {
         String magnet;
@@ -112,13 +116,16 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       );
 
       // Also merge any proxyHeaders from behaviorHints if present
-      final proxyReqHeaders = _currentSource.behaviorHints?['proxyHeaders']?['request'];
+      final proxyReqHeaders =
+          _currentSource.behaviorHints?['proxyHeaders']?['request'];
       if (proxyReqHeaders is Map) {
         playerHeaders.addAll(Map<String, String>.from(proxyReqHeaders));
       }
 
       final cleanUri = Uri.parse(sanitizedUrlStr);
-      AppLog.d('[PlayerScreen] Opening direct network stream URL: $cleanUri (headers: ${playerHeaders.keys})');
+      AppLog.d(
+        '[PlayerScreen] Opening direct network stream URL: $cleanUri (headers: ${playerHeaders.keys})',
+      );
 
       if (!mounted) return;
       final epLabel = _currentEpisode != null
@@ -127,40 +134,53 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       setState(() => _statusMessage = 'Buffering $epLabel...');
 
       final lowerClean = sanitizedUrlStr.toLowerCase();
-      final bool isLive = _currentSource.behaviorHints?['isLive'] == true ||
+      final bool isLive =
+          _currentSource.behaviorHints?['isLive'] == true ||
           _currentSource.addonName.toLowerCase() == 'iptv' ||
           _currentSource.name?.toLowerCase() == 'iptv' ||
           lowerClean.contains('/live/') ||
           lowerClean.contains('/hls/live');
 
-      final bool isTorrentStream = isTorrent ||
+      final bool isTorrentStream =
+          isTorrent ||
           sanitizedUrlStr.contains(':8090') ||
           sanitizedUrlStr.contains('/stream?link=') ||
           sanitizedUrlStr.contains('/stream?');
 
-      await PlayerSettings.applyPreOpenProperties(_player, isLive: isLive, isTorrent: isTorrentStream);
+      await PlayerSettings.applyPreOpenProperties(
+        _player,
+        isLive: isLive,
+        isTorrent: isTorrentStream,
+      );
 
       // Set native MPV properties for referer and user-agent directly on the player for web streams
       if (!isTorrentStream) {
         try {
           final dynamic platform = _player.platform;
           if (platform != null) {
-            final referer = playerHeaders['Referer'] ?? playerHeaders['referer'];
+            final referer =
+                playerHeaders['Referer'] ?? playerHeaders['referer'];
             if (referer != null && referer.isNotEmpty) {
               await platform.setProperty('referrer', referer);
             }
-            final ua = playerHeaders['User-Agent'] ?? playerHeaders['user-agent'];
+            final ua =
+                playerHeaders['User-Agent'] ?? playerHeaders['user-agent'];
             if (ua != null && ua.isNotEmpty) {
               await platform.setProperty('user-agent', ua);
             }
             final cookie = playerHeaders['Cookie'] ?? playerHeaders['cookie'];
             if (cookie != null && cookie.isNotEmpty) {
               await platform.setProperty('cookies', 'yes');
-              await platform.setProperty('http-header-fields', 'Cookie: $cookie');
+              await platform.setProperty(
+                'http-header-fields',
+                'Cookie: $cookie',
+              );
             }
           }
         } catch (e) {
-          AppLog.d('[PlayerScreen] Warning setting native header properties: $e');
+          AppLog.d(
+            '[PlayerScreen] Warning setting native header properties: $e',
+          );
         }
       }
 
@@ -178,7 +198,9 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       _setSubtitleScale(_subtitleScale);
       _applyVolume(_isMuted ? 0.0 : _volume, persist: false);
 
-      AppLog.d('[PlayerScreen SUCCESS] Player opened media successfully for $streamUrl');
+      AppLog.d(
+        '[PlayerScreen SUCCESS] Player opened media successfully for $streamUrl',
+      );
 
       _updateMediaTracks(_player.state.tracks);
 
@@ -190,8 +212,11 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       _player.play();
       _startHideControlsTimer();
       // P4: one sound at a time — video starting pauses music.
-      unawaited(GlobalMediaCoordinator.instance
-          .notifyVideoStarted(title: _currentSource.name ?? ''));
+      unawaited(
+        GlobalMediaCoordinator.instance.notifyVideoStarted(
+          title: _currentSource.name ?? '',
+        ),
+      );
 
       // Defer background services until after playback starts
       Future.microtask(() {
@@ -204,22 +229,37 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
 
         final detail = widget.detail;
         if (detail != null) {
-          final targetId = detail.id.startsWith('tt') ? detail.id : (detail.tmdbId ?? detail.id);
+          final targetId = detail.id.startsWith('tt')
+              ? detail.id
+              : (detail.tmdbId ?? detail.id);
           if (targetId.isNotEmpty) {
             final s = _currentEpisode?.season;
             final e = _currentEpisode?.episode;
             final initPos = widget.initialPosition?.inSeconds ?? 0;
             final dur = _player.state.duration.inSeconds;
-            final progress = (dur > 0 ? (initPos / dur) * 100.0 : 0.0).clamp(0.0, 100.0);
+            final progress = (dur > 0 ? (initPos / dur) * 100.0 : 0.0).clamp(
+              0.0,
+              100.0,
+            );
 
             TraktService.instance.isAuthenticated().then((authed) {
               if (authed) {
-                TraktService.instance.scrobbleStart(targetId, progress, season: s, episode: e);
+                TraktService.instance.scrobbleStart(
+                  targetId,
+                  progress,
+                  season: s,
+                  episode: e,
+                );
               }
             });
             SimklService.instance.isAuthenticated().then((authed) {
               if (authed) {
-                SimklService.instance.scrobbleStart(targetId, progress, season: s, episode: e);
+                SimklService.instance.scrobbleStart(
+                  targetId,
+                  progress,
+                  season: s,
+                  episode: e,
+                );
               }
             });
           }
@@ -233,20 +273,20 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
         _savePlaybackProgress();
       });
     } catch (e, stackTrace) {
-      AppLog.d('[PlayerScreen ERROR] Failed to initialize stream URL: "$streamUrl"');
+      AppLog.d(
+        '[PlayerScreen ERROR] Failed to initialize stream URL: "$streamUrl"',
+      );
       AppLog.d('[PlayerScreen ERROR] Exception: $e');
       AppLog.d('[PlayerScreen ERROR] StackTrace:\n$stackTrace');
 
       if (!mounted) return;
 
-      // If we have an episode context (TV show), reopen the sources panel with error notice!
-      if (_currentEpisode != null && widget.detail?.videos.isNotEmpty == true) {
-        setState(() {
-          _isLoading = false;
-          _showSourcesPanel = true;
-          _sourcesEpisode = _currentEpisode;
-          _sourcesErrorMessage = 'Source failed to play. Please select another source below.';
-        });
+      // Open the sources picker for episodes AND movies: a failed movie used
+      // to show only status text with no way to switch.
+      if (_sourcesPanelAvailable) {
+        _openSourcesPanelWithError(
+          'Source failed to play. Please select another source below.',
+        );
         return;
       }
 
@@ -271,14 +311,17 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       final t = audioList[i];
       if (t.id == 'no' || t.id == 'auto') continue;
       final lang = t.language;
-      final title = t.title ?? (lang != null ? lang.toUpperCase() : 'Track ${i + 1}');
+      final title =
+          t.title ?? (lang != null ? lang.toUpperCase() : 'Track ${i + 1}');
       final idx = int.tryParse(t.id) ?? (i + 1);
-      audioTracks.add(PlayerAudioTrack(
-        index: idx,
-        title: title,
-        language: lang,
-        channels: int.tryParse(t.channels?.toString() ?? ''),
-      ));
+      audioTracks.add(
+        PlayerAudioTrack(
+          index: idx,
+          title: title,
+          language: lang,
+          channels: int.tryParse(t.channels?.toString() ?? ''),
+        ),
+      );
     }
 
     final subList = tracks.subtitle;
@@ -287,13 +330,12 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       final t = subList[i];
       if (t.id == 'no' || t.id == 'auto') continue;
       final lang = t.language;
-      final title = t.title ?? (lang != null ? lang.toUpperCase() : 'Track ${i + 1}');
+      final title =
+          t.title ?? (lang != null ? lang.toUpperCase() : 'Track ${i + 1}');
       final idx = int.tryParse(t.id) ?? (i + 1);
-      embeddedSubs.add(PlayerEmbeddedSubtitle(
-        index: idx,
-        title: title,
-        language: lang,
-      ));
+      embeddedSubs.add(
+        PlayerEmbeddedSubtitle(index: idx, title: title, language: lang),
+      );
     }
 
     int activeIdx = _selectedAudioTrackIndex;
@@ -337,10 +379,11 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
       final np = _player.platform as dynamic;
       np.setProperty('aid', preferred.toString());
       if (mounted) setState(() => _selectedAudioTrackIndex = preferred);
-      AppLog.d('[AudioGate] auto-selected track $preferred (hindi=${DubModeService.isHindi})');
+      AppLog.d(
+        '[AudioGate] auto-selected track $preferred (hindi=${DubModeService.isHindi})',
+      );
     } catch (e) {
       AppLog.d('[AudioGate] auto-select skipped: $e');
     }
   }
-
 }

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../notification/notification_prefs.dart';
 import '../notification/notification_service.dart';
+import '../../utils/download/atomic_file_swap.dart';
 import 'update_state_machine.dart';
 
 /// Minimal [Sink<Digest>] collector so we can read the final hash without
@@ -143,8 +144,7 @@ class UpdateStager {
           }
         }
 
-        if (await out.exists()) await out.delete();
-        await partial.rename(out.path);
+        await promoteFile(partial, out.path);
 
         await UpdateStateMachine.set(
           UpdateRunState.ready,

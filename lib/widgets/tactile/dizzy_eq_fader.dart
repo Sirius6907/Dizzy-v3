@@ -56,7 +56,9 @@ class _DizzyEqFaderState extends State<DizzyEqFader> {
               child: Text(
                 widget.label!,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 10,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -123,8 +125,9 @@ class _DizzyEqFaderState extends State<DizzyEqFader> {
                               color: DizzyGlow.beam,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.20),
-                                      width: 1),
+                                color: Colors.white.withValues(alpha: 0.20),
+                                width: 1,
+                              ),
                             ),
                           ),
                         ),
@@ -141,7 +144,10 @@ class _DizzyEqFaderState extends State<DizzyEqFader> {
               child: Text(
                 _current.toStringAsFixed(1),
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
         ],

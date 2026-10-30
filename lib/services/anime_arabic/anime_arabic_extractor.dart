@@ -52,7 +52,8 @@ class AnimeArabicExtractor {
   static const String _fallbackName = 'KwQdDUVLRBELIQgCEhY=';
   static const String _fallbackBool = 'no';
   static const String _fallbackSan = 'KwQdDUVLRBELIQgCEhY=';
-  static const String _fallbackMwsem = 'U29yY2VyeSBGaWdodCxKdWp1dHN1IEthaXNlbixKSks=';
+  static const String _fallbackMwsem =
+      'U29yY2VyeSBGaWdodCxKdWp1dHN1IEthaXNlbixKSks=';
 
   static const String _userAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -120,7 +121,11 @@ class AnimeArabicExtractor {
       final pe = segs.length > 1 ? segs.last : '';
       if (pe.isEmpty) return const [];
 
-      final flare = await _getFlare(client, timeout: timeout, onProgress: onProgress);
+      final flare = await _getFlare(
+        client,
+        timeout: timeout,
+        onProgress: onProgress,
+      );
       if (flare == null) return const [];
       final apiFirst = flare.$1;
       final apiSec = flare.$2;
@@ -139,6 +144,7 @@ class AnimeArabicExtractor {
           final m = re.firstMatch(pageHtml);
           return m?.group(1);
         }
+
         final n = pluck('name');
         final s = pluck('san');
         final m = pluck('mwsem');
@@ -148,7 +154,11 @@ class AnimeArabicExtractor {
         if (m != null && m.isNotEmpty) mwsem = m;
         if (b != null && b.isNotEmpty) boolStr = b;
       } catch (e) {
-        if (kDebugMode) debugPrint('[ArabicExtractor] page-token parse failed, using fallback: $e');
+        if (kDebugMode) {
+          debugPrint(
+            '[ArabicExtractor] page-token parse failed, using fallback: $e',
+          );
+        }
       }
 
       final r1 = await _post(
@@ -181,7 +191,10 @@ class AnimeArabicExtractor {
         'mwsem': mwsem,
       };
       final secEncoded = secBody.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .map(
+            (e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+          )
           .join('&');
 
       final r2 = await _post(client, apiSec, body: secEncoded).timeout(timeout);
@@ -200,8 +213,18 @@ class AnimeArabicExtractor {
         for (var i = 0; i < rawServers.length; i++) {
           final entry = rawServers[i];
           if (entry is Map) {
-            final name = (entry['name'] ?? entry['key'] ?? entry['server'] ?? entry['id'])?.toString();
-            final enc = (entry['enc'] ?? entry['value'] ?? entry['url'] ?? entry['data'])?.toString();
+            final name =
+                (entry['name'] ??
+                        entry['key'] ??
+                        entry['server'] ??
+                        entry['id'])
+                    ?.toString();
+            final enc =
+                (entry['enc'] ??
+                        entry['value'] ??
+                        entry['url'] ??
+                        entry['data'])
+                    ?.toString();
             if (name != null && enc != null) {
               servers[name] = enc;
             } else if (entry.length == 1) {
@@ -222,16 +245,20 @@ class AnimeArabicExtractor {
         if (encStr.isEmpty) return;
         final url = decryptXorBase64(encStr);
         if (url == null || !url.startsWith('http')) return;
-        out.add(ArabicResolvedServer(
-          name: name,
-          displayName: _displayNames[name] ?? _titleCase(name),
-          iframeUrl: url,
-        ));
+        out.add(
+          ArabicResolvedServer(
+            name: name,
+            displayName: _displayNames[name] ?? _titleCase(name),
+            iframeUrl: url,
+          ),
+        );
       });
 
       return out;
     } catch (e, st) {
-      if (kDebugMode) debugPrint('[ArabicExtractor] discoverServers error: $e\n$st');
+      if (kDebugMode) {
+        debugPrint('[ArabicExtractor] discoverServers error: $e\n$st');
+      }
       return const [];
     } finally {
       client.close(force: true);
@@ -259,23 +286,28 @@ class AnimeArabicExtractor {
     }
 
     for (final s in servers) {
-      _scrapeOne(s, timeout: timeout).then((variants) {
-        settled++;
-        if (variants.isNotEmpty) {
-          hits.addAll(variants);
-          if (hits.isNotEmpty && !completer.isCompleted && grace == null && settled < total) {
-            grace = Timer(graceWindow, () {
-              if (!completer.isCompleted) {
-                completer.complete(List.of(hits));
+      _scrapeOne(s, timeout: timeout)
+          .then((variants) {
+            settled++;
+            if (variants.isNotEmpty) {
+              hits.addAll(variants);
+              if (hits.isNotEmpty &&
+                  !completer.isCompleted &&
+                  grace == null &&
+                  settled < total) {
+                grace = Timer(graceWindow, () {
+                  if (!completer.isCompleted) {
+                    completer.complete(List.of(hits));
+                  }
+                });
               }
-            });
-          }
-        }
-        finalizeIfDone();
-      }).catchError((e) {
-        settled++;
-        finalizeIfDone();
-      });
+            }
+            finalizeIfDone();
+          })
+          .catchError((e) {
+            settled++;
+            finalizeIfDone();
+          });
     }
 
     Timer(timeout, () {
@@ -294,7 +326,9 @@ class AnimeArabicExtractor {
     final iframeHost = Uri.tryParse(server.iframeUrl)?.host.toLowerCase() ?? '';
     if (iframeHost.contains('mega.nz') || iframeHost.contains('mega.co.nz')) {
       try {
-        final mega = await MegaProxy.instance.resolve(server.iframeUrl).timeout(timeout);
+        final mega = await MegaProxy.instance
+            .resolve(server.iframeUrl)
+            .timeout(timeout);
         if (mega == null) return const [];
         return [
           ArabicResolvedStream(
@@ -354,19 +388,25 @@ class AnimeArabicExtractor {
       if (!seen.add(url)) continue;
       final label = (m.group(2) ?? '').trim();
       final res = (m.group(3) ?? '').trim();
-      final quality = label.isNotEmpty ? label : (res.isNotEmpty ? '${res}p' : '');
+      final quality = label.isNotEmpty
+          ? label
+          : (res.isNotEmpty ? '${res}p' : '');
       final lower = url.toLowerCase();
       final type = lower.contains('.m3u8') ? 'hls' : 'video';
-      out.add(ArabicResolvedStream(
-        server: server,
-        url: url,
-        quality: quality,
-        type: type,
-        headers: headers,
-      ));
+      out.add(
+        ArabicResolvedStream(
+          server: server,
+          url: url,
+          quality: quality,
+          type: type,
+          headers: headers,
+        ),
+      );
     }
 
-    out.sort((a, b) => _qualityRank(b.quality).compareTo(_qualityRank(a.quality)));
+    out.sort(
+      (a, b) => _qualityRank(b.quality).compareTo(_qualityRank(a.quality)),
+    );
     return out;
   }
 
@@ -389,10 +429,14 @@ class AnimeArabicExtractor {
       return (_cachedApiFirst!, _cachedApiSec!);
     }
     try {
-      final raw = await _get(client, _flareUrl, headers: {
-        'Referer': '${AnimeArabicService.baseUrl}/',
-        'Accept': 'application/json,*/*',
-      }).timeout(timeout);
+      final raw = await _get(
+        client,
+        _flareUrl,
+        headers: {
+          'Referer': '${AnimeArabicService.baseUrl}/',
+          'Accept': 'application/json,*/*',
+        },
+      ).timeout(timeout);
       final j = jsonDecode(raw) as Map<String, dynamic>;
       final first = j['first']?.toString();
       final sec = j['sec']?.toString();
@@ -431,10 +475,16 @@ class AnimeArabicExtractor {
   }) async {
     final req = await client.postUrl(Uri.parse(url));
     req.headers.set(HttpHeaders.userAgentHeader, _userAgent);
-    req.headers.set(HttpHeaders.contentTypeHeader, 'application/x-www-form-urlencoded; charset=UTF-8');
+    req.headers.set(
+      HttpHeaders.contentTypeHeader,
+      'application/x-www-form-urlencoded; charset=UTF-8',
+    );
     req.headers.set('Origin', AnimeArabicService.baseUrl);
     req.headers.set('Referer', '${AnimeArabicService.baseUrl}/');
-    req.headers.set(HttpHeaders.acceptHeader, 'application/json, text/plain, */*');
+    req.headers.set(
+      HttpHeaders.acceptHeader,
+      'application/json, text/plain, */*',
+    );
     if (headers != null) headers.forEach(req.headers.set);
     req.write(body);
     final res = await req.close();
@@ -470,7 +520,16 @@ class AnimeArabicExtractor {
     String animeTitle = '',
     int episodeNumber = 1,
   }) {
-    const order = ['wit', 'rift', 'riftv2', 'shof', 'blkom', 'animeify', 'kuudere', 'topcinema'];
+    const order = [
+      'wit',
+      'rift',
+      'riftv2',
+      'shof',
+      'blkom',
+      'animeify',
+      'kuudere',
+      'topcinema',
+    ];
     int rank(String name) {
       final i = order.indexOf(name);
       return i < 0 ? 999 : i;
@@ -492,20 +551,21 @@ class AnimeArabicExtractor {
           ? '$animeTitle • Ep $episodeNumber [${h.server.displayName}$qLabel]'
           : '${h.server.displayName}$qLabel';
 
-      out.add(StreamSource(
-        name: sourceName,
-        title: title,
-        description: 'AnimeSlayer • ${h.server.displayName} • ${h.type.toUpperCase()}$qLabel (Arabic Sub)',
-        url: h.url,
-        addonName: 'ArabicAnime',
-        headers: h.headers,
-        behaviorHints: {
-          'notWebReady': false,
-          'proxyHeaders': {
-            'request': h.headers,
+      out.add(
+        StreamSource(
+          name: sourceName,
+          title: title,
+          description:
+              'AnimeSlayer • ${h.server.displayName} • ${h.type.toUpperCase()}$qLabel (Arabic Sub)',
+          url: h.url,
+          addonName: 'ArabicAnime',
+          headers: h.headers,
+          behaviorHints: {
+            'notWebReady': false,
+            'proxyHeaders': {'request': h.headers},
           },
-        },
-      ));
+        ),
+      );
     }
     return out;
   }

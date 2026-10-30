@@ -8,10 +8,7 @@ class AniDbEpisode {
   final int number;
   final String id;
 
-  AniDbEpisode({
-    required this.number,
-    required this.id,
-  });
+  AniDbEpisode({required this.number, required this.id});
 }
 
 class AniDbResult {
@@ -55,22 +52,20 @@ class AniDbExtractor {
 
   /// Fetches URL via curl subprocess on desktop or http.Client on mobile/web.
   Future<String> _fetch(String url) async {
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    if (!kIsWeb &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       try {
         final curlCmd = Platform.isWindows ? 'curl.exe' : 'curl';
-        final result = await Process.run(
-          curlCmd,
-          [
-            '-sL',
-            '-A',
-            _userAgent,
-            '-e',
-            '$baseUrl/',
-            '--max-time',
-            '10',
-            url,
-          ],
-        );
+        final result = await Process.run(curlCmd, [
+          '-sL',
+          '-A',
+          _userAgent,
+          '-e',
+          '$baseUrl/',
+          '--max-time',
+          '10',
+          url,
+        ]);
         if (result.exitCode == 0 && (result.stdout as String).isNotEmpty) {
           return result.stdout as String;
         }
@@ -78,18 +73,13 @@ class AniDbExtractor {
     }
 
     final response = await _client
-        .get(
-          Uri.parse(url),
-          headers: _defaultHeaders,
-        )
+        .get(Uri.parse(url), headers: _defaultHeaders)
         .timeout(const Duration(seconds: 12));
     return response.body;
   }
 
   /// Searches AniDB for a matching anime and returns its slug identifier.
-  Future<String?> mapAnime({
-    required List<String> titleCandidates,
-  }) async {
+  Future<String?> mapAnime({required List<String> titleCandidates}) async {
     final uniqueTitles = <String>[];
     final seen = <String>{};
 
@@ -109,7 +99,8 @@ class AniDbExtractor {
 
     for (final title in uniqueTitles) {
       try {
-        final searchUrl = '$baseUrl/search/suggestions?q=${Uri.encodeComponent(title)}';
+        final searchUrl =
+            '$baseUrl/search/suggestions?q=${Uri.encodeComponent(title)}';
         final html = await _fetch(searchUrl);
 
         if (html.isNotEmpty) {
@@ -119,13 +110,16 @@ class AniDbExtractor {
 
           for (final el in links) {
             final href = el.attributes['href'] ?? '';
-            final itemTitle = el.querySelector('p')?.text.trim() ??
+            final itemTitle =
+                el.querySelector('p')?.text.trim() ??
                 el.attributes['title'] ??
                 el.text.trim();
 
             if (href.isNotEmpty && itemTitle.isNotEmpty) {
-              final match = RegExp(r'/anime/([a-z0-9-]+-[0-9]+)', caseSensitive: false)
-                  .firstMatch(href);
+              final match = RegExp(
+                r'/anime/([a-z0-9-]+-[0-9]+)',
+                caseSensitive: false,
+              ).firstMatch(href);
               if (match != null) {
                 results.add({'id': match.group(1)!, 'title': itemTitle});
               }
@@ -139,17 +133,22 @@ class AniDbExtractor {
 
             if (browseHtml.isNotEmpty) {
               final browseDoc = html_parser.parse(browseHtml);
-              final browseLinks = browseDoc.querySelectorAll("a[href*='/anime/']");
+              final browseLinks = browseDoc.querySelectorAll(
+                "a[href*='/anime/']",
+              );
 
               for (final el in browseLinks) {
                 final href = el.attributes['href'] ?? '';
-                final itemTitle = el.attributes['title'] ??
+                final itemTitle =
+                    el.attributes['title'] ??
                     el.querySelector('h3, p, span')?.text.trim() ??
                     el.text.trim();
 
                 if (href.isNotEmpty && itemTitle.isNotEmpty) {
-                  final match = RegExp(r'/anime/([a-z0-9-]+-[0-9]+)', caseSensitive: false)
-                      .firstMatch(href);
+                  final match = RegExp(
+                    r'/anime/([a-z0-9-]+-[0-9]+)',
+                    caseSensitive: false,
+                  ).firstMatch(href);
                   if (match != null) {
                     results.add({'id': match.group(1)!, 'title': itemTitle});
                   }
@@ -162,7 +161,8 @@ class AniDbExtractor {
             final normalizedSearch = title.toLowerCase().trim();
             // Check exact match
             final exactMatch = results.firstWhere(
-              (r) => (r['title'] ?? '').toLowerCase().trim() == normalizedSearch,
+              (r) =>
+                  (r['title'] ?? '').toLowerCase().trim() == normalizedSearch,
               orElse: () => results.first,
             );
 
@@ -198,11 +198,10 @@ class AniDbExtractor {
         if (data is Map && data['episodes'] is List) {
           final list = (data['episodes'] as List).map((ep) {
             final numVal = ep['number'];
-            final num = numVal is int ? numVal : int.tryParse(numVal.toString()) ?? 1;
-            return AniDbEpisode(
-              number: num,
-              id: ep['id'].toString(),
-            );
+            final num = numVal is int
+                ? numVal
+                : int.tryParse(numVal.toString()) ?? 1;
+            return AniDbEpisode(number: num, id: ep['id'].toString());
           }).toList();
 
           list.sort((a, b) => a.number.compareTo(b.number));
@@ -232,7 +231,8 @@ class AniDbExtractor {
         orElse: () => episodes.first,
       );
 
-      if (ep.number != episodeNumber && episodes.any((e) => e.number == episodeNumber)) {
+      if (ep.number != episodeNumber &&
+          episodes.any((e) => e.number == episodeNumber)) {
         return null;
       }
 
@@ -243,7 +243,8 @@ class AniDbExtractor {
       final langData = jsonDecode(langJsonStr);
       if (langData is! Map || langData['languages'] is! List) return null;
 
-      final languages = (langData['languages'] as List).cast<Map<String, dynamic>>();
+      final languages = (langData['languages'] as List)
+          .cast<Map<String, dynamic>>();
       if (languages.isEmpty) return null;
 
       Map<String, dynamic>? targetLang;
@@ -251,7 +252,8 @@ class AniDbExtractor {
         targetLang = languages.firstWhere(
           (l) =>
               l['code'] == 'eng' ||
-              (l['name']?.toString().toLowerCase().contains('english') == true) ||
+              (l['name']?.toString().toLowerCase().contains('english') ==
+                  true) ||
               (l['name']?.toString().toLowerCase().contains('dub') == true),
           orElse: () => <String, dynamic>{},
         );
@@ -259,7 +261,8 @@ class AniDbExtractor {
         targetLang = languages.firstWhere(
           (l) =>
               l['code'] == 'jpn' ||
-              (l['name']?.toString().toLowerCase().contains('japanese') == true) ||
+              (l['name']?.toString().toLowerCase().contains('japanese') ==
+                  true) ||
               (l['name']?.toString().toLowerCase().contains('sub') == true),
           orElse: () => <String, dynamic>{},
         );
@@ -275,8 +278,9 @@ class AniDbExtractor {
       final embedHtml = await _fetch(embedUrl);
       if (embedHtml.isEmpty) return null;
 
-      final fileMatch =
-          RegExp(r'''file:\s*['"]([^'"]+)['"]''').firstMatch(embedHtml);
+      final fileMatch = RegExp(
+        r'''file:\s*['"]([^'"]+)['"]''',
+      ).firstMatch(embedHtml);
       if (fileMatch == null || fileMatch.group(1) == null) return null;
 
       final masterUrl = fileMatch.group(1)!;

@@ -49,13 +49,20 @@ class GuestAutoOpen {
   static bool get busy => _handlingRef != null;
 
   /// Parsed host ref → what to fetch. Pure (unit-tested).
-  static RefTarget? parseRef(String ref,
-      {String? title, int? season, int? episode}) {
+  static RefTarget? parseRef(
+    String ref, {
+    String? title,
+    int? season,
+    int? episode,
+  }) {
     final r = ref.trim();
     var m = RegExp(r'^tmdb:movie:(\d+)$').firstMatch(r);
     if (m != null) {
       return RefTarget(
-          kind: RefKind.movie, tmdbId: int.parse(m.group(1)!), title: title);
+        kind: RefKind.movie,
+        tmdbId: int.parse(m.group(1)!),
+        title: title,
+      );
     }
     m = RegExp(r'^tmdb:tv:(\d+)(?::S(\d+):E(\d+))?$').firstMatch(r);
     if (m != null) {
@@ -90,7 +97,12 @@ class GuestAutoOpen {
     } on TimeoutException {
       _handlingRef = null; // release immediately so retry can re-acquire
       unawaited(
-          AppErrorLog.log(code: 'guest_open', screen: 'party', detail: 'timeout_20s'));
+        AppErrorLog.log(
+          code: 'guest_open',
+          screen: 'party',
+          detail: 'timeout_20s',
+        ),
+      );
       await _showTimeoutRetry(msg, context: navigatorKey.currentContext);
     } catch (_) {
       _toast("Couldn't open this one — check net, you'll rejoin on next play.");
@@ -114,8 +126,12 @@ class GuestAutoOpen {
   }
 
   static Future<void> _open(WatchSyncMessage msg) async {
-    final target = parseRef(msg.mediaRef,
-        title: msg.mediaTitle, season: msg.season, episode: msg.episode);
+    final target = parseRef(
+      msg.mediaRef,
+      title: msg.mediaTitle,
+      season: msg.season,
+      episode: msg.episode,
+    );
     if (target == null) {
       _toast('Host is playing something unknown — stay, next title follows.');
       return;
@@ -134,7 +150,8 @@ class GuestAutoOpen {
     if (target.kind == RefKind.tv) {
       final vids = detail.videos;
       for (final v in vids) {
-        if ((v.season ?? 1) == target.season && (v.episode ?? 1) == target.episode) {
+        if ((v.season ?? 1) == target.season &&
+            (v.episode ?? 1) == target.episode) {
           ep = v;
           break;
         }
@@ -172,15 +189,18 @@ class GuestAutoOpen {
   static Future<void> prewarm(WatchSyncMessage msg) async {
     if (!msg.isUsable || cachedDetail(msg.mediaRef) != null) return;
     try {
-      final target = parseRef(msg.mediaRef,
-          title: msg.mediaTitle, season: msg.season, episode: msg.episode);
+      final target = parseRef(
+        msg.mediaRef,
+        title: msg.mediaTitle,
+        season: msg.season,
+        episode: msg.episode,
+      );
       if (target == null) return;
       final detail = await _resolveDetail(target).timeout(_resolveTimeout);
       if (detail != null) cacheDetail(msg.mediaRef, detail);
     } catch (_) {
       // P15: silent-but-logged — the real switch resolves normally.
-      unawaited(
-          AppErrorLog.log(code: 'guest_prewarm', screen: 'party'));
+      unawaited(AppErrorLog.log(code: 'guest_prewarm', screen: 'party'));
     }
   }
 
@@ -189,7 +209,10 @@ class GuestAutoOpen {
     String? imdb = t.imdbId;
     final String endpoint = t.kind == RefKind.tv ? 'tv' : 'movie';
     if (imdb == null && t.tmdbId != null) {
-      imdb = await TmdbHelper.fetchImdbId(endpoint: endpoint, tmdbId: t.tmdbId!);
+      imdb = await TmdbHelper.fetchImdbId(
+        endpoint: endpoint,
+        tmdbId: t.tmdbId!,
+      );
     }
     if (imdb == null) {
       // Last resort: title search → Movie → meta (needs msg title).
@@ -235,7 +258,10 @@ class GuestAutoOpen {
   /// Guarded: no sheet when the app is backgrounded, never an unawaited
   /// fire-and-forget (the countdown owns the only retry), and Cancel
   /// truly cancels (no auto-retry after user dismisses).
-  static Future<void> _showTimeoutRetry(WatchSyncMessage msg, {BuildContext? context}) async {
+  static Future<void> _showTimeoutRetry(
+    WatchSyncMessage msg, {
+    BuildContext? context,
+  }) async {
     final ctx = context ?? navigatorKey.currentContext;
     if (ctx == null) return;
     // Dead context guard: pushing a sheet on a defunct route tree throws.
@@ -256,7 +282,8 @@ class GuestAutoOpen {
     final countdown = ValueNotifier<int>(3);
     Timer? timer;
     var retryCount = 0;
-    var settled = false; // exactly one outcome: auto-retry XOR button XOR cancel
+    var settled =
+        false; // exactly one outcome: auto-retry XOR button XOR cancel
 
     void settle({required bool retry}) {
       if (settled) return;
@@ -362,7 +389,10 @@ class GuestAutoOpen {
     }
   }
 
-  static Future<void> _retryOpen(WatchSyncMessage msg, {int attempts = 0}) async {
+  static Future<void> _retryOpen(
+    WatchSyncMessage msg, {
+    int attempts = 0,
+  }) async {
     if (attempts >= 3) return; // max 3 retries
     final d = Duration(seconds: 15 - attempts * 3); // 15, 12, 9 seconds
     try {
@@ -416,7 +446,8 @@ class GuestFollowService {
         final decoded = jsonDecode(event.text!);
         if (decoded is! Map) return;
         final msg = WatchSyncMessage.fromJson(
-            Map<String, dynamic>.from(decoded));
+          Map<String, dynamic>.from(decoded),
+        );
         // P10: prefetch-verified hint → warm metadata only (no open).
         if (msg.isUsable && msg.prefetchReady && msg.mediaRef != s.mediaRef) {
           await GuestAutoOpen.prewarm(msg);

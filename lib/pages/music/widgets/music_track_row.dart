@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_download_service.dart';
+import '../../../services/theme/app_theme_service.dart';
 import 'music_cover_image.dart';
 import 'music_hoverable.dart';
 
@@ -23,14 +25,17 @@ class MusicTrackRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = PrismInk.primary(isLight);
+    final inkFaint = PrismInk.faint(isLight);
     return MusicHoverable(
       scaleFactor: 1.01,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         tileColor: isCurrent
-            ? const Color(0xFF7C5CFF).withValues(alpha: 0.15)
-            : DizzyVoid.surface1,
+            ? const Color(0xFF7C5CFF).withValues(alpha: isLight ? 0.14 : 0.15)
+            : (isLight ? PrismLight.raisedTop : DizzyVoid.surface1),
         leading: Stack(
           alignment: Alignment.center,
           children: [
@@ -61,7 +66,7 @@ class MusicTrackRow extends StatelessWidget {
         title: Text(
           track.title,
           style: TextStyle(
-            color: isCurrent ? const Color(0xFF7C5CFF) : Colors.white,
+            color: isCurrent ? const Color(0xFF7C5CFF) : ink,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
@@ -70,7 +75,7 @@ class MusicTrackRow extends StatelessWidget {
         ),
         subtitle: Text(
           track.artist,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(color: inkFaint, fontSize: 12),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -81,11 +86,11 @@ class MusicTrackRow extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               track.formattedDuration,
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style: TextStyle(color: inkFaint, fontSize: 12),
             ),
             const SizedBox(width: 4),
             IconButton(
-              icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
+              icon: Icon(Icons.more_vert_rounded, color: inkFaint, size: 20),
               onPressed: onMoreTap,
             ),
           ],
@@ -96,10 +101,14 @@ class MusicTrackRow extends StatelessWidget {
   }
 
   Widget _buildDownloadButton(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final idleInk = PrismInk.faint(isLight);
     final isDownloaded = MusicDownloadService.instance.isDownloaded(track.id);
     final task = MusicDownloadService.instance.getTask(track.id);
-    final isDownloading = task != null &&
-        (task.status == MusicDownloadStatus.extracting || task.status == MusicDownloadStatus.downloading);
+    final isDownloading =
+        task != null &&
+        (task.status == MusicDownloadStatus.extracting ||
+            task.status == MusicDownloadStatus.downloading);
     final isQueued = task != null && task.status == MusicDownloadStatus.queued;
 
     if (isDownloaded) {
@@ -147,7 +156,7 @@ class MusicTrackRow extends StatelessWidget {
     }
 
     return IconButton(
-      icon: const Icon(Icons.download_rounded, color: Colors.white38, size: 18),
+      icon: Icon(Icons.download_rounded, color: idleInk, size: 18),
       tooltip: 'Download Track',
       onPressed: () {
         MusicDownloadService.instance.queueTrack(track);
@@ -161,4 +170,3 @@ class MusicTrackRow extends StatelessWidget {
     );
   }
 }
-

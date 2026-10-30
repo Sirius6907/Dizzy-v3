@@ -152,7 +152,10 @@ class DiscordRpcService {
     final presence = DiscordPresence(
       type: DiscordActivityType.playing,
       details: 'Browsing Dizzy v3',
-      largeAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      largeAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: DiscordTimestamps.started(_sessionStartTime),
     );
     await _updatePresence(presence);
@@ -176,22 +179,32 @@ class DiscordRpcService {
         final remaining = duration - position;
         timestamps = DiscordTimestamps.ending(DateTime.now().add(remaining));
       } else if (position != null) {
-        timestamps = DiscordTimestamps.started(DateTime.now().subtract(position));
+        timestamps = DiscordTimestamps.started(
+          DateTime.now().subtract(position),
+        );
       }
     }
 
-    final hasValidPoster = posterUrl != null && posterUrl.trim().isNotEmpty && posterUrl.startsWith('http');
+    final hasValidPoster =
+        posterUrl != null &&
+        posterUrl.trim().isNotEmpty &&
+        posterUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.watching,
       details: 'Watching $cleanTitle',
       state: isPaused
           ? 'Paused'
-          : (year != null && year.trim().isNotEmpty ? '($year)' : 'In Dizzy v3'),
+          : (year != null && year.trim().isNotEmpty
+                ? '($year)'
+                : 'In Dizzy v3'),
       largeAsset: hasValidPoster
           ? DiscordAsset.fromUrl(posterUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: timestamps,
     );
 
@@ -228,11 +241,16 @@ class DiscordRpcService {
         final remaining = duration - position;
         timestamps = DiscordTimestamps.ending(DateTime.now().add(remaining));
       } else if (position != null) {
-        timestamps = DiscordTimestamps.started(DateTime.now().subtract(position));
+        timestamps = DiscordTimestamps.started(
+          DateTime.now().subtract(position),
+        );
       }
     }
 
-    final hasValidPoster = posterUrl != null && posterUrl.trim().isNotEmpty && posterUrl.startsWith('http');
+    final hasValidPoster =
+        posterUrl != null &&
+        posterUrl.trim().isNotEmpty &&
+        posterUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.watching,
@@ -241,7 +259,10 @@ class DiscordRpcService {
       largeAsset: hasValidPoster
           ? DiscordAsset.fromUrl(posterUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: timestamps,
     );
 
@@ -283,11 +304,16 @@ class DiscordRpcService {
         final remaining = duration - position;
         timestamps = DiscordTimestamps.ending(DateTime.now().add(remaining));
       } else if (position != null) {
-        timestamps = DiscordTimestamps.started(DateTime.now().subtract(position));
+        timestamps = DiscordTimestamps.started(
+          DateTime.now().subtract(position),
+        );
       }
     }
 
-    final hasValidPoster = posterUrl != null && posterUrl.trim().isNotEmpty && posterUrl.startsWith('http');
+    final hasValidPoster =
+        posterUrl != null &&
+        posterUrl.trim().isNotEmpty &&
+        posterUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.watching,
@@ -296,7 +322,10 @@ class DiscordRpcService {
       largeAsset: hasValidPoster
           ? DiscordAsset.fromUrl(posterUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: timestamps,
     );
 
@@ -304,16 +333,16 @@ class DiscordRpcService {
   }
 
   /// Set Watching Live TV status: "watching live tv"
-  Future<void> setWatchingLiveTv({
-    String? channelName,
-    String? logoUrl,
-  }) async {
+  Future<void> setWatchingLiveTv({String? channelName, String? logoUrl}) async {
     _currentKind = DiscordActivityKind.liveTv;
     final stateText = (channelName != null && channelName.trim().isNotEmpty)
         ? channelName.trim()
         : 'Live Streams';
 
-    final hasValidLogo = logoUrl != null && logoUrl.trim().isNotEmpty && logoUrl.startsWith('http');
+    final hasValidLogo =
+        logoUrl != null &&
+        logoUrl.trim().isNotEmpty &&
+        logoUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.watching,
@@ -322,7 +351,10 @@ class DiscordRpcService {
       largeAsset: hasValidLogo
           ? DiscordAsset.fromUrl(logoUrl.trim(), text: stateText)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: DiscordTimestamps.started(DateTime.now()),
     );
 
@@ -358,11 +390,16 @@ class DiscordRpcService {
         final remaining = duration - position;
         timestamps = DiscordTimestamps.ending(DateTime.now().add(remaining));
       } else if (position != null) {
-        timestamps = DiscordTimestamps.started(DateTime.now().subtract(position));
+        timestamps = DiscordTimestamps.started(
+          DateTime.now().subtract(position),
+        );
       }
     }
 
-    final hasValidCover = coverUrl != null && coverUrl.trim().isNotEmpty && coverUrl.startsWith('http');
+    final hasValidCover =
+        coverUrl != null &&
+        coverUrl.trim().isNotEmpty &&
+        coverUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.listening,
@@ -371,7 +408,10 @@ class DiscordRpcService {
       largeAsset: hasValidCover
           ? DiscordAsset.fromUrl(coverUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: timestamps,
     );
 
@@ -401,7 +441,10 @@ class DiscordRpcService {
       stateText = 'eBook in Dizzy v3';
     }
 
-    final hasValidCover = coverUrl != null && coverUrl.trim().isNotEmpty && coverUrl.startsWith('http');
+    final hasValidCover =
+        coverUrl != null &&
+        coverUrl.trim().isNotEmpty &&
+        coverUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.playing,
@@ -410,7 +453,10 @@ class DiscordRpcService {
       largeAsset: hasValidCover
           ? DiscordAsset.fromUrl(coverUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
     );
 
     await _updatePresence(presence);
@@ -426,10 +472,15 @@ class DiscordRpcService {
     final cleanTitle = title.trim();
 
     final stateText = (chapter != null && chapter.trim().isNotEmpty)
-        ? (chapter.trim().toLowerCase().startsWith('chapter') ? chapter.trim() : 'Chapter ${chapter.trim()}')
+        ? (chapter.trim().toLowerCase().startsWith('chapter')
+              ? chapter.trim()
+              : 'Chapter ${chapter.trim()}')
         : 'Manga in Dizzy v3';
 
-    final hasValidCover = coverUrl != null && coverUrl.trim().isNotEmpty && coverUrl.startsWith('http');
+    final hasValidCover =
+        coverUrl != null &&
+        coverUrl.trim().isNotEmpty &&
+        coverUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.playing,
@@ -438,7 +489,10 @@ class DiscordRpcService {
       largeAsset: hasValidCover
           ? DiscordAsset.fromUrl(coverUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
     );
 
     await _updatePresence(presence);
@@ -458,7 +512,9 @@ class DiscordRpcService {
     final cleanTitle = title.trim();
     final cleanArtist = artist.trim();
 
-    String stateText = cleanArtist.isNotEmpty ? 'by $cleanArtist' : 'Music in Dizzy v3';
+    String stateText = cleanArtist.isNotEmpty
+        ? 'by $cleanArtist'
+        : 'Music in Dizzy v3';
     if (!isPlaying) stateText = '$stateText (Paused)';
 
     DiscordTimestamps? timestamps;
@@ -467,11 +523,16 @@ class DiscordRpcService {
         final remaining = duration - position;
         timestamps = DiscordTimestamps.ending(DateTime.now().add(remaining));
       } else if (position != null) {
-        timestamps = DiscordTimestamps.started(DateTime.now().subtract(position));
+        timestamps = DiscordTimestamps.started(
+          DateTime.now().subtract(position),
+        );
       }
     }
 
-    final hasValidCover = coverUrl != null && coverUrl.trim().isNotEmpty && coverUrl.startsWith('http');
+    final hasValidCover =
+        coverUrl != null &&
+        coverUrl.trim().isNotEmpty &&
+        coverUrl.startsWith('http');
 
     final presence = DiscordPresence(
       type: DiscordActivityType.listening,
@@ -480,7 +541,10 @@ class DiscordRpcService {
       largeAsset: hasValidCover
           ? DiscordAsset.fromUrl(coverUrl.trim(), text: cleanTitle)
           : const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
-      smallAsset: const DiscordAsset.fromKey(_defaultAssetKey, text: 'Dizzy v3'),
+      smallAsset: const DiscordAsset.fromKey(
+        _defaultAssetKey,
+        text: 'Dizzy v3',
+      ),
       timestamps: timestamps,
     );
 

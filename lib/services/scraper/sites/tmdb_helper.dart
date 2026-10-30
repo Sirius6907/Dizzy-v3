@@ -21,8 +21,10 @@ import '../../net/timeout_race.dart';
 /// APK key check: release builds inject no dart-define + ship no .env, so
 /// [hasKey] is false and only the keyless proxy path can fire.
 class TmdbHelper {
-  static const _compileKey =
-      String.fromEnvironment('TMDB_API_KEY', defaultValue: '');
+  static const _compileKey = String.fromEnvironment(
+    'TMDB_API_KEY',
+    defaultValue: '',
+  );
   static String get _apiKey =>
       _compileKey.isNotEmpty ? _compileKey : EnvService.get('TMDB_API_KEY');
   static bool get hasKey => _apiKey.isNotEmpty;
@@ -40,6 +42,20 @@ class TmdbHelper {
 
   static final Map<String, int> _cache = {};
 
+  /// Resolutions currently on the wire, keyed like [_cache]. Several scrapers
+  /// resolve the same title at once; they all await the first network hit.
+  static final Map<String, Future<int?>> _inflight = {};
+
+  static const int _maxCacheEntries = 300;
+
+  /// Bounded insert: Maps keep insertion order, so the first key is oldest.
+  static void _remember(String key, int id) {
+    if (!_cache.containsKey(key) && _cache.length >= _maxCacheEntries) {
+      _cache.remove(_cache.keys.first);
+    }
+    _cache[key] = id;
+  }
+
   static String _cleanString(String s) {
     return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
@@ -48,8 +64,10 @@ class TmdbHelper {
   /// direct entries exist only when a key exists; keyless third-party
   /// fallback is ALWAYS last (cloud-off survival, never preferred).
   /// Unit-tested (chain order is the P14 success metric).
-  static List<String> resolveChain(
-      {required bool edgeReady, required bool key}) {
+  static List<String> resolveChain({
+    required bool edgeReady,
+    required bool key,
+  }) {
     final chain = <String>[];
     if (edgeReady) chain.addAll(['resolve', 'edge']);
     if (key) chain.add('direct');
@@ -62,20 +80,21 @@ class TmdbHelper {
 
   /// GET the edge proxy: `?path=/movie/550&...` (allowlisted server-side).
   static Future<Map<String, dynamic>?> _edgeGet(
-      String path, Map<String, String> query) async {
+    String path,
+    Map<String, String> query,
+  ) async {
     final base = CloudClient.functionUrl('tmdb-proxy');
     if (base.isEmpty) return null;
     try {
-      final uri = Uri.parse(base).replace(queryParameters: {
-        'path': path,
-        ...query,
-      });
+      final uri = Uri.parse(
+        base,
+      ).replace(queryParameters: {'path': path, ...query});
       final res = await raceTimeout<Map<String, dynamic>?>(
         Future.sync(() async {
-          final r = await http.get(uri, headers: {
-            ..._headers,
-            'apikey': CloudClient.anonKey,
-          });
+          final r = await http.get(
+            uri,
+            headers: {..._headers, 'apikey': CloudClient.anonKey},
+          );
           if (r.statusCode != 200) return null;
           return jsonDecode(r.body) as Map<String, dynamic>?;
         }),
@@ -85,13 +104,17 @@ class TmdbHelper {
       return res;
     } catch (_) {
       // P15: silent-but-logged network (throttled 24h/code server-side).
-      unawaited(AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'edge'));
+      unawaited(
+        AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'edge'),
+      );
       return null;
     }
   }
 
-  static Future<Map<String, dynamic>?> _directGet(Uri uri,
-      {int seconds = 7}) async {
+  static Future<Map<String, dynamic>?> _directGet(
+    Uri uri, {
+    int seconds = 7,
+  }) async {
     try {
       final res = await raceTimeout<Map<String, dynamic>?>(
         Future.sync(() async {
@@ -104,9 +127,30 @@ class TmdbHelper {
       );
       return res;
     } catch (_) {
-      unawaited(AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'direct'));
+      unawaited(
+        AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'direct'),
+      );
       return null;
     }
+  }
+
+  /// Full detail map (`title`/`name`, dates, `imdb_id`, …) through the same
+  /// keyless-first chain — scrapers must never embed an api_key of their own.
+  static Future<Map<String, dynamic>?> fetchDetail({
+    required String endpoint, // 'movie' or 'tv'
+    required int tmdbId,
+  }) async {
+    if (_edgeReady) {
+      final got = await _edgeGet('/$endpoint/$tmdbId', {});
+      if (got != null) return got;
+    }
+    if (hasKey) {
+      final got = await _directGet(
+        Uri.parse('$_tmdbDirect/$endpoint/$tmdbId?api_key=$_apiKey'),
+      );
+      if (got != null) return got;
+    }
+    return _directGet(Uri.parse('$_speedrace/$endpoint/$tmdbId'));
   }
 
   /// v1.2.0-P3: tmdb id → imdb id (guest auto-open needs it for Cinemeta).
@@ -125,15 +169,23 @@ class TmdbHelper {
       if (got != null) return got;
     }
     if (hasKey) {
-      final got = pick(await _directGet(Uri.parse(
-          '$_tmdbDirect/$endpoint/$tmdbId/external_ids?api_key=$_apiKey'),
-          seconds: 6));
+      final got = pick(
+        await _directGet(
+          Uri.parse(
+            '$_tmdbDirect/$endpoint/$tmdbId/external_ids?api_key=$_apiKey',
+          ),
+          seconds: 6,
+        ),
+      );
       if (got != null) return got;
     }
     // Last resort: third-party keyless proxy (cloud-off devices).
-    final got = pick(await _directGet(
+    final got = pick(
+      await _directGet(
         Uri.parse('$_speedrace/$endpoint/$tmdbId/external_ids'),
-        seconds: 6));
+        seconds: 6,
+      ),
+    );
     return got;
   }
 
@@ -154,16 +206,17 @@ class TmdbHelper {
     int? bestMatchId;
     for (final item in results) {
       final m = item as Map;
-      final itemTitle = (m['title'] ??
-              m['name'] ??
-              m['original_title'] ??
-              m['original_name'] ??
-              '')
-          .toString();
+      final itemTitle =
+          (m['title'] ??
+                  m['name'] ??
+                  m['original_title'] ??
+                  m['original_name'] ??
+                  '')
+              .toString();
       final itemCleanTitle = _cleanString(itemTitle);
       if (itemCleanTitle != targetCleanTitle) continue;
-      final dateStr =
-          (m['release_date'] ?? m['first_air_date'] ?? '').toString();
+      final dateStr = (m['release_date'] ?? m['first_air_date'] ?? '')
+          .toString();
       final itemYear = dateStr.length >= 4
           ? int.tryParse(dateStr.substring(0, 4))
           : null;
@@ -195,13 +248,15 @@ class TmdbHelper {
   }) {
     final cacheKey =
         '${_cleanCacheImdb(imdbId)}|$title|${_normCacheType(type)}|${year ?? ""}';
-    _cache[cacheKey] = tmdbId;
+    _remember(cacheKey, tmdbId);
   }
 
   static String _cleanCacheImdb(String? imdbId) {
     var clean = (imdbId ?? '').trim();
     clean = clean.replaceAll(
-        RegExp(r'^(tmdb|movie|tv|imdb):', caseSensitive: false), '');
+      RegExp(r'^(tmdb|movie|tv|imdb):', caseSensitive: false),
+      '',
+    );
     if (clean.contains(':')) clean = clean.split(':')[0];
     return clean;
   }
@@ -210,6 +265,35 @@ class TmdbHelper {
       (type == 'tv' || type == 'series') ? 'tv' : 'movie';
 
   static Future<int?> resolveTmdbId({
+    String? imdbId,
+    required String title,
+    required String type,
+    int? year,
+  }) {
+    final cacheKey =
+        '${_cleanCacheImdb(imdbId)}|$title|${_normCacheType(type)}|${year ?? ""}';
+    final cached = _cache[cacheKey];
+    if (cached != null) return Future.value(cached);
+
+    final existing = _inflight[cacheKey];
+    if (existing != null) return existing;
+
+    final fut =
+        _resolveUncached(
+          imdbId: imdbId,
+          title: title,
+          type: type,
+          year: year,
+        ).whenComplete(() {
+          // Block body: `remove` returns the future itself, and an arrow body
+          // would make whenComplete await its own result (deadlock).
+          _inflight.remove(cacheKey);
+        });
+    _inflight[cacheKey] = fut;
+    return fut;
+  }
+
+  static Future<int?> _resolveUncached({
     String? imdbId,
     required String title,
     required String type,
@@ -232,13 +316,16 @@ class TmdbHelper {
       );
       final smartId = int.tryParse('${smart?['tmdbId'] ?? ''}');
       if (smartId != null) {
-        _cache[cacheKey] = smartId;
+        _remember(cacheKey, smartId);
         return smartId;
       }
     }
 
     String cleanId = (imdbId ?? '').trim();
-    cleanId = cleanId.replaceAll(RegExp(r'^(tmdb|movie|tv|imdb):', caseSensitive: false), '');
+    cleanId = cleanId.replaceAll(
+      RegExp(r'^(tmdb|movie|tv|imdb):', caseSensitive: false),
+      '',
+    );
     if (cleanId.contains(':')) {
       cleanId = cleanId.split(':')[0];
     }
@@ -248,48 +335,58 @@ class TmdbHelper {
     final edge = _edgeReady;
 
     List<int>? idsFromFind(Map<String, dynamic>? data) {
-      final results =
-          isTv ? (data?['tv_results'] as List?) : (data?['movie_results'] as List?);
+      final results = isTv
+          ? (data?['tv_results'] as List?)
+          : (data?['movie_results'] as List?);
       if (results == null || results.isEmpty) return null;
-      return [for (final r in results) (r as Map)['id'] as int?]
-          .whereType<int>()
-          .toList();
+      return [
+        for (final r in results) (r as Map)['id'] as int?,
+      ].whereType<int>().toList();
     }
 
-    int? pickTitle(List? results) => pickExactTitleId(
-          results: results, title: title, year: year);
+    int? pickTitle(List? results) =>
+        pickExactTitleId(results: results, title: title, year: year);
 
     if (cleanId.isNotEmpty) {
       // 1. Direct numeric ID
       if (RegExp(r'^\d+$').hasMatch(cleanId)) {
         final id = int.parse(cleanId);
-        _cache[cacheKey] = id;
+        _remember(cacheKey, id);
         return id;
       }
 
       // 2. Find API for tt IMDB IDs — edge, keyed direct, keyless last.
       if (cleanId.startsWith('tt')) {
         if (edge) {
-          final ids = idsFromFind(await _edgeGet(
-              '/find/$cleanId', {'external_source': 'imdb_id'}));
+          final ids = idsFromFind(
+            await _edgeGet('/find/$cleanId', {'external_source': 'imdb_id'}),
+          );
           if (ids != null && ids.isNotEmpty) {
-            _cache[cacheKey] = ids.first;
+            _remember(cacheKey, ids.first);
             return ids.first;
           }
         }
         if (hasKey) {
-          final ids = idsFromFind(await _directGet(Uri.parse(
-              '$_tmdbDirect/find/$cleanId?api_key=$_apiKey&external_source=imdb_id')));
+          final ids = idsFromFind(
+            await _directGet(
+              Uri.parse(
+                '$_tmdbDirect/find/$cleanId?api_key=$_apiKey&external_source=imdb_id',
+              ),
+            ),
+          );
           if (ids != null && ids.isNotEmpty) {
-            _cache[cacheKey] = ids.first;
+            _remember(cacheKey, ids.first);
             return ids.first;
           }
         }
-        final ids = idsFromFind(await _directGet(Uri.parse(
-            '$_speedrace/find/$cleanId?external_source=imdb_id'),
-            seconds: 6));
+        final ids = idsFromFind(
+          await _directGet(
+            Uri.parse('$_speedrace/find/$cleanId?external_source=imdb_id'),
+            seconds: 6,
+          ),
+        );
         if (ids != null && ids.isNotEmpty) {
-          _cache[cacheKey] = ids.first;
+          _remember(cacheKey, ids.first);
           return ids.first;
         }
       }
@@ -299,29 +396,34 @@ class TmdbHelper {
     if (title.isNotEmpty) {
       int? hit;
       if (edge) {
-        final data = await _edgeGet(
-            '/search/$endpoint', {'query': title});
+        final data = await _edgeGet('/search/$endpoint', {'query': title});
         hit = pickTitle(data?['results'] as List?);
         if (hit != null) {
-          _cache[cacheKey] = hit;
+          _remember(cacheKey, hit);
           return hit;
         }
       }
       if (hasKey) {
-        final data = await _directGet(Uri.parse(
-            '$_tmdbDirect/search/$endpoint?api_key=$_apiKey&query=${Uri.encodeComponent(title)}'));
+        final data = await _directGet(
+          Uri.parse(
+            '$_tmdbDirect/search/$endpoint?api_key=$_apiKey&query=${Uri.encodeComponent(title)}',
+          ),
+        );
         hit = pickTitle(data?['results'] as List?);
         if (hit != null) {
-          _cache[cacheKey] = hit;
+          _remember(cacheKey, hit);
           return hit;
         }
       }
-      final data = await _directGet(Uri.parse(
-          '$_speedrace/search/$endpoint?query=${Uri.encodeComponent(title)}'),
-          seconds: 6);
+      final data = await _directGet(
+        Uri.parse(
+          '$_speedrace/search/$endpoint?query=${Uri.encodeComponent(title)}',
+        ),
+        seconds: 6,
+      );
       hit = pickTitle(data?['results'] as List?);
       if (hit != null) {
-        _cache[cacheKey] = hit;
+        _remember(cacheKey, hit);
         return hit;
       }
     }

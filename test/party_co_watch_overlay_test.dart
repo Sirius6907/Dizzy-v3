@@ -7,14 +7,11 @@ import 'package:dizzy/widgets/party/party_co_watch_overlay.dart';
 /// Dadi-ma test — Easy English only.
 void main() {
   group('PartyCoWatchOverlay', () {
-    testWidgets('catching up shows Easy English + spinner',
-        (tester) async {
+    testWidgets('catching up shows Easy English + spinner', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: PartyCoWatchOverlay(
-              kind: PartyOverlayKind.catchingUp,
-            ),
+            body: PartyCoWatchOverlay(kind: PartyOverlayKind.catchingUp),
           ),
         ),
       );
@@ -22,14 +19,13 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('paused by host shows Easy English, no tech words',
-        (tester) async {
+    testWidgets('paused by host shows Easy English, no tech words', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: PartyCoWatchOverlay(
-              kind: PartyOverlayKind.pausedByHost,
-            ),
+            body: PartyCoWatchOverlay(kind: PartyOverlayKind.pausedByHost),
           ),
         ),
       );

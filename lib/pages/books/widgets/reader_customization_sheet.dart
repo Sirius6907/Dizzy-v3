@@ -8,10 +8,7 @@ import 'reader_design_tokens.dart';
 class ReaderCustomizationSheet extends StatefulWidget {
   final String? realBookSampleText;
 
-  const ReaderCustomizationSheet({
-    super.key,
-    this.realBookSampleText,
-  });
+  const ReaderCustomizationSheet({super.key, this.realBookSampleText});
 
   static Future<void> show(BuildContext context, {String? realBookSampleText}) {
     final isDesktop = MediaQuery.of(context).size.width > 760;
@@ -29,14 +26,22 @@ class ReaderCustomizationSheet extends StatefulWidget {
             alignment: Alignment.centerRight,
             child: Material(
               color: Colors.transparent,
-              child: ReaderCustomizationSheet(realBookSampleText: realBookSampleText),
+              child: ReaderCustomizationSheet(
+                realBookSampleText: realBookSampleText,
+              ),
             ),
           );
         },
         transitionBuilder: (ctx, anim1, anim2, child) {
-          final curved = CurvedAnimation(parent: anim1, curve: ReaderTokens.curveSheet);
+          final curved = CurvedAnimation(
+            parent: anim1,
+            curve: ReaderTokens.curveSheet,
+          );
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(curved),
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(curved),
             child: child,
           );
         },
@@ -48,12 +53,14 @@ class ReaderCustomizationSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => ReaderCustomizationSheet(realBookSampleText: realBookSampleText),
+      builder: (ctx) =>
+          ReaderCustomizationSheet(realBookSampleText: realBookSampleText),
     );
   }
 
   @override
-  State<ReaderCustomizationSheet> createState() => _ReaderCustomizationSheetState();
+  State<ReaderCustomizationSheet> createState() =>
+      _ReaderCustomizationSheetState();
 }
 
 class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
@@ -99,12 +106,18 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
           height: isDesktop ? double.infinity : null,
           constraints: isDesktop
               ? null
-              : BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.88),
+              : BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.88,
+                ),
           decoration: BoxDecoration(
             color: settings.surfaceColor,
             borderRadius: isDesktop
-                ? const BorderRadius.horizontal(left: Radius.circular(ReaderTokens.radius24))
-                : const BorderRadius.vertical(top: Radius.circular(ReaderTokens.radius24)),
+                ? const BorderRadius.horizontal(
+                    left: Radius.circular(ReaderTokens.radius24),
+                  )
+                : const BorderRadius.vertical(
+                    top: Radius.circular(ReaderTokens.radius24),
+                  ),
             border: Border.all(color: settings.borderColor),
             boxShadow: const [ReaderTokens.shadowMd],
           ),
@@ -114,7 +127,10 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
               // Mobile Drag Handle
               if (!isDesktop)
                 Container(
-                  margin: const EdgeInsets.only(top: ReaderTokens.space12, bottom: ReaderTokens.space8),
+                  margin: const EdgeInsets.only(
+                    top: ReaderTokens.space12,
+                    bottom: ReaderTokens.space8,
+                  ),
                   width: 32,
                   height: 4,
                   decoration: BoxDecoration(
@@ -136,7 +152,11 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.tune_rounded, color: settings.accentColor, size: 18),
+                        Icon(
+                          Icons.tune_rounded,
+                          color: settings.accentColor,
+                          size: 18,
+                        ),
                         const SizedBox(width: ReaderTokens.space8),
                         Text(
                           'Appearance',
@@ -150,7 +170,11 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                       ],
                     ),
                     IconButton(
-                      icon: Icon(Icons.close_rounded, color: settings.secondaryTextColor, size: 18),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: settings.secondaryTextColor,
+                        size: 18,
+                      ),
                       tooltip: 'Close settings',
                       onPressed: () => Navigator.of(context).pop(),
                     ),
@@ -168,7 +192,9 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                   vertical: ReaderTokens.space8,
                 ),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: settings.borderColor)),
+                  border: Border(
+                    bottom: BorderSide(color: settings.borderColor),
+                  ),
                 ),
                 child: TabBar(
                   controller: _tabController,
@@ -192,8 +218,12 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                 child: SliderTheme(
                   data: SliderThemeData(
                     trackHeight: 2.5,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 7,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 14,
+                    ),
                     activeTrackColor: settings.accentColor,
                     inactiveTrackColor: settings.borderColor,
                     thumbColor: settings.accentColor,
@@ -231,9 +261,13 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                   children: [
                     TextButton.icon(
                       icon: Icon(
-                        _showResetSuccess ? Icons.check_rounded : Icons.restart_alt_rounded,
+                        _showResetSuccess
+                            ? Icons.check_rounded
+                            : Icons.restart_alt_rounded,
                         size: 16,
-                        color: _showResetSuccess ? const Color(0xFF10B981) : settings.secondaryTextColor,
+                        color: _showResetSuccess
+                            ? const Color(0xFF10B981)
+                            : settings.secondaryTextColor,
                       ),
                       label: Text(
                         _showResetSuccess ? 'Reset ✓' : 'Reset to Defaults',
@@ -241,7 +275,9 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                           fontFamily: ReaderTokens.uiFont,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w500,
-                          color: _showResetSuccess ? const Color(0xFF10B981) : settings.secondaryTextColor,
+                          color: _showResetSuccess
+                              ? const Color(0xFF10B981)
+                              : settings.secondaryTextColor,
                         ),
                       ),
                       onPressed: _triggerReset,
@@ -251,7 +287,9 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                       style: TextStyle(
                         fontFamily: ReaderTokens.uiFont,
                         fontSize: 11,
-                        color: settings.secondaryTextColor.withValues(alpha: 0.5),
+                        color: settings.secondaryTextColor.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ],
@@ -368,7 +406,14 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
         ),
         Row(
           children: [
-            Text('A', style: TextStyle(fontSize: 12, color: settings.secondaryTextColor, fontWeight: FontWeight.bold)),
+            Text(
+              'A',
+              style: TextStyle(
+                fontSize: 12,
+                color: settings.secondaryTextColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             Expanded(
               child: Slider(
                 value: settings.fontSize,
@@ -379,7 +424,14 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                 onChanged: (val) => ReaderSettings.updateFontSize(val),
               ),
             ),
-            Text('A', style: TextStyle(fontSize: 22, color: settings.secondaryTextColor, fontWeight: FontWeight.bold)),
+            Text(
+              'A',
+              style: TextStyle(
+                fontSize: 22,
+                color: settings.secondaryTextColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: ReaderTokens.space16),
@@ -421,9 +473,17 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                   const SizedBox(height: ReaderTokens.space8),
                   Row(
                     children: [
-                      _buildAlignButton(Icons.format_align_left_rounded, TextAlign.left, settings),
+                      _buildAlignButton(
+                        Icons.format_align_left_rounded,
+                        TextAlign.left,
+                        settings,
+                      ),
                       const SizedBox(width: ReaderTokens.space8),
-                      _buildAlignButton(Icons.format_align_justify_rounded, TextAlign.justify, settings),
+                      _buildAlignButton(
+                        Icons.format_align_justify_rounded,
+                        TextAlign.justify,
+                        settings,
+                      ),
                     ],
                   ),
                 ],
@@ -522,7 +582,11 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
         ),
         Row(
           children: [
-            Icon(Icons.brightness_low_rounded, color: settings.secondaryTextColor, size: 18),
+            Icon(
+              Icons.brightness_low_rounded,
+              color: settings.secondaryTextColor,
+              size: 18,
+            ),
             Expanded(
               child: Slider(
                 value: settings.brightness,
@@ -533,7 +597,11 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                 onChanged: (val) => ReaderSettings.updateBrightness(val),
               ),
             ),
-            Icon(Icons.brightness_high_rounded, color: settings.secondaryTextColor, size: 20),
+            Icon(
+              Icons.brightness_high_rounded,
+              color: settings.secondaryTextColor,
+              size: 20,
+            ),
           ],
         ),
       ],
@@ -629,7 +697,9 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
               color: isSelected ? const Color(0xFF7C3AED) : border,
               width: isSelected ? 2.2 : 1.0,
             ),
-            boxShadow: isSelected ? [ReaderTokens.shadowGlow(const Color(0xFF7C3AED))] : null,
+            boxShadow: isSelected
+                ? [ReaderTokens.shadowGlow(const Color(0xFF7C3AED))]
+                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -654,7 +724,10 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
                     decoration: BoxDecoration(
                       color: bg,
                       shape: BoxShape.circle,
-                      border: Border.all(color: textColor.withValues(alpha: 0.5), width: 0.8),
+                      border: Border.all(
+                        color: textColor.withValues(alpha: 0.5),
+                        width: 0.8,
+                      ),
                     ),
                   ),
                 ],
@@ -676,7 +749,11 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
     );
   }
 
-  Widget _buildAlignButton(IconData icon, TextAlign align, ReaderSettingsData settings) {
+  Widget _buildAlignButton(
+    IconData icon,
+    TextAlign align,
+    ReaderSettingsData settings,
+  ) {
     final isSelected = settings.textAlign == align;
     return IconButton.filledTonal(
       icon: Icon(icon, size: 20),
@@ -685,15 +762,27 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
         ReaderSettings.updateTextAlign(align);
       },
       style: IconButton.styleFrom(
-        backgroundColor: isSelected ? settings.accentColor : settings.backgroundColor,
-        foregroundColor: isSelected ? Colors.white : settings.secondaryTextColor,
-        side: BorderSide(color: isSelected ? Colors.transparent : settings.borderColor),
-        shape: const RoundedRectangleBorder(borderRadius: ReaderTokens.rounded8),
+        backgroundColor: isSelected
+            ? settings.accentColor
+            : settings.backgroundColor,
+        foregroundColor: isSelected
+            ? Colors.white
+            : settings.secondaryTextColor,
+        side: BorderSide(
+          color: isSelected ? Colors.transparent : settings.borderColor,
+        ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: ReaderTokens.rounded8,
+        ),
       ),
     );
   }
 
-  Widget _buildMarginChip(String label, MarginPreset preset, ReaderSettingsData settings) {
+  Widget _buildMarginChip(
+    String label,
+    MarginPreset preset,
+    ReaderSettingsData settings,
+  ) {
     final isSelected = settings.marginPreset == preset;
     return Expanded(
       child: ChoiceChip(
@@ -735,7 +824,9 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: ReaderTokens.space12),
         decoration: BoxDecoration(
-          color: isSelected ? settings.accentColor.withValues(alpha: 0.15) : settings.backgroundColor,
+          color: isSelected
+              ? settings.accentColor.withValues(alpha: 0.15)
+              : settings.backgroundColor,
           borderRadius: ReaderTokens.rounded12,
           border: Border.all(
             color: isSelected ? settings.accentColor : settings.borderColor,
@@ -744,7 +835,13 @@ class _ReaderCustomizationSheetState extends State<ReaderCustomizationSheet>
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? settings.accentColor : settings.secondaryTextColor, size: 20),
+            Icon(
+              icon,
+              color: isSelected
+                  ? settings.accentColor
+                  : settings.secondaryTextColor,
+              size: 20,
+            ),
             const SizedBox(height: ReaderTokens.space4),
             Text(
               label,

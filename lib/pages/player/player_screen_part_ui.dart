@@ -17,8 +17,11 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
           Positioned.fill(
             child: Opacity(
               opacity: 0.4,
-              child: Image.network(widget.backdropUrl!,
-                  fit: BoxFit.cover, cacheWidth: 960),
+              child: Image.network(
+                widget.backdropUrl!,
+                fit: BoxFit.cover,
+                cacheWidth: 960,
+              ),
             ),
           ),
 
@@ -49,7 +52,9 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                         ),
                       )
                     else
-                      const CircularProgressIndicator(color: PlayerTheme.accent),
+                      const CircularProgressIndicator(
+                        color: PlayerTheme.accent,
+                      ),
                     const SizedBox(height: 24),
                     // P23: title paints on the FIRST frame — the user knows
                     // WHAT opened while the stream attaches behind.
@@ -86,7 +91,8 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                         controller: _videoController,
                         fit: _videoFit,
                         controls: mk.NoVideoControls,
-                        subtitleViewConfiguration: PlayerSettings.getSubtitleViewConfiguration(),
+                        subtitleViewConfiguration:
+                            PlayerSettings.getSubtitleViewConfiguration(),
                       );
                     },
                   ),
@@ -111,7 +117,9 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
     if (existing != null) {
       if (existing.status == DownloadStatus.downloading) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Download already in progress in background.')),
+          const SnackBar(
+            content: Text('Download already in progress in background.'),
+          ),
         );
         return;
       } else if (existing.status == DownloadStatus.completed) {
@@ -135,7 +143,9 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
       await DownloadService.instance.startDownload(
         title: widget.detail?.name ?? _currentTitle,
         mediaId: mediaId,
-        type: widget.detail?.type ?? (widget.detail?.videos.isNotEmpty == true ? 'series' : 'movie'),
+        type:
+            widget.detail?.type ??
+            (widget.detail?.videos.isNotEmpty == true ? 'series' : 'movie'),
         season: season,
         episode: episode,
         episodeTitle: _currentEpisode?.title,
@@ -149,16 +159,18 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Download started in background. Track progress in Downloads tab.'),
+            content: Text(
+              'Download started in background. Track progress in Downloads tab.',
+            ),
             duration: Duration(seconds: 3),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed to start: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Download failed to start: $e')));
       }
     }
   }
@@ -194,9 +206,15 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
           left: 0,
           right: 0,
           child: IgnorePointer(
-            ignoring: (!_showControls && !_isLoading) || _showSubSyncBar || _showTextSyncOverlay,
+            ignoring:
+                (!_showControls && !_isLoading) ||
+                _showSubSyncBar ||
+                _showTextSyncOverlay,
             child: AnimatedOpacity(
-              opacity: (_showControls || _isLoading) && !_showSubSyncBar && !_showTextSyncOverlay
+              opacity:
+                  (_showControls || _isLoading) &&
+                      !_showSubSyncBar &&
+                      !_showTextSyncOverlay
                   ? 1.0
                   : 0.0,
               duration: DizzyMotion.fast,
@@ -216,19 +234,23 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                     final mediaId = widget.detail?.id ?? _currentTitle;
                     final season = _currentEpisode?.season;
                     final episode = _currentEpisode?.episode;
-                    final isDownloading = tasks.any((t) =>
-                        t.mediaId == mediaId &&
-                        t.season == season &&
-                        t.episode == episode &&
-                        t.status == DownloadStatus.downloading);
+                    final isDownloading = tasks.any(
+                      (t) =>
+                          t.mediaId == mediaId &&
+                          t.season == season &&
+                          t.episode == episode &&
+                          t.status == DownloadStatus.downloading,
+                    );
 
                     return PlayerTopBar(
                       title: widget.detail?.name ?? _currentTitle,
                       subtitle: episodeSubtitle,
-                      quality: _currentSource.name,
-                      onDownload: (_isLoading || isOfflineFile) ? null : _handleDownloadMedia,
+                      quality: _currentSource.quality,
+                      onDownload: (_isLoading || isOfflineFile)
+                          ? null
+                          : _handleDownloadMedia,
                       isDownloading: isDownloading,
-                      onToggleEpisodes: (!_isLoading && widget.detail?.videos.isNotEmpty == true)
+                      onToggleEpisodes: (!_isLoading && _sourcesPanelAvailable)
                           ? _toggleEpisodesPanel
                           : null,
                       isEpisodesActive: _showEpisodesPanel || _showSourcesPanel,
@@ -249,506 +271,431 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
           ),
         ),
 
-          // Bottom Transport Bar
-          if (!_isLoading)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                ignoring: (!_showControls && _activeMenu == null) || _showTextSyncOverlay,
-                child: AnimatedOpacity(
-                  opacity: (_showControls || _activeMenu != null) && !_showTextSyncOverlay ? 1.0 : 0.0,
-                  duration: DizzyMotion.fast,
-                  curve: DizzyMotion.easeOut,
-                  child: MouseRegion(
-                    onEnter: (_) {
-                      _isHoveringUI = true;
-                      _hideTimer?.cancel();
+        // Bottom Transport Bar
+        if (!_isLoading)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              ignoring:
+                  (!_showControls && _activeMenu == null) ||
+                  _showTextSyncOverlay,
+              child: AnimatedOpacity(
+                opacity:
+                    (_showControls || _activeMenu != null) &&
+                        !_showTextSyncOverlay
+                    ? 1.0
+                    : 0.0,
+                duration: DizzyMotion.fast,
+                curve: DizzyMotion.easeOut,
+                child: MouseRegion(
+                  onEnter: (_) {
+                    _isHoveringUI = true;
+                    _hideTimer?.cancel();
+                  },
+                  onExit: (_) {
+                    _isHoveringUI = false;
+                    _startHideControlsTimer();
+                  },
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable:
+                        WindowService.instance.isFullscreenNotifier,
+                    builder: (context, isFs, _) {
+                      return PlayerTransport(
+                        isPlaying: _isPlaying,
+                        position: _position,
+                        duration: _duration,
+                        buffered: buffered,
+                        positionListenable: _positionNotifier,
+                        bufferedListenable: _bufferNotifier,
+                        skipSegments: _skipSegments,
+                        volume: _volume,
+                        isMuted: _isMuted || _volume == 0,
+                        playbackRate: _playbackRate,
+                        isSubtitlesActive:
+                            _isSubtitleEnabled &&
+                            _currentSubtitleVariant != null,
+                        isSubSyncActive:
+                            _selectedEmbeddedSubtitleIndex == null &&
+                            (_showSubSyncBar || _subtitleDelayMs != 0),
+                        isAudioActive: _selectedAudioTrackIndex > 0,
+                        isQualityManual: _qualityChoice != QualityChoice.auto,
+                        isFullscreen: isFs,
+                        onPlayPause: () {
+                          _togglePlayPause();
+                        },
+                        onSeek: (pos) {
+                          _onUserSeek(pos);
+                          _player.seek(pos);
+                        },
+                        onSeekBack10: () {
+                          _seekRelative(const Duration(seconds: -10));
+                        },
+                        onSeekForward10: () {
+                          _seekRelative(const Duration(seconds: 10));
+                        },
+                        onVolumeChanged: (vol) => _applyVolume(vol),
+                        onToggleMute: () => _toggleMute(),
+                        onToggleAudioMenu: () => _toggleMenu('audio'),
+                        onToggleSubtitleMenu: () => _toggleMenu('subtitle'),
+                        onOpenMore: _openMoreSheet,
+                        onToggleFullscreen: () =>
+                            WindowService.instance.toggleFullscreen(),
+                      );
                     },
-                    onExit: (_) {
-                      _isHoveringUI = false;
-                      _startHideControlsTimer();
-                    },
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: WindowService.instance.isFullscreenNotifier,
-                      builder: (context, isFs, _) {
-                        return PlayerTransport(
-                          isPlaying: _isPlaying,
-                          position: _position,
-                          duration: _duration,
-                          buffered: buffered,
-                          positionListenable: _positionNotifier,
-                          bufferedListenable: _bufferNotifier,
-                          skipSegments: _skipSegments,
-                          volume: _volume,
-                          isMuted: _isMuted || _volume == 0,
-                          playbackRate: _playbackRate,
-                          isSubtitlesActive: _isSubtitleEnabled && _currentSubtitleVariant != null,
-                          isSubSyncActive: _selectedEmbeddedSubtitleIndex == null && (_showSubSyncBar || _subtitleDelayMs != 0),
-                          isAudioActive: _selectedAudioTrackIndex > 0,
-                          isQualityManual:
-                              _qualityChoice != QualityChoice.auto,
-                          isEpisodesActive: _showEpisodesPanel || _showSourcesPanel,
-                          isFullscreen: isFs,
-                          onToggleEpisodes: (widget.detail?.videos.isNotEmpty == true)
-                              ? _toggleEpisodesPanel
-                              : null,
-                          onPlayPause: () {
-                            _togglePlayPause();
-                          },
-                          onSeek: (pos) {
-                            _onUserSeek(pos);
-                            _player.seek(pos);
-                          },
-                          onSeekBack10: () {
-                            _seekRelative(const Duration(seconds: -10));
-                          },
-                          onSeekForward10: () {
-                            _seekRelative(const Duration(seconds: 10));
-                          },
-                          onVolumeChanged: (vol) => _applyVolume(vol),
-                          onToggleMute: () => _toggleMute(),
-                          onToggleAspectMenu: () => _toggleMenu('aspect'),
-                          onToggleSpeedMenu: () => _toggleMenu('speed'),
-                          onToggleAudioMenu: () => _toggleMenu('audio'),
-                          onToggleQualityMenu: () => _toggleMenu('quality'),
-                          onToggleSubtitleMenu: () => _toggleMenu('subtitle'),
-                          onToggleSubSync: () {
-                            if (_selectedEmbeddedSubtitleIndex != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Subtitle sync is not supported for embedded subtitles. Please select an external subtitle.'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                              return;
-                            }
-                            if (_currentSubtitlePath == null || _currentSubtitleVariant == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please load an external subtitle to use subtitle sync.'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                              return;
-                            }
-                            setState(() {
-                              _showSubSyncBar = !_showSubSyncBar;
-                              _activeMenu = null;
-                            });
-                          },
-                          onToggleFullscreen: () => WindowService.instance.toggleFullscreen(),
-                        );
-                      },
-                    ),
                   ),
                 ),
               ),
             ),
+          ),
 
-          // Floating Subtitle Menu Popover
-          if (_activeMenu == 'subtitle' && !_isLoading)
-            Positioned(
-              bottom: MediaQuery.sizeOf(context).height < 500
-                  ? 44
-                  : (MediaQuery.sizeOf(context).width < 560
+        // Floating Subtitle Menu Popover
+        if (_activeMenu == 'subtitle' && !_isLoading)
+          Positioned(
+            bottom: MediaQuery.sizeOf(context).height < 500
+                ? 44
+                : (MediaQuery.sizeOf(context).width < 560
                       ? 60
                       : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96)),
-              right: MediaQuery.sizeOf(context).width < 560
-                  ? 8
-                  : (MediaQuery.sizeOf(context).width < 680 ? 12 : 28),
-              left: MediaQuery.sizeOf(context).width < 560 ? 8 : null,
-              child: Align(
-                alignment: MediaQuery.sizeOf(context).width < 560
-                    ? Alignment.bottomCenter
-                    : Alignment.bottomRight,
-                child: PlayerSubtitleMenu(
-                  groups: _subtitleGroups,
-                  embeddedSubtitles: _embeddedSubtitles,
-                  selectedEmbeddedIndex: _selectedEmbeddedSubtitleIndex,
-                  selectedVariant: _currentSubtitleVariant,
-                  isSubtitleEnabled: _isSubtitleEnabled,
-                  movieTitle: widget.detail?.name ?? widget.title,
-                  imdbId: widget.detail?.id,
-                  season: _currentEpisode?.season,
-                  episode: _currentEpisode?.episode,
-                  year: widget.detail?.year != null ? int.tryParse(widget.detail!.year!) : null,
-                  delaySec: _subtitleDelayMs / 1000.0,
-                  onSelectVariant: (v) {
-                    if (v != null) _loadSubtitle(v);
-                  },
-                  onSelectEmbedded: (emb) => _selectEmbeddedSubtitle(emb),
-                  onToggleOff: _disableSubtitles,
-                  onOpenSyncBar: () {
-                    if (_selectedEmbeddedSubtitleIndex != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Subtitle sync is not supported for embedded subtitles.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      return;
-                    }
-                    setState(() {
-                      _activeMenu = null;
-                      _showSubSyncBar = true;
-                    });
-                  },
-                  onOpenStyleBar: () {
-                    setState(() => _activeMenu = 'style');
-                  },
-                  onOpenTextSync: () {
-                    if (_selectedEmbeddedSubtitleIndex != null || _currentSubtitlePath == null || _currentCues.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Speech sync requires an external subtitle file.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      return;
-                    }
-                    setState(() {
-                      _activeMenu = null;
-                      _showTextSyncOverlay = true;
-                    });
-                  },
-                  onClose: () => setState(() => _activeMenu = null),
-                ),
-              ),
-            ),
-
-          // Floating Audio Menu Popover
-          if (_activeMenu == 'audio' && !_isLoading)
-            Positioned(
-              bottom: MediaQuery.sizeOf(context).height < 500
-                  ? 46
-                  : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
-              right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
-              child: PlayerAudioMenu(
-                audioTracks: _audioTracks,
-                selectedIndex: _selectedAudioTrackIndex,
-                delaySec: _audioDelaySec,
-                onTrackSelected: (idx) {
-                  setState(() => _selectedAudioTrackIndex = idx);
-                  try {
-                    final matching = _player.state.tracks.audio.firstWhere(
-                      (t) => t.id == idx.toString(),
-                      orElse: () => AudioTrack(idx.toString(), null, null),
-                    );
-                    _player.setAudioTrack(matching);
-                    final np = _player.platform as dynamic;
-                    np.setProperty('aid', idx.toString());
-                  } catch (_) {}
-                  final match = _audioTracks.where((t) => t.index == idx).firstOrNull;
-                  _showAudioHudToast(match?.title ?? 'Track $idx');
-                },
-                onDelayChanged: (sec) {
-                  setState(() => _audioDelaySec = sec);
-                  try {
-                    final np = _player.platform as dynamic;
-                    np.setProperty('audio-delay', sec.toString());
-                  } catch (_) {}
-                  _showAudioHudToast('AUDIO SYNC: ${sec > 0 ? "+" : ""}${sec.toStringAsFixed(2)}s');
-                },
-                onClose: () => setState(() => _activeMenu = null),
-              ),
-            ),
-
-          // Floating Quality Menu Popover (P7 — manual rendition picker)
-          if (_activeMenu == 'quality' && !_isLoading)
-            Positioned(
-              bottom: MediaQuery.sizeOf(context).height < 500
-                  ? 46
-                  : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
-              right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
-              child: PlayerQualityMenu(
-                options: QualityService.optionsFor(
-                  isHls: QualityService.isHlsUrl(_currentSource.url),
-                  badges: {
-                    if (_currentSource.quality != null)
-                      _currentSource.quality!,
-                    for (final s in _failoverChain)
-                      if (s.quality != null) s.quality!,
-                  },
-                  renditionLabels: {
-                    for (final r in _currentSource.renditions) r.label,
-                  },
-                ),
-                current: _qualityChoice,
-                onSelected: _applyQualityChoice,
-                onClose: () => setState(() => _activeMenu = null),
-              ),
-            ),
-
-          // Floating Speed Menu Popover
-          if (_activeMenu == 'speed' && !_isLoading)
-            Positioned(
-              bottom: MediaQuery.sizeOf(context).height < 500
-                  ? 46
-                  : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
-              right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
-              child: PlayerSpeedMenu(
-                currentRate: _playbackRate,
-                onRateSelected: _setPlaybackRate,
-                onClose: () => setState(() => _activeMenu = null),
-              ),
-            ),
-
-          // Floating Aspect Ratio Popover
-          if (_activeMenu == 'aspect' && !_isLoading)
-            Positioned(
-              bottom: MediaQuery.sizeOf(context).height < 500
-                  ? 46
-                  : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
-              right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
-              child: PlayerAspectMenu(
-                currentFit: _videoFit,
-                subtitleScale: _subtitleScale,
-                onFitSelected: (fit) => setState(() => _videoFit = fit),
-                onSubtitleScaleChanged: _setSubtitleScale,
-                onClose: () => setState(() => _activeMenu = null),
-              ),
-            ),
-
-          // Floating Subtitle Appearance & Customization Modal
-          if (_activeMenu == 'style' && !_isLoading)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _activeMenu = null),
-                child: Container(
-                  color: Colors.black54,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GestureDetector(
-                    onTap: () {}, // Prevent tap through
-                    child: PlayerSubStyleModal(
-                      player: _player,
-                      onClose: () => setState(() => _activeMenu = null),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // Top Floating Live SubSyncBar
-          if (_showSubSyncBar && !_isLoading && _selectedEmbeddedSubtitleIndex == null)
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 16,
-              left: 0,
-              right: 0,
-              child: SubSyncBar(
+            right: MediaQuery.sizeOf(context).width < 560
+                ? 8
+                : (MediaQuery.sizeOf(context).width < 680 ? 12 : 28),
+            left: MediaQuery.sizeOf(context).width < 560 ? 8 : null,
+            child: Align(
+              alignment: MediaQuery.sizeOf(context).width < 560
+                  ? Alignment.bottomCenter
+                  : Alignment.bottomRight,
+              child: PlayerSubtitleMenu(
+                groups: _subtitleGroups,
+                embeddedSubtitles: _embeddedSubtitles,
+                selectedEmbeddedIndex: _selectedEmbeddedSubtitleIndex,
+                selectedVariant: _currentSubtitleVariant,
+                isSubtitleEnabled: _isSubtitleEnabled,
+                movieTitle: widget.detail?.name ?? widget.title,
+                imdbId: widget.detail?.id,
+                season: _currentEpisode?.season,
+                episode: _currentEpisode?.episode,
+                year: widget.detail?.year != null
+                    ? int.tryParse(widget.detail!.year!)
+                    : null,
                 delaySec: _subtitleDelayMs / 1000.0,
-                isTextSyncAvailable: _selectedEmbeddedSubtitleIndex == null && _currentSubtitlePath != null && _currentCues.isNotEmpty,
-                onDelayChanged: (sec) => _applyLiveDelay(sec),
-                onEnterTextSync: () {
+                onSelectVariant: (v) {
+                  if (v != null) _loadSubtitle(v);
+                },
+                onSelectEmbedded: (emb) => _selectEmbeddedSubtitle(emb),
+                onToggleOff: _disableSubtitles,
+                onOpenSyncBar: () {
+                  if (_selectedEmbeddedSubtitleIndex != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Subtitle sync is not supported for embedded subtitles.',
+                        ),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
                   setState(() {
-                    _showSubSyncBar = false;
+                    _activeMenu = null;
+                    _showSubSyncBar = true;
+                  });
+                },
+                onOpenStyleBar: () {
+                  setState(() => _activeMenu = 'style');
+                },
+                onOpenTextSync: () {
+                  if (_selectedEmbeddedSubtitleIndex != null ||
+                      _currentSubtitlePath == null ||
+                      _currentCues.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Speech sync requires an external subtitle file.',
+                        ),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+                  setState(() {
+                    _activeMenu = null;
                     _showTextSyncOverlay = true;
                   });
                 },
-                onClose: () {
-                  setState(() => _showSubSyncBar = false);
-                  _startHideControlsTimer();
-                },
+                onClose: () => setState(() => _activeMenu = null),
               ),
             ),
+          ),
 
-          // In-Player Episodes Side Panel
-          if (_showEpisodesPanel && widget.detail?.videos.isNotEmpty == true && !_isLoading)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _showEpisodesPanel = false),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: PlayerEpisodesPanel(
-                      videos: widget.detail!.videos,
-                      currentEpisode: _currentEpisode,
-                      onEpisodeSelected: _onEpisodeChosen,
-                      onClose: () => setState(() => _showEpisodesPanel = false),
-                    ),
+        // Floating Audio Menu Popover
+        if (_activeMenu == 'audio' && !_isLoading)
+          Positioned(
+            bottom: MediaQuery.sizeOf(context).height < 500
+                ? 46
+                : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
+            right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
+            child: PlayerAudioMenu(
+              audioTracks: _audioTracks,
+              selectedIndex: _selectedAudioTrackIndex,
+              delaySec: _audioDelaySec,
+              onTrackSelected: (idx) {
+                setState(() => _selectedAudioTrackIndex = idx);
+                try {
+                  final matching = _player.state.tracks.audio.firstWhere(
+                    (t) => t.id == idx.toString(),
+                    orElse: () => AudioTrack(idx.toString(), null, null),
+                  );
+                  _player.setAudioTrack(matching);
+                  final np = _player.platform as dynamic;
+                  np.setProperty('aid', idx.toString());
+                } catch (_) {}
+                final match = _audioTracks
+                    .where((t) => t.index == idx)
+                    .firstOrNull;
+                _showAudioHudToast(match?.title ?? 'Track $idx');
+              },
+              onDelayChanged: (sec) {
+                setState(() => _audioDelaySec = sec);
+                try {
+                  final np = _player.platform as dynamic;
+                  np.setProperty('audio-delay', sec.toString());
+                } catch (_) {}
+                _showAudioHudToast(
+                  'AUDIO SYNC: ${sec > 0 ? "+" : ""}${sec.toStringAsFixed(2)}s',
+                );
+              },
+              onClose: () => setState(() => _activeMenu = null),
+            ),
+          ),
+
+        // Floating Quality Menu Popover (P7 — manual rendition picker)
+        if (_activeMenu == 'quality' && !_isLoading)
+          Positioned(
+            bottom: MediaQuery.sizeOf(context).height < 500
+                ? 46
+                : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
+            right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
+            child: PlayerQualityMenu(
+              options: QualityService.optionsFor(
+                isHls: QualityService.isHlsUrl(_currentSource.url),
+                badges: {
+                  if (_currentSource.quality != null) _currentSource.quality!,
+                  for (final s in _failoverChain)
+                    if (s.quality != null) s.quality!,
+                },
+                renditionLabels: {
+                  for (final r in _currentSource.renditions) r.label,
+                },
+              ),
+              current: _qualityChoice,
+              onSelected: _applyQualityChoice,
+              onClose: () => setState(() => _activeMenu = null),
+            ),
+          ),
+
+        // Floating Speed Menu Popover
+        if (_activeMenu == 'speed' && !_isLoading)
+          Positioned(
+            bottom: MediaQuery.sizeOf(context).height < 500
+                ? 46
+                : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
+            right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
+            child: PlayerSpeedMenu(
+              currentRate: _playbackRate,
+              onRateSelected: _setPlaybackRate,
+              onClose: () => setState(() => _activeMenu = null),
+            ),
+          ),
+
+        // Floating Aspect Ratio Popover
+        if (_activeMenu == 'aspect' && !_isLoading)
+          Positioned(
+            bottom: MediaQuery.sizeOf(context).height < 500
+                ? 46
+                : (MediaQuery.sizeOf(context).width < 680 ? 76 : 96),
+            right: MediaQuery.sizeOf(context).width < 680 ? 12 : 28,
+            child: PlayerAspectMenu(
+              currentFit: _videoFit,
+              subtitleScale: _subtitleScale,
+              onFitSelected: (fit) => setState(() => _videoFit = fit),
+              onSubtitleScaleChanged: _setSubtitleScale,
+              onClose: () => setState(() => _activeMenu = null),
+            ),
+          ),
+
+        // Floating Subtitle Appearance & Customization Modal
+        if (_activeMenu == 'style' && !_isLoading)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _activeMenu = null),
+              child: Container(
+                color: Colors.black54,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GestureDetector(
+                  onTap: () {}, // Prevent tap through
+                  child: PlayerSubStyleModal(
+                    player: _player,
+                    onClose: () => setState(() => _activeMenu = null),
                   ),
                 ),
               ),
             ),
+          ),
 
-          // In-Player Sources Side Panel (Targeted Scraping & Error Recovery)
-          if (_showSourcesPanel && _sourcesEpisode != null && !_isLoading)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _showSourcesPanel = false),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: PlayerSourcesPanel(
-                      episode: _sourcesEpisode!,
-                      detail: widget.detail,
-                      currentAddonName: _currentSource.addonName,
-                      errorMessage: _sourcesErrorMessage,
-                      cachedSources: _cachedSourcesByEpisode['${_sourcesEpisode!.season ?? 1}:${_sourcesEpisode!.episode ?? 1}'],
-                      onSourcesLoaded: (sources) {
-                        _cachedSourcesByEpisode['${_sourcesEpisode!.season ?? 1}:${_sourcesEpisode!.episode ?? 1}'] = sources;
-                      },
-                      onPlaySource: _playNewSource,
-                      onBackToEpisodes: _onBackToEpisodes,
-                      onClose: () => setState(() => _showSourcesPanel = false),
-                    ),
+        // Top Floating Live SubSyncBar
+        if (_showSubSyncBar &&
+            !_isLoading &&
+            _selectedEmbeddedSubtitleIndex == null)
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 16,
+            left: 0,
+            right: 0,
+            child: SubSyncBar(
+              delaySec: _subtitleDelayMs / 1000.0,
+              isTextSyncAvailable:
+                  _selectedEmbeddedSubtitleIndex == null &&
+                  _currentSubtitlePath != null &&
+                  _currentCues.isNotEmpty,
+              onDelayChanged: (sec) => _applyLiveDelay(sec),
+              onEnterTextSync: () {
+                setState(() {
+                  _showSubSyncBar = false;
+                  _showTextSyncOverlay = true;
+                });
+              },
+              onClose: () {
+                setState(() => _showSubSyncBar = false);
+                _startHideControlsTimer();
+              },
+            ),
+          ),
+
+        // In-Player Episodes Side Panel
+        if (_showEpisodesPanel &&
+            widget.detail?.videos.isNotEmpty == true &&
+            !_isLoading)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _showEpisodesPanel = false),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.45),
+                child: GestureDetector(
+                  onTap: () {},
+                  child: PlayerEpisodesPanel(
+                    videos: widget.detail!.videos,
+                    currentEpisode: _currentEpisode,
+                    onEpisodeSelected: _onEpisodeChosen,
+                    onClose: () => setState(() => _showEpisodesPanel = false),
                   ),
                 ),
               ),
             ),
+          ),
 
-          // Right Drawer Text Sync
-          if (_showTextSyncOverlay && !_isLoading && _currentCues.isNotEmpty && _selectedEmbeddedSubtitleIndex == null)
-            Positioned.fill(
-              child: TextSyncOverlay(
-                player: _player,
-                initialCues: _currentCues,
-                baseOffsetSec: _subtitleDelayMs / 1000.0,
-                onClose: () {
-                  setState(() => _showTextSyncOverlay = false);
-                  _startHideControlsTimer();
-                },
-                onSave: _saveTextSyncedCues,
+        // In-Player Sources Side Panel (Targeted Scraping & Error Recovery)
+        if (_showSourcesPanel && _sourcesEpisode != null && !_isLoading)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _showSourcesPanel = false),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.45),
+                child: GestureDetector(
+                  onTap: () {},
+                  child: PlayerSourcesPanel(
+                    episode: _sourcesEpisode!,
+                    detail: widget.detail,
+                    currentAddonName: _currentSource.addonName,
+                    errorMessage: _sourcesErrorMessage,
+                    // Paint the player's own verified list instantly; the
+                    // panel only re-scrapes on its explicit Refresh action.
+                    seedSources: _sourcesSeed,
+                    cachedSources:
+                        _cachedSourcesByEpisode['${_sourcesEpisode!.season ?? 1}:${_sourcesEpisode!.episode ?? 1}'],
+                    onSourcesLoaded: (sources) {
+                      _cachedSourcesByEpisode['${_sourcesEpisode!.season ?? 1}:${_sourcesEpisode!.episode ?? 1}'] =
+                          sources;
+                    },
+                    onPlaySource: _playNewSource,
+                    onBackToEpisodes: _onBackToEpisodes,
+                    onClose: () => setState(() => _showSourcesPanel = false),
+                  ),
+                ),
               ),
             ),
+          ),
 
-          // Floating Skip Button (Skip Intro, Skip Recap, Skip Credits, Skip Preview)
-          if (_showSkipButton && _activeSkipSegment != null && !_isLoading && !_showTextSyncOverlay && !_showEpisodesPanel && !_showSourcesPanel)
-            Positioned(
-              bottom: (_showControls || _activeMenu != null)
-                  ? (MediaQuery.paddingOf(context).bottom +
+        // Right Drawer Text Sync
+        if (_showTextSyncOverlay &&
+            !_isLoading &&
+            _currentCues.isNotEmpty &&
+            _selectedEmbeddedSubtitleIndex == null)
+          Positioned.fill(
+            child: TextSyncOverlay(
+              player: _player,
+              initialCues: _currentCues,
+              baseOffsetSec: _subtitleDelayMs / 1000.0,
+              onClose: () {
+                setState(() => _showTextSyncOverlay = false);
+                _startHideControlsTimer();
+              },
+              onSave: _saveTextSyncedCues,
+            ),
+          ),
+
+        // Floating Skip Button (Skip Intro, Skip Recap, Skip Credits, Skip Preview)
+        if (_showSkipButton &&
+            _activeSkipSegment != null &&
+            !_isLoading &&
+            !_showTextSyncOverlay &&
+            !_showEpisodesPanel &&
+            !_showSourcesPanel)
+          Positioned(
+            bottom: (_showControls || _activeMenu != null)
+                ? (MediaQuery.paddingOf(context).bottom +
                       (MediaQuery.sizeOf(context).width < 680 ? 108 : 128))
-                  : (MediaQuery.paddingOf(context).bottom +
+                : (MediaQuery.paddingOf(context).bottom +
                       (MediaQuery.sizeOf(context).width < 680 ? 22 : 36)),
-              right: MediaQuery.sizeOf(context).width < 680 ? 16 : 28,
-              child: AnimatedOpacity(
-                opacity: _showSkipButton ? 1.0 : 0.0,
-                duration: DizzyMotion.fast,
-                curve: DizzyMotion.easeOut,
-                child: PlayerSkipButton(
-                  segment: _activeSkipSegment!,
-                  onSkip: () => _handleSkipSegment(_activeSkipSegment!),
-                  onDismiss: () => _handleDismissSkipSegment(_activeSkipSegment!),
-                ),
+            right: MediaQuery.sizeOf(context).width < 680 ? 16 : 28,
+            child: AnimatedOpacity(
+              opacity: _showSkipButton ? 1.0 : 0.0,
+              duration: DizzyMotion.fast,
+              curve: DizzyMotion.easeOut,
+              child: PlayerSkipButton(
+                segment: _activeSkipSegment!,
+                onSkip: () => _handleSkipSegment(_activeSkipSegment!),
+                onDismiss: () => _handleDismissSkipSegment(_activeSkipSegment!),
               ),
             ),
+          ),
 
-          // Polish P4: first-run gesture hints — every control explains itself.
-          // One tap anywhere (or Got it) dismisses forever on this device.
-          if (_showGestureHints && !_isLoading)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _dismissGestureHints,
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(DizzySpace.lg),
-                  child: GestureDetector(
-                    onTap: () {}, // card taps don't dismiss
-                    child: PlayerGlassCard(
-                      width: (340.0).clamp(
-                          260.0, MediaQuery.sizeOf(context).width - 64),
-                      padding: const EdgeInsets.all(DizzySpace.md + 4),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Know the moves',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: DizzyType.title,
-                              fontWeight: DizzyType.wBold,
-                            ),
-                          ),
-                          const SizedBox(height: DizzySpace.xs),
-                          const Text(
-                            'Your fingers are the remote:',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: DizzyType.body,
-                            ),
-                          ),
-                          const SizedBox(height: DizzySpace.sm),
-                          _hintRow(Icons.swipe_rounded,
-                              'Swipe left-right — jump in the video'),
-                          _hintRow(Icons.brightness_6_rounded,
-                              'Left edge up-down — brightness'),
-                          _hintRow(Icons.volume_up_rounded,
-                              'Right edge up-down — volume'),
-                          _hintRow(Icons.touch_app_rounded,
-                              'Double-tap sides — skip 10 sec'),
-                          _hintRow(Icons.fast_forward_rounded,
-                              'Press and hold — 2x speed'),
-                          const SizedBox(height: DizzySpace.md),
-                          GestureDetector(
-                            onTap: _dismissGestureHints,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: DizzySpace.sm),
-                              decoration: BoxDecoration(
-                                color: AppThemeService
-                                    .currentPalette.value.primaryColor,
-                                borderRadius: DizzyRadius.mdAll,
-                              ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Got it!',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+        // Center Heads-Up Volume Display (HUD)
+        if (_showVolumeHud)
+          Positioned.fill(child: IgnorePointer(child: _buildVolumeHud())),
 
-          // Center Heads-Up Volume Display (HUD)
-          if (_showVolumeHud)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: _buildVolumeHud(),
-              ),
-            ),
+        // Center Heads-Up Audio Display (HUD)
+        if (_showAudioHud)
+          Positioned.fill(child: IgnorePointer(child: _buildAudioHud())),
 
-          // Center Heads-Up Audio Display (HUD)
-          if (_showAudioHud)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: _buildAudioHud(),
-              ),
+        // Next-Episode Countdown (Netflix-style binge handoff)
+        if (_showNextEpisodeCountdown &&
+            _nextEpisodeEngine.prefetchedEpisode != null)
+          Positioned.fill(
+            child: NextEpisodeCountdown(
+              nextEpisode: _nextEpisodeEngine.prefetchedEpisode!,
+              showName: widget.detail?.name ?? widget.title,
+              backdropUrl: widget.backdropUrl,
+              onPlayNow: _playNextEpisode,
+              onCancel: _cancelNextEpisode,
             ),
-
-          // Next-Episode Countdown (Netflix-style binge handoff)
-          if (_showNextEpisodeCountdown &&
-              _nextEpisodeEngine.prefetchedEpisode != null)
-            Positioned.fill(
-              child: NextEpisodeCountdown(
-                nextEpisode: _nextEpisodeEngine.prefetchedEpisode!,
-                showName: widget.detail?.name ?? widget.title,
-                backdropUrl: widget.backdropUrl,
-                onPlayNow: _playNextEpisode,
-                onCancel: _cancelNextEpisode,
-              ),
-            ),
-        ],
-      );
+          ),
+      ],
+    );
   }
 
   Widget _buildVolumeHud() {
@@ -784,7 +731,9 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
           ),
           boxShadow: [
             BoxShadow(
-              color: isBoosting ? boostColor.withValues(alpha: 0.28) : Colors.black54,
+              color: isBoosting
+                  ? boostColor.withValues(alpha: 0.28)
+                  : Colors.black54,
               blurRadius: 30,
               spreadRadius: 2,
             ),
@@ -814,11 +763,17 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                 if (isBoosting) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: boostColor.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: boostColor.withValues(alpha: 0.4), width: 0.8),
+                      border: Border.all(
+                        color: boostColor.withValues(alpha: 0.4),
+                        width: 0.8,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -851,7 +806,11 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                     Container(color: Colors.white.withValues(alpha: 0.15)),
                     FractionallySizedBox(
                       alignment: Alignment.centerLeft,
-                      widthFactor: (effectiveVol / PlayerVolumeControl.maxVolume).clamp(0.0, 1.0),
+                      widthFactor:
+                          (effectiveVol / PlayerVolumeControl.maxVolume).clamp(
+                            0.0,
+                            1.0,
+                          ),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: isBoosting

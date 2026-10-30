@@ -16,7 +16,9 @@ class DizzyProfileService {
 
   static final ValueNotifier<List<DizzyProfile>> profiles =
       ValueNotifier<List<DizzyProfile>>([]);
-  static final ValueNotifier<String?> activeProfileId = ValueNotifier<String?>(null);
+  static final ValueNotifier<String?> activeProfileId = ValueNotifier<String?>(
+    null,
+  );
 
   static DizzyProfile? get active {
     final id = activeProfileId.value;
@@ -58,7 +60,8 @@ class DizzyProfileService {
       profiles.value = [guest];
       await _persist();
     }
-    activeProfileId.value = prefs.getString(_activeKey) ?? profiles.value.first.id;
+    activeProfileId.value =
+        prefs.getString(_activeKey) ?? profiles.value.first.id;
     if (isCloudUser) syncFromCloud();
   }
 
@@ -189,7 +192,9 @@ class DizzyProfileService {
   static Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        _profilesKey, jsonEncode(profiles.value.map((e) => e.toJson()).toList()));
+      _profilesKey,
+      jsonEncode(profiles.value.map((e) => e.toJson()).toList()),
+    );
   }
 
   static Future<void> _upsertCloud(DizzyProfile p) async {

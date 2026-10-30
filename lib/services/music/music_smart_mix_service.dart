@@ -29,7 +29,9 @@ class MusicSmartMixService {
 
   List<SmartMixPlaylist>? _cachedMixes;
 
-  Future<List<SmartMixPlaylist>> getOrGenerateMixes({bool forceRefresh = false}) async {
+  Future<List<SmartMixPlaylist>> getOrGenerateMixes({
+    bool forceRefresh = false,
+  }) async {
     if (_cachedMixes != null && !forceRefresh && _cachedMixes!.isNotEmpty) {
       return _cachedMixes!;
     }
@@ -52,11 +54,19 @@ class MusicSmartMixService {
 
     // 1. Daily Mix 1: Top Favorites & Similar
     final mix1Tracks = pool.take(15).toList();
-    final mix1Artists = mix1Tracks.map((t) => t.artist).toSet().take(3).join(', ');
+    final mix1Artists = mix1Tracks
+        .map((t) => t.artist)
+        .toSet()
+        .take(3)
+        .join(', ');
 
     // 2. Daily Mix 2: Upbeat & High Energy
     final mix2Tracks = pool.skip(10).take(15).toList();
-    final mix2Artists = mix2Tracks.map((t) => t.artist).toSet().take(3).join(', ');
+    final mix2Artists = mix2Tracks
+        .map((t) => t.artist)
+        .toSet()
+        .take(3)
+        .join(', ');
 
     // 3. Discover Weekly: Fresh Discoveries
     final mix3Tracks = pool.reversed.take(15).toList();
@@ -68,7 +78,9 @@ class MusicSmartMixService {
       SmartMixPlaylist(
         id: 'smart_mix_daily_1',
         title: 'Daily Mix 1',
-        description: mix1Artists.isNotEmpty ? mix1Artists : 'Personalized for you',
+        description: mix1Artists.isNotEmpty
+            ? mix1Artists
+            : 'Personalized for you',
         gradientStart: const Color(0xFF1DB954),
         gradientEnd: const Color(0xFF123B22),
         tracks: mix1Tracks,
@@ -76,7 +88,9 @@ class MusicSmartMixService {
       SmartMixPlaylist(
         id: 'smart_mix_daily_2',
         title: 'Daily Mix 2',
-        description: mix2Artists.isNotEmpty ? mix2Artists : 'High energy & rhythm',
+        description: mix2Artists.isNotEmpty
+            ? mix2Artists
+            : 'High energy & rhythm',
         gradientStart: const Color(0xFF7C5CFF),
         gradientEnd: const Color(0xFF261852),
         tracks: mix2Tracks,

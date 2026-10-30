@@ -33,7 +33,6 @@ class _PlayerSpeedMenuState extends State<PlayerSpeedMenu> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // Speed Preset List
           Column(
             children: _presets.map((rate) {
@@ -50,10 +49,14 @@ class _PlayerSpeedMenuState extends State<PlayerSpeedMenu> {
                     height: 38,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: isSelected ? PlayerTheme.raised : Colors.transparent,
+                      color: isSelected
+                          ? PlayerTheme.raised
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected ? PlayerTheme.edge : Colors.transparent,
+                        color: isSelected
+                            ? PlayerTheme.edge
+                            : Colors.transparent,
                         width: 1,
                       ),
                     ),
@@ -65,9 +68,13 @@ class _PlayerSpeedMenuState extends State<PlayerSpeedMenu> {
                               ? 'Normal (1.0×)'
                               : '${rate.toStringAsFixed(rate == rate.roundToDouble() ? 0 : 2)}×',
                           style: TextStyle(
-                            color: isSelected ? PlayerTheme.ink : PlayerTheme.inkMuted,
+                            color: isSelected
+                                ? PlayerTheme.ink
+                                : PlayerTheme.inkMuted,
                             fontSize: 13.5,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                           ),
                         ),
                         if (isSelected)

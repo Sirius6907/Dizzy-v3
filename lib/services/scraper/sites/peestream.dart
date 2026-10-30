@@ -40,7 +40,9 @@ class PeeStreamScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[PeeStreamScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[PeeStreamScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -61,17 +63,21 @@ class PeeStreamScraper extends StreamScraper {
           queryParams['episode'] = (episode ?? 1).toString();
         }
 
-        final scrapeUri = Uri.parse('$_baseUrl/scrape').replace(queryParameters: queryParams);
+        final scrapeUri = Uri.parse(
+          '$_baseUrl/scrape',
+        ).replace(queryParameters: queryParams);
 
         try {
-          final res = await client.get(
-            scrapeUri,
-            headers: {
-              'User-Agent': _ua,
-              'Accept': 'text/event-stream',
-              'Referer': '$_baseUrl/',
-            },
-          ).timeout(const Duration(seconds: 12));
+          final res = await client
+              .get(
+                scrapeUri,
+                headers: {
+                  'User-Agent': _ua,
+                  'Accept': 'text/event-stream',
+                  'Referer': '$_baseUrl/',
+                },
+              )
+              .timeout(const Duration(seconds: 12));
 
           if (res.statusCode == 200) {
             final events = res.body.split('\n\n');
@@ -83,18 +89,22 @@ class PeeStreamScraper extends StreamScraper {
                     final parsed = jsonDecode(match.group(1)!.trim());
                     if (parsed is Map && parsed['stream'] is Map) {
                       final stream = parsed['stream'] as Map;
-                      final streamUrl = stream['playlist']?.toString() ??
+                      final streamUrl =
+                          stream['playlist']?.toString() ??
                           stream['url']?.toString() ??
                           stream['file']?.toString();
 
                       if (streamUrl != null && streamUrl.isNotEmpty) {
-                        final sourceId = parsed['sourceId']?.toString() ?? 'Poseidon';
-                        final quality = stream['quality']?.toString() ?? '1080p';
+                        final sourceId =
+                            parsed['sourceId']?.toString() ?? 'Poseidon';
+                        final quality =
+                            stream['quality']?.toString() ?? '1080p';
 
                         Map<String, String>? reqHeaders;
                         if (stream['headers'] is Map) {
-                          reqHeaders = (stream['headers'] as Map)
-                              .map((k, v) => MapEntry(k.toString(), v.toString()));
+                          reqHeaders = (stream['headers'] as Map).map(
+                            (k, v) => MapEntry(k.toString(), v.toString()),
+                          );
                         } else {
                           reqHeaders = {'User-Agent': _ua};
                         }
@@ -103,14 +113,13 @@ class PeeStreamScraper extends StreamScraper {
                           name: 'PeeStream',
                           addonName: 'peestream',
                           title: 'PeeStream · $sourceId · $quality',
-                          description: 'PeeStream Multi-Server Stream · $quality',
+                          description:
+                              'PeeStream Multi-Server Stream · $quality',
                           url: streamUrl,
                           headers: reqHeaders,
                           behaviorHints: {
                             'notWebReady': false,
-                            'proxyHeaders': {
-                              'request': reqHeaders,
-                            },
+                            'proxyHeaders': {'request': reqHeaders},
                           },
                         );
                         foundStreams = true;
@@ -136,22 +145,27 @@ class PeeStreamScraper extends StreamScraper {
               searchParams['episode'] = (episode ?? 1).toString();
             }
 
-            final searchUri = Uri.parse('$_baseUrl/api/search').replace(queryParameters: searchParams);
-            final sRes = await client.get(
-              searchUri,
-              headers: {
-                'User-Agent': _ua,
-                'Accept': 'application/json',
-                'Referer': '$_baseUrl/',
-              },
-            ).timeout(const Duration(seconds: 10));
+            final searchUri = Uri.parse(
+              '$_baseUrl/api/search',
+            ).replace(queryParameters: searchParams);
+            final sRes = await client
+                .get(
+                  searchUri,
+                  headers: {
+                    'User-Agent': _ua,
+                    'Accept': 'application/json',
+                    'Referer': '$_baseUrl/',
+                  },
+                )
+                .timeout(const Duration(seconds: 10));
 
             if (sRes.statusCode == 200) {
               final data = jsonDecode(sRes.body);
               if (data is Map && data['results'] is List) {
                 for (final result in data['results']) {
                   if (result is! Map) continue;
-                  final pName = result['providerName']?.toString() ??
+                  final pName =
+                      result['providerName']?.toString() ??
                       result['provider']?.toString() ??
                       'PeeStream';
 
@@ -175,9 +189,7 @@ class PeeStreamScraper extends StreamScraper {
                         headers: streamHeaders,
                         behaviorHints: {
                           'notWebReady': false,
-                          'proxyHeaders': {
-                            'request': streamHeaders,
-                          },
+                          'proxyHeaders': {'request': streamHeaders},
                         },
                       );
                     }

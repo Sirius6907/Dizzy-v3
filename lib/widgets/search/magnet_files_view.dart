@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../models/stream/stream_model.dart';
 import '../../pages/player/player_screen.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -52,10 +53,7 @@ class MagnetFileItem {
 class MagnetFilesView extends StatefulWidget {
   final String magnet;
 
-  const MagnetFilesView({
-    super.key,
-    required this.magnet,
-  });
+  const MagnetFilesView({super.key, required this.magnet});
 
   @override
   State<MagnetFilesView> createState() => _MagnetFilesViewState();
@@ -148,7 +146,9 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
         final activeService = await DebridService().getSelectedService();
         _providerName = activeService;
 
-        final debridFiles = await DebridService().resolveMagnet(magnet: normalizedMagnet);
+        final debridFiles = await DebridService().resolveMagnet(
+          magnet: normalizedMagnet,
+        );
         if (debridFiles.isEmpty) {
           throw Exception('$activeService returned no files for this magnet.');
         }
@@ -159,13 +159,15 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
           final df = debridFiles[i];
           final isVid = _checkIsVideo(df.filename);
           sumBytes += df.filesize;
-          items.add(MagnetFileItem(
-            id: i,
-            name: df.filename,
-            size: df.filesize,
-            downloadUrl: df.downloadUrl,
-            isVideo: isVid,
-          ));
+          items.add(
+            MagnetFileItem(
+              id: i,
+              name: df.filename,
+              size: df.filesize,
+              downloadUrl: df.downloadUrl,
+              isVideo: isVid,
+            ),
+          );
         }
 
         if (mounted) {
@@ -181,7 +183,9 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
         final info = await tss.getTorrentMetadata(normalizedMagnet);
 
         if (info == null || info.fileStats.isEmpty) {
-          throw Exception('Could not retrieve torrent metadata from swarm. Check peer connectivity.');
+          throw Exception(
+            'Could not retrieve torrent metadata from swarm. Check peer connectivity.',
+          );
         }
 
         final items = <MagnetFileItem>[];
@@ -189,12 +193,14 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
         for (final stat in info.fileStats) {
           final isVid = _checkIsVideo(stat.path);
           sumBytes += stat.length;
-          items.add(MagnetFileItem(
-            id: stat.id,
-            name: stat.path,
-            size: stat.length,
-            isVideo: isVid,
-          ));
+          items.add(
+            MagnetFileItem(
+              id: stat.id,
+              name: stat.path,
+              size: stat.length,
+              isVideo: isVid,
+            ),
+          );
         }
 
         if (info.title.isNotEmpty && _torrentTitle == (rawHash ?? '')) {
@@ -243,10 +249,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PlayerScreen(
-          source: source,
-          title: streamTitle,
-        ),
+        builder: (_) => PlayerScreen(source: source, title: streamTitle),
       ),
     );
   }
@@ -267,6 +270,12 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
     return ValueListenableBuilder<AppThemePalette>(
       valueListenable: AppThemeService.currentPalette,
       builder: (context, palette, _) {
+        // Clay-aware ink tokens: this view is embedded in the light-capable
+        // Search page, so body text must follow the palette.
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+
         if (_isLoading) {
           return Center(
             child: Padding(
@@ -302,20 +311,19 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    _isDebrid ? 'Using $_providerName for files...' : 'Connecting to swarm peers...',
-                    style: const TextStyle(
+                    _isDebrid
+                        ? 'Using $_providerName for files...'
+                        : 'Connecting to swarm peers...',
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: ink,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Gathering file list & stream metadata',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
+                    style: TextStyle(fontSize: 13, color: inkSoft),
                   ),
                 ],
               ),
@@ -335,20 +343,30 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.redAccent.withValues(alpha: 0.12),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.3),
+                      ),
                     ),
-                    child: const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 36),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 36,
+                    ),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     'Failed to Read Magnet',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: ink,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _errorMessage!,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
+                    style: TextStyle(fontSize: 13, color: inkSoft, height: 1.4),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
@@ -356,11 +374,19 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: palette.primaryColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text(
+                      'Try Again',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -397,7 +423,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Text(
                     'No files match filter',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14),
+                    style: TextStyle(color: inkSoft, fontSize: 14),
                   ),
                 ),
               )
@@ -410,10 +436,18 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
   }
 
   Widget _buildTorrentHeaderCard(AppThemePalette palette, int videoCount) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight
+        ? PrismLight.raisedTop
+        : DizzyVoid.surface1.withValues(alpha: 0.85);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1.withValues(alpha: 0.85),
+        color: panel,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: palette.primaryColor.withValues(alpha: 0.3),
@@ -421,8 +455,8 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 18,
+            color: Colors.black.withValues(alpha: isLight ? 0.06 : 0.4),
+            blurRadius: isLight ? 12 : 18,
             offset: const Offset(0, 6),
           ),
         ],
@@ -438,7 +472,11 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                   color: palette.primaryColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.link_rounded, color: palette.primaryColor, size: 22),
+                child: Icon(
+                  Icons.link_rounded,
+                  color: palette.primaryColor,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -447,10 +485,10 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                   children: [
                     Text(
                       _torrentTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: ink,
                         letterSpacing: -0.2,
                       ),
                       maxLines: 2,
@@ -462,7 +500,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                         _infoHash!,
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: inkFaint,
                           fontFamily: 'monospace',
                         ),
                         maxLines: 1,
@@ -483,19 +521,22 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
               _buildBadge(
                 icon: _isDebrid ? Icons.cloud_done_rounded : Icons.hub_rounded,
                 label: _isDebrid ? '$_providerName Cloud' : 'P2P Swarm',
-                color: _isDebrid ? Colors.cyanAccent : palette.primaryColor,
+                color: _isDebrid
+                    ? (isLight ? PrismLight.ink : Colors.cyanAccent)
+                    : palette.primaryColor,
               ),
               // Size Badge
               _buildBadge(
                 icon: Icons.storage_rounded,
                 label: MagnetFileItem.formatBytes(_totalSize),
-                color: Colors.white70,
+                color: inkSoft,
               ),
               // Total Files Badge
               _buildBadge(
                 icon: Icons.folder_rounded,
-                label: '${_files.length} ${_files.length == 1 ? "file" : "files"}',
-                color: Colors.white70,
+                label:
+                    '${_files.length} ${_files.length == 1 ? "file" : "files"}',
+                color: inkSoft,
               ),
               // Video Files Badge
               if (videoCount > 0)
@@ -542,25 +583,42 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
   }
 
   Widget _buildFilterToolbar(AppThemePalette palette, int videoCount) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final well = isLight
+        ? PrismLight.raisedBottom
+        : Colors.white.withValues(alpha: 0.05);
+
     return Column(
       children: [
         // Search Filter Input
         Container(
           height: 38,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: well,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: hairline),
           ),
           child: TextField(
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: TextStyle(color: ink, fontSize: 13),
             onChanged: (val) => setState(() => _searchFilter = val),
             decoration: InputDecoration(
               hintText: 'Filter files by name...',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 13),
-              prefixIcon: Icon(Icons.filter_list_rounded, size: 16, color: Colors.white.withValues(alpha: 0.4)),
+              hintStyle: TextStyle(color: inkFaint, fontSize: 13),
+              prefixIcon: Icon(
+                Icons.filter_list_rounded,
+                size: 16,
+                color: inkFaint,
+              ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
               isDense: true,
             ),
           ),
@@ -573,14 +631,30 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
             const SizedBox(width: 8),
             _buildCategoryChip('video', 'Videos ($videoCount)', palette),
             const SizedBox(width: 8),
-            _buildCategoryChip('other', 'Other (${_files.length - videoCount})', palette),
+            _buildCategoryChip(
+              'other',
+              'Other (${_files.length - videoCount})',
+              palette,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildCategoryChip(String category, String label, AppThemePalette palette) {
+  Widget _buildCategoryChip(
+    String category,
+    String label,
+    AppThemePalette palette,
+  ) {
+    final isLight = palette.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.1);
+    final well = isLight
+        ? PrismLight.raisedBottom
+        : Colors.white.withValues(alpha: 0.05);
     final isSelected = _activeCategory == category;
     return GestureDetector(
       onTap: () => setState(() => _activeCategory = category),
@@ -590,12 +664,10 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
         decoration: BoxDecoration(
           color: isSelected
               ? palette.primaryColor.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.05),
+              : well,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? palette.primaryColor
-                : Colors.white.withValues(alpha: 0.1),
+            color: isSelected ? palette.primaryColor : hairline,
             width: 1,
           ),
         ),
@@ -604,7 +676,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : Colors.white60,
+            color: isSelected ? Colors.white : inkSoft,
           ),
         ),
       ),
@@ -613,19 +685,30 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
 
   Widget _buildFileTile(MagnetFileItem file, AppThemePalette palette) {
     final ext = file.extension;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: file.isVideo
-            ? const Color(0xFF161B26).withValues(alpha: 0.75)
-            : DizzyVoid.surface1.withValues(alpha: 0.5),
+            ? (isLight
+                  ? PrismLight.raisedTop
+                  : const Color(0xFF161B26).withValues(alpha: 0.75))
+            : (isLight
+                  ? PrismLight.raisedBottom
+                  : DizzyVoid.surface1.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: file.isVideo
               ? palette.primaryColor.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.05),
+              : hairline,
           width: 0.9,
         ),
       ),
@@ -638,16 +721,18 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
             decoration: BoxDecoration(
               color: file.isVideo
                   ? palette.primaryColor.withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.05),
+                  : hairline,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               file.isVideo
                   ? Icons.movie_rounded
                   : (ext == 'MP3' || ext == 'FLAC' || ext == 'M4A'
-                      ? Icons.audiotrack_rounded
-                      : Icons.insert_drive_file_rounded),
-              color: file.isVideo ? palette.primaryColor : Colors.white54,
+                        ? Icons.audiotrack_rounded
+                        : Icons.insert_drive_file_rounded),
+              color: file.isVideo
+                  ? palette.primaryColor
+                  : (isLight ? PrismLight.inkFaint : Colors.white54),
               size: 20,
             ),
           ),
@@ -662,8 +747,10 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                   file.cleanFilename,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: file.isVideo ? FontWeight.w600 : FontWeight.normal,
-                    color: file.isVideo ? Colors.white : Colors.white70,
+                    fontWeight: file.isVideo
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: file.isVideo ? ink : inkSoft,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -673,17 +760,20 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                   children: [
                     if (ext.isNotEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: hairline,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           ext,
-                          style: const TextStyle(
-                            fontSize: 9.5,
+                          style: TextStyle(
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white70,
+                            color: inkSoft,
                           ),
                         ),
                       ),
@@ -691,10 +781,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
                     ],
                     Text(
                       MagnetFileItem.formatBytes(file.size),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
+                      style: TextStyle(fontSize: 11, color: inkFaint),
                     ),
                   ],
                 ),
@@ -711,10 +798,15 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: palette.primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 9,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 elevation: 0,
               ),
               icon: const Icon(Icons.play_arrow_rounded, size: 18),
@@ -724,13 +816,7 @@ class _MagnetFilesViewState extends State<MagnetFilesView> {
               ),
             )
           else
-            Text(
-              'Non-video',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withValues(alpha: 0.25),
-              ),
-            ),
+            Text('Non-video', style: TextStyle(fontSize: 11, color: inkFaint)),
         ],
       ),
     );

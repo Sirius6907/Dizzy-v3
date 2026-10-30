@@ -72,9 +72,7 @@ class _DizzyStompPadState extends State<DizzyStompPad> {
                 ? DizzyGradients.carvedSurface
                 : DizzyGradients.tactileSurface,
             border: Border.fromBorderSide(
-              pressed
-                  ? DizzyEdge.neon(widget.accent)
-                  : DizzyEdge.hairline,
+              pressed ? DizzyEdge.neon(widget.accent) : DizzyEdge.hairline,
             ),
             boxShadow: pressed
                 ? DizzyShadow.pressed
@@ -138,12 +136,9 @@ class _DizzyStompPadState extends State<DizzyStompPad> {
                       height: 5,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(3),
-                        color: pressed
-                            ? widget.accent
-                            : DizzyVoid.surface3,
+                        color: pressed ? widget.accent : DizzyVoid.surface3,
                         border: Border.all(
-                          color: DizzyVoid.obsidian
-                              .withValues(alpha: 0.45),
+                          color: DizzyVoid.obsidian.withValues(alpha: 0.45),
                         ),
                       ),
                     ),

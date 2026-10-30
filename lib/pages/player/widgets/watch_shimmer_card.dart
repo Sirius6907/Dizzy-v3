@@ -99,4 +99,3 @@ class WatchShimmerCardState extends State<WatchShimmerCard>
     );
   }
 }
-

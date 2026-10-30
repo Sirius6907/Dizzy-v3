@@ -15,7 +15,8 @@ class DownloadEverythingScraper extends StreamScraper {
   @override
   String get name => 'downdaily';
 
-  static const _slaveUrl = 'https://slave.downloadeverythingfromeverywhere.com/';
+  static const _slaveUrl =
+      'https://slave.downloadeverythingfromeverywhere.com/';
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
 
@@ -48,7 +49,9 @@ class DownloadEverythingScraper extends StreamScraper {
           year: year,
         );
 
-        AppLog.d('[DownloadEverything] Starting scrape for "$title" (tmdb: $tmdbId, imdb: $imdbId, year: $year, S:${season}E:$episode)');
+        AppLog.d(
+          '[DownloadEverything] Starting scrape for "$title" (tmdb: $tmdbId, imdb: $imdbId, year: $year, S:${season}E:$episode)',
+        );
 
         final payload = <String, dynamic>{
           'mode': isTv ? 'series' : 'movie',
@@ -65,7 +68,9 @@ class DownloadEverythingScraper extends StreamScraper {
           ..body = jsonEncode(payload);
 
         final client = http.Client();
-        final streamedResponse = await client.send(request).timeout(const Duration(seconds: 15));
+        final streamedResponse = await client
+            .send(request)
+            .timeout(const Duration(seconds: 15));
 
         const lineSplitter = LineSplitter();
         final stringStream = streamedResponse.stream.transform(utf8.decoder);
@@ -78,21 +83,29 @@ class DownloadEverythingScraper extends StreamScraper {
           if (trimmed.isEmpty) continue;
           try {
             final parsed = jsonDecode(trimmed);
-            if (parsed is Map<String, dynamic> && parsed['t'] == 'hit' && parsed['links'] is List) {
+            if (parsed is Map<String, dynamic> &&
+                parsed['t'] == 'hit' &&
+                parsed['links'] is List) {
               final site = parsed['site']?.toString() ?? 'DownloadEverything';
               final links = parsed['links'] as List;
               totalHitsFound += links.length;
-              AppLog.d('[DownloadEverything] Hit from site "$site": ${links.length} candidate(s)');
+              AppLog.d(
+                '[DownloadEverything] Hit from site "$site": ${links.length} candidate(s)',
+              );
 
               for (final l in links) {
                 if (l is Map<String, dynamic>) {
                   final item = {'site': site, ...l};
-                  final fut = _resolveItem(item, title, isTv, season, episode).then((source) {
-                    if (source != null && !controller.isClosed) {
-                      AppLog.d('[DownloadEverything] [+] Playable stream extracted: ${source.title}');
-                      controller.add(source);
-                    }
-                  }).catchError((_) {});
+                  final fut = _resolveItem(item, title, isTv, season, episode)
+                      .then((source) {
+                        if (source != null && !controller.isClosed) {
+                          AppLog.d(
+                            '[DownloadEverything] [+] Playable stream extracted: ${source.title}',
+                          );
+                          controller.add(source);
+                        }
+                      })
+                      .catchError((_) {});
                   activeResolutions.add(fut);
                 }
               }
@@ -104,7 +117,9 @@ class DownloadEverythingScraper extends StreamScraper {
           await Future.wait(activeResolutions);
         }
 
-        AppLog.d('[DownloadEverything] Completed stream for "$title" (total candidates inspected: $totalHitsFound)');
+        AppLog.d(
+          '[DownloadEverything] Completed stream for "$title" (total candidates inspected: $totalHitsFound)',
+        );
       } catch (e) {
         AppLog.d('[DownloadEverything] Error: $e');
       } finally {
@@ -170,8 +185,11 @@ class DownloadEverythingScraper extends StreamScraper {
         streamHeaders = {'User-Agent': 'Lavf/60.16.100'};
       }
       // 2. Pixeldrain Direct API
-      else if (rawUrl.contains('pixeldrain.dev') || rawUrl.contains('pixeldrain.com')) {
-        final m = RegExp(r'pixeldrain\.(?:dev|com)\/(?:u|l)\/([a-zA-Z0-9_-]+)').firstMatch(rawUrl);
+      else if (rawUrl.contains('pixeldrain.dev') ||
+          rawUrl.contains('pixeldrain.com')) {
+        final m = RegExp(
+          r'pixeldrain\.(?:dev|com)\/(?:u|l)\/([a-zA-Z0-9_-]+)',
+        ).firstMatch(rawUrl);
         if (m != null) {
           directStreamUrl = 'https://pixeldrain.com/api/file/${m.group(1)}';
           provider = 'Pixeldrain';
@@ -195,17 +213,21 @@ class DownloadEverythingScraper extends StreamScraper {
         }
       }
       // 5. Direct MP4 / MKV Streams (Tattooin, Vikingfile, etc.)
-      else if (RegExp(r'\.(?:mp4|mkv)(?:\?|$)', caseSensitive: false).hasMatch(rawUrl) &&
+      else if (RegExp(
+            r'\.(?:mp4|mkv)(?:\?|$)',
+            caseSensitive: false,
+          ).hasMatch(rawUrl) &&
           !rawUrl.contains('111477.xyz') &&
           !rawUrl.contains('vadapav.mov') &&
           !rawUrl.contains('.cyou/res/')) {
         // Quick verification to ensure stream is online and not 404
         try {
-          final check = await http.head(
-            Uri.parse(rawUrl),
-            headers: {'User-Agent': _ua},
-          ).timeout(const Duration(milliseconds: 1500));
-          if (check.statusCode == 200 || check.statusCode == 206 || check.statusCode == 302) {
+          final check = await http
+              .head(Uri.parse(rawUrl), headers: {'User-Agent': _ua})
+              .timeout(const Duration(milliseconds: 1500));
+          if (check.statusCode == 200 ||
+              check.statusCode == 206 ||
+              check.statusCode == 302) {
             directStreamUrl = rawUrl;
             provider = item['site']?.toString() ?? 'DirectStream';
             streamHeaders = {'User-Agent': _ua};
@@ -216,13 +238,18 @@ class DownloadEverythingScraper extends StreamScraper {
 
     if (directStreamUrl == null || directStreamUrl.isEmpty) return null;
 
-    final tags = (item['tags'] as List?)?.map((e) => e.toString()).toList() ?? [];
+    final tags =
+        (item['tags'] as List?)?.map((e) => e.toString()).toList() ?? [];
     final qualityMatch = tags.firstWhere(
-      (t) => RegExp(r'2160p|4k|1080p|720p|480p', caseSensitive: false).hasMatch(t),
+      (t) =>
+          RegExp(r'2160p|4k|1080p|720p|480p', caseSensitive: false).hasMatch(t),
       orElse: () => '1080p',
     );
 
-    final rawTitle = item['name']?.toString() ?? item['release']?.toString() ?? fallbackTitle;
+    final rawTitle =
+        item['name']?.toString() ??
+        item['release']?.toString() ??
+        fallbackTitle;
     final tagsStr = tags.isNotEmpty ? tags.join(' · ') : qualityMatch;
 
     return StreamSource(
@@ -238,38 +265,54 @@ class DownloadEverythingScraper extends StreamScraper {
   /// Extracts direct Cloudflare R2 / S3 signed stream link from HubCloud.
   Future<String?> _resolveHubCloud(String hubUrl) async {
     try {
-      final res1 = await http.get(
-        Uri.parse(hubUrl),
-        headers: {'User-Agent': _ua, 'Referer': 'https://downloadeverythingfromeverywhere.com/'},
-      ).timeout(const Duration(seconds: 8));
+      final res1 = await http
+          .get(
+            Uri.parse(hubUrl),
+            headers: {
+              'User-Agent': _ua,
+              'Referer': 'https://downloadeverythingfromeverywhere.com/',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
       String html = res1.body;
       if (res1.isRedirect || res1.statusCode == 301 || res1.statusCode == 302) {
         final loc = res1.headers['location'];
         if (loc != null) {
-          final resRedirect = await http.get(Uri.parse(loc), headers: {'User-Agent': _ua});
+          final resRedirect = await http.get(
+            Uri.parse(loc),
+            headers: {'User-Agent': _ua},
+          );
           html = resRedirect.body;
         }
       }
 
-      final hubPhpMatch = RegExp(r'https?://[^\s"<>]*/hubcloud\.php\?[^\s"<>]*').firstMatch(html);
+      final hubPhpMatch = RegExp(
+        r'https?://[^\s"<>]*/hubcloud\.php\?[^\s"<>]*',
+      ).firstMatch(html);
       if (hubPhpMatch != null) {
         final phpUrl = hubPhpMatch.group(0)!;
-        final phpRes = await http.get(
-          Uri.parse(phpUrl),
-          headers: {'User-Agent': _ua, 'Referer': hubUrl},
-        ).timeout(const Duration(seconds: 8));
+        final phpRes = await http
+            .get(
+              Uri.parse(phpUrl),
+              headers: {'User-Agent': _ua, 'Referer': hubUrl},
+            )
+            .timeout(const Duration(seconds: 8));
 
         final phpBody = phpRes.body;
 
         // Check for Cloudflare R2 signed link
-        final r2Match = RegExp(r'https?://[a-zA-Z0-9.\-_]+\.r2\.cloudflarestorage\.com/[^\s"<>]+').firstMatch(phpBody);
+        final r2Match = RegExp(
+          r'https?://[a-zA-Z0-9.\-_]+\.r2\.cloudflarestorage\.com/[^\s"<>]+',
+        ).firstMatch(phpBody);
         if (r2Match != null) {
           return r2Match.group(0)!.replaceAll('&amp;', '&');
         }
 
         // Check for Pixel mirror link
-        final pixelMatch = RegExp(r'https?://pixel\.hubcloud\.[a-z]+/\?id=[^\s"<>]+').firstMatch(phpBody);
+        final pixelMatch = RegExp(
+          r'https?://pixel\.hubcloud\.[a-z]+/\?id=[^\s"<>]+',
+        ).firstMatch(phpBody);
         if (pixelMatch != null) {
           return pixelMatch.group(0)!;
         }
@@ -281,18 +324,27 @@ class DownloadEverythingScraper extends StreamScraper {
   /// Resolves direct stream link from ClicknUpload through automated form submit.
   Future<String?> _resolveClicknUpload(String clicknUrl) async {
     try {
-      final res1 = await http.get(
-        Uri.parse(clicknUrl),
-        headers: {'User-Agent': _ua, 'Referer': 'https://downloadeverythingfromeverywhere.com/'},
-      ).timeout(const Duration(seconds: 8));
+      final res1 = await http
+          .get(
+            Uri.parse(clicknUrl),
+            headers: {
+              'User-Agent': _ua,
+              'Referer': 'https://downloadeverythingfromeverywhere.com/',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
-      final formMatch = RegExp(r'<form[^>]+method=["\x27]POST["\x27][^>]*>([\s\S]*?)</form>', caseSensitive: false)
-          .firstMatch(res1.body);
+      final formMatch = RegExp(
+        r'<form[^>]+method=["\x27]POST["\x27][^>]*>([\s\S]*?)</form>',
+        caseSensitive: false,
+      ).firstMatch(res1.body);
       if (formMatch == null) return null;
 
       final formBody = formMatch.group(1)!;
-      final inputMatches = RegExp(r'<input[^>]+name=["\x27]([^"\x27]+)["\x27][^>]+value=["\x27]([^"\x27]*)["\x27]', caseSensitive: false)
-          .allMatches(formBody);
+      final inputMatches = RegExp(
+        r'<input[^>]+name=["\x27]([^"\x27]+)["\x27][^>]+value=["\x27]([^"\x27]*)["\x27]',
+        caseSensitive: false,
+      ).allMatches(formBody);
 
       final params1 = <String, String>{};
       for (final m in inputMatches) {
@@ -302,23 +354,29 @@ class DownloadEverythingScraper extends StreamScraper {
 
       final cookies = res1.headers['set-cookie'] ?? '';
 
-      final res2 = await http.post(
-        Uri.parse(clicknUrl),
-        headers: {
-          'User-Agent': _ua,
-          'Referer': clicknUrl,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          if (cookies.isNotEmpty) 'Cookie': cookies,
-        },
-        body: params1,
-      ).timeout(const Duration(seconds: 8));
+      final res2 = await http
+          .post(
+            Uri.parse(clicknUrl),
+            headers: {
+              'User-Agent': _ua,
+              'Referer': clicknUrl,
+              'Content-Type': 'application/x-www-form-urlencoded',
+              if (cookies.isNotEmpty) 'Cookie': cookies,
+            },
+            body: params1,
+          )
+          .timeout(const Duration(seconds: 8));
 
-      final formMatch2 = RegExp(r'<form[^>]+method=["\x27]POST["\x27][^>]*>([\s\S]*?)</form>', caseSensitive: false)
-          .firstMatch(res2.body);
+      final formMatch2 = RegExp(
+        r'<form[^>]+method=["\x27]POST["\x27][^>]*>([\s\S]*?)</form>',
+        caseSensitive: false,
+      ).firstMatch(res2.body);
       if (formMatch2 == null) return null;
 
-      final inputMatches2 = RegExp(r'<input[^>]+name=["\x27]([^"\x27]+)["\x27][^>]+value=["\x27]([^"\x27]*)["\x27]', caseSensitive: false)
-          .allMatches(formMatch2.group(1)!);
+      final inputMatches2 = RegExp(
+        r'<input[^>]+name=["\x27]([^"\x27]+)["\x27][^>]+value=["\x27]([^"\x27]*)["\x27]',
+        caseSensitive: false,
+      ).allMatches(formMatch2.group(1)!);
 
       final params2 = <String, String>{};
       for (final m in inputMatches2) {
@@ -328,19 +386,26 @@ class DownloadEverythingScraper extends StreamScraper {
 
       await Future.delayed(const Duration(milliseconds: 4500));
 
-      final res3 = await http.post(
-        Uri.parse(clicknUrl),
-        headers: {
-          'User-Agent': _ua,
-          'Referer': clicknUrl,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          if (cookies.isNotEmpty) 'Cookie': cookies,
-        },
-        body: params2,
-      ).timeout(const Duration(seconds: 8));
+      final res3 = await http
+          .post(
+            Uri.parse(clicknUrl),
+            headers: {
+              'User-Agent': _ua,
+              'Referer': clicknUrl,
+              'Content-Type': 'application/x-www-form-urlencoded',
+              if (cookies.isNotEmpty) 'Cookie': cookies,
+            },
+            body: params2,
+          )
+          .timeout(const Duration(seconds: 8));
 
-      final directMatch = RegExp(r'https?://[a-zA-Z0-9.\-_:]+/d/[a-zA-Z0-9_\-/]+').firstMatch(res3.body) ??
-          RegExp(r'window\.open\(["\x27](https?://[^"\x27]+)["\x27]\)').firstMatch(res3.body);
+      final directMatch =
+          RegExp(
+            r'https?://[a-zA-Z0-9.\-_:]+/d/[a-zA-Z0-9_\-/]+',
+          ).firstMatch(res3.body) ??
+          RegExp(
+            r'window\.open\(["\x27](https?://[^"\x27]+)["\x27]\)',
+          ).firstMatch(res3.body);
 
       if (directMatch != null) {
         final found = directMatch.group(1) ?? directMatch.group(0)!;

@@ -54,7 +54,8 @@ class _AnimeSliderSectionState extends State<AnimeSliderSection> {
   void _updateScrollButtons() {
     if (!_scrollController.hasClients) return;
     final canLeft = _scrollController.position.pixels > 10;
-    final canRight = _scrollController.position.pixels <
+    final canRight =
+        _scrollController.position.pixels <
         _scrollController.position.maxScrollExtent - 10;
     if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
       setState(() {
@@ -68,8 +69,10 @@ class _AnimeSliderSectionState extends State<AnimeSliderSection> {
     if (!_scrollController.hasClients) return;
     final viewportWidth = _scrollController.position.viewportDimension;
     final scrollAmount = viewportWidth * 0.8 * directionMultiplier;
-    final target = (_scrollController.position.pixels + scrollAmount)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    final target = (_scrollController.position.pixels + scrollAmount).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
     _scrollController.animateTo(
       target,
@@ -121,9 +124,12 @@ class _AnimeSliderSectionState extends State<AnimeSliderSection> {
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: sizing.sidePadding,
+                      ),
                       itemCount: widget.animeList.length,
-                      separatorBuilder: (_, __) => SizedBox(width: sizing.spacing),
+                      separatorBuilder: (_, __) =>
+                          SizedBox(width: sizing.spacing),
                       itemBuilder: (context, index) {
                         final anime = widget.animeList[index];
                         return SizedBox(

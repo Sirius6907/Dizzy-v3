@@ -8,17 +8,9 @@ class SubCue {
   final double end;
   final String text;
 
-  const SubCue({
-    required this.start,
-    required this.end,
-    required this.text,
-  });
+  const SubCue({required this.start, required this.end, required this.text});
 
-  SubCue copyWith({
-    double? start,
-    double? end,
-    String? text,
-  }) {
+  SubCue copyWith({double? start, double? end, String? text}) {
     return SubCue(
       start: start ?? this.start,
       end: end ?? this.end,
@@ -34,10 +26,7 @@ class SubtitleParseResult {
   final List<SubCue> cues;
   final SubFormat format;
 
-  const SubtitleParseResult({
-    required this.cues,
-    required this.format,
-  });
+  const SubtitleParseResult({required this.cues, required this.format});
 }
 
 class SubtitleParser {
@@ -46,7 +35,10 @@ class SubtitleParser {
     if (bytes.isEmpty) return '';
 
     // 1. Check for UTF-8 with BOM
-    if (bytes.length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xEF &&
+        bytes[1] == 0xBB &&
+        bytes[2] == 0xBF) {
       try {
         return utf8.decode(bytes.sublist(3));
       } catch (_) {}
@@ -128,7 +120,10 @@ class SubtitleParser {
     );
 
     for (final block in blocks) {
-      final lines = block.split('\n').where((l) => l.trim().isNotEmpty).toList();
+      final lines = block
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
       if (lines.length < 2) continue;
 
       int timingIdx = 0;
@@ -157,7 +152,10 @@ class SubtitleParser {
 
   static List<SubCue> parseVtt(String text) {
     final List<SubCue> cues = [];
-    final stripped = text.replaceFirst(RegExp(r'^WEBVTT[^\n]*\n+', caseSensitive: false), '');
+    final stripped = text.replaceFirst(
+      RegExp(r'^WEBVTT[^\n]*\n+', caseSensitive: false),
+      '',
+    );
     final blocks = stripped.split(RegExp(r'\n{2,}'));
 
     final timingRegex = RegExp(
@@ -165,7 +163,10 @@ class SubtitleParser {
     );
 
     for (final block in blocks) {
-      final lines = block.split('\n').where((l) => l.trim().isNotEmpty).toList();
+      final lines = block
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
       if (lines.isEmpty) continue;
 
       int timingIdx = -1;
@@ -271,7 +272,12 @@ class SubtitleParser {
   static double _parseAssTime(String s) {
     final m = RegExp(r'(\d+):(\d{2}):(\d{2})\.(\d{1,3})').firstMatch(s.trim());
     if (m == null) return double.nan;
-    return _toSec(m.group(1)!, m.group(2)!, m.group(3)!, '${m.group(4)!}00'.substring(0, 3));
+    return _toSec(
+      m.group(1)!,
+      m.group(2)!,
+      m.group(3)!,
+      '${m.group(4)!}00'.substring(0, 3),
+    );
   }
 
   static String _stripAssTags(String s) {
@@ -311,13 +317,16 @@ class SubtitleParser {
   // ---------------------------------------------------------------------------
 
   static String toSrt(List<SubCue> cues) {
-    final sorted = List<SubCue>.from(cues)..sort((a, b) => a.start.compareTo(b.start));
+    final sorted = List<SubCue>.from(cues)
+      ..sort((a, b) => a.start.compareTo(b.start));
     final buffer = StringBuffer();
 
     for (int i = 0; i < sorted.length; i++) {
       final cue = sorted[i];
       buffer.writeln('${i + 1}');
-      buffer.writeln('${formatSrtTime(cue.start)} --> ${formatSrtTime(cue.end)}');
+      buffer.writeln(
+        '${formatSrtTime(cue.start)} --> ${formatSrtTime(cue.end)}',
+      );
       buffer.writeln(cue.text);
       buffer.writeln();
     }
@@ -326,11 +335,14 @@ class SubtitleParser {
   }
 
   static String toVtt(List<SubCue> cues) {
-    final sorted = List<SubCue>.from(cues)..sort((a, b) => a.start.compareTo(b.start));
+    final sorted = List<SubCue>.from(cues)
+      ..sort((a, b) => a.start.compareTo(b.start));
     final buffer = StringBuffer('WEBVTT\n\n');
 
     for (final cue in sorted) {
-      buffer.writeln('${formatVttTime(cue.start)} --> ${formatVttTime(cue.end)}');
+      buffer.writeln(
+        '${formatVttTime(cue.start)} --> ${formatVttTime(cue.end)}',
+      );
       buffer.writeln(cue.text);
       buffer.writeln();
     }

@@ -18,7 +18,9 @@ void main() {
         (false, false),
       ]) {
         final chain = TmdbHelper.resolveChain(
-            edgeReady: entry.$1, key: entry.$2);
+          edgeReady: entry.$1,
+          key: entry.$2,
+        );
         expect(chain.last, 'keyless');
         if (entry.$1) {
           expect(chain.first, 'resolve');

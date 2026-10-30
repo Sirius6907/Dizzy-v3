@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../services/profiles/dizzy_profile_service.dart';
 import '../../services/profiles/kids_mode.dart';
 import '../../services/theme/app_theme_service.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 /// S3B (v1.1.9): local-first profile selector and manager.
 class ProfilesSettingsPage extends StatelessWidget {
@@ -13,57 +12,69 @@ class ProfilesSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
-    return GuideTrigger(
-      guideKey: 'profiles_pin',
-      steps: AppGuides.profilesPin,
-      child: Scaffold(
-        backgroundColor: DizzyVoid.voidA,
-        appBar: AppBar(
-          backgroundColor: DizzyVoid.voidB,
-          surfaceTintColor: Colors.transparent,
-          title: const Text('Profiles',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return Scaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: palette.appBarBackgroundColor,
+        surfaceTintColor: Colors.transparent,
+        title: const Text(
+          'Profiles',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showCreate(context),
-          icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text('Add profile'),
-        ),
-        body: ValueListenableBuilder(
-          valueListenable: DizzyProfileService.profiles,
-          builder: (context, profiles, _) => ValueListenableBuilder<String?>(
-            valueListenable: DizzyProfileService.activeProfileId,
-            builder: (context, activeId, _) => ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const Text('Choose who is watching',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(
-                  DizzyProfileService.isCloudUser
-                      ? 'Profiles sync privately across your devices.'
-                      : 'Local profiles work offline. Cloud sync turns on automatically.',
-                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCreate(context),
+        icon: const Icon(Icons.person_add_alt_1_rounded),
+        label: const Text('Add profile'),
+      ),
+      body: ValueListenableBuilder(
+        valueListenable: DizzyProfileService.profiles,
+        builder: (context, profiles, _) => ValueListenableBuilder<String?>(
+          valueListenable: DizzyProfileService.activeProfileId,
+          builder: (context, activeId, _) => ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text(
+                'Choose who is watching',
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(height: 18),
-                for (final p in profiles)
-                  _profileTile(context, p, activeId == p.id, palette),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                DizzyProfileService.isCloudUser
+                    ? 'Profiles sync privately across your devices.'
+                    : 'Local profiles work offline. Cloud sync turns on automatically.',
+                style: TextStyle(color: inkSoft, fontSize: 13),
+              ),
+              const SizedBox(height: 18),
+              for (final p in profiles)
+                _profileTile(context, p, activeId == p.id, palette),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _profileTile(BuildContext context, dynamic p, bool active, dynamic palette) {
+  Widget _profileTile(
+    BuildContext context,
+    dynamic p,
+    bool active,
+    dynamic palette,
+  ) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return Card(
       color: active
           ? palette.primaryColor.withValues(alpha: 0.16)
-          : DizzyVoid.surface1,
+          : (isLight ? PrismLight.raisedTop : PrismDark.raised),
       child: ListTile(
         // Polish P15: kids avatar wears a gold ring + cub badge.
         leading: Semantics(
@@ -81,31 +92,33 @@ class ProfilesSettingsPage extends StatelessWidget {
                   ),
                 ),
                 child: CircleAvatar(
-                  backgroundColor:
-                      palette.primaryColor.withValues(alpha: 0.22),
-                  child:
-                      Text(p.avatar, style: const TextStyle(fontSize: 22)),
+                  backgroundColor: palette.primaryColor.withValues(alpha: 0.22),
+                  child: Text(p.avatar, style: const TextStyle(fontSize: 22)),
                 ),
               ),
               if (p.isKids)
                 const Positioned(
                   right: -4,
                   bottom: -2,
-                  child: Text(KidsMode.kKidsBadge,
-                      style: TextStyle(fontSize: 16)),
+                  child: Text(
+                    KidsMode.kKidsBadge,
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
             ],
           ),
         ),
-        title: Text(p.name,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        title: Text(
+          p.name,
+          style: TextStyle(color: ink, fontWeight: FontWeight.w700),
+        ),
         subtitle: Text(
           KidsMode.subtitle(isKids: p.isKids, hasPin: p.hasPin),
-          style: const TextStyle(color: Colors.white60, fontSize: 12),
+          style: TextStyle(color: inkSoft, fontSize: 12),
         ),
         trailing: active
             ? Icon(Icons.check_circle_rounded, color: palette.primaryColor)
-            : const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+            : Icon(Icons.chevron_right_rounded, color: inkSoft),
         onTap: () async {
           if (p.hasPin) {
             final pin = await _askPin(context, 'Enter PIN for ${p.name}');
@@ -123,14 +136,17 @@ class ProfilesSettingsPage extends StatelessWidget {
               content: const Text('Rename this profile or delete it.'),
               actions: [
                 TextButton(
-                    onPressed: () => Navigator.pop(c, 'rename'),
-                    child: const Text('Rename')),
+                  onPressed: () => Navigator.pop(c, 'rename'),
+                  child: const Text('Rename'),
+                ),
                 TextButton(
-                    onPressed: () => Navigator.pop(c, 'delete'),
-                    child: const Text('Delete')),
+                  onPressed: () => Navigator.pop(c, 'delete'),
+                  child: const Text('Delete'),
+                ),
                 FilledButton(
-                    onPressed: () => Navigator.pop(c),
-                    child: const Text('Cancel')),
+                  onPressed: () => Navigator.pop(c),
+                  child: const Text('Cancel'),
+                ),
               ],
             ),
           );
@@ -142,14 +158,17 @@ class ProfilesSettingsPage extends StatelessWidget {
               builder: (c) => AlertDialog(
                 title: Text('Delete ${p.name}?'),
                 content: const Text(
-                    'This only deletes the profile. Local media stays on this device.'),
+                  'This only deletes the profile. Local media stays on this device.',
+                ),
                 actions: [
                   TextButton(
-                      onPressed: () => Navigator.pop(c, false),
-                      child: const Text('Cancel')),
+                    onPressed: () => Navigator.pop(c, false),
+                    child: const Text('Cancel'),
+                  ),
                   FilledButton(
-                      onPressed: () => Navigator.pop(c, true),
-                      child: const Text('Delete')),
+                    onPressed: () => Navigator.pop(c, true),
+                    child: const Text('Delete'),
+                  ),
                 ],
               ),
             );
@@ -164,6 +183,8 @@ class ProfilesSettingsPage extends StatelessWidget {
   }
 
   Future<void> _showCreate(BuildContext context) async {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     final name = TextEditingController();
     final pin = TextEditingController();
     var kids = false;
@@ -176,19 +197,26 @@ class ProfilesSettingsPage extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
               TextField(
                 controller: pin,
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 6,
-                decoration: const InputDecoration(labelText: 'Optional 4–6 digit PIN'),
+                decoration: const InputDecoration(
+                  labelText: 'Optional 4–6 digit PIN',
+                ),
               ),
               const SizedBox(height: 8),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Avatar',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                child: Text(
+                  'Avatar',
+                  style: TextStyle(color: inkSoft, fontSize: 12),
+                ),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -203,7 +231,7 @@ class ProfilesSettingsPage extends StatelessWidget {
                     '🎧',
                     '🚀',
                     '🌙',
-                    '🔥'
+                    '🔥',
                   ])
                     ChoiceChip(
                       label: Text(e, style: const TextStyle(fontSize: 20)),
@@ -216,14 +244,19 @@ class ProfilesSettingsPage extends StatelessWidget {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Kids profile'),
-                subtitle: const Text('Marked kid-safe; stricter filtering comes in the next pass.'),
+                subtitle: const Text(
+                  'Marked kid-safe; stricter filtering comes in the next pass.',
+                ),
                 value: kids,
                 onChanged: (v) => setState(() => kids = v),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel'),
+            ),
             FilledButton(
               onPressed: () async {
                 await DizzyProfileService.create(
@@ -241,7 +274,9 @@ class ProfilesSettingsPage extends StatelessWidget {
       ),
     );
     if (created == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile created')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile created')));
     }
   }
 
@@ -259,20 +294,24 @@ class ProfilesSettingsPage extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Save')),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
     if (saved != true) return;
-    final ok =
-        await DizzyProfileService.updateName(p.id as String, name.text);
+    final ok = await DizzyProfileService.updateName(p.id as String, name.text);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(ok ? 'Name saved ✓' : 'Could not save that name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok ? 'Name saved ✓' : 'Could not save that name'),
+        ),
+      );
     }
   }
 
@@ -291,8 +330,14 @@ class ProfilesSettingsPage extends StatelessWidget {
           decoration: const InputDecoration(labelText: 'PIN'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Unlock')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, c.text),
+            child: const Text('Unlock'),
+          ),
         ],
       ),
     );

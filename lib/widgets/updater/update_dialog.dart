@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:ota_update/ota_update.dart';
 import 'package:path/path.dart' as path;
@@ -24,8 +27,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
 
-  static const Color _surfaceColor = DizzyVoid.surface1;
-  static const Color _backgroundColor = DizzyVoid.voidA;
+  bool get _isLight => AppThemeService.currentPalette.value.isLight;
+  Color get _surfaceColor =>
+      _isLight ? PrismLight.raisedTop : DizzyVoid.surface1;
+  Color get _backgroundColor =>
+      _isLight ? PrismLight.raisedBottom : DizzyVoid.voidA;
+  Color get _ink => _isLight ? PrismLight.ink : Colors.white;
+  Color get _inkSoft => _isLight ? PrismLight.inkSoft : Colors.white70;
+  Color get _hairline =>
+      _isLight ? PrismLight.borderSubtle : Colors.white.withValues(alpha: 0.08);
   static const Color _accentColor = Color(0xFFF59E0B);
 
   @override
@@ -48,337 +58,341 @@ class _UpdateDialogState extends State<UpdateDialog> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500),
           decoration: BoxDecoration(
-            color: _surfaceColor,
+            gradient: PrismShadows.surfaceGradient(
+              AppThemeService.currentPalette.value.isLight,
+            ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _accentColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
-          boxShadow: [
-            BoxShadow(
-              color: _accentColor.withValues(alpha: 0.2),
-              blurRadius: 40,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header with gradient
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    _accentColor.withValues(alpha: 0.2),
-                    _accentColor.withValues(alpha: 0.05),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+            boxShadow: [
+              ...PrismShadows.floating(
+                isLight: AppThemeService.currentPalette.value.isLight,
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _accentColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.system_update_rounded,
-                      color: _accentColor,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'UPDATE AVAILABLE',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                            color: _accentColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Version ${widget.updateInfo.latestVersion}',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              BoxShadow(
+                color: _accentColor.withValues(alpha: 0.2),
+                blurRadius: 40,
+                spreadRadius: 5,
               ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Version details container
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Current',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white38,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.updateInfo.currentVersion,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Icon(
-                          Icons.arrow_forward_rounded,
-                          color: _accentColor,
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text(
-                              'Latest',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white38,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.updateInfo.latestVersion,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: _accentColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with gradient
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _accentColor.withValues(alpha: 0.2),
+                      _accentColor.withValues(alpha: 0.05),
+                    ],
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Release notes header & box
-                  const Text(
-                    "WHAT'S NEW",
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: Colors.white38,
-                    ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
-                  const SizedBox(height: 10),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 180),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _backgroundColor.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      child: Text(
-                        widget.updateInfo.releaseNotes,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  if (widget.updateInfo.isMacOS || widget.updateInfo.isIOS) ...[
-                    const SizedBox(height: 16),
+                ),
+                child: Row(
+                  children: [
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.3),
-                        ),
+                        color: _accentColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
+                      child: const Icon(
+                        Icons.system_update_rounded,
+                        color: _accentColor,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.orange.shade300,
-                            size: 20,
+                          const Text(
+                            'UPDATE AVAILABLE',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                              color: _accentColor,
+                            ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              widget.updateInfo.isIOS
-                                  ? "iOS: You'll be redirected to GitHub to download the IPA"
-                                  : "macOS: You'll be redirected to GitHub to download",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange.shade200,
-                              ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Version ${widget.updateInfo.latestVersion}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-
-                  if (_isDownloading) ...[
-                    const SizedBox(height: 20),
-                    Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Downloading...',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: _accentColor,
-                              ),
-                            ),
-                            Text(
-                              '${(_downloadProgress * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: _downloadProgress,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.1,
-                            ),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              _accentColor,
-                            ),
-                            minHeight: 8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
 
-            // Buttons
-            if (!_isDownloading)
+              // Content
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: Row(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () {
-                          AppUpdaterService.dismissVersion(widget.updateInfo.latestVersion);
-                          Navigator.of(context).pop();
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.15),
-                            ),
+                    // Version details container
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _hairline,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _hairline),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Current',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white38,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.updateInfo.currentVersion,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        child: const Text(
-                          'Later',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: _accentColor,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'Latest',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white38,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.updateInfo.latestVersion,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: _accentColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Release notes header & box
+                    const Text(
+                      "WHAT'S NEW",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: Colors.white38,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 180),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _backgroundColor.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _hairline),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          widget.updateInfo.releaseNotes,
+                          style: const TextStyle(
+                            fontSize: 13,
                             color: Colors.white70,
+                            height: 1.5,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        onPressed: _handleUpdate,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _accentColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+
+                    if (widget.updateInfo.isMacOS ||
+                        widget.updateInfo.isIOS) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.3),
                           ),
-                          elevation: 0,
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Row(
                           children: [
-                            Text(
-                              'Update Now',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.orange.shade300,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                widget.updateInfo.isIOS
+                                    ? "iOS: You'll be redirected to GitHub to download the IPA"
+                                    : "macOS: You'll be redirected to GitHub to download",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade200,
+                                ),
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.download_rounded, size: 20),
                           ],
                         ),
                       ),
-                    ),
+                    ],
+
+                    if (_isDownloading) ...[
+                      const SizedBox(height: 20),
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Downloading...',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: _accentColor,
+                                ),
+                              ),
+                              Text(
+                                '${(_downloadProgress * 100).toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: _downloadProgress,
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.1,
+                              ),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                _accentColor,
+                              ),
+                              minHeight: 8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
-          ],
+
+              // Buttons
+              if (!_isDownloading)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            AppUpdaterService.dismissVersion(
+                              widget.updateInfo.latestVersion,
+                            );
+                            Navigator.of(context).pop();
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            'Later',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: _handleUpdate,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _accentColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Update Now',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.download_rounded, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -421,8 +435,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           label: 'Open in browser',
           textColor: Colors.white,
           onPressed: () {
-            AppUpdaterService()
-                .openDownloadPage(widget.updateInfo.downloadUrl);
+            AppUpdaterService().openDownloadPage(widget.updateInfo.downloadUrl);
           },
         ),
       ),
@@ -441,8 +454,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       OtaUpdate()
           .execute(
             widget.updateInfo.downloadUrl,
-            destinationFilename:
-                'Dizzy_${widget.updateInfo.latestVersion}.apk',
+            destinationFilename: 'Dizzy_${widget.updateInfo.latestVersion}.apk',
             // GitHub asset digest — plugin aborts with CHECKSUM_ERROR on a
             // truncated/corrupt download instead of launching the installer.
             sha256checksum: widget.updateInfo.sha256,
@@ -545,8 +557,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         extension = Platform.isWindows ? '.exe' : '.AppImage';
       }
 
-      final fileName =
-          'Dizzy-${widget.updateInfo.latestVersion}$extension';
+      final fileName = 'Dizzy-${widget.updateInfo.latestVersion}$extension';
       final filePath = path.join(dir.path, fileName);
       final file = File(filePath);
 
@@ -588,23 +599,20 @@ class _UpdateDialogState extends State<UpdateDialog> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: _surfaceColor,
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 32),
-                SizedBox(width: 12),
-                Text(
-                  'Download Complete',
-                  style: TextStyle(color: Colors.white),
-                ),
+                const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                const SizedBox(width: 12),
+                Text('Download Complete', style: TextStyle(color: _ink)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Update downloaded to:',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: _inkSoft),
                 ),
                 const SizedBox(height: 8),
                 Container(
@@ -627,7 +635,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   Platform.isWindows
                       ? 'Close Dizzy and run the installer to update.'
                       : 'Make the file executable and run it:\nchmod +x "$fileName"\n./$fileName',
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: _inkSoft),
                 ),
               ],
             ),
@@ -641,15 +649,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   }
                   if (context.mounted) Navigator.of(context).pop();
                 },
-                child: const Text(
-                  'Open Folder',
-                  style: TextStyle(color: Colors.white70),
-                ),
+                child: Text('Open Folder', style: TextStyle(color: _inkSoft)),
               ),
               if (Platform.isWindows && filePath.toLowerCase().endsWith('.exe'))
                 ElevatedButton(
                   onPressed: () async {
-                    await Process.start(filePath, [], mode: ProcessStartMode.detached);
+                    await Process.start(
+                      filePath,
+                      [],
+                      mode: ProcessStartMode.detached,
+                    );
                     exit(0);
                   },
                   style: ElevatedButton.styleFrom(

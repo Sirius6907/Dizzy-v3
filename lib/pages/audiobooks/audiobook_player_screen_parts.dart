@@ -74,7 +74,9 @@ class _VolumeButtonState extends State<_VolumeButton> {
         _PlayerIconButton(
           icon: widget.volume == 0
               ? Icons.volume_off_rounded
-              : (widget.volume > 0.5 ? Icons.volume_up_rounded : Icons.volume_down_rounded),
+              : (widget.volume > 0.5
+                    ? Icons.volume_up_rounded
+                    : Icons.volume_down_rounded),
           size: 22,
           palette: widget.palette,
           tooltip: 'Volume',
@@ -156,21 +158,29 @@ class _ChapterListItemTileState extends State<_ChapterListItemTile> {
               decoration: BoxDecoration(
                 color: widget.isSelected
                     ? palette.primaryColor.withValues(alpha: 0.22)
-                    : (_isHovered ? Colors.white.withValues(alpha: 0.08) : Colors.transparent),
+                    : (_isHovered
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.transparent),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: widget.isSelected
                       ? palette.primaryColor.withValues(alpha: 0.6)
-                      : (_isHovered ? Colors.white.withValues(alpha: 0.12) : Colors.transparent),
+                      : (_isHovered
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.transparent),
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     widget.isSelected
-                        ? (widget.isPlaying ? Icons.graphic_eq_rounded : Icons.pause_circle_filled_rounded)
+                        ? (widget.isPlaying
+                              ? Icons.graphic_eq_rounded
+                              : Icons.pause_circle_filled_rounded)
                         : Icons.play_circle_outline_rounded,
-                    color: widget.isSelected ? palette.primaryColor : Colors.white54,
+                    color: widget.isSelected
+                        ? palette.primaryColor
+                        : Colors.white54,
                     size: 22,
                   ),
                   const SizedBox(width: 12),
@@ -178,9 +188,13 @@ class _ChapterListItemTileState extends State<_ChapterListItemTile> {
                     child: Text(
                       widget.chapter.title,
                       style: TextStyle(
-                        color: widget.isSelected ? Colors.white : Colors.white70,
+                        color: widget.isSelected
+                            ? Colors.white
+                            : Colors.white70,
                         fontSize: 14,
-                        fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

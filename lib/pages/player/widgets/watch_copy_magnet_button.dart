@@ -42,7 +42,11 @@ class WatchCopyMagnetButtonState extends State<WatchCopyMagnetButton> {
         content: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+            Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF10B981),
+              size: 18,
+            ),
             SizedBox(width: 8),
             Text(
               'Magnet link copied to clipboard',
@@ -82,15 +86,15 @@ class WatchCopyMagnetButtonState extends State<WatchCopyMagnetButton> {
                 color: _copied
                     ? const Color(0xFF10B981).withValues(alpha: 0.2)
                     : (_hovered
-                        ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.06)),
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.18)
+                          : Colors.white.withValues(alpha: 0.06)),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: _copied
                       ? const Color(0xFF10B981).withValues(alpha: 0.5)
                       : (_hovered
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
-                          : Colors.white.withValues(alpha: 0.08)),
+                            ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
+                            : Colors.white.withValues(alpha: 0.08)),
                   width: 1,
                 ),
               ),
@@ -101,7 +105,9 @@ class WatchCopyMagnetButtonState extends State<WatchCopyMagnetButton> {
                   key: ValueKey(_copied),
                   color: _copied
                       ? const Color(0xFF10B981)
-                      : (_hovered ? const Color(0xFF00E5FF) : WatchColors.textSecondary),
+                      : (_hovered
+                            ? const Color(0xFF00E5FF)
+                            : WatchColors.textSecondary),
                   size: 18,
                 ),
               ),
@@ -112,4 +118,3 @@ class WatchCopyMagnetButtonState extends State<WatchCopyMagnetButton> {
     );
   }
 }
-

@@ -126,7 +126,9 @@ class DebridService {
           'No Debrid key saved for $pinned. Please add it in Settings.',
         );
       }
-      throw Exception('No Debrid service is set up. Please add a key in Settings.');
+      throw Exception(
+        'No Debrid service is set up. Please add a key in Settings.',
+      );
     }
     throw Exception(
       'Every Debrid service failed (${result.attempted.join(', ')}). '

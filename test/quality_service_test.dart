@@ -4,11 +4,11 @@ import 'package:dizzy/models/stream/stream_model.dart';
 import 'package:dizzy/services/player/quality_service.dart';
 
 StreamSource src(String badge) => StreamSource(
-      name: 'S $badge',
-      title: 'Movie $badge x264',
-      url: 'https://cdn/x.mp4',
-      addonName: 'test',
-    );
+  name: 'S $badge',
+  title: 'Movie $badge x264',
+  url: 'https://cdn/x.mp4',
+  addonName: 'test',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +26,14 @@ void main() {
 
     test('bitrate caps ascend, auto uncapped', () {
       expect(QualityChoice.auto.maxBitrate, isNull);
-      expect(QualityChoice.q480.maxBitrate, lessThan(QualityChoice.q720.maxBitrate!));
-      expect(QualityChoice.q720.maxBitrate, lessThan(QualityChoice.q1080.maxBitrate!));
+      expect(
+        QualityChoice.q480.maxBitrate,
+        lessThan(QualityChoice.q720.maxBitrate!),
+      );
+      expect(
+        QualityChoice.q720.maxBitrate,
+        lessThan(QualityChoice.q1080.maxBitrate!),
+      );
       expect(QualityChoice.q2160.maxBitrate, lessThanOrEqualTo(30000000));
     });
   });
@@ -43,11 +49,18 @@ void main() {
         isHls: false,
         badges: const {'1080p', '480p'},
       );
-      expect(opts, [QualityChoice.auto, QualityChoice.q480, QualityChoice.q1080]);
+      expect(opts, [
+        QualityChoice.auto,
+        QualityChoice.q480,
+        QualityChoice.q1080,
+      ]);
     });
 
     test('progressive with no badges → Auto only (never a dead choice)', () {
-      final opts = QualityService.optionsFor(isHls: false, badges: const {'CAM'});
+      final opts = QualityService.optionsFor(
+        isHls: false,
+        badges: const {'CAM'},
+      );
       expect(opts, [QualityChoice.auto]);
     });
   });
@@ -55,9 +68,18 @@ void main() {
   group('P7: matching + urls + toast', () {
     test('matchProgressive finds first ranked match', () {
       final chain = [src('1080p'), src('720p')];
-      expect(QualityService.matchProgressive(chain, QualityChoice.q720)?.quality, '720p');
-      expect(QualityService.matchProgressive(chain, QualityChoice.q2160), isNull);
-      expect(QualityService.matchProgressive(chain, QualityChoice.auto), isNull);
+      expect(
+        QualityService.matchProgressive(chain, QualityChoice.q720)?.quality,
+        '720p',
+      );
+      expect(
+        QualityService.matchProgressive(chain, QualityChoice.q2160),
+        isNull,
+      );
+      expect(
+        QualityService.matchProgressive(chain, QualityChoice.auto),
+        isNull,
+      );
     });
 
     test('isHlsUrl ignores query/fragment, case-insensitive', () {
@@ -85,8 +107,7 @@ void main() {
     });
 
     test('corrupt value → fail-soft auto', () async {
-      SharedPreferences.setMockInitialValues(
-          {QualityService.prefsKey: 'nope'});
+      SharedPreferences.setMockInitialValues({QualityService.prefsKey: 'nope'});
       expect(await QualityService().load(), QualityChoice.auto);
     });
   });

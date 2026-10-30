@@ -4,14 +4,15 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 
 import 'package:dizzy/services/cloud/announcement_service.dart';
 import 'package:dizzy/services/cloud/cloud_client.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
 import 'package:dizzy/services/device/device_id_service.dart';
-import 'package:dizzy/services/guide/guide_service.dart';
+import 'package:dizzy/widgets/guide/guide_card.dart';
 import 'package:dizzy/services/updater/app_updater_service.dart';
 import 'package:dizzy/services/updater/update_prefs.dart';
 import 'package:dizzy/services/updater/update_state_machine.dart';
@@ -27,6 +28,7 @@ import '../settings/appearance_settings_page.dart';
 import '../settings/download_settings_page.dart';
 import '../settings/privacy_settings_page.dart';
 import '../settings/updates_settings_page.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/notify.dart';
 
 /// Phase B (Profile Hub): sections under the profile header.
@@ -152,9 +154,13 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
       (d['device_code'] ?? '').toString().trim() == _myCode;
 
   void _showDevicesSheet() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
     showModalBottomSheet(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: panel,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -165,18 +171,18 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'My devices',
                 style: TextStyle(
-                  color: DizzyVoid.bone,
+                  color: ink,
                   fontSize: DizzyType.title,
                   fontWeight: DizzyType.wBold,
                 ),
               ),
               const SizedBox(height: DizzySpace.xs),
-              const Text(
+              Text(
                 'Every phone or PC signed in to your account. Remove one and it must be linked again to continue.',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 13),
+                style: TextStyle(color: inkSoft, fontSize: 13),
               ),
               const SizedBox(height: DizzySpace.md),
               if (!_devicesLoaded)
@@ -190,13 +196,13 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   ),
                 )
               else if (_devices.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: DizzySpace.lg),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: DizzySpace.lg),
                   child: Center(
                     child: Text(
                       'No devices yet — open Dizzy on another phone to see it here.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: DizzyVoid.ash, fontSize: 13),
+                      style: TextStyle(color: inkSoft, fontSize: 13),
                     ),
                   ),
                 )
@@ -212,7 +218,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                       final seen = DateTime.tryParse(
                         d['last_seen_at']?.toString() ?? '',
                       );
-                      return DizzyTactileCard(
+                      return PrismCard(
                         margin: const EdgeInsets.only(bottom: DizzySpace.sm),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -224,7 +230,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                               (d['platform'] ?? '').toString() == 'android'
                                   ? Icons.phone_android_rounded
                                   : Icons.computer_rounded,
-                              color: DizzyVoid.ash,
+                              color: inkSoft,
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -238,25 +244,35 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                                         DeviceIdService.displayCode(
                                           (d['device_code'] ?? '').toString(),
                                         ),
-                                        style: const TextStyle(
-                                          color: DizzyVoid.bone,
+                                        style: TextStyle(
+                                          color: ink,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       if (mine)
-                                        _chip('This device', DizzyGlow.beam),
+                                        _chip(
+                                          'This device',
+                                          isLight
+                                              ? PrismAccent.successTextLight
+                                              : DizzyGlow.beam,
+                                        ),
                                       if (revoked)
-                                        _chip('Removed', DizzyGlow.red),
+                                        _chip(
+                                          'Removed',
+                                          isLight
+                                              ? PrismAccent.text(true)
+                                              : DizzyGlow.red,
+                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${d['app_version'] ?? 'unknown'}'
                                     '${seen != null ? ' · last seen ${_ago(seen)}' : ''}',
-                                    style: const TextStyle(
-                                      color: DizzyVoid.ash,
+                                    style: TextStyle(
+                                      color: inkSoft,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -304,10 +320,12 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                                     );
                                   }
                                 },
-                                child: const Text(
+                                child: Text(
                                   'Remove',
                                   style: TextStyle(
-                                    color: DizzyGlow.red,
+                                    color: isLight
+                                        ? PrismAccent.text(true)
+                                        : DizzyGlow.red,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -335,7 +353,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
     ),
     child: Text(
       text,
-      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
     ),
   );
 
@@ -357,9 +375,13 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
     >
     toggles,
   }) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
     showModalBottomSheet(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: panel,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -372,28 +394,25 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: DizzyVoid.bone,
+                style: TextStyle(
+                  color: ink,
                   fontSize: DizzyType.title,
                   fontWeight: DizzyType.wBold,
                 ),
               ),
               const SizedBox(height: DizzySpace.xs),
-              Text(
-                line,
-                style: const TextStyle(color: DizzyVoid.ash, fontSize: 13),
-              ),
+              Text(line, style: TextStyle(color: inkSoft, fontSize: 13)),
               const SizedBox(height: DizzySpace.sm),
               for (final t in toggles)
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
                     t.label,
-                    style: const TextStyle(color: DizzyVoid.bone, fontSize: 14),
+                    style: TextStyle(color: ink, fontSize: 14),
                   ),
                   subtitle: Text(
                     t.hint,
-                    style: const TextStyle(color: DizzyVoid.ash, fontSize: 11),
+                    style: TextStyle(color: inkSoft, fontSize: 11),
                   ),
                   value: t.value,
                   activeThumbColor: DizzyGlow.beam,
@@ -418,7 +437,11 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    return DizzyTactileCard(
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    return PrismCard(
       margin: const EdgeInsets.only(bottom: DizzySpace.sm),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       onTap: onTap,
@@ -432,8 +455,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: DizzyVoid.bone,
+                  style: TextStyle(
+                    color: ink,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -442,38 +465,34 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: DizzyVoid.ash,
-                      fontSize: 11.5,
-                    ),
+                    style: TextStyle(color: inkSoft, fontSize: 11.5),
                   ),
                 ],
               ],
             ),
           ),
           trailing ??
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: DizzyVoid.ash,
-                size: 20,
-              ),
+              Icon(Icons.chevron_right_rounded, color: inkFaint, size: 20),
         ],
       ),
     );
   }
 
-  Widget _groupLabel(String text) => Padding(
-    padding: const EdgeInsets.only(top: DizzySpace.sm, bottom: DizzySpace.xs),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: DizzyVoid.ash,
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.1,
+  Widget _groupLabel(String text) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    return Padding(
+      padding: const EdgeInsets.only(top: DizzySpace.sm, bottom: DizzySpace.xs),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: isLight ? PrismLight.inkSoft : Colors.white60,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.1,
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   // ── Phase I2/I3: staged-update row + What's new ──────────────────────────
 
@@ -522,6 +541,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
     required VoidCallback onTap,
     bool primary = true,
   }) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final accentText = isLight ? PrismAccent.starTextLight : DizzyGlow.gold;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -532,14 +553,14 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
         decoration: BoxDecoration(
           color: primary ? DizzyGlow.volt : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: primary ? null : Border.all(color: DizzyGlow.gold),
+          border: primary ? null : Border.all(color: accentText),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: primary ? DizzyVoid.voidA : DizzyGlow.gold,
+            color: primary ? DizzyVoid.voidA : accentText,
           ),
         ),
       ),
@@ -548,6 +569,13 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
 
   /// Live row for the staged-update state machine (plan §2d).
   Widget _updateStatusRow(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     return ListenableBuilder(
       listenable: Listenable.merge([
         UpdateStateMachine.state,
@@ -615,7 +643,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           margin: const EdgeInsets.only(bottom: DizzySpace.sm),
           padding: const EdgeInsets.all(DizzySpace.md),
           decoration: BoxDecoration(
-            color: DizzyVoid.surface1.withValues(alpha: 0.9),
+            color: panel,
             borderRadius: BorderRadius.circular(DizzyRadius.lg),
             border: Border.all(color: accent.withValues(alpha: 0.45)),
           ),
@@ -635,8 +663,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: ink,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -647,11 +675,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
               const SizedBox(height: 4),
               Text(
                 sub,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 12,
-                  height: 1.35,
-                ),
+                style: TextStyle(color: inkSoft, fontSize: 12, height: 1.35),
               ),
               if (s == UpdateRunState.downloading) ...[
                 const SizedBox(height: 10),
@@ -660,7 +684,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   child: LinearProgressIndicator(
                     value: progress <= 0 ? null : progress,
                     minHeight: 6,
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    backgroundColor: hairline,
                     color: accent,
                   ),
                 ),
@@ -679,6 +703,11 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
   /// I3: "What's new" — release notes cached at check time, hidden once that
   /// version is the one installed.
   Widget _whatsNewRow(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
     return FutureBuilder<({String version, String notes, String date})?>(
       future: () async {
         final rel = await UpdatePrefs.lastRelease();
@@ -699,38 +728,28 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           ),
           title: Text(
             'What\'s new in v${rel.version}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: ink,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),
           subtitle: Text(
             'See what changed before you update',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: inkSoft, fontSize: 12),
           ),
-          trailing: Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white.withValues(alpha: 0.4),
-          ),
+          trailing: Icon(Icons.chevron_right_rounded, color: inkFaint),
           onTap: () => showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
-              backgroundColor: DizzyVoid.surface1,
+              backgroundColor: panel,
               title: Text('What\'s new in v${rel.version}'),
               content: SingleChildScrollView(
                 child: Text(
                   rel.notes.isEmpty
                       ? 'No release notes for this version.'
                       : rel.notes,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: inkSoft, fontSize: 13, height: 1.5),
                 ),
               ),
               actions: [
@@ -909,20 +928,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
         _sectionCard(
           icon: Icons.help_outline_rounded,
           title: 'Help',
-          subtitle: 'Show the guide cards again',
-          onTap: () async {
-            await GuideService.resetAll([
-              ...GuideService.allKeys,
-              GuideService.onboardingKey,
-            ]);
-            if (context.mounted) {
-              DizzyNotify.show(
-                context,
-                'Guides will show again as you go.',
-                tone: NotifyTone.success,
-              );
-            }
-          },
+          subtitle: 'Take the 3-card tour',
+          onTap: () => GuideCard.show(context, AppGuides.tour),
         ),
         _sectionCard(
           icon: Icons.info_outline_rounded,
@@ -938,9 +945,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                   title: 'Admin Console',
                   subtitle: 'Open the fleet dashboard',
                   onTap: () async {
-                    final uri = Uri.parse(
-                      'https://dizzy-s-admin.netlify.app',
-                    );
+                    final uri = Uri.parse('https://dizzy-s-admin.netlify.app');
                     try {
                       await launchUrl(
                         uri,
@@ -965,6 +970,9 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
 
   /// Notices = server notice text + active announcements (dismissable).
   Widget _buildNotices() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return ValueListenableBuilder<int>(
       valueListenable: RemoteConfigService.revision,
       builder: (context, _, __) {
@@ -992,7 +1000,7 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                     trailing: const SizedBox.shrink(),
                   ),
                 for (final a in list)
-                  DizzyTactileCard(
+                  PrismCard(
                     margin: const EdgeInsets.only(bottom: DizzySpace.sm),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -1013,8 +1021,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                             children: [
                               Text(
                                 a.title,
-                                style: const TextStyle(
-                                  color: DizzyVoid.bone,
+                                style: TextStyle(
+                                  color: ink,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1023,8 +1031,8 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                                 const SizedBox(height: 2),
                                 Text(
                                   a.body,
-                                  style: const TextStyle(
-                                    color: DizzyVoid.ash,
+                                  style: TextStyle(
+                                    color: inkSoft,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -1033,11 +1041,12 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.close_rounded,
                             size: 16,
-                            color: DizzyVoid.ash,
+                            color: inkSoft,
                           ),
+                          tooltip: 'Dismiss',
                           onPressed: () => AnnouncementService.dismiss(a.id),
                         ),
                       ],
@@ -1063,6 +1072,8 @@ class ProfileHubAdminBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final gold = isLight ? PrismAccent.starTextLight : DizzyGlow.gold;
     return ValueListenableBuilder<bool>(
       valueListenable: ProfileHubSections.isAdmin,
       builder: (context, admin, _) {
@@ -1073,25 +1084,21 @@ class ProfileHubAdminBadge extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
-              color: DizzyGlow.gold.withValues(alpha: 0.15),
-              border: const Border.fromBorderSide(
-                BorderSide(color: DizzyGlow.gold, width: 0.5),
+              color: gold.withValues(alpha: 0.15),
+              border: Border.fromBorderSide(
+                BorderSide(color: gold, width: 0.5),
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.verified_user_rounded,
-                  size: 12,
-                  color: DizzyGlow.gold,
-                ),
-                SizedBox(width: 4),
+                Icon(Icons.verified_user_rounded, size: 12, color: gold),
+                const SizedBox(width: 4),
                 Text(
                   'ADMIN',
                   style: TextStyle(
-                    color: DizzyGlow.gold,
-                    fontSize: 10,
+                    color: gold,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
                   ),

@@ -49,18 +49,10 @@ class FshareTvScraper extends StreamScraper {
         );
 
         if (tmdbId != null) {
-          try {
-            final uri = Uri.parse(
-              'https://api.themoviedb.org/3/movie/$tmdbId?api_key=b3556f3b206e16f82df4d1f6fd4545e6',
-            );
-            final res = await http.get(uri).timeout(const Duration(seconds: 4));
-            if (res.statusCode == 200) {
-              final data = jsonDecode(res.body);
-              if (data is Map && data['imdb_id'] != null) {
-                resolvedImdbId = data['imdb_id'].toString();
-              }
-            }
-          } catch (_) {}
+          resolvedImdbId = await TmdbHelper.fetchImdbId(
+            endpoint: 'movie',
+            tmdbId: tmdbId,
+          );
         }
       }
 
@@ -68,10 +60,12 @@ class FshareTvScraper extends StreamScraper {
 
       final client = http.Client();
       try {
-        final pageRes = await client.get(
-          Uri.parse('$_baseUrl/movie/$resolvedImdbId'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final pageRes = await client
+            .get(
+              Uri.parse('$_baseUrl/movie/$resolvedImdbId'),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (pageRes.statusCode != 200) return;
         final html = pageRes.body;
@@ -80,16 +74,17 @@ class FshareTvScraper extends StreamScraper {
         if (match == null || match.group(1) == null) return;
         final watchPath = match.group(1)!;
 
-        final watchRes = await client.get(
-          Uri.parse('$_baseUrl$watchPath'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final watchRes = await client
+            .get(Uri.parse('$_baseUrl$watchPath'), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (watchRes.statusCode != 200) return;
         final watchHtml = watchRes.body;
 
-        final sidMatch = RegExp(r'''(?:source_id|file_id|setSource)[\s=:\('"]+([^'"\)]+)''', caseSensitive: false)
-            .firstMatch(watchHtml);
+        final sidMatch = RegExp(
+          r'''(?:source_id|file_id|setSource)[\s=:\('"]+([^'"\)]+)''',
+          caseSensitive: false,
+        ).firstMatch(watchHtml);
         if (sidMatch == null || sidMatch.group(1) == null) return;
         final sourceId = sidMatch.group(1)!;
 
@@ -100,10 +95,14 @@ class FshareTvScraper extends StreamScraper {
           'Referer': '$_baseUrl$watchPath',
         };
 
-        final jsonRes = await client.get(
-          Uri.parse('$_baseUrl/api/file/$sourceId/source?trailer=Png81APqcxU&type=watch'),
-          headers: apiHeaders,
-        ).timeout(const Duration(seconds: 8));
+        final jsonRes = await client
+            .get(
+              Uri.parse(
+                '$_baseUrl/api/file/$sourceId/source?trailer=Png81APqcxU&type=watch',
+              ),
+              headers: apiHeaders,
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (jsonRes.statusCode != 200) return;
         final json = jsonDecode(jsonRes.body);
@@ -124,7 +123,9 @@ class FshareTvScraper extends StreamScraper {
           for (final item in group) {
             if (item is! Map || item['src'] == null) continue;
             final rawSrc = item['src'].toString();
-            final srcUrl = rawSrc.startsWith('http') ? rawSrc : '$_baseUrl$rawSrc';
+            final srcUrl = rawSrc.startsWith('http')
+                ? rawSrc
+                : '$_baseUrl$rawSrc';
             if (seen.add(srcUrl)) {
               final quality = item['quality']?.toString() ?? '1080';
               final label = item['label']?.toString().trim() ?? '';
@@ -151,9 +152,7 @@ class FshareTvScraper extends StreamScraper {
                 headers: _headers,
                 behaviorHints: {
                   'notWebReady': false,
-                  'proxyHeaders': {
-                    'request': _headers,
-                  },
+                  'proxyHeaders': {'request': _headers},
                 },
               );
             }

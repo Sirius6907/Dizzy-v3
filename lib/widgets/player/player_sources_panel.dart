@@ -23,6 +23,11 @@ class PlayerSourcesPanel extends StatefulWidget {
   final String currentAddonName;
   final String? errorMessage;
   final List<StreamSource>? cachedSources;
+
+  /// Player-held sources (e.g. `failoverSources`) used to paint the list
+  /// instantly. A re-scrape only happens on the explicit Refresh action when
+  /// this is non-empty, so opening the panel never re-hits the network.
+  final List<StreamSource>? seedSources;
   final Function(List<StreamSource> sources) onSourcesLoaded;
   final Function(StreamSource source, Video episode) onPlaySource;
   final VoidCallback onBackToEpisodes;
@@ -35,6 +40,7 @@ class PlayerSourcesPanel extends StatefulWidget {
     required this.currentAddonName,
     this.errorMessage,
     this.cachedSources,
+    this.seedSources,
     required this.onSourcesLoaded,
     required this.onPlaySource,
     required this.onBackToEpisodes,
@@ -61,6 +67,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
     if (widget.cachedSources != null && widget.cachedSources!.isNotEmpty) {
       _sources.addAll(widget.cachedSources!);
       _isLoading = false;
+    } else if (widget.seedSources != null && widget.seedSources!.isNotEmpty) {
+      _sources.addAll(widget.seedSources!);
+      _isLoading = false;
     } else {
       _startScraping();
     }
@@ -83,7 +92,8 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
     final year = int.tryParse(detail?.year ?? '');
     final epNum = ep.episode ?? 1;
 
-    final isArabicAnime = id.startsWith('arabic_anime:') ||
+    final isArabicAnime =
+        id.startsWith('arabic_anime:') ||
         (detail?.id.startsWith('arabic_anime:') ?? false) ||
         widget.currentAddonName == 'ArabicAnime';
 
@@ -101,14 +111,18 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
       () async {
         try {
           if (slug.isEmpty && title.isNotEmpty) {
-            final searchResults = await AnimeArabicService.instance.search(title);
+            final searchResults = await AnimeArabicService.instance.search(
+              title,
+            );
             if (searchResults.isNotEmpty) {
               slug = searchResults.first.slug;
             }
           }
 
           if (slug.isNotEmpty) {
-            final arabicDetails = await AnimeArabicService.instance.getDetails(slug);
+            final arabicDetails = await AnimeArabicService.instance.getDetails(
+              slug,
+            );
             final targetEp = arabicDetails.episodes.firstWhere(
               (e) => e.number == epNum,
               orElse: () => ArabicEpisode(
@@ -119,10 +133,14 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
               ),
             );
 
-            final hits = await AnimeArabicExtractor.instance.resolveEpisode(targetEp);
+            final hits = await AnimeArabicExtractor.instance.resolveEpisode(
+              targetEp,
+            );
             final sources = AnimeArabicExtractor.toSources(
               hits,
-              animeTitle: arabicDetails.title.isNotEmpty ? arabicDetails.title : title,
+              animeTitle: arabicDetails.title.isNotEmpty
+                  ? arabicDetails.title
+                  : title,
               episodeNumber: epNum,
             );
 
@@ -146,7 +164,8 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
       return;
     }
 
-    final isAnime = type == 'anime' ||
+    final isAnime =
+        type == 'anime' ||
         id.startsWith('anilist:') ||
         (detail?.id.startsWith('anilist:') ?? false) ||
         widget.currentAddonName == 'MegaPlay' ||
@@ -167,95 +186,102 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
 
       _streamSub = AnimeScraperService.instance
           .scrapeStreamsByDetails(
-        title: title,
-        anilistId: anilistId,
-        episodeNumber: epNum,
-      )
+            title: title,
+            anilistId: anilistId,
+            episodeNumber: epNum,
+          )
           .listen(
-        (source) {
-          if (!mounted) return;
-          setState(() {
-            final exists = _sources.any((s) =>
-                (source.url != null && s.url == source.url) ||
-                (s.name == source.name && s.title == source.title));
-            if (!exists) {
-              _sources.add(source);
-            }
-          });
-        },
-        onError: (_) {
-          if (mounted) setState(() => _isLoading = false);
-        },
-        onDone: () {
-          if (mounted) {
-            setState(() => _isLoading = false);
-            widget.onSourcesLoaded(List.from(_sources));
-          }
-        },
-      );
+            (source) {
+              if (!mounted) return;
+              setState(() {
+                final exists = _sources.any(
+                  (s) =>
+                      (source.url != null && s.url == source.url) ||
+                      (s.name == source.name && s.title == source.title),
+                );
+                if (!exists) {
+                  _sources.add(source);
+                }
+              });
+            },
+            onError: (_) {
+              if (mounted) setState(() => _isLoading = false);
+            },
+            onDone: () {
+              if (mounted) {
+                setState(() => _isLoading = false);
+                widget.onSourcesLoaded(List.from(_sources));
+              }
+            },
+          );
       return;
     }
 
-    _streamSub = StreamService.fetchStreamsForTargetAddon(
-      targetAddonName: widget.currentAddonName,
-      type: type,
-      id: id,
-      title: title,
-      year: year,
-      season: ep.season,
-      episode: ep.episode,
-    ).listen(
-      (source) {
-        if (!mounted) return;
-        // Dub-mode gate: Hindi mode ON pe sirf hindi-tagged sources hi
-        // list mein aate hain. Non-hindi sources fallback pool mein —
-        // zero hindi mila to onDone pe English release + banner.
-        if (DubModeService.isHindi &&
-            !source.hasAudioLanguage('hindi', mediaTitle: title)) {
-          _nonHindiPool.add(source);
-          return;
-        }
-        setState(() {
-          // Deduplicate by URL / infoHash / title
-          final exists = _sources.any((s) =>
-              (source.infoHash != null && s.infoHash == source.infoHash) ||
-              (source.url != null && s.url == source.url) ||
-              (s.name == source.name && s.title == source.title));
-          if (!exists) {
-            _sources.add(source);
-          }
-        });
-      },
-      onError: (_) {
-        if (mounted) setState(() => _isLoading = false);
-      },
-      onDone: () {
-        if (!mounted) return;
-        // English fallback: zero hindi sources — release + notice.
-        if (DubModeService.isHindi &&
-            _sources.isEmpty &&
-            _nonHindiPool.isNotEmpty) {
-          _sources.addAll(_nonHindiPool);
-          _nonHindiPool.clear();
-          widget.onSourcesLoaded(List.from(_sources));
-          if (mounted) {
-            setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Is episode ka Hindi dub nahi mila — English sources dikha raha hoon'),
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
-          return;
-        }
-        if (mounted) {
-          setState(() => _isLoading = false);
-          widget.onSourcesLoaded(List.from(_sources));
-        }
-      },
-    );
+    _streamSub =
+        StreamService.fetchStreamsForTargetAddon(
+          targetAddonName: widget.currentAddonName,
+          type: type,
+          id: id,
+          title: title,
+          year: year,
+          season: ep.season,
+          episode: ep.episode,
+        ).listen(
+          (source) {
+            if (!mounted) return;
+            // Dub-mode gate: Hindi mode ON pe sirf hindi-tagged sources hi
+            // list mein aate hain. Non-hindi sources fallback pool mein —
+            // zero hindi mila to onDone pe English release + banner.
+            if (DubModeService.isHindi &&
+                !source.hasAudioLanguage('hindi', mediaTitle: title)) {
+              _nonHindiPool.add(source);
+              return;
+            }
+            setState(() {
+              // Deduplicate by URL / infoHash / title
+              final exists = _sources.any(
+                (s) =>
+                    (source.infoHash != null &&
+                        s.infoHash == source.infoHash) ||
+                    (source.url != null && s.url == source.url) ||
+                    (s.name == source.name && s.title == source.title),
+              );
+              if (!exists) {
+                _sources.add(source);
+              }
+            });
+          },
+          onError: (_) {
+            if (mounted) setState(() => _isLoading = false);
+          },
+          onDone: () {
+            if (!mounted) return;
+            // English fallback: zero hindi sources — release + notice.
+            if (DubModeService.isHindi &&
+                _sources.isEmpty &&
+                _nonHindiPool.isNotEmpty) {
+              _sources.addAll(_nonHindiPool);
+              _nonHindiPool.clear();
+              widget.onSourcesLoaded(List.from(_sources));
+              if (mounted) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Is episode ka Hindi dub nahi mila — English sources dikha raha hoon',
+                    ),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              }
+              return;
+            }
+            if (mounted) {
+              setState(() => _isLoading = false);
+              widget.onSourcesLoaded(List.from(_sources));
+            }
+          },
+        );
   }
 
   @override
@@ -300,7 +326,8 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                 _buildHeader(sNum, eNum, isCompact),
 
                 // ── Error Notice Banner (if previous stream failed) ──
-                if (widget.errorMessage != null && widget.errorMessage!.isNotEmpty)
+                if (widget.errorMessage != null &&
+                    widget.errorMessage!.isNotEmpty)
                   _buildErrorBanner(widget.errorMessage!, isCompact),
 
                 const Divider(height: 1, color: Color(0x1AFFFFFF)),
@@ -310,8 +337,8 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                   child: _sources.isEmpty && _isLoading
                       ? _buildLoadingState()
                       : (_sources.isEmpty && !_isLoading
-                          ? _buildEmptyState()
-                          : _buildSourcesList(isCompact)),
+                            ? _buildEmptyState()
+                            : _buildSourcesList(isCompact)),
                 ),
               ],
             ),
@@ -351,11 +378,16 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: PlayerTheme.accent.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(5),
-                        border: Border.all(color: PlayerTheme.accent.withValues(alpha: 0.50)),
+                        border: Border.all(
+                          color: PlayerTheme.accent.withValues(alpha: 0.50),
+                        ),
                       ),
                       child: Text(
                         'S$sNum : E$eNum',
@@ -398,6 +430,17 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
             ),
           ),
 
+          // Refresh Button (targeted re-scrape stays explicit)
+          PlayerIconButton(
+            size: 36,
+            iconSize: 18,
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh sources',
+            backgroundColor: Colors.white.withValues(alpha: 0.08),
+            onPressed: _isLoading ? null : _startScraping,
+          ),
+          const SizedBox(width: 8),
+
           // Close Drawer Button
           PlayerIconButton(
             size: 36,
@@ -430,7 +473,11 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFCA5A5), size: 22),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Color(0xFFFCA5A5),
+            size: 22,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -482,7 +529,11 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded, color: Colors.white.withValues(alpha: 0.30), size: 48),
+            Icon(
+              Icons.search_off_rounded,
+              color: Colors.white.withValues(alpha: 0.30),
+              size: 48,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No streams found for this episode',
@@ -509,7 +560,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: PlayerTheme.accent,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -540,7 +593,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                   height: 14,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(PlayerTheme.accent),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      PlayerTheme.accent,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -587,7 +642,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              color: isHovered ? const Color(0x331E2435) : const Color(0x1F121722),
+              color: isHovered
+                  ? const Color(0x331E2435)
+                  : const Color(0x1F121722),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isHovered
@@ -617,8 +674,12 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    isTorrent ? Icons.cloud_download_rounded : Icons.play_arrow_rounded,
-                    color: isTorrent ? const Color(0xFFFBBF24) : const Color(0xFF9D84FF),
+                    isTorrent
+                        ? Icons.cloud_download_rounded
+                        : Icons.play_arrow_rounded,
+                    color: isTorrent
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFF9D84FF),
                     size: 18,
                   ),
                 ),
@@ -634,7 +695,10 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                         children: [
                           if (resolution.isNotEmpty) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1.5,
+                              ),
                               margin: const EdgeInsets.only(right: 6),
                               decoration: BoxDecoration(
                                 color: _getResolutionColor(resolution),
@@ -653,7 +717,10 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                           ],
 
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
                             margin: const EdgeInsets.only(right: 6),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.10),
@@ -669,7 +736,8 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                             ),
                           ),
 
-                          if (source.name != null && source.name!.isNotEmpty) ...[
+                          if (source.name != null &&
+                              source.name!.isNotEmpty) ...[
                             Flexible(
                               child: Text(
                                 source.name!,
@@ -712,7 +780,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: source.magnetUrl!));
+                        Clipboard.setData(
+                          ClipboardData(text: source.magnetUrl!),
+                        );
                         HapticFeedback.lightImpact();
                         ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -720,7 +790,11 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                             content: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Color(0xFF10B981),
+                                  size: 18,
+                                ),
                                 SizedBox(width: 8),
                                 Text(
                                   'Magnet link copied to clipboard',
@@ -734,7 +808,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                             ),
                             backgroundColor: DizzyColors.scrim,
                             behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             duration: const Duration(seconds: 2),
                           ),
                         );
@@ -760,7 +836,9 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: (isHovered ? PlayerTheme.accent : Colors.white.withValues(alpha: 0.08)),
+                    color: (isHovered
+                        ? PlayerTheme.accent
+                        : Colors.white.withValues(alpha: 0.08)),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -779,7 +857,11 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
 
   String _extractResolution(String title) {
     final lower = title.toLowerCase();
-    if (lower.contains('4k') || lower.contains('2160p') || lower.contains('uhd')) return '4K';
+    if (lower.contains('4k') ||
+        lower.contains('2160p') ||
+        lower.contains('uhd')) {
+      return '4K';
+    }
     if (lower.contains('1080p') || lower.contains('fhd')) return '1080P';
     if (lower.contains('720p') || lower.contains('hd')) return '720P';
     if (lower.contains('480p') || lower.contains('sd')) return '480P';

@@ -10,8 +10,11 @@ void main() {
       for (var i = 0; i < 25; i++) {
         final id = WatchPartyService.generateRoomId();
         expect(id, hasLength(6));
-        expect(WatchPartyService.validRoomId(id), isTrue,
-            reason: 'generator output must always validate: $id');
+        expect(
+          WatchPartyService.validRoomId(id),
+          isTrue,
+          reason: 'generator output must always validate: $id',
+        );
       }
     });
 

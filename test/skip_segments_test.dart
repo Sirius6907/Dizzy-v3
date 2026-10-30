@@ -10,18 +10,18 @@ void main() {
         'season': 1,
         'episode': 1,
         'intro': [
-          {'start_ms': null, 'end_ms': 23000}
+          {'start_ms': null, 'end_ms': 23000},
         ],
         'recap': [
-          {'start_ms': 25000, 'end_ms': 134000}
+          {'start_ms': 25000, 'end_ms': 134000},
         ],
         'credits': [
           {'start_ms': 5801777, 'end_ms': 6371111},
-          {'start_ms': 6408000, 'end_ms': null}
+          {'start_ms': 6408000, 'end_ms': null},
         ],
         'preview': [
-          {'start_ms': 1680000, 'end_ms': 1740000}
-        ]
+          {'start_ms': 1680000, 'end_ms': 1740000},
+        ],
       };
 
       final data = MediaSkipData.fromJson(json);
@@ -57,11 +57,7 @@ void main() {
     });
 
     test('Contains method checks position intervals accurately', () {
-      const seg = MediaSkipSegment(
-        type: 'intro',
-        startMs: 15000,
-        endMs: 85000,
-      );
+      const seg = MediaSkipSegment(type: 'intro', startMs: 15000, endMs: 85000);
 
       expect(seg.contains(const Duration(seconds: 10)), isFalse);
       expect(seg.contains(const Duration(seconds: 15)), isTrue);
@@ -79,15 +75,28 @@ void main() {
       );
 
       const totalDur = Duration(milliseconds: 5500000);
-      expect(seg.contains(const Duration(milliseconds: 4999999), totalDur), isFalse);
-      expect(seg.contains(const Duration(milliseconds: 5000000), totalDur), isTrue);
-      expect(seg.contains(const Duration(milliseconds: 5499999), totalDur), isTrue);
+      expect(
+        seg.contains(const Duration(milliseconds: 4999999), totalDur),
+        isFalse,
+      );
+      expect(
+        seg.contains(const Duration(milliseconds: 5000000), totalDur),
+        isTrue,
+      );
+      expect(
+        seg.contains(const Duration(milliseconds: 5499999), totalDur),
+        isTrue,
+      );
     });
 
     test('Unique keys differentiate segments cleanly', () {
       const seg1 = MediaSkipSegment(type: 'intro', startMs: 0, endMs: 20000);
       const seg2 = MediaSkipSegment(type: 'intro', startMs: 0, endMs: 20000);
-      const seg3 = MediaSkipSegment(type: 'credits', startMs: 50000, endMs: null);
+      const seg3 = MediaSkipSegment(
+        type: 'credits',
+        startMs: 50000,
+        endMs: null,
+      );
 
       expect(seg1.uniqueKey, seg2.uniqueKey);
       expect(seg1.uniqueKey, isNot(seg3.uniqueKey));

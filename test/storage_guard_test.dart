@@ -46,10 +46,7 @@ void main() {
     });
 
     test('unknown space never blocks playback', () {
-      expect(
-        StorageGuard.decideCritical(freeBytes: 0, totalBytes: 0),
-        false,
-      );
+      expect(StorageGuard.decideCritical(freeBytes: 0, totalBytes: 0), false);
     });
   });
 }

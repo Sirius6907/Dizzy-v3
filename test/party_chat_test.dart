@@ -15,21 +15,15 @@ void main() {
     test('isExpired hides messages older than 24h', () {
       final now = DateTime.utc(2026, 9, 9, 12);
       expect(
-        PartyChatService.isExpired(
-            DateTime.utc(2026, 9, 9, 11, 59),
-            now: now),
+        PartyChatService.isExpired(DateTime.utc(2026, 9, 9, 11, 59), now: now),
         isFalse,
       );
       expect(
-        PartyChatService.isExpired(
-            DateTime.utc(2026, 9, 8, 12),
-            now: now),
+        PartyChatService.isExpired(DateTime.utc(2026, 9, 8, 12), now: now),
         isTrue,
       );
       expect(
-        PartyChatService.isExpired(
-            DateTime.utc(2026, 9, 8, 11),
-            now: now),
+        PartyChatService.isExpired(DateTime.utc(2026, 9, 8, 11), now: now),
         isTrue,
       );
     });
@@ -58,19 +52,23 @@ void main() {
       final junk = PartyChatMessage.fromJson({'id': '3'});
       expect(junk.body, isEmpty);
       expect(
-        PartyChatService.isExpired(junk.createdAt,
-            now: DateTime.utc(2026, 9, 9)),
+        PartyChatService.isExpired(
+          junk.createdAt,
+          now: DateTime.utc(2026, 9, 9),
+        ),
         isTrue,
       );
     });
 
     test('member host flag + display name', () {
       const host = PartyMember(
-          userId: 'u1', role: 'host', deviceCode: '1111111');
+        userId: 'u1',
+        role: 'host',
+        deviceCode: '1111111',
+      );
       expect(host.isHost, isTrue);
       expect(host.displayName, 'DIZ-1111111');
-      const guest =
-          PartyMember(userId: 'u2', role: 'member', deviceCode: null);
+      const guest = PartyMember(userId: 'u2', role: 'member', deviceCode: null);
       expect(guest.isHost, isFalse);
       expect(guest.displayName, 'Guest');
     });

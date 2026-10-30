@@ -2,6 +2,51 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.3.3+1034] — 2026-10-29 — "Accounts, Support, Sound"
+
+### Accounts that survive a reinstall
+- **First-run @username gate** — the name is asked once, right after the intro, with a live "is this free?" check. A reinstalled device offers the previous name ("Welcome back, @name?") instead of silently creating a second, duplicate account; a name is the server truth, never a local first-launch flag.
+- **Username durability + identity history** — a username is now reserved across devices and reinstalls, with an admin trail of renames instead of silent collisions.
+- **Email OTP links fixed, full account merge, resend cooldown** — a broken verification link no longer strands a half-created account; two accounts can be merged, and the resend button now honours a cooldown.
+- **Missed-call phone verification (stub-first)** — phone verification lands behind the same stub-first pattern the rest of the auth stack uses, with a webhook and an unread badge.
+
+### Admin powers, typed and logged
+- **Per-admin roles** — owner / admin / moderator each see only the tools they can use.
+- **Typed remote config hot-fixes** — remote values are validated before they land, so a bad payload can't brick a screen.
+- **Remote user powers + rich log trail** — every remote action on a user is recorded with who, what and when.
+
+### Support and curation
+- **Support inbox** — user tickets land in the dashboard with a reply path back to the app.
+- **Curated publish** — curated shelves are published from the dashboard (`admin_curated_upsert` now auto-slugs and tolerates partial JSON).
+- **Offline-first AI help** — the in-app help answers from a local FAQ before it ever asks the network.
+
+### Music depth
+- **JioSaavn edge proxy** — catalogue requests go through the edge function instead of the device.
+- **Exact search policy** — the search never hands back a near-miss song.
+- **Curated shelves** — hand-picked rows ship with the app.
+
+### Frontend polish — Prism clay, both themes
+- **Settings, Books, Live TV, Music, Anime, Manga, Audiobooks, Downloads, 18+ and the Arabic-anime screens** rebuilt on the Prism token set: light clay by default, dark equally crafted, no leftover dark islands.
+- **Contrast fixed where it actually failed** — accent text, gold scores and status greens now use AA-safe tokens instead of vivid colours at 12–13px.
+- **Layout fixed** — scrolling lists clear the floating dock via one shared clearance rule, long titles ellipsize instead of overflowing, anime details now sit on an opaque sheet over a clipped hero instead of scrolling text across artwork. The profile page also gained the back control it was missing.
+- **Touch and screen readers** — icon-only controls carry tooltips and 48dp targets, subtitles/dub toggles announce their state, and nothing renders below 11px.
+
+## [1.3.2+1033] — 2026-10-11 — "It Plays the Right Thing"
+
+### Correct playback, every time
+- **Exact-title gates** — a wrong match can no longer start a movie; closing a stream also kills the orphaned resolve job.
+- **Resolve-edge bypass closed** — the cloud gate can't be skipped into serving the wrong video.
+- **Anime timeouts** — megaplay and the anidb HTTP paths now time out instead of hanging the sheet.
+
+### Media and caches
+- **Desktop image cache** — sqflite FFI wired up so covers persist; music covers never render blank.
+- **P2P defaults** — torrent source is ON out of the box, routed through the builtin addon so the Settings switch and the addon entry can't desync, with a Knaben fallback.
+
+### New surfaces
+- **18+ Heaven** — gated adult section behind a triple lock and an admin kill-switch.
+- **India-first music** — desi-first home rows, artists, albums, playlists, plus browse/radio tiles.
+- **Player refactor** — watch_screen (2716 → 400 lines) and player_screen (3262 → 610 lines) split into themed part files, no behaviour change.
+
 ## [1.3.1+1032] — 2026-09-30 — "Update Anything, From Anything"
 
 ### Fix — in-place updates for every install, no uninstall ever

@@ -19,21 +19,27 @@ class KissKhScraper extends StreamScraper {
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-  static const _headers = {
-    'User-Agent': _ua,
-    'Accept': 'application/json',
-  };
+  static const _headers = {'User-Agent': _ua, 'Accept': 'application/json'};
 
   String _cleanTitle(String t) {
-    return t.toLowerCase().replaceAll(RegExp(r'\(\d{4}\)'), '').replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return t
+        .toLowerCase()
+        .replaceAll(RegExp(r'\(\d{4}\)'), '')
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
-  Future<String?> _encKey(http.Client client, dynamic episodeId, String type) async {
+  Future<String?> _encKey(
+    http.Client client,
+    dynamic episodeId,
+    String type,
+  ) async {
     try {
-      final res = await client.get(
-        Uri.parse('$_encApi/enc-kisskh?text=$episodeId&type=$type'),
-        headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 6));
+      final res = await client
+          .get(
+            Uri.parse('$_encApi/enc-kisskh?text=$episodeId&type=$type'),
+            headers: {'User-Agent': _ua, 'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -59,10 +65,14 @@ class KissKhScraper extends StreamScraper {
       try {
         final targetClean = _cleanTitle(title);
 
-        final searchRes = await client.get(
-          Uri.parse('$_base/api/DramaList/Search?q=${Uri.encodeComponent(title)}'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 6));
+        final searchRes = await client
+            .get(
+              Uri.parse(
+                '$_base/api/DramaList/Search?q=${Uri.encodeComponent(title)}',
+              ),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 6));
 
         if (searchRes.statusCode != 200) return;
         final results = jsonDecode(searchRes.body);
@@ -79,7 +89,9 @@ class KissKhScraper extends StreamScraper {
           var score = 0;
           if (parts.any((p) => p == targetClean)) {
             score += 5;
-          } else if (parts.any((p) => p.contains(targetClean) || targetClean.contains(p))) {
+          } else if (parts.any(
+            (p) => p.contains(targetClean) || targetClean.contains(p),
+          )) {
             score += 3;
           }
 
@@ -92,10 +104,12 @@ class KissKhScraper extends StreamScraper {
         if (drama == null || drama['id'] == null) return;
         final dramaId = drama['id'];
 
-        final detailRes = await client.get(
-          Uri.parse('$_base/api/DramaList/Drama/$dramaId'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final detailRes = await client
+            .get(
+              Uri.parse('$_base/api/DramaList/Drama/$dramaId'),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (detailRes.statusCode != 200) return;
         final detail = jsonDecode(detailRes.body);
@@ -115,10 +129,14 @@ class KissKhScraper extends StreamScraper {
         final vidKey = await _encKey(client, episodeId, 'vid');
         if (vidKey == null || vidKey.isEmpty) return;
 
-        final videoRes = await client.get(
-          Uri.parse('$_base/api/DramaList/Episode/$episodeId.png?err=false&ts=&time=&kkey=$vidKey'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 10));
+        final videoRes = await client
+            .get(
+              Uri.parse(
+                '$_base/api/DramaList/Episode/$episodeId.png?err=false&ts=&time=&kkey=$vidKey',
+              ),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (videoRes.statusCode != 200) return;
         final videoData = jsonDecode(videoRes.body);
@@ -128,10 +146,7 @@ class KissKhScraper extends StreamScraper {
         if (streamUrl.isEmpty) return;
 
         final isHls = streamUrl.contains('.m3u8');
-        final reqHeaders = {
-          'User-Agent': _ua,
-          'Referer': '$_base/',
-        };
+        final reqHeaders = {'User-Agent': _ua, 'Referer': '$_base/'};
 
         yield StreamSource(
           name: 'KissKH',
@@ -142,9 +157,7 @@ class KissKhScraper extends StreamScraper {
           headers: reqHeaders,
           behaviorHints: {
             'notWebReady': false,
-            'proxyHeaders': {
-              'request': reqHeaders,
-            },
+            'proxyHeaders': {'request': reqHeaders},
           },
         );
       } finally {

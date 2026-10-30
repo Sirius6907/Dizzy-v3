@@ -107,7 +107,12 @@ class PartyPlaybackSession {
     final s = PartySession.instance;
     if (!s.inParty || !s.isHost) return;
     if (!previewOnly) {
-      s.switchMedia(mediaRef: ref, mediaTitle: title, season: season, episode: episode);
+      s.switchMedia(
+        mediaRef: ref,
+        mediaTitle: title,
+        season: season,
+        episode: episode,
+      );
       // ignore: unawaited_futures
       WatchPartyService.updateCurrentMedia(
         roomId: s.room!.roomId,
@@ -119,16 +124,18 @@ class PartyPlaybackSession {
       await WatchPartyService.sendControl(
         type: 'media_switch',
         positionMs: 0,
-        text: jsonEncode(WatchSyncMessage(
-          mediaRef: ref,
-          mediaTitle: title,
-          season: season,
-          episode: episode,
-          positionMs: 0,
-          playing: true,
-          hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
-          prefetchReady: prefetchReady,
-        ).toJson()),
+        text: jsonEncode(
+          WatchSyncMessage(
+            mediaRef: ref,
+            mediaTitle: title,
+            season: season,
+            episode: episode,
+            positionMs: 0,
+            playing: true,
+            hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+            prefetchReady: prefetchReady,
+          ).toJson(),
+        ),
       );
     } catch (_) {
       _scheduleReconnect();
@@ -142,14 +149,16 @@ class PartyPlaybackSession {
       await WatchPartyService.sendControl(
         type: 'host_state',
         positionMs: getPositionMs(),
-        text: jsonEncode(WatchSyncMessage(
-          mediaRef: s.mediaRef!,
-          positionMs: getPositionMs(),
-          playing: isPlaying(),
-          speed: getSpeed(),
-          audioTrack: getAudioLang?.call(),
-          hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
-        ).toJson()),
+        text: jsonEncode(
+          WatchSyncMessage(
+            mediaRef: s.mediaRef!,
+            positionMs: getPositionMs(),
+            playing: isPlaying(),
+            speed: getSpeed(),
+            audioTrack: getAudioLang?.call(),
+            hostSentAtMs: DateTime.now().millisecondsSinceEpoch,
+          ).toJson(),
+        ),
       );
     } catch (_) {
       _scheduleReconnect();
@@ -164,11 +173,11 @@ class PartyPlaybackSession {
       WatchSyncMessage msg;
       try {
         msg = WatchSyncMessage.fromJson(
-            Map<String, dynamic>.from(jsonDecode(event.text!)));
+          Map<String, dynamic>.from(jsonDecode(event.text!)),
+        );
       } catch (_) {
         // P15: malformed realtime payload — silent-but-logged (parse class).
-        unawaited(AppErrorLog.log(
-            code: 'sync_msg_parse', screen: 'party'));
+        unawaited(AppErrorLog.log(code: 'sync_msg_parse', screen: 'party'));
         return;
       }
       if (!msg.isUsable) return;
@@ -209,7 +218,8 @@ class PartyPlaybackSession {
     } else if (event.type == 'media_switch' && event.text != null) {
       try {
         final msg = WatchSyncMessage.fromJson(
-            Map<String, dynamic>.from(jsonDecode(event.text!)));
+          Map<String, dynamic>.from(jsonDecode(event.text!)),
+        );
         // P10: ready-hint is GuestFollowService's (prewarm only) — the player
         // stays quiet until the real switch lands. Never set guest media early:
         // that would make the follow-service skip the real open as "same".

@@ -1,8 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:liquid_glass_easy/liquid_glass_easy.dart';
-import '../../services/theme/glass_settings.dart';
 
 /// Design tokens and glass styling for the modern video player UI.
 class PlayerTheme {
@@ -47,11 +44,7 @@ class PlayerTheme {
   ];
 
   static const List<BoxShadow> buttonShadow = [
-    BoxShadow(
-      color: Color(0x4D000000),
-      offset: Offset(0, 4),
-      blurRadius: 16,
-    ),
+    BoxShadow(color: Color(0x4D000000), offset: Offset(0, 4), blurRadius: 16),
   ];
 }
 
@@ -83,25 +76,14 @@ class PlayerGlassCard extends StatelessWidget {
     return Container(
       width: width,
       height: height,
+      padding: padding,
       decoration: BoxDecoration(
+        color: backgroundColor ?? PlayerTheme.elevated,
         borderRadius: BorderRadius.circular(borderRadius),
+        border: border ?? Border.all(color: PlayerTheme.edge),
         boxShadow: shadows ?? PlayerTheme.menuShadow,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              color: backgroundColor ?? PlayerTheme.elevated,
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: border ?? Border.all(color: PlayerTheme.edge, width: 1),
-            ),
-            child: child,
-          ),
-        ),
-      ),
+      child: child,
     );
   }
 }
@@ -144,126 +126,110 @@ class _PlayerIconButtonState extends State<PlayerIconButton> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: GlassSettings.enabled,
-      builder: (context, glassEnabled, _) {
-        return ValueListenableBuilder<int>(
-          valueListenable: GlassSettings.styleRevision,
-          builder: (context, _, __) {
-            final hoverScaleVal = glassEnabled ? GlassSettings.hoverScale.value : 1.0;
-            final effectiveScale = _hovered ? hoverScaleVal : 1.0;
+    final enabled = widget.onPressed != null;
 
-            final bg = widget.active
-                ? (widget.activeColor ?? Colors.white.withValues(alpha: 0.22))
-                : (_hovered
-                    ? (widget.backgroundColor ?? Colors.white.withValues(alpha: 0.12))
-                    : (widget.backgroundColor ?? Colors.transparent));
+    final Color iconColor = !enabled
+        ? PlayerTheme.inkDisabled
+        : widget.active
+        ? (widget.activeColor ?? PlayerTheme.accent)
+        : (_hovered ? PlayerTheme.ink : PlayerTheme.inkMuted);
 
-            final iconContent = Stack(
-              alignment: Alignment.center,
-              children: [
-                IconTheme(
-                  data: IconThemeData(
-                    color: widget.active ? Colors.white : (_hovered ? Colors.white : PlayerTheme.inkMuted),
-                    size: widget.iconSize,
-                  ),
-                  child: widget.icon,
-                ),
-                if (widget.showActiveBadge)
-                  Positioned(
-                    top: widget.size * 0.2,
-                    right: widget.size * 0.2,
-                    child: Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: widget.badgeColor ?? PlayerTheme.accent,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (widget.badgeColor ?? PlayerTheme.accent).withValues(alpha: 0.8),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+    final Color fill =
+        widget.backgroundColor ??
+        (widget.active
+            ? PlayerTheme.accentSoft
+            : (_hovered ? PlayerTheme.surfaceHover : PlayerTheme.raised));
+
+    final Color borderColor = widget.active
+        ? PlayerTheme.accent.withValues(alpha: 0.55)
+        : PlayerTheme.edgeSoft;
+
+    final iconContent = Stack(
+      alignment: Alignment.center,
+      children: [
+        IconTheme(
+          data: IconThemeData(color: iconColor, size: widget.iconSize),
+          child: widget.icon,
+        ),
+        if (widget.showActiveBadge)
+          Positioned(
+            top: widget.size * 0.18,
+            right: widget.size * 0.18,
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: widget.badgeColor ?? PlayerTheme.accent,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (widget.badgeColor ?? PlayerTheme.accent).withValues(
+                      alpha: 0.8,
                     ),
+                    blurRadius: 4,
+                    spreadRadius: 1,
                   ),
-              ],
-            );
-
-            Widget buttonBody;
-            if (glassEnabled) {
-              final buttonStyle = GlassSettings.createButtonGlassStyle(
-                cornerRadius: widget.borderRadius.clamp(0, widget.size / 2),
-                customColor: widget.active
-                    ? (widget.activeColor?.withValues(alpha: 0.35) ?? const Color(0x557C5CFF))
-                    : (_hovered ? const Color(0x38FFFFFF) : const Color(0x18FFFFFF)),
-              );
-
-              buttonBody = RepaintBoundary(
-                child: LiquidGlassLens(
-                  style: buttonStyle,
-                  useImpellerBackdrop: true,
-                  child: SizedBox(
-                    width: widget.size,
-                    height: widget.size,
-                    child: iconContent,
-                  ),
-                ),
-              );
-            } else {
-              buttonBody = AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                ),
-                child: iconContent,
-              );
-            }
-
-            Widget button = MouseRegion(
-              cursor: widget.onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-              onEnter: (_) => setState(() => _hovered = true),
-              onExit: (_) => setState(() => _hovered = false),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onPressed,
-                child: AnimatedScale(
-                  scale: effectiveScale,
-                  duration: const Duration(milliseconds: 140),
-                  curve: Curves.easeOutCubic,
-                  child: buttonBody,
-                ),
+                ],
               ),
-            );
-
-            if (widget.tooltip != null) {
-              return Tooltip(
-                message: widget.tooltip!,
-                waitDuration: const Duration(milliseconds: 400),
-                decoration: BoxDecoration(
-                  color: const Color(0xE6080C12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: PlayerTheme.edgeSoft),
-                ),
-                textStyle: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                child: button,
-              );
-            }
-
-            return button;
-          },
-        );
-      },
+            ),
+          ),
+      ],
     );
+
+    final buttonBody = AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      width: widget.size,
+      height: widget.size,
+      decoration: BoxDecoration(
+        color: fill,
+        shape: widget.borderRadius >= widget.size / 2
+            ? BoxShape.circle
+            : BoxShape.rectangle,
+        borderRadius: widget.borderRadius >= widget.size / 2
+            ? null
+            : BorderRadius.circular(widget.borderRadius),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: PlayerTheme.buttonShadow,
+      ),
+      child: iconContent,
+    );
+
+    Widget button = MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onPressed,
+        child: AnimatedScale(
+          scale: _hovered && enabled ? 1.06 : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: buttonBody,
+        ),
+      ),
+    );
+
+    if (widget.tooltip != null) {
+      return Tooltip(
+        message: widget.tooltip!,
+        waitDuration: const Duration(milliseconds: 400),
+        decoration: BoxDecoration(
+          color: const Color(0xE6080C12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: PlayerTheme.edgeSoft),
+        ),
+        textStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        child: button,
+      );
+    }
+
+    return button;
   }
 }
 
@@ -291,15 +257,18 @@ class PlayerToggleChip extends StatelessWidget {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 150),
         opacity: disabled ? 0.35 : 1.0,
-        child: Container(
-          height: 28,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
           decoration: BoxDecoration(
-            color: active ? PlayerTheme.raised : Colors.transparent,
+            color: active ? PlayerTheme.accentSoft : PlayerTheme.raised,
             borderRadius: BorderRadius.circular(9999),
             border: Border.all(
-              color: active ? PlayerTheme.edge : Colors.transparent,
-              width: 1,
+              color: active
+                  ? PlayerTheme.accent.withValues(alpha: 0.55)
+                  : PlayerTheme.edgeSoft,
             ),
           ),
           child: Row(
@@ -317,10 +286,12 @@ class PlayerToggleChip extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   count!,
-                  style: const TextStyle(
-                    color: PlayerTheme.inkSubtle,
+                  style: TextStyle(
+                    color: active
+                        ? PlayerTheme.ink.withValues(alpha: 0.75)
+                        : PlayerTheme.inkSubtle,
                     fontSize: 11,
-                    fontFeatures: [FontFeature.tabularFigures()],
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],

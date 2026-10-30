@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../services/cloud/remote_config_service.dart';
 import '../../services/scraper/scraper_quarantine_service.dart';
 import '../../services/scraper/stream_scraper.dart';
-import '../../widgets/guide/guide_card.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../design/dizzy_tactile.dart';
+import '../../design/prism_tokens.dart';
 
 /// v1.2.0-P2 (T2.1): Sources health dashboard.
 ///
@@ -25,10 +26,6 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
     super.initState();
     _reload();
     RemoteConfigService.revision.addListener(_reload);
-    // v1.2.0-T2.6: first-time Sources guide (skipable, never nags).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      GuideCard.maybeShow(context, 'sources_health', AppGuides.sourcesHealth);
-    });
   }
 
   @override
@@ -39,10 +36,13 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
 
   void _reload() {
     final list = List<StreamScraper>.of(ScraperManager.instance.scrapers);
-    list.sort((a, b) => ScraperQuarantineService.displayNameFor(a.name)
-        .toLowerCase()
-        .compareTo(
-            ScraperQuarantineService.displayNameFor(b.name).toLowerCase()));
+    list.sort(
+      (a, b) => ScraperQuarantineService.displayNameFor(a.name)
+          .toLowerCase()
+          .compareTo(
+            ScraperQuarantineService.displayNameFor(b.name).toLowerCase(),
+          ),
+    );
     if (mounted) setState(() => _sources = list);
   }
 
@@ -53,7 +53,8 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-            'Trying ${ScraperQuarantineService.displayNameFor(name)} again.'),
+          'Trying ${ScraperQuarantineService.displayNameFor(name)} again.',
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -73,6 +74,7 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
     var working = 0;
     var resting = 0;
     var off = 0;
@@ -87,16 +89,19 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
     }
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Sources',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+        title: const Text(
+          'Sources',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -119,6 +124,9 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
   }
 
   Widget _emptyState() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -126,22 +134,22 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
         children: [
           const Text('📡', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 12),
-          const Text('Sources are loading...',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800)),
+          Text(
+            'Sources are loading...',
+            style: TextStyle(
+              color: ink,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Open any movie first. Then come back here.',
-            style: TextStyle(color: Colors.white54, fontSize: 13),
+            style: TextStyle(color: inkSoft, fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _reload,
-            child: const Text('Check again'),
-          ),
+          FilledButton(onPressed: _reload, child: const Text('Check again')),
         ],
       ),
     );
@@ -149,38 +157,48 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
 
   Widget _introCard(int working, int resting, int off) {
     final summary = _summaryText(working, resting, off);
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [
-          const Color(0xFF10B981).withValues(alpha: 0.22),
-          DizzyGlow.violet.withValues(alpha: 0.10),
-        ]),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF10B981).withValues(alpha: 0.22),
+            DizzyGlow.violet.withValues(alpha: 0.10),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: const Color(0xFF10B981).withValues(alpha: 0.30)),
+          color: const Color(0xFF10B981).withValues(alpha: 0.30),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('📡 Where do videos come from?',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900)),
+          Text(
+            '📡 Where do videos come from?',
+            style: TextStyle(
+              color: ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Dizzy finds videos from many Sources. Green means working. Orange means resting. Grey means off for now.',
-            style: TextStyle(color: Colors.white70, fontSize: 13.5),
+            style: TextStyle(color: inkSoft, fontSize: 13.5),
           ),
           if (summary.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               summary,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: ink,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ],
@@ -201,35 +219,43 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
     final brand = ScraperQuarantineService.displayNameFor(s.name);
     final killed = RemoteConfigService.isKilled(s.name);
     final resting = !killed && ScraperQuarantineService.isQuarantined(s.name);
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
 
     final Color dot;
     final String label;
     final String sub;
     Color? labelColor;
-      if (killed) {
-        dot = DizzyGlow.red;
-        label = 'Off';
-        sub = 'Off for now. It will return soon.';
-        labelColor = DizzyGlow.red;
-      } else if (resting) {
-        dot = DizzyGlow.beam;
-        label = 'Resting';
-        sub = 'Taking a short break. Tap Retry to try now.';
-        labelColor = DizzyGlow.beam;
-      } else {
-        dot = DizzyGlow.volt;
-        label = 'Working';
-        sub = 'Ready to find videos.';
-        labelColor = DizzyGlow.volt;
-      }
+    if (killed) {
+      dot = DizzyGlow.red;
+      label = 'Off';
+      sub = 'Off for now. It will return soon.';
+      labelColor = isLight ? PrismAccent.text(isLight) : DizzyGlow.red;
+    } else if (resting) {
+      dot = DizzyGlow.beam;
+      label = 'Resting';
+      sub = 'Taking a short break. Tap Retry to try now.';
+      labelColor = isLight ? PrismLight.inkSoft : DizzyGlow.beam;
+    } else {
+      dot = DizzyGlow.volt;
+      label = 'Working';
+      sub = 'Ready to find videos.';
+      labelColor = isLight ? PrismAccent.successTextLight : DizzyGlow.volt;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         children: [
@@ -246,23 +272,27 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(brand,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800)),
-                    ),
-                    Text(label,
+                      child: Text(
+                        brand,
                         style: TextStyle(
-                            color: labelColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800)),
+                          color: ink,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: labelColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(sub,
-                    style: const TextStyle(
-                        color: Colors.white54, fontSize: 12)),
+                Text(sub, style: TextStyle(color: inkSoft, fontSize: 12)),
               ],
             ),
           ),
@@ -271,8 +301,10 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
             FilledButton.tonal(
               style: FilledButton.styleFrom(
                 minimumSize: const Size(72, 36),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 textStyle: const TextStyle(fontWeight: FontWeight.w800),
               ),
               onPressed: () => _retry(s.name),
@@ -285,6 +317,7 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
   }
 
   Widget _restoreAllButton() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -295,10 +328,10 @@ class _ScraperHealthPageState extends State<ScraperHealthPage> {
       ),
       child: TextButton(
         onPressed: _restoreAll,
-        child: const Text(
+        child: Text(
           'Restore All',
           style: TextStyle(
-            color: DizzyGlow.volt,
+            color: isLight ? PrismAccent.successTextLight : DizzyGlow.volt,
             fontWeight: FontWeight.w800,
             fontSize: 13,
           ),

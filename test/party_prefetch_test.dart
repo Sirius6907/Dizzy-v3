@@ -27,7 +27,8 @@ void main() {
         prefetchReady: true,
       );
       final back = WatchSyncMessage.fromJson(
-          Map<String, dynamic>.from(m.toJson()));
+        Map<String, dynamic>.from(m.toJson()),
+      );
       expect(back.prefetchReady, isTrue);
       expect(back.isUsable, isTrue);
 
@@ -47,10 +48,14 @@ void main() {
 
   group('P10: prefetch carries renditions', () {
     test('HLS master + fake fetch → ladder attached best-first', () async {
-      final src =
-          StreamSource(url: 'https://cdn/x/master.m3u8', addonName: 'a');
-      final out = await NextEpisodeEngine.withRenditions(src,
-          fetchBody: (_, __) async => _master);
+      final src = StreamSource(
+        url: 'https://cdn/x/master.m3u8',
+        addonName: 'a',
+      );
+      final out = await NextEpisodeEngine.withRenditions(
+        src,
+        fetchBody: (_, __) async => _master,
+      );
       expect(out.renditions.map((e) => e.label), ['1080p', '720p']);
     });
 
@@ -58,14 +63,20 @@ void main() {
       final mp4 = StreamSource(url: 'https://c/f.mp4', addonName: 'a');
       expect(await NextEpisodeEngine.withRenditions(mp4), same(mp4));
 
-      final hls =
-          StreamSource(url: 'https://cdn/x/master.m3u8', addonName: 'a');
-      final failed = await NextEpisodeEngine.withRenditions(hls,
-          fetchBody: (_, __) async => throw Exception('offline'));
+      final hls = StreamSource(
+        url: 'https://cdn/x/master.m3u8',
+        addonName: 'a',
+      );
+      final failed = await NextEpisodeEngine.withRenditions(
+        hls,
+        fetchBody: (_, __) async => throw Exception('offline'),
+      );
       expect(failed.renditions, isEmpty);
 
-      final garbage = await NextEpisodeEngine.withRenditions(hls,
-          fetchBody: (_, __) async => 'not a playlist');
+      final garbage = await NextEpisodeEngine.withRenditions(
+        hls,
+        fetchBody: (_, __) async => 'not a playlist',
+      );
       expect(garbage.renditions, isEmpty);
 
       final rich = StreamSource(
@@ -74,11 +85,13 @@ void main() {
         renditions: const [Rendition(label: '480p', url: 'u')],
       );
       var fetched = false;
-      final kept = await NextEpisodeEngine.withRenditions(rich,
-          fetchBody: (_, __) async {
-        fetched = true;
-        return _master;
-      });
+      final kept = await NextEpisodeEngine.withRenditions(
+        rich,
+        fetchBody: (_, __) async {
+          fetched = true;
+          return _master;
+        },
+      );
       expect(kept, same(rich)); // no refetch when ladder exists
       expect(fetched, isFalse);
     });
@@ -95,8 +108,11 @@ void main() {
       for (var i = 2; i <= 10; i++) {
         GuestAutoOpen.cacheDetail('tmdb:movie:$i', _detail('tt$i'));
       }
-      expect(GuestAutoOpen.cachedDetail('tmdb:movie:1'), isNull,
-          reason: 'oldest evicted past bound');
+      expect(
+        GuestAutoOpen.cachedDetail('tmdb:movie:1'),
+        isNull,
+        reason: 'oldest evicted past bound',
+      );
       expect(GuestAutoOpen.cachedDetail('tmdb:movie:10')?.name, 'N tt10');
 
       GuestAutoOpen.clearCache();

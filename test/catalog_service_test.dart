@@ -27,9 +27,13 @@ void main() {
     test('offline + no snapshot → null (no spinner of death)', () async {
       // Test env: no Supabase URL, no snapshot seeded → null.
       expect(
-          await CatalogService.fetchFeed(
-              feed: 'trending-test-feed-xyz', type: 'all', page: 999),
-          isNull);
+        await CatalogService.fetchFeed(
+          feed: 'trending-test-feed-xyz',
+          type: 'all',
+          page: 999,
+        ),
+        isNull,
+      );
     });
   });
 }

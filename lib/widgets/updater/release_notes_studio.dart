@@ -19,8 +19,7 @@ class ReleaseNotesStudio extends StatefulWidget {
   /// Returns true when the sheet was shown.
   static Future<bool> checkAndShow(BuildContext context) async {
     try {
-      final info =
-          await AppUpdaterService().checkForUpdates();
+      final info = await AppUpdaterService().checkForUpdates();
       if (info == null || !context.mounted) return false;
       await showModalBottomSheet<void>(
         context: context,
@@ -66,16 +65,14 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await AppUpdaterService()
-          .openDownloadPage(widget.updateInfo.downloadUrl);
+      await AppUpdaterService().openDownloadPage(widget.updateInfo.downloadUrl);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _later() async {
-    await AppUpdaterService.dismissVersion(
-        widget.updateInfo.latestVersion);
+    await AppUpdaterService.dismissVersion(widget.updateInfo.latestVersion);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -91,10 +88,8 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
       ),
       decoration: BoxDecoration(
         color: DizzyVoid.surface1,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       padding: const EdgeInsets.fromLTRB(22, 14, 22, 30),
       child: SafeArea(
@@ -121,8 +116,7 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: palette.primaryColor
-                          .withValues(alpha: 0.15),
+                      color: palette.primaryColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
@@ -134,8 +128,7 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "What's New in v${info.latestVersion}",
@@ -148,7 +141,9 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                         Text(
                           'v${info.currentVersion} → v${info.latestVersion}',
                           style: const TextStyle(
-                              color: Colors.white54, fontSize: 12.5),
+                            color: Colors.white54,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ],
                     ),
@@ -160,8 +155,7 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.check_circle_rounded,
@@ -188,11 +182,9 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        minimumSize:
-                            const Size.fromHeight(48),
+                        minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       onPressed: _later,
@@ -204,14 +196,11 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                     flex: 2,
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                            palette.primaryColor,
+                        backgroundColor: palette.primaryColor,
                         foregroundColor: Colors.black,
-                        minimumSize:
-                            const Size.fromHeight(48),
+                        minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       onPressed: _busy ? null : _updateNow,
@@ -219,18 +208,15 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child:
-                                  CircularProgressIndicator(
+                              child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
                                 color: Colors.black,
                               ),
                             )
-                          : const Icon(
-                              Icons.download_rounded),
+                          : const Icon(Icons.download_rounded),
                       label: Text(
                         _busy ? 'Opening…' : 'Update now',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -240,8 +226,7 @@ class _ReleaseNotesStudioState extends State<ReleaseNotesStudio> {
               const Center(
                 child: Text(
                   'Free update. Your list and downloads stay safe.',
-                  style: TextStyle(
-                      color: Colors.white38, fontSize: 11.5),
+                  style: TextStyle(color: Colors.white38, fontSize: 11.5),
                 ),
               ),
             ],

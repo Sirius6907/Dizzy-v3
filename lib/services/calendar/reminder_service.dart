@@ -37,24 +37,23 @@ class FollowedShow {
   static const int defaultLeadMinutes = 30;
 
   ReminderRequest toRequest() => ReminderRequest(
-        showTitle: showTitle,
-        season: season,
-        episode: episode,
-        leadMinutes: leadMinutes,
-      );
+    showTitle: showTitle,
+    season: season,
+    episode: episode,
+    leadMinutes: leadMinutes,
+  );
 
   /// Stable key, so following the same episode twice is one follow.
-  String get key =>
-      ReminderSchedule.slotId(showTitle, season, episode);
+  String get key => ReminderSchedule.slotId(showTitle, season, episode);
 
   bool get isValid => showTitle.trim().isNotEmpty && season > 0 && episode > 0;
 
   Map<String, dynamic> toJson() => {
-        'showTitle': showTitle,
-        'season': season,
-        'episode': episode,
-        'leadMinutes': leadMinutes,
-      };
+    'showTitle': showTitle,
+    'season': season,
+    'episode': episode,
+    'leadMinutes': leadMinutes,
+  };
 
   static FollowedShow? fromJson(Map<dynamic, dynamic> json) {
     final title = json['showTitle']?.toString() ?? '';
@@ -62,7 +61,9 @@ class FollowedShow {
     final episode = json['episode'];
     final lead = json['leadMinutes'];
     final s = season is int ? season : int.tryParse(season?.toString() ?? '');
-    final e = episode is int ? episode : int.tryParse(episode?.toString() ?? '');
+    final e = episode is int
+        ? episode
+        : int.tryParse(episode?.toString() ?? '');
     if (title.trim().isEmpty || s == null || e == null) return null;
     return FollowedShow(
       showTitle: title,
@@ -71,7 +72,7 @@ class FollowedShow {
       leadMinutes: lead is int
           ? lead
           : (int.tryParse(lead?.toString() ?? '') ??
-              FollowedShow.defaultLeadMinutes),
+                FollowedShow.defaultLeadMinutes),
     );
   }
 }
@@ -196,12 +197,7 @@ class ReminderService {
   List<ReminderSlot> dueIn({
     required DateTime now,
     Duration window = const Duration(hours: 1),
-  }) =>
-      ReminderSchedule.due(
-        schedule.value,
-        from: now,
-        to: now.add(window),
-      );
+  }) => ReminderSchedule.due(schedule.value, from: now, to: now.add(window));
 
   /// The next alert, or `null`.
   ReminderSlot? get next => ReminderSchedule.next(schedule.value);

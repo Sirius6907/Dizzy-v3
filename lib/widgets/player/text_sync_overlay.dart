@@ -63,7 +63,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
     _currentPositionSec = widget.player.state.position.inMilliseconds / 1000.0;
     _isPlaying = widget.player.state.playing;
 
-    _positionUpdateTimer = Timer.periodic(const Duration(milliseconds: 250), (_) {
+    _positionUpdateTimer = Timer.periodic(const Duration(milliseconds: 250), (
+      _,
+    ) {
       if (!mounted) return;
       final posSec = widget.player.state.position.inMilliseconds / 1000.0;
       final isPl = widget.player.state.playing;
@@ -130,7 +132,11 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
   }
 
   double get _currentDelta {
-    return SubtitleSyncHelper.computeDelta(_currentPositionSec, _points, _nudge);
+    return SubtitleSyncHelper.computeDelta(
+      _currentPositionSec,
+      _points,
+      _nudge,
+    );
   }
 
   double get _effectiveSubtitleTime {
@@ -138,11 +144,17 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
   }
 
   int? get _activeCueIndex {
-    return SubtitleParser.findActiveCueIndex(widget.initialCues, _effectiveSubtitleTime);
+    return SubtitleParser.findActiveCueIndex(
+      widget.initialCues,
+      _effectiveSubtitleTime,
+    );
   }
 
   int get _closestCueIndex {
-    return SubtitleParser.findClosestCueIndex(widget.initialCues, _effectiveSubtitleTime);
+    return SubtitleParser.findClosestCueIndex(
+      widget.initialCues,
+      _effectiveSubtitleTime,
+    );
   }
 
   void _scrollToIndex(int targetIndex, {bool immediate = false}) {
@@ -151,23 +163,26 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
 
     final viewportHeight = _scrollController.position.viewportDimension;
     final itemOffset = targetIndex * _kEstimatedItemHeight;
-    final targetOffset = (itemOffset - (viewportHeight / 2) + (_kEstimatedItemHeight / 2)).clamp(
-      0.0,
-      _scrollController.position.maxScrollExtent,
-    );
+    final targetOffset =
+        (itemOffset - (viewportHeight / 2) + (_kEstimatedItemHeight / 2)).clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
 
     _isProgrammaticScroll = true;
     if (immediate) {
       _scrollController.jumpTo(targetOffset);
       _isProgrammaticScroll = false;
     } else {
-      _scrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOutCubic,
-      ).then((_) {
-        _isProgrammaticScroll = false;
-      });
+      _scrollController
+          .animateTo(
+            targetOffset,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+          )
+          .then((_) {
+            _isProgrammaticScroll = false;
+          });
     }
   }
 
@@ -177,7 +192,11 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
   }
 
   void _scrollToMatch(int matchIdx) {
-    if (_matchedIndices.isEmpty || matchIdx < 0 || matchIdx >= _matchedIndices.length) return;
+    if (_matchedIndices.isEmpty ||
+        matchIdx < 0 ||
+        matchIdx >= _matchedIndices.length) {
+      return;
+    }
     final targetCueIdx = _matchedIndices[matchIdx];
     _scrollToIndex(targetCueIdx);
   }
@@ -193,7 +212,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
   void _goToPrevMatch() {
     if (_matchedIndices.isEmpty) return;
     setState(() {
-      _currentMatchIndex = (_currentMatchIndex - 1 + _matchedIndices.length) % _matchedIndices.length;
+      _currentMatchIndex =
+          (_currentMatchIndex - 1 + _matchedIndices.length) %
+          _matchedIndices.length;
     });
     _scrollToMatch(_currentMatchIndex);
   }
@@ -211,11 +232,24 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
       if (_sectionMode && _rangeStart != null && _rangeEnd != null) {
         final lo = _rangeStart! < _rangeEnd! ? _rangeStart! : _rangeEnd!;
         final hi = _rangeStart! > _rangeEnd! ? _rangeStart! : _rangeEnd!;
-        final curDelta = SubtitleSyncHelper.computeDelta(cue.start, _points, _nudge);
+        final curDelta = SubtitleSyncHelper.computeDelta(
+          cue.start,
+          _points,
+          _nudge,
+        );
         final offset = (playbackPos - cue.start - curDelta);
 
-        _segments = _segments.where((s) => !(s.startIdx == lo && s.endIdx == hi)).toList()
-          ..add(SyncSegment(startIdx: lo, endIdx: hi, offsetSec: (offset * 1000).round() / 1000.0));
+        _segments =
+            _segments
+                .where((s) => !(s.startIdx == lo && s.endIdx == hi))
+                .toList()
+              ..add(
+                SyncSegment(
+                  startIdx: lo,
+                  endIdx: hi,
+                  offsetSec: (offset * 1000).round() / 1000.0,
+                ),
+              );
 
         _rangeStart = null;
         _rangeEnd = null;
@@ -241,7 +275,10 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
   void _handleSeekTo(int cueIndex) {
     final cue = widget.initialCues[cueIndex];
     final targetSec = cue.start + _currentDelta;
-    final targetMs = (targetSec * 1000).round().clamp(0, widget.player.state.duration.inMilliseconds);
+    final targetMs = (targetSec * 1000).round().clamp(
+      0,
+      widget.player.state.duration.inMilliseconds,
+    );
     widget.player.seek(Duration(milliseconds: targetMs));
   }
 
@@ -286,9 +323,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
       widget.onClose();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving sync: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving sync: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -311,13 +348,16 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
 
     String hintText;
     if (_sectionMode) {
-      hintText = 'Tap first & last line of section, then tap line playing now and "Sync from here".';
+      hintText =
+          'Tap first & last line of section, then tap line playing now and "Sync from here".';
     } else if (_points.isEmpty) {
       hintText = 'Tap the line you hear right now, then tap "Sync from here".';
     } else if (_points.length == 1) {
-      hintText = 'Point 1 set. If subtitles drift later on, tap "Sync from here" at a later line.';
+      hintText =
+          'Point 1 set. If subtitles drift later on, tap "Sync from here" at a later line.';
     } else {
-      hintText = 'Drift correction active (2 anchor points). Fine-tune with buttons.';
+      hintText =
+          'Drift correction active (2 anchor points). Fine-tune with buttons.';
     }
 
     final panelWidth = isLandscapeMobile
@@ -333,9 +373,7 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
           height: double.infinity,
           decoration: const BoxDecoration(
             color: Color(0xF4080C12),
-            border: Border(
-              left: BorderSide(color: PlayerTheme.edge),
-            ),
+            border: Border(left: BorderSide(color: PlayerTheme.edge)),
             boxShadow: [
               BoxShadow(
                 color: Color(0xCC000000),
@@ -387,7 +425,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                               ),
                             ),
                             Text(
-                              _sectionMode ? 'Select Range & Sync' : 'Speech Dialogue Sync',
+                              _sectionMode
+                                  ? 'Select Range & Sync'
+                                  : 'Speech Dialogue Sync',
                               style: TextStyle(
                                 color: PlayerTheme.ink,
                                 fontSize: isLandscapeMobile ? 14 : 16,
@@ -413,7 +453,10 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                 // Hint Banner (Compact on mobile)
                 if (!isLandscapeMobile)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
                     child: Text(
                       hintText,
                       style: const TextStyle(
@@ -435,7 +478,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                       color: PlayerTheme.raised,
                       borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: _searchQuery.isNotEmpty && _matchedIndices.isNotEmpty
+                        color:
+                            _searchQuery.isNotEmpty &&
+                                _matchedIndices.isNotEmpty
                             ? DizzyGlow.gold.withValues(alpha: 0.45)
                             : PlayerTheme.edge,
                       ),
@@ -445,7 +490,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                       children: [
                         Icon(
                           Icons.search_rounded,
-                          color: _searchQuery.isNotEmpty && _matchedIndices.isNotEmpty
+                          color:
+                              _searchQuery.isNotEmpty &&
+                                  _matchedIndices.isNotEmpty
                               ? DizzyGlow.gold
                               : PlayerTheme.inkSubtle,
                           size: 15,
@@ -454,11 +501,17 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                         Expanded(
                           child: TextField(
                             controller: _searchController,
-                            style: TextStyle(color: PlayerTheme.ink, fontSize: isLandscapeMobile ? 12 : 12.5),
+                            style: TextStyle(
+                              color: PlayerTheme.ink,
+                              fontSize: isLandscapeMobile ? 12 : 12.5,
+                            ),
                             onSubmitted: (_) => _goToNextMatch(),
                             decoration: const InputDecoration(
                               hintText: 'Search dialogue...',
-                              hintStyle: TextStyle(color: PlayerTheme.inkSubtle, fontSize: 12),
+                              hintStyle: TextStyle(
+                                color: PlayerTheme.inkSubtle,
+                                fontSize: 12,
+                              ),
                               border: InputBorder.none,
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
@@ -468,9 +521,14 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                         if (_searchController.text.trim().isNotEmpty) ...[
                           // Match counter
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
                             decoration: BoxDecoration(
-                              color: _searchQuery.length >= 3 && _matchedIndices.isNotEmpty
+                              color:
+                                  _searchQuery.length >= 3 &&
+                                      _matchedIndices.isNotEmpty
                                   ? const Color(0x33FFC107)
                                   : Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(5),
@@ -479,15 +537,19 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                               _searchQuery.length < 3
                                   ? '3+ chars'
                                   : (_matchedIndices.isNotEmpty
-                                      ? '${_currentMatchIndex + 1}/${_matchedIndices.length}'
-                                      : '0/0'),
+                                        ? '${_currentMatchIndex + 1}/${_matchedIndices.length}'
+                                        : '0/0'),
                               style: TextStyle(
-                                color: _searchQuery.length >= 3 && _matchedIndices.isNotEmpty
+                                color:
+                                    _searchQuery.length >= 3 &&
+                                        _matchedIndices.isNotEmpty
                                     ? DizzyGlow.gold
                                     : PlayerTheme.inkSubtle,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                fontFeatures: const [FontFeature.tabularFigures()],
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
                               ),
                             ),
                           ),
@@ -495,25 +557,33 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                           if (_searchQuery.length >= 3) ...[
                             InkWell(
                               borderRadius: BorderRadius.circular(4),
-                              onTap: _matchedIndices.isNotEmpty ? _goToPrevMatch : null,
+                              onTap: _matchedIndices.isNotEmpty
+                                  ? _goToPrevMatch
+                                  : null,
                               child: Padding(
                                 padding: const EdgeInsets.all(2),
                                 child: Icon(
                                   Icons.keyboard_arrow_up_rounded,
                                   size: 16,
-                                  color: _matchedIndices.isNotEmpty ? PlayerTheme.ink : PlayerTheme.inkSubtle,
+                                  color: _matchedIndices.isNotEmpty
+                                      ? PlayerTheme.ink
+                                      : PlayerTheme.inkSubtle,
                                 ),
                               ),
                             ),
                             InkWell(
                               borderRadius: BorderRadius.circular(4),
-                              onTap: _matchedIndices.isNotEmpty ? _goToNextMatch : null,
+                              onTap: _matchedIndices.isNotEmpty
+                                  ? _goToNextMatch
+                                  : null,
                               child: Padding(
                                 padding: const EdgeInsets.all(2),
                                 child: Icon(
                                   Icons.keyboard_arrow_down_rounded,
                                   size: 16,
-                                  color: _matchedIndices.isNotEmpty ? PlayerTheme.ink : PlayerTheme.inkSubtle,
+                                  color: _matchedIndices.isNotEmpty
+                                      ? PlayerTheme.ink
+                                      : PlayerTheme.inkSubtle,
                                 ),
                               ),
                             ),
@@ -523,7 +593,11 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                             onTap: () => _searchController.clear(),
                             child: const Padding(
                               padding: EdgeInsets.all(2),
-                              child: Icon(Icons.close_rounded, color: PlayerTheme.inkSubtle, size: 14),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: PlayerTheme.inkSubtle,
+                                size: 14,
+                              ),
                             ),
                           ),
                         ],
@@ -538,7 +612,8 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                 Expanded(
                   child: NotificationListener<ScrollNotification>(
                     onNotification: (notification) {
-                      if (!_isProgrammaticScroll && notification is ScrollUpdateNotification) {
+                      if (!_isProgrammaticScroll &&
+                          notification is ScrollUpdateNotification) {
                         if (_isFollowing) {
                           setState(() => _isFollowing = false);
                         }
@@ -550,15 +625,21 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                         ListView.builder(
                           controller: _scrollController,
                           itemCount: cues.length,
-                          cacheExtent: 300, // Pre-cache only adjacent visible rows
+                          cacheExtent:
+                              300, // Pre-cache only adjacent visible rows
                           padding: EdgeInsets.only(
                             top: 4,
                             bottom: isLandscapeMobile ? 24 : 40,
                           ),
                           itemBuilder: (context, index) {
                             final cue = cues[index];
-                            final isActive = index == activeIdx || (activeIdx == null && index == closestIdx && _isFollowing);
-                            final isSelected = _selectedCueIndex == index && !_sectionMode;
+                            final isActive =
+                                index == activeIdx ||
+                                (activeIdx == null &&
+                                    index == closestIdx &&
+                                    _isFollowing);
+                            final isSelected =
+                                _selectedCueIndex == index && !_sectionMode;
 
                             // Point anchor badges
                             int? pointNum;
@@ -571,17 +652,29 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
 
                             // Section range check
                             final lo = _rangeStart != null && _rangeEnd != null
-                                ? (_rangeStart! < _rangeEnd! ? _rangeStart! : _rangeEnd!)
+                                ? (_rangeStart! < _rangeEnd!
+                                      ? _rangeStart!
+                                      : _rangeEnd!)
                                 : null;
                             final hi = _rangeStart != null && _rangeEnd != null
-                                ? (_rangeStart! > _rangeEnd! ? _rangeStart! : _rangeEnd!)
+                                ? (_rangeStart! > _rangeEnd!
+                                      ? _rangeStart!
+                                      : _rangeEnd!)
                                 : null;
-                            final inRange = lo != null && hi != null && index >= lo && index <= hi;
-                            final inSegment = _segments.any((s) => s.contains(index));
+                            final inRange =
+                                lo != null &&
+                                hi != null &&
+                                index >= lo &&
+                                index <= hi;
+                            final inSegment = _segments.any(
+                              (s) => s.contains(index),
+                            );
 
-                            final isMatch = _searchQuery.length >= 3 &&
+                            final isMatch =
+                                _searchQuery.length >= 3 &&
                                 cue.text.toLowerCase().contains(_searchQuery);
-                            final isCurrentFocusedMatch = _searchQuery.length >= 3 &&
+                            final isCurrentFocusedMatch =
+                                _searchQuery.length >= 3 &&
                                 _matchedIndices.isNotEmpty &&
                                 _currentMatchIndex < _matchedIndices.length &&
                                 _matchedIndices[_currentMatchIndex] == index;
@@ -593,17 +686,22 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                   color: isCurrentFocusedMatch
                                       ? const Color(0x59FFC107)
                                       : isMatch
-                                          ? const Color(0x26FFC107)
-                                          : isActive
-                                              ? PlayerTheme.accent.withValues(alpha: 0.18)
-                                              : inRange
-                                                  ? PlayerTheme.accent.withValues(alpha: 0.1)
-                                                  : Colors.transparent,
+                                      ? const Color(0x26FFC107)
+                                      : isActive
+                                      ? PlayerTheme.accent.withValues(
+                                          alpha: 0.18,
+                                        )
+                                      : inRange
+                                      ? PlayerTheme.accent.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : Colors.transparent,
                                   child: InkWell(
                                     onTap: () {
                                       if (_sectionMode) {
                                         setState(() {
-                                          if (_rangeStart == null || _rangeEnd != null) {
+                                          if (_rangeStart == null ||
+                                              _rangeEnd != null) {
                                             _rangeStart = index;
                                             _rangeEnd = null;
                                           } else {
@@ -612,7 +710,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                         });
                                       } else {
                                         setState(() {
-                                          _selectedCueIndex = isSelected ? null : index;
+                                          _selectedCueIndex = isSelected
+                                              ? null
+                                              : index;
                                         });
                                       }
                                     },
@@ -624,7 +724,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                       decoration: BoxDecoration(
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: Colors.white.withValues(alpha: 0.04),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.04,
+                                            ),
                                           ),
                                           left: isCurrentFocusedMatch
                                               ? const BorderSide(
@@ -632,26 +734,37 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                                   width: 3,
                                                 )
                                               : isActive
-                                                  ? const BorderSide(
-                                                      color: PlayerTheme.accent,
-                                                      width: 3,
-                                                    )
-                                                  : BorderSide.none,
+                                              ? const BorderSide(
+                                                  color: PlayerTheme.accent,
+                                                  width: 3,
+                                                )
+                                              : BorderSide.none,
                                         ),
                                       ),
                                       child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           // Time label
                                           SizedBox(
                                             width: 44,
                                             child: Text(
-                                              SubtitleParser.formatDisplayTime(cue.start),
+                                              SubtitleParser.formatDisplayTime(
+                                                cue.start,
+                                              ),
                                               style: TextStyle(
-                                                color: isActive ? PlayerTheme.accent : PlayerTheme.inkSubtle,
-                                                fontSize: isLandscapeMobile ? 10.5 : 11,
-                                                fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
-                                                fontFeatures: const [FontFeature.tabularFigures()],
+                                                color: isActive
+                                                    ? PlayerTheme.accent
+                                                    : PlayerTheme.inkSubtle,
+                                                fontSize: isLandscapeMobile
+                                                    ? 10.5
+                                                    : 11,
+                                                fontWeight: isActive
+                                                    ? FontWeight.w700
+                                                    : FontWeight.normal,
+                                                fontFeatures: const [
+                                                  FontFeature.tabularFigures(),
+                                                ],
                                               ),
                                             ),
                                           ),
@@ -663,7 +776,9 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                               cue.text,
                                               _searchQuery,
                                               isActive,
-                                              fontSize: isLandscapeMobile ? 12 : 12.5,
+                                              fontSize: isLandscapeMobile
+                                                  ? 12
+                                                  : 12.5,
                                             ),
                                           ),
 
@@ -672,10 +787,15 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                           // Right badge
                                           if (pointNum != null)
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 5,
+                                                    vertical: 1.5,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: PlayerTheme.accent,
-                                                borderRadius: BorderRadius.circular(999),
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
                                               ),
                                               child: Text(
                                                 'P$pointNum',
@@ -688,10 +808,15 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                             )
                                           else if (isActive)
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 5,
+                                                    vertical: 1.5,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: PlayerTheme.accent,
-                                                borderRadius: BorderRadius.circular(4),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                               child: const Text(
                                                 'NOW',
@@ -718,7 +843,10 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                 // Expanded Action Box for Selected Line
                                 if (isSelected)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 6,
+                                    ),
                                     color: PlayerTheme.raised,
                                     child: Row(
                                       children: [
@@ -726,26 +854,54 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: PlayerTheme.accent,
                                             foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 5,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(7),
+                                            ),
                                           ),
-                                          icon: const Icon(Icons.check_rounded, size: 14),
+                                          icon: const Icon(
+                                            Icons.check_rounded,
+                                            size: 14,
+                                          ),
                                           label: const Text(
                                             'Sync from here',
-                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                          onPressed: () => _handleSyncFromHere(index),
+                                          onPressed: () =>
+                                              _handleSyncFromHere(index),
                                         ),
                                         const SizedBox(width: 6),
                                         OutlinedButton.icon(
                                           style: OutlinedButton.styleFrom(
-                                            foregroundColor: PlayerTheme.inkMuted,
-                                            side: const BorderSide(color: PlayerTheme.edgeSoft),
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                                            foregroundColor:
+                                                PlayerTheme.inkMuted,
+                                            side: const BorderSide(
+                                              color: PlayerTheme.edgeSoft,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 5,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(7),
+                                            ),
                                           ),
-                                          icon: const Icon(Icons.play_arrow_rounded, size: 14),
-                                          label: const Text('Jump here', style: TextStyle(fontSize: 11)),
+                                          icon: const Icon(
+                                            Icons.play_arrow_rounded,
+                                            size: 14,
+                                          ),
+                                          label: const Text(
+                                            'Jump here',
+                                            style: TextStyle(fontSize: 11),
+                                          ),
                                           onPressed: () => _handleSeekTo(index),
                                         ),
                                       ],
@@ -767,15 +923,26 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                                 style: FilledButton.styleFrom(
                                   backgroundColor: PlayerTheme.accent,
                                   foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                   shadowColor: Colors.black,
                                   elevation: 6,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                 ),
-                                icon: const Icon(Icons.arrow_downward_rounded, size: 13),
+                                icon: const Icon(
+                                  Icons.arrow_downward_rounded,
+                                  size: 13,
+                                ),
                                 label: const Text(
                                   'Jump to now',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 onPressed: _jumpToNow,
                               ),
@@ -838,17 +1005,27 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
               const Spacer(),
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: _sectionMode ? PlayerTheme.accent : PlayerTheme.inkMuted,
+                  foregroundColor: _sectionMode
+                      ? PlayerTheme.accent
+                      : PlayerTheme.inkMuted,
                   backgroundColor: _sectionMode
                       ? PlayerTheme.accent.withValues(alpha: 0.18)
                       : Colors.white.withValues(alpha: 0.05),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 icon: const Icon(Icons.content_cut_rounded, size: 12),
-                label: Text(_sectionMode ? 'Selecting' : 'Fix section', style: const TextStyle(fontSize: 11)),
+                label: Text(
+                  _sectionMode ? 'Selecting' : 'Fix section',
+                  style: const TextStyle(fontSize: 11),
+                ),
                 onPressed: () {
                   setState(() {
                     _sectionMode = !_sectionMode;
@@ -860,10 +1037,17 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
               if (_isDirty) ...[
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.replay_rounded, size: 15, color: PlayerTheme.inkSubtle),
+                  icon: const Icon(
+                    Icons.replay_rounded,
+                    size: 15,
+                    color: PlayerTheme.inkSubtle,
+                  ),
                   tooltip: 'Reset timing',
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                  constraints: const BoxConstraints(
+                    minWidth: 26,
+                    minHeight: 26,
+                  ),
                   onPressed: _handleReset,
                 ),
               ],
@@ -881,8 +1065,12 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: PlayerTheme.edgeSoft),
-                    padding: EdgeInsets.symmetric(vertical: isLandscapeMobile ? 6 : 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: EdgeInsets.symmetric(
+                      vertical: isLandscapeMobile ? 6 : 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -914,8 +1102,12 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: PlayerTheme.accent,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: isLandscapeMobile ? 6 : 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: EdgeInsets.symmetric(
+                      vertical: isLandscapeMobile ? 6 : 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -923,7 +1115,10 @@ class _TextSyncOverlayState extends State<TextSyncOverlay> {
                       ? const SizedBox(
                           width: 13,
                           height: 13,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 1.8),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 1.8,
+                          ),
                         )
                       : const Icon(Icons.check_rounded, size: 15),
                   label: Text(
@@ -1005,10 +1200,7 @@ class _NudgeButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _NudgeButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _NudgeButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

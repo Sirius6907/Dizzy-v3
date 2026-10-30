@@ -32,14 +32,13 @@ import '../../widgets/p2p/p2p_warning_dialog.dart';
 import '../../services/discord/discord_rpc_service.dart';
 import '../../services/backup/backup_restore_service.dart';
 import '../../services/cloud/remote_config_service.dart';
-import '../../services/guide/guide_service.dart';
 import '../../widgets/guide/guide_card.dart';
 import '../../services/home/home_page_settings.dart';
 
 import '../../widgets/common/offline_aware_scaffold.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:dizzy/design/dizzy_tokens.dart';
 import 'download_settings_page.dart';
 import 'settings_search_delegate.dart';
 
@@ -61,17 +60,22 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showBackupRestoreDialog() async {
     // Capture navigator before the async gap (lint-safe, same route).
     final navigator = Navigator.of(context);
-    // v1.2.0-T2.6: first-time cloud guide before backup dialog (skipable).
-    await GuideCard.maybeShow(context, 'cloud_sync', AppGuides.cloudSync);
-    if (!mounted) return;
     showDialog(
       context: navigator.context,
       builder: (ctx) {
+        final palette = AppThemeService.currentPalette.value;
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
         return Dialog(
-          backgroundColor: DizzyVoid.surface1,
+          backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+            side: BorderSide(
+              color: isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.12),
+            ),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
@@ -86,13 +90,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.backup_rounded, color: Color(0xFF10B981), size: 22),
+                        child: const Icon(
+                          Icons.backup_rounded,
+                          color: Color(0xFF10B981),
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -101,18 +111,19 @@ class _SettingsPageState extends State<SettingsPage> {
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: ink,
                               ),
                             ),
                             Text(
                               'Cross-device JSON configuration',
-                              style: TextStyle(fontSize: 12, color: Colors.white54),
+                              style: TextStyle(fontSize: 12, color: inkSoft),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                        icon: Icon(Icons.close_rounded, color: inkSoft),
+                        tooltip: 'Close',
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -120,7 +131,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 20),
                   Text(
                     'Export your configuration (installed addons, IPTV portals, Debrid keys & themes) to JSON or import on another device.',
-                    style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7), height: 1.4),
+                    style: TextStyle(fontSize: 13, color: inkSoft, height: 1.4),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -129,21 +140,34 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF10B981),
-                            foregroundColor: Colors.white,
+                            foregroundColor: PrismAccent.onAccent,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          icon: const Icon(Icons.file_upload_outlined, size: 18),
-                          label: const Text('Export JSON', style: TextStyle(fontWeight: FontWeight.bold)),
+                          icon: const Icon(
+                            Icons.file_upload_outlined,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Export JSON',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           onPressed: () async {
-                            final jsonStr = await BackupRestoreService.exportSettingsJson();
-                            await Clipboard.setData(ClipboardData(text: jsonStr));
+                            final jsonStr =
+                                await BackupRestoreService.exportSettingsJson();
+                            await Clipboard.setData(
+                              ClipboardData(text: jsonStr),
+                            );
                             if (!ctx.mounted) return;
                             Navigator.pop(ctx);
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Configuration JSON copied to clipboard! Save or paste it on any device.'),
+                                  content: Text(
+                                    'Configuration JSON copied to clipboard! Save or paste it on any device.',
+                                  ),
                                   backgroundColor: Color(0xFF10B981),
                                   duration: Duration(seconds: 4),
                                 ),
@@ -156,13 +180,25 @@ class _SettingsPageState extends State<SettingsPage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                            foregroundColor: ink,
+                            side: BorderSide(
+                              color: isLight
+                                  ? PrismLight.borderSubtle
+                                  : Colors.white.withValues(alpha: 0.2),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          icon: const Icon(Icons.file_download_outlined, size: 18),
-                          label: const Text('Import JSON', style: TextStyle(fontWeight: FontWeight.bold)),
+                          icon: const Icon(
+                            Icons.file_download_outlined,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Import JSON',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           onPressed: () {
                             Navigator.pop(ctx);
                             _showImportJsonInputDialog();
@@ -185,11 +221,19 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (ctx) {
+        final palette = AppThemeService.currentPalette.value;
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
         return Dialog(
-          backgroundColor: DizzyVoid.surface1,
+          backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+            side: BorderSide(
+              color: isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.12),
+            ),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
@@ -201,15 +245,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.file_download_outlined, color: Color(0xFF00E5FF), size: 22),
+                      const Icon(
+                        Icons.file_download_outlined,
+                        color: Color(0xFF00E5FF),
+                        size: 22,
+                      ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'Paste Configuration JSON',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: ink,
+                        ),
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                        icon: Icon(Icons.close_rounded, color: inkSoft),
+                        tooltip: 'Close',
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -218,13 +271,26 @@ class _SettingsPageState extends State<SettingsPage> {
                   TextField(
                     controller: textController,
                     maxLines: 8,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'monospace'),
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Paste backup JSON here...',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                      hintStyle: TextStyle(
+                        color: isLight
+                            ? PrismLight.inkFaint
+                            : Colors.white.withValues(alpha: 0.3),
+                      ),
                       filled: true,
-                      fillColor: DizzyColors.bg,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      fillColor: isLight
+                          ? PrismLight.raisedBottom
+                          : PrismDark.sunken,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       contentPadding: const EdgeInsets.all(12),
                     ),
                   ),
@@ -232,10 +298,19 @@ class _SettingsPageState extends State<SettingsPage> {
                   Row(
                     children: [
                       TextButton.icon(
-                        icon: const Icon(Icons.paste_rounded, size: 16, color: Color(0xFF00E5FF)),
-                        label: const Text('Paste from Clipboard', style: TextStyle(color: Color(0xFF00E5FF))),
+                        icon: const Icon(
+                          Icons.paste_rounded,
+                          size: 16,
+                          color: Color(0xFF00E5FF),
+                        ),
+                        label: const Text(
+                          'Paste from Clipboard',
+                          style: TextStyle(color: Color(0xFF00E5FF)),
+                        ),
                         onPressed: () async {
-                          final data = await Clipboard.getData(Clipboard.kTextPlain);
+                          final data = await Clipboard.getData(
+                            Clipboard.kTextPlain,
+                          );
                           if (data?.text != null) {
                             textController.text = data!.text!;
                           }
@@ -246,15 +321,26 @@ class _SettingsPageState extends State<SettingsPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF00E5FF),
                           foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        child: const Text('Restore Now', style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Restore Now',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         onPressed: () async {
                           final txt = textController.text.trim();
                           if (txt.isEmpty) return;
                           try {
-                            final msg = await BackupRestoreService.importSettingsJson(txt);
+                            final msg =
+                                await BackupRestoreService.importSettingsJson(
+                                  txt,
+                                );
                             if (!ctx.mounted) return;
                             Navigator.pop(ctx);
                             if (mounted) {
@@ -300,12 +386,14 @@ class _SettingsPageState extends State<SettingsPage> {
     final provider = await _debrid.getSelectedService();
     final traktAuth = await TraktService.instance.isAuthenticated();
     final simklAuth = await SimklService.instance.isAuthenticated();
-    final pkg = await PackageInfo.fromPlatform().catchError((_) => PackageInfo(
-          appName: 'Dizzy',
-          packageName: 'com.dizzy',
-          version: '1.1.5',
-          buildNumber: '16',
-        ));
+    final pkg = await PackageInfo.fromPlatform().catchError(
+      (_) => PackageInfo(
+        appName: 'Dizzy',
+        packageName: 'com.dizzy',
+        version: '1.1.5',
+        buildNumber: '16',
+      ),
+    );
 
     if (mounted) {
       setState(() {
@@ -332,14 +420,22 @@ class _SettingsPageState extends State<SettingsPage> {
     final addonCount = AddonManager.instance.addons.length;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.5);
+    final iconMuted = isLight ? PrismLight.inkSoft : Colors.white54;
+    final disabledInk = isLight ? PrismLight.inkFaint : Colors.white38;
 
     return OfflineAwareScaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: palette.appBarBackgroundColor.withValues(alpha: 0.85),
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -352,7 +448,7 @@ class _SettingsPageState extends State<SettingsPage> {
             button: true,
             label: 'Find a setting',
             child: IconButton(
-              icon: const Icon(Icons.search_rounded, color: Colors.white),
+              icon: Icon(Icons.search_rounded, color: ink),
               tooltip: 'Find a setting',
               onPressed: () => showSearch(
                 context: context,
@@ -408,12 +504,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Preferences & Configuration',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: ink,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -421,7 +517,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             'Manage streaming providers, addons, UI effects, and account sync.',
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: inkSoft,
                               height: 1.35,
                             ),
                           ),
@@ -440,7 +536,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: isLight
+                      ? PrismLight.inkFaint
+                      : Colors.white.withValues(alpha: 0.35),
                   letterSpacing: 1.1,
                 ),
               ),
@@ -454,7 +552,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     icon: Icons.palette_rounded,
                     iconColor: currentPalette.primaryColor,
                     title: 'Appearance & Interface',
-                    subtitle: 'Theme palettes, elevation, edges, and Home Page UI',
+                    subtitle:
+                        'Theme palettes, elevation, edges, and Home Page UI',
                     badgeText: currentPalette.name,
                     badgeColor: currentPalette.primaryColor,
                     onTap: () => _navigateTo(const AppearanceSettingsPage()),
@@ -472,12 +571,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     icon: Icons.auto_awesome_rounded,
                     iconColor: palette.primaryColor,
                     title: 'Video & Upscaling',
-                    subtitle: 'Anime4K neural GLSL shader presets and GPU pipeline',
+                    subtitle:
+                        'Anime4K neural GLSL shader presets and GPU pipeline',
                     badgeText: anime4kPreset == Anime4KPreset.off
                         ? 'Off'
                         : anime4kPreset.label.split('(').first.trim(),
                     badgeColor: anime4kPreset == Anime4KPreset.off
-                        ? Colors.white38
+                        ? disabledInk
                         : palette.primaryColor,
                     onTap: () => _navigateTo(const VideoSettingsPage()),
                   );
@@ -491,7 +591,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.emoji_events_rounded,
                 iconColor: palette.primaryColor,
                 title: 'My Dizzy Wrap',
-                subtitle: 'Watch time, streaks, top genres — your year in Dizzy',
+                subtitle:
+                    'Watch time, streaks, top genres — your year in Dizzy',
                 badgeText: 'NEW',
                 badgeColor: palette.primaryColor,
                 onTap: () => _navigateTo(const StatsPage()),
@@ -526,8 +627,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         subtitle: 'Adult-only browsed rows, category-wise',
                         badgeText: '18+',
                         badgeColor: const Color(0xFFE50914),
-                        onTap: () =>
-                            _navigateTo(const AdultHeavenPage()),
+                        onTap: () => _navigateTo(const AdultHeavenPage()),
                       ),
                     ],
                   );
@@ -554,7 +654,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.hub_rounded,
                 iconColor: const Color(0xFFEC4899),
                 title: 'Social Hub',
-                subtitle: 'Watch Together rooms, Listen Together sessions & 1-tap invite',
+                subtitle:
+                    'Watch Together rooms, Listen Together sessions & 1-tap invite',
                 badgeText: 'HOT',
                 badgeColor: const Color(0xFFEC4899),
                 onTap: () => SocialHubSheet.show(context),
@@ -598,11 +699,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.cloud_download_rounded,
                 iconColor: const Color(0xFF00E5FF),
                 title: 'Debrid & Cloud Streaming',
-                subtitle: 'Real-Debrid, TorBox, AllDebrid, Premiumize & Debrid-Link',
+                subtitle:
+                    'Real-Debrid, TorBox, AllDebrid, Premiumize & Debrid-Link',
                 badgeText: _useDebrid
                     ? (_debridProvider != 'None' ? _debridProvider : 'Active')
                     : 'Disabled',
-                badgeColor: _useDebrid ? const Color(0xFF00E5FF) : Colors.white38,
+                badgeColor: _useDebrid ? const Color(0xFF00E5FF) : disabledInk,
                 onTap: () => _navigateTo(const DebridSettingsPage()),
               ),
 
@@ -627,19 +729,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 builder: (context, isP2p, _) {
                   return _SettingsSwitchTile(
                     icon: Icons.hub_rounded,
-                    iconColor: isP2p ? const Color(0xFFF59E0B) : Colors.white54,
+                    iconColor: isP2p ? const Color(0xFFF59E0B) : iconMuted,
                     title: 'Built-in P2P Torrent Source',
                     subtitle: isP2p
                         ? 'Dizzy torrent swarms (Knaben, TorrentGalaxy) active'
                         : 'P2P disabled. Using direct HTTP streaming only',
                     badgeText: isP2p ? 'P2P Active' : 'HTTP Only',
-                    badgeColor: isP2p ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                    badgeColor: isP2p
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF10B981),
                     value: isP2p,
                     onChanged: (val) async {
                       // Route through the addon so the Settings switch and the
                       // builtin entry (isDizzyActive) never desync — toggleAddon
                       // also flips P2pSettingsService internally.
-                      await AddonManager.instance.toggleAddon('builtin.dizzy', val);
+                      await AddonManager.instance.toggleAddon(
+                        'builtin.dizzy',
+                        val,
+                      );
                     },
                     onInfoTap: () {
                       showDialog(
@@ -659,13 +766,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 builder: (context, isCalEnabled, _) {
                   return _SettingsSwitchTile(
                     icon: Icons.calendar_month_rounded,
-                    iconColor: isCalEnabled ? const Color(0xFF38BDF8) : Colors.white54,
+                    iconColor: isCalEnabled
+                        ? const Color(0xFF38BDF8)
+                        : iconMuted,
                     title: 'TV Airing Calendar',
                     subtitle: isCalEnabled
                         ? 'Calendar buttons active on Home top bar and section headers'
                         : 'Calendar disabled and hidden across all pages',
                     badgeText: isCalEnabled ? 'Enabled' : 'Disabled',
-                    badgeColor: isCalEnabled ? const Color(0xFF38BDF8) : Colors.white38,
+                    badgeColor: isCalEnabled
+                        ? const Color(0xFF38BDF8)
+                        : disabledInk,
                     value: isCalEnabled,
                     onChanged: (val) async {
                       await HomePageSettings.setEnableCalendar(val);
@@ -682,13 +793,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 builder: (context, isAiEnabled, _) {
                   return _SettingsSwitchTile(
                     icon: Icons.auto_awesome_rounded,
-                    iconColor: isAiEnabled ? const Color(0xFFF472B6) : Colors.white54,
+                    iconColor: isAiEnabled
+                        ? const Color(0xFFF472B6)
+                        : iconMuted,
                     title: 'AI Recommendation Quiz',
                     subtitle: isAiEnabled
                         ? 'AI Taste Profile Quiz active on Home and Search bars'
                         : 'AI quiz disabled and hidden across all pages',
                     badgeText: isAiEnabled ? 'Enabled' : 'Disabled',
-                    badgeColor: isAiEnabled ? const Color(0xFFF472B6) : Colors.white38,
+                    badgeColor: isAiEnabled
+                        ? const Color(0xFFF472B6)
+                        : disabledInk,
                     value: isAiEnabled,
                     onChanged: (val) async {
                       await HomePageSettings.setEnableAiQuiz(val);
@@ -700,19 +815,25 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 12),
 
               // 5. Discord Rich Presence (Desktop Only)
-              if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...[
+              if (Platform.isWindows ||
+                  Platform.isLinux ||
+                  Platform.isMacOS) ...[
                 ValueListenableBuilder<bool>(
                   valueListenable: DiscordRpcService.instance.isEnabled,
                   builder: (context, isDiscordEnabled, _) {
                     return _SettingsSwitchTile(
                       icon: Icons.sports_esports_rounded,
-                      iconColor: isDiscordEnabled ? const Color(0xFF5865F2) : Colors.white54,
+                      iconColor: isDiscordEnabled
+                          ? const Color(0xFF5865F2)
+                          : iconMuted,
                       title: 'Discord Rich Presence',
                       subtitle: isDiscordEnabled
                           ? 'Broadcasting movies, shows, music & live activity to Discord'
                           : 'Disabled. Activity is hidden from Discord',
                       badgeText: isDiscordEnabled ? 'Active' : 'Disabled',
-                      badgeColor: isDiscordEnabled ? const Color(0xFF5865F2) : Colors.white38,
+                      badgeColor: isDiscordEnabled
+                          ? const Color(0xFF5865F2)
+                          : disabledInk,
                       value: isDiscordEnabled,
                       onChanged: (val) async {
                         await DiscordRpcService.instance.setEnabled(val);
@@ -728,9 +849,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.movie_filter_rounded,
                 iconColor: const Color(0xFFED1C24),
                 title: 'Trakt.tv Sync',
-                subtitle: 'Cross-device watchlist, history & playback synchronization',
+                subtitle:
+                    'Cross-device watchlist, history & playback synchronization',
                 badgeText: _traktConnected ? 'Connected' : 'Offline',
-                badgeColor: _traktConnected ? const Color(0xFFED1C24) : Colors.white38,
+                badgeColor: _traktConnected
+                    ? const Color(0xFFED1C24)
+                    : disabledInk,
                 onTap: () => _navigateTo(const TraktSettingsPage()),
               ),
 
@@ -743,7 +867,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Simkl Sync',
                 subtitle: 'Cross-device Movies, TV & Anime synchronization',
                 badgeText: _simklConnected ? 'Connected' : 'Offline',
-                badgeColor: _simklConnected ? const Color(0xFF00ADFF) : Colors.white38,
+                badgeColor: _simklConnected
+                    ? const Color(0xFF00ADFF)
+                    : disabledInk,
                 onTap: () => _navigateTo(const SimklSettingsPage()),
               ),
 
@@ -754,7 +880,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.backup_rounded,
                 iconColor: const Color(0xFF10B981),
                 title: 'Backup & Restore',
-                subtitle: 'Export or import your settings, addons & IPTV portals (JSON)',
+                subtitle:
+                    'Export or import your settings, addons & IPTV portals (JSON)',
                 badgeText: 'JSON',
                 badgeColor: const Color(0xFF10B981),
                 onTap: _showBackupRestoreDialog,
@@ -775,57 +902,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-              // v1.2.0-T2.6: replay first-time guides.
-              // Polish P8: confirm pattern — destructive actions always ask.
+              // One opt-in tour. Nothing pops up on its own anymore.
               _SettingsCategoryTile(
                 icon: Icons.help_outline_rounded,
                 iconColor: const Color(0xFF7C5CFF),
-                title: 'Show guides again',
-                subtitle: 'Replay easy intro cards for all features',
-                onTap: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: DizzyVoid.surface1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      title: const Text(
-                        'Show guides again?',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      content: const Text(
-                        'Easy intro cards will appear again on each feature.',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel',
-                              style: TextStyle(color: Colors.white60)),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Show guides'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (ok != true || !context.mounted) return;
-                  await GuideService.resetAll([
-                    ...GuideService.allKeys,
-                    GuideService.onboardingKey,
-                  ]);
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Guides reset. Open any feature to see its intro again.'),
-                    ),
-                  );
-                },
+                title: 'Take the tour',
+                subtitle: 'A 3-card look at how Dizzy works',
+                onTap: () => GuideCard.show(context, AppGuides.tour),
               ),
 
               // Download Settings
@@ -841,21 +924,21 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-                            // v1.3.3-T4: in-app help — offline FAQ first, human second.
-                            _SettingsCategoryTile(
-                              icon: Icons.support_agent_rounded,
-                              iconColor: Colors.white70,
-                              title: 'Help',
-                              subtitle: 'Ask a question — works offline too',
-                              onTap: () => _navigateTo(const SupportChatPage()),
-                            ),
+              // v1.3.3-T4: in-app help — offline FAQ first, human second.
+              _SettingsCategoryTile(
+                icon: Icons.support_agent_rounded,
+                iconColor: iconMuted,
+                title: 'Help',
+                subtitle: 'Ask a question — works offline too',
+                onTap: () => _navigateTo(const SupportChatPage()),
+              ),
 
-                            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-                            // 9. About Dizzy
+              // 9. About Dizzy
               _SettingsCategoryTile(
                 icon: Icons.info_outline_rounded,
-                iconColor: Colors.white70,
+                iconColor: iconMuted,
                 title: 'About Dizzy',
                 subtitle: 'Architecture, video engine, and credits',
                 onTap: () => _navigateTo(const AboutSettingsPage()),
@@ -900,7 +983,13 @@ class _SettingsCategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DizzyTactileCard(
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.45);
+    return PrismCard(
       onTap: onTap,
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
@@ -909,7 +998,9 @@ class _SettingsCategoryTile extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08),
           ),
         ),
         child: Row(
@@ -922,11 +1013,7 @@ class _SettingsCategoryTile extends StatelessWidget {
                 color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 22,
-              ),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 12),
 
@@ -941,10 +1028,10 @@ class _SettingsCategoryTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -953,17 +1040,24 @@ class _SettingsCategoryTile extends StatelessWidget {
                       if (badgeText != null) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: (badgeColor ?? iconColor).withValues(alpha: 0.14),
+                            color: (badgeColor ?? iconColor).withValues(
+                              alpha: isLight ? 0.16 : 0.14,
+                            ),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             badgeText!,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: PrismType.micro,
                               fontWeight: FontWeight.w700,
-                              color: badgeColor ?? iconColor,
+                              color: isLight
+                                  ? inkSoft
+                                  : (badgeColor ?? iconColor),
                             ),
                             maxLines: 1,
                           ),
@@ -976,7 +1070,7 @@ class _SettingsCategoryTile extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: inkSoft,
                       height: 1.25,
                     ),
                     maxLines: 2,
@@ -992,7 +1086,9 @@ class _SettingsCategoryTile extends StatelessWidget {
             Icon(
               Icons.arrow_forward_ios_rounded,
               size: 14,
-              color: Colors.white.withValues(alpha: 0.25),
+              color: isLight
+                  ? PrismLight.inkFaint
+                  : Colors.white.withValues(alpha: 0.25),
             ),
           ],
         ),
@@ -1030,18 +1126,26 @@ class _SettingsSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.45);
     return GestureDetector(
       onTapDown: (_) => HapticFeedback.selectionClick(),
-      child: DizzyTactileCard(
+      child: PrismCard(
         margin: EdgeInsets.zero,
         padding: EdgeInsets.zero,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
+            color: isLight ? Colors.transparent : PrismDark.raised,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.08),
             ),
           ),
           child: Row(
@@ -1054,11 +1158,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                   color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 22,
-                ),
+                child: Icon(icon, color: iconColor, size: 22),
               ),
               const SizedBox(width: 12),
 
@@ -1073,10 +1173,10 @@ class _SettingsSwitchTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: ink,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1085,7 +1185,11 @@ class _SettingsSwitchTile extends StatelessWidget {
                         if (onInfoTap != null) ...[
                           const SizedBox(width: 4),
                           IconButton(
-                            icon: const Icon(Icons.info_outline_rounded, size: 16, color: Colors.white54),
+                            icon: Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: inkSoft,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             tooltip: 'P2P Advisory Details',
@@ -1095,17 +1199,24 @@ class _SettingsSwitchTile extends StatelessWidget {
                         if (badgeText != null) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: (badgeColor ?? iconColor).withValues(alpha: 0.14),
+                              color: (badgeColor ?? iconColor).withValues(
+                                alpha: isLight ? 0.16 : 0.14,
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               badgeText!,
                               style: TextStyle(
-                                fontSize: 9.5,
+                                fontSize: PrismType.micro,
                                 fontWeight: FontWeight.w700,
-                                color: badgeColor ?? iconColor,
+                                color: isLight
+                                    ? inkSoft
+                                    : (badgeColor ?? iconColor),
                               ),
                               maxLines: 1,
                             ),
@@ -1117,8 +1228,8 @@ class _SettingsSwitchTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 11.5,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 12,
+                        color: inkSoft,
                         height: 1.25,
                       ),
                       maxLines: 2,
@@ -1136,9 +1247,13 @@ class _SettingsSwitchTile extends StatelessWidget {
                 child: Switch.adaptive(
                   value: value,
                   activeColor: const Color(0xFFF59E0B),
-                  activeTrackColor: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                  inactiveThumbColor: Colors.white60,
-                  inactiveTrackColor: Colors.white10,
+                  activeTrackColor: const Color(
+                    0xFFF59E0B,
+                  ).withValues(alpha: 0.35),
+                  inactiveThumbColor: isLight ? Colors.white : Colors.white60,
+                  inactiveTrackColor: isLight
+                      ? PrismLight.raisedBottom
+                      : Colors.white10,
                   onChanged: onChanged,
                 ),
               ),

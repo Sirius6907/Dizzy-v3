@@ -31,11 +31,13 @@ class MeowTvScraper extends StreamScraper {
 
   Future<dynamic> _decryptPayload(http.Client client, dynamic payload) async {
     try {
-      final res = await client.post(
-        Uri.parse(_encDecApi),
-        headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
-        body: jsonEncode({'data': payload}),
-      ).timeout(const Duration(seconds: 8));
+      final res = await client
+          .post(
+            Uri.parse(_encDecApi),
+            headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
+            body: jsonEncode({'data': payload}),
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -69,7 +71,9 @@ class MeowTvScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[MeowTvScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[MeowTvScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -79,10 +83,9 @@ class MeowTvScraper extends StreamScraper {
             ? '/streams/tv/$tmdbId/${season ?? 1}/${episode ?? 1}?s=hindiv3'
             : '/streams/movie/$tmdbId?s=hindiv3';
 
-        final res = await client.get(
-          Uri.parse('$_apiBase$path'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final res = await client
+            .get(Uri.parse('$_apiBase$path'), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (res.statusCode != 200) return;
         final payload = jsonDecode(res.body);
@@ -97,7 +100,9 @@ class MeowTvScraper extends StreamScraper {
 
         if (data['streams'] is List) {
           for (final st in data['streams']) {
-            if (st is Map && st['url'] != null && st['url'].toString().startsWith('http')) {
+            if (st is Map &&
+                st['url'] != null &&
+                st['url'].toString().startsWith('http')) {
               urls.add(st['url'].toString());
             }
           }
@@ -120,9 +125,7 @@ class MeowTvScraper extends StreamScraper {
             headers: reqHeaders,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': reqHeaders,
-              },
+              'proxyHeaders': {'request': reqHeaders},
             },
           );
         }

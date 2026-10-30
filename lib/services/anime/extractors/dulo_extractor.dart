@@ -29,15 +29,22 @@ class DuloExtractor {
     final results = <DuloAnimeResult>[];
 
     try {
-      final stream = DuloClient.instance.getAnimeStreams(anilistId, episodeNumber);
+      final stream = DuloClient.instance.getAnimeStreams(
+        anilistId,
+        episodeNumber,
+      );
       await for (final s in stream) {
         if (s.url.isNotEmpty && s.url.startsWith('http')) {
-          results.add(DuloAnimeResult(
-            url: s.url,
-            title: s.title.isNotEmpty ? s.title : 'Source',
-            quality: s.quality.isNotEmpty && s.quality != 'Auto' ? s.quality : '1080p',
-            headers: DuloClient.instance.playbackHeaders,
-          ));
+          results.add(
+            DuloAnimeResult(
+              url: s.url,
+              title: s.title.isNotEmpty ? s.title : 'Source',
+              quality: s.quality.isNotEmpty && s.quality != 'Auto'
+                  ? s.quality
+                  : '1080p',
+              headers: DuloClient.instance.playbackHeaders,
+            ),
+          );
         }
       }
     } catch (e) {

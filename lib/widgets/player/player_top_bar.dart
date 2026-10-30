@@ -16,6 +16,7 @@ class PlayerTopBar extends StatelessWidget {
   final bool isDownloading;
   final VoidCallback? onLock;
   final bool isLocked;
+  final VoidCallback? onPip;
 
   const PlayerTopBar({
     super.key,
@@ -35,15 +36,16 @@ class PlayerTopBar extends StatelessWidget {
     this.onPip,
   });
 
-  final VoidCallback? onPip;
+  static const double _buttonSize = 40;
+  static const double _buttonGap = 8;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.paddingOf(context).top + 12,
-        left: 24,
-        right: 24,
+        left: 20,
+        right: 20,
         bottom: 24,
       ),
       decoration: BoxDecoration(
@@ -51,8 +53,8 @@ class PlayerTopBar extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.black.withValues(alpha: 0.75),
-            Colors.black.withValues(alpha: 0.35),
+            Colors.black.withValues(alpha: 0.72),
+            Colors.black.withValues(alpha: 0.30),
             Colors.transparent,
           ],
         ),
@@ -60,20 +62,16 @@ class PlayerTopBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Frosted Glass Circular Back Button
           PlayerIconButton(
-            size: 44,
-            iconSize: 26,
+            size: _buttonSize,
+            iconSize: 24,
             icon: const Icon(Icons.chevron_left_rounded),
             tooltip: 'Back',
-            backgroundColor: const Color(0x33080C12),
-            borderRadius: 9999,
             onPressed: onBack,
           ),
 
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
 
-          // Title & Details Column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,10 +84,11 @@ class PlayerTopBar extends StatelessWidget {
                       child: Text(
                         title,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18.5,
+                          color: PlayerTheme.ink,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.2,
+                          height: 1.2,
                           shadows: [
                             Shadow(
                               color: Color(0x99000000),
@@ -104,34 +103,20 @@ class PlayerTopBar extends StatelessWidget {
                     ),
                     if (quality != null && quality!.isNotEmpty) ...[
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          quality!.toUpperCase(),
-                          style: const TextStyle(
-                            color: Color(0xDDFFFFFF),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
+                      _QualityBadge(label: quality!),
                     ],
                   ],
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     subtitle!,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      shadows: const [
+                    style: const TextStyle(
+                      color: PlayerTheme.inkMuted,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                      shadows: [
                         Shadow(
                           color: Color(0x99000000),
                           offset: Offset(0, 1),
@@ -147,107 +132,41 @@ class PlayerTopBar extends StatelessWidget {
             ),
           ),
 
-          // Top-Right Action Badges
+          const SizedBox(width: 12),
+
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (onPip != null) ...[
                 PlayerIconButton(
-                  size: 40,
+                  size: _buttonSize,
                   iconSize: 20,
                   icon: const Icon(Icons.picture_in_picture_alt_rounded),
                   tooltip: 'Picture-in-Picture',
-                  backgroundColor: const Color(0x22080C12),
                   onPressed: onPip,
                 ),
-                const SizedBox(width: 8),
-              ],
-              if (onLock != null) ...[
-                PlayerIconButton(
-                  size: 40,
-                  iconSize: 20,
-                  icon: Icon(
-                    isLocked
-                        ? Icons.lock_rounded
-                        : Icons.lock_outline_rounded,
-                  ),
-                  tooltip: isLocked ? 'Unlock player' : 'Lock player',
-                  backgroundColor: isLocked
-                      ? const Color(0x33EF4444)
-                      : const Color(0x22080C12),
-                  onPressed: onLock,
-                ),
-                const SizedBox(width: 8),
+                const SizedBox(width: _buttonGap),
               ],
               if (onToggleEpisodes != null) ...[
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: onToggleEpisodes,
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isEpisodesActive
-                            ? PlayerTheme.accent.withValues(alpha: 0.30)
-                            : const Color(0x33080C12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isEpisodesActive
-                              ? PlayerTheme.accent.withValues(alpha: 0.85)
-                              : Colors.white.withValues(alpha: 0.15),
-                          width: 1.2,
-                        ),
-                        boxShadow: isEpisodesActive
-                            ? [
-                                BoxShadow(
-                                  color: PlayerTheme.accent.withValues(alpha: 0.35),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.video_library_rounded,
-                            size: 18,
-                            color: isEpisodesActive ? const Color(0xFF9D84FF) : Colors.white,
-                          ),
-                          const SizedBox(width: 7),
-                          Text(
-                            'Episodes',
-                            style: TextStyle(
-                              color: isEpisodesActive ? Colors.white : Colors.white.withValues(alpha: 0.9),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                _EpisodesPill(
+                  active: isEpisodesActive,
+                  onTap: onToggleEpisodes!,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: _buttonGap),
               ],
               if (onScreenshot != null) ...[
                 PlayerIconButton(
-                  size: 40,
+                  size: _buttonSize,
                   iconSize: 20,
                   icon: const Icon(Icons.camera_alt_outlined),
                   tooltip: 'Screenshot',
-                  backgroundColor: const Color(0x22080C12),
                   onPressed: onScreenshot,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: _buttonGap),
               ],
               if (onDownload != null) ...[
                 PlayerIconButton(
-                  size: 40,
+                  size: _buttonSize,
                   iconSize: 20,
                   icon: isDownloading
                       ? const SizedBox(
@@ -255,30 +174,130 @@ class PlayerTopBar extends StatelessWidget {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFF10B981),
+                            color: PlayerTheme.success,
                           ),
                         )
                       : const Icon(Icons.file_download_outlined),
-                  tooltip: isDownloading ? 'Downloading...' : 'Download Media',
+                  tooltip: isDownloading ? 'Downloading…' : 'Download media',
+                  active: isDownloading,
+                  activeColor: PlayerTheme.success,
                   backgroundColor: isDownloading
-                      ? const Color(0xFF10B981).withValues(alpha: 0.2)
-                      : const Color(0x22080C12),
+                      ? const Color(0x2610B981)
+                      : null,
                   onPressed: onDownload,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: _buttonGap),
               ],
-              if (onCast != null)
+              if (onCast != null) ...[
                 PlayerIconButton(
-                  size: 40,
+                  size: _buttonSize,
                   iconSize: 20,
                   icon: const Icon(Icons.cast_rounded),
                   tooltip: 'Cast',
-                  backgroundColor: const Color(0x22080C12),
                   onPressed: onCast,
+                ),
+                if (onLock != null) const SizedBox(width: _buttonGap),
+              ],
+              // Lock sits at the far edge: the one control you cannot tap
+              // by accident while reaching for something else.
+              if (onLock != null)
+                PlayerIconButton(
+                  size: _buttonSize,
+                  iconSize: 20,
+                  icon: Icon(
+                    isLocked ? Icons.lock_rounded : Icons.lock_outline_rounded,
+                  ),
+                  tooltip: isLocked ? 'Unlock player' : 'Lock player',
+                  active: isLocked,
+                  activeColor: PlayerTheme.danger,
+                  backgroundColor: isLocked ? const Color(0x33EF4444) : null,
+                  onPressed: onLock,
                 ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QualityBadge extends StatelessWidget {
+  final String label;
+
+  const _QualityBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: PlayerTheme.raised,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: PlayerTheme.edgeSoft),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: PlayerTheme.inkMuted,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _EpisodesPill extends StatelessWidget {
+  final bool active;
+  final VoidCallback onTap;
+
+  const _EpisodesPill({required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          height: PlayerTopBar._buttonSize,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
+          decoration: BoxDecoration(
+            color: active ? PlayerTheme.accentSoft : PlayerTheme.raised,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: active
+                  ? PlayerTheme.accent.withValues(alpha: 0.55)
+                  : PlayerTheme.edgeSoft,
+            ),
+            boxShadow: PlayerTheme.buttonShadow,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.video_library_rounded,
+                size: 18,
+                color: active ? PlayerTheme.accent : PlayerTheme.inkMuted,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                'Episodes',
+                style: TextStyle(
+                  color: active ? PlayerTheme.ink : PlayerTheme.inkMuted,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -14,7 +14,10 @@ class OpenFileLocationHelper {
       if (!kIsWeb) {
         if (Platform.isWindows) {
           if (exists) {
-            final result = await Process.run('explorer.exe', ['/select,', filePath]);
+            final result = await Process.run('explorer.exe', [
+              '/select,',
+              filePath,
+            ]);
             if (result.exitCode == 0) return true;
           }
           final result = await Process.run('explorer.exe', [dirPath]);

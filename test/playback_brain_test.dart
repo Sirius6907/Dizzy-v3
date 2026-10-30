@@ -47,22 +47,31 @@ void main() {
 
   group('P6: url classification', () {
     test('direct / hls / torrent / debrid / empty', () {
-      expect(PlaybackBrain.classifyUrl('https://cdn/a/movie.mp4'),
-          SourceKind.direct);
-      expect(PlaybackBrain.classifyUrl('https://cdn/a/master.m3u8?tok=1'),
-          SourceKind.hlsMaster);
-      expect(PlaybackBrain.classifyUrl('magnet:?xt=urn:btih:abc'),
-          SourceKind.torrent);
-      expect(PlaybackBrain.classifyUrl('https://real-debrid.com/dl/xyz'),
-          SourceKind.debrid);
+      expect(
+        PlaybackBrain.classifyUrl('https://cdn/a/movie.mp4'),
+        SourceKind.direct,
+      );
+      expect(
+        PlaybackBrain.classifyUrl('https://cdn/a/master.m3u8?tok=1'),
+        SourceKind.hlsMaster,
+      );
+      expect(
+        PlaybackBrain.classifyUrl('magnet:?xt=urn:btih:abc'),
+        SourceKind.torrent,
+      );
+      expect(
+        PlaybackBrain.classifyUrl('https://real-debrid.com/dl/xyz'),
+        SourceKind.debrid,
+      );
       expect(PlaybackBrain.classifyUrl(''), SourceKind.unknown);
     });
 
     test('kindOverride wins', () {
       const s = BrainSource(
-          url: 'https://x/y.mp4',
-          label: 't',
-          kindOverride: SourceKind.torrent);
+        url: 'https://x/y.mp4',
+        label: 't',
+        kindOverride: SourceKind.torrent,
+      );
       expect(s.kind, SourceKind.torrent);
     });
   });
@@ -70,10 +79,22 @@ void main() {
   group('P6: attempt plan — direct → HLS → lower rendition → next source', () {
     test('main url first, renditions high → low after', () {
       final sources = [
-        const BrainSource(url: 'https://cdn/a/master.m3u8', label: 'A', renditions: [
-          BrainRendition(label: '480p', url: 'https://cdn/a/480.m3u8', bitrate: 800000),
-          BrainRendition(label: '1080p', url: 'https://cdn/a/1080.m3u8', bitrate: 5000000),
-        ]),
+        const BrainSource(
+          url: 'https://cdn/a/master.m3u8',
+          label: 'A',
+          renditions: [
+            BrainRendition(
+              label: '480p',
+              url: 'https://cdn/a/480.m3u8',
+              bitrate: 800000,
+            ),
+            BrainRendition(
+              label: '1080p',
+              url: 'https://cdn/a/1080.m3u8',
+              bitrate: 5000000,
+            ),
+          ],
+        ),
       ];
       final plan = PlaybackBrain().buildPlan(sources);
       expect(plan.map((p) => p.url), [
@@ -127,8 +148,7 @@ void main() {
       ];
       BrainAttempt? n;
       for (var i = 0; i < 6; i++) {
-        n = b.nextAfterFailure(sources, 'https://cdn/$i.mp4',
-            maxSwitches: 3);
+        n = b.nextAfterFailure(sources, 'https://cdn/$i.mp4', maxSwitches: 3);
         if (n == null) break;
       }
       expect(b.switches, 3);
@@ -139,15 +159,25 @@ void main() {
 
   group('P6: easy errors — no tech words', () {
     const banned = [
-      'mpv', 'ffmpeg', 'averror', 'codec', 'demuxer',
-      'ffurl', 'exception', 'stacktrace', 'null',
+      'mpv',
+      'ffmpeg',
+      'averror',
+      'codec',
+      'demuxer',
+      'ffurl',
+      'exception',
+      'stacktrace',
+      'null',
     ];
 
     String check(String raw) {
       final msg = PlaybackBrain.easyErrorMessage(raw);
       for (final w in banned) {
-        expect(msg.toLowerCase().contains(w), isFalse,
-            reason: '"$w" leaked into "$msg"');
+        expect(
+          msg.toLowerCase().contains(w),
+          isFalse,
+          reason: '"$w" leaked into "$msg"',
+        );
       }
       return msg;
     }

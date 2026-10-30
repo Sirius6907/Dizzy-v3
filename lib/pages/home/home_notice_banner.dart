@@ -6,8 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/services/cloud/announcement_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 import 'package:dizzy/services/updater/update_gate.dart';
 
 /// Phase E1+E4 — single home banner slot above the hero row:
@@ -93,6 +96,7 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
   }
 
   Widget _row({
+    required bool isLight,
     required Color accent,
     required IconData icon,
     required String text,
@@ -106,13 +110,18 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
         vertical: DizzySpace.sm,
       ),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1.withValues(alpha: 0.85),
+        gradient: PrismShadows.surfaceGradient(isLight),
         borderRadius: BorderRadius.circular(DizzyRadius.lg),
-        border: Border.all(color: accent.withValues(alpha: 0.5), width: 1),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : accent.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
-          Icon(icon, color: accent, size: 20),
+          Icon(icon, color: isLight ? PrismLight.ink : accent, size: 20),
           const SizedBox(width: DizzySpace.sm),
           Expanded(
             child: Column(
@@ -120,8 +129,8 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
               children: [
                 Text(
                   text,
-                  style: const TextStyle(
-                    color: DizzyVoid.bone,
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : DizzyVoid.bone,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -130,7 +139,9 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
                   Text(
                     sub,
                     style: TextStyle(
-                      color: DizzyVoid.bone.withValues(alpha: 0.65),
+                      color: isLight
+                          ? PrismLight.inkSoft
+                          : DizzyVoid.bone.withValues(alpha: 0.65),
                       fontSize: 12,
                       height: 1.35,
                     ),
@@ -144,7 +155,9 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
             icon: Icon(
               Icons.close_rounded,
               size: 18,
-              color: DizzyVoid.bone.withValues(alpha: 0.6),
+              color: isLight
+                  ? PrismLight.inkSoft
+                  : DizzyVoid.bone.withValues(alpha: 0.6),
             ),
             tooltip: 'Hide',
           ),
@@ -165,13 +178,18 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
   @override
   Widget build(BuildContext context) {
     // E4: live rebuild when admin pushes a new announcement.
-    return ValueListenableBuilder<List<AppAnnouncement>>(
-      valueListenable: AnnouncementService.active,
-      builder: (context, _, __) => _buildBody(context),
+    return ValueListenableBuilder<AppThemePalette>(
+      valueListenable: AppThemeService.currentPalette,
+      builder: (context, palette, __) =>
+          ValueListenableBuilder<List<AppAnnouncement>>(
+            valueListenable: AnnouncementService.active,
+            builder: (context, _, __) => _buildBody(context, palette),
+          ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, AppThemePalette palette) {
+    final isLight = palette.isLight;
     final children = <Widget>[];
 
     // 1. Force-update banner with grace countdown (E1). Required updates
@@ -186,15 +204,19 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
             vertical: DizzySpace.sm,
           ),
           decoration: BoxDecoration(
-            color: DizzyVoid.surface1.withValues(alpha: 0.85),
+            gradient: PrismShadows.surfaceGradient(isLight),
             borderRadius: BorderRadius.circular(DizzyRadius.lg),
-            border: Border.all(color: DizzyGlow.gold.withValues(alpha: 0.5)),
+            border: Border.all(
+              color: isLight
+                  ? PrismLight.borderSubtle
+                  : DizzyGlow.gold.withValues(alpha: 0.5),
+            ),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.system_update_alt_rounded,
-                color: DizzyGlow.gold,
+                color: isLight ? PrismLight.ink : DizzyGlow.gold,
                 size: 20,
               ),
               const SizedBox(width: DizzySpace.sm),
@@ -206,8 +228,8 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
                       fa == null
                           ? 'Update available — v${_gate.minVersion} or newer'
                           : 'Update to v${_gate.minVersion} — required soon',
-                      style: const TextStyle(
-                        color: DizzyVoid.bone,
+                      style: TextStyle(
+                        color: isLight ? PrismLight.ink : DizzyVoid.bone,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -218,7 +240,9 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
                           : 'In ${_countdown(fa.difference(DateTime.now()))} '
                                 'this update becomes required.',
                       style: TextStyle(
-                        color: DizzyVoid.bone.withValues(alpha: 0.65),
+                        color: isLight
+                            ? PrismLight.inkSoft
+                            : DizzyVoid.bone.withValues(alpha: 0.65),
                         fontSize: 12,
                         height: 1.35,
                       ),
@@ -239,6 +263,7 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
     for (final a in anns) {
       children.add(
         _row(
+          isLight: isLight,
           accent: DizzyGlow.beam,
           icon: Icons.campaign_outlined,
           text: a.title,
@@ -253,6 +278,7 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
     if (notice.isNotEmpty && notice != _dismissedNotice) {
       children.add(
         _row(
+          isLight: isLight,
           accent: DizzyVoid.bone,
           icon: Icons.info_outline_rounded,
           text: notice,
@@ -264,9 +290,10 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
 
     if (children.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      // Home's app bar floats over item 0; the banner must start below it.
+      padding: EdgeInsets.fromLTRB(
         DizzySpace.md,
-        DizzySpace.sm,
+        PrismLayout.homeAppBarClearance(context),
         DizzySpace.md,
         0,
       ),

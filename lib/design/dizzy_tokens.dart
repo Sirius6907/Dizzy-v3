@@ -109,16 +109,16 @@ abstract final class DizzyBreakpoints {
 // ─────────────────────────────────────────────────────────────────────────────
 abstract final class DizzyLight {
   // Light OLED surfaces — pure bright whites and soft grays.
-  static const obsidian = Color(0xFF000000);   // Pixel-off reference
-  static const voidA = Color(0xFFF8F9FA);      // Brushed aluminum base
-  static const voidB = Color(0xFFECEEF2);      // Secondary light surface
-  static const surface1 = Color(0xFFFAFBFD);   // Base card
-  static const surface2 = Color(0xFFE2E5EB);   // Raised surface
-  static const surface3 = Color(0xFFC6CBD4);   // Most raised
+  static const obsidian = Color(0xFF000000); // Pixel-off reference
+  static const voidA = Color(0xFFF8F9FA); // Brushed aluminum base
+  static const voidB = Color(0xFFECEEF2); // Secondary light surface
+  static const surface1 = Color(0xFFFAFBFD); // Base card
+  static const surface2 = Color(0xFFE2E5EB); // Raised surface
+  static const surface3 = Color(0xFFC6CBD4); // Most raised
 
   // Light theme bone — near-black for text on light surfaces
-  static const bone = Color(0xFF111216);       // Razor-sharp text
-  static const ash = Color(0xFF5A6070);        // Metadata on light
+  static const bone = Color(0xFF111216); // Razor-sharp text
+  static const ash = Color(0xFF5A6070); // Metadata on light
 
   // Hairline borders for light hardware panels
   static const hairlineBorder = Color(0xFFB8BEC8);

@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/services/social/dizzy_identity_service.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/social/phone_link_service.dart';
@@ -23,6 +24,7 @@ import 'package:dizzy/services/stats/watch_stats.dart';
 import 'package:dizzy/widgets/common/dizzy_image.dart';
 import 'friends_page.dart';
 import 'profile_hub_sections.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/notify.dart';
 
 /// Instagram-Grade Tactile Neo-Skeuomorphic Profile & Binge Hub.
@@ -59,7 +61,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     var chapters = 0;
     try {
       final items = List<ContinueWatchingItem>.from(
-          ContinueWatchingService.activeItems.value);
+        ContinueWatchingService.activeItems.value,
+      );
       stats = WatchStats.aggregate(items);
     } catch (_) {}
     try {
@@ -69,7 +72,9 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     if (mounted) {
       setState(() {
         _deviceCode = code;
-        _username = DizzySocialService.currentUsername.value ?? 'user_${code.toLowerCase()}';
+        _username =
+            DizzySocialService.currentUsername.value ??
+            'user_${code.toLowerCase()}';
         _stats = stats;
         _chaptersRead = chapters;
       });
@@ -83,19 +88,27 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
   }
 
   void _showClaimUsernameDialog() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final controller = TextEditingController(text: _username);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface2,
+        backgroundColor: panel,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: DizzyEdge.hairline,
+          side: BorderSide(color: hairline),
         ),
-        title: const Text(
+        title: Text(
           'Choose Username',
           style: TextStyle(
-            color: DizzyVoid.bone,
+            color: ink,
             fontSize: DizzyType.title,
             fontWeight: DizzyType.wBold,
           ),
@@ -104,22 +117,25 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Your unique @username lets friends find and invite you.',
-              style: TextStyle(color: DizzyVoid.ash, fontSize: 13),
+              style: TextStyle(color: inkSoft, fontSize: 13),
             ),
             const SizedBox(height: DizzySpace.sm),
             TextField(
               controller: controller,
-              style: const TextStyle(color: DizzyVoid.bone),
+              style: TextStyle(color: ink),
               decoration: InputDecoration(
                 prefixText: '@ ',
-                prefixStyle: const TextStyle(color: DizzyGlow.beam, fontWeight: FontWeight.bold),
+                prefixStyle: TextStyle(
+                  color: isLight ? PrismAccent.text(true) : DizzyGlow.beam,
+                  fontWeight: FontWeight.bold,
+                ),
                 filled: true,
-                fillColor: DizzyVoid.surface1,
+                fillColor: well,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: DizzyEdge.hairline,
+                  borderSide: BorderSide(color: hairline),
                 ),
               ),
             ),
@@ -128,7 +144,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: DizzyVoid.ash)),
+            child: Text('Cancel', style: TextStyle(color: inkSoft)),
           ),
           DizzyTactileButton(
             height: 38,
@@ -140,19 +156,25 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               if (res['success'] == true) {
                 setState(() => _username = res['username']);
                 if (mounted) {
-                  DizzyNotify.show(context, 'Username updated to @$_username',
-                      tone: NotifyTone.success);
+                  DizzyNotify.show(
+                    context,
+                    'Username updated to @$_username',
+                    tone: NotifyTone.success,
+                  );
                 }
               } else {
                 if (mounted) {
-                  DizzyNotify.show(context, res['error'] ?? 'Could not claim username',
-                      tone: NotifyTone.warn);
+                  DizzyNotify.show(
+                    context,
+                    res['error'] ?? 'Could not claim username',
+                    tone: NotifyTone.warn,
+                  );
                 }
               }
             },
-            child: const Text(
+            child: Text(
               'Save',
-              style: TextStyle(color: DizzyVoid.bone, fontWeight: FontWeight.bold),
+              style: TextStyle(color: ink, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -161,12 +183,16 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
   }
 
   void _showLinkAccountSheet() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
     final linkedKind = DizzyIdentityService.linkedKind.value;
     final savedPhone = PhoneLinkService.phoneNumber.value;
     final phoneOk = PhoneLinkService.phoneVerified.value;
     showModalBottomSheet(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: panel,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -176,10 +202,10 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Link Phone or Email',
               style: TextStyle(
-                color: DizzyVoid.bone,
+                color: ink,
                 fontSize: DizzyType.title,
                 fontWeight: DizzyType.wBold,
               ),
@@ -189,7 +215,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               linkedKind != null
                   ? 'Linked with ${linkedKind == 'phone' ? 'phone' : 'email'} (${DizzyIdentityService.linkedIdentifier.value ?? ''}). One link is enough — everything stays in sync.'
                   : 'Sync your Watchlist, history, and friends across phone and PC effortlessly.',
-              style: const TextStyle(color: DizzyVoid.ash, fontSize: 13),
+              style: TextStyle(color: inkSoft, fontSize: 13),
             ),
             const SizedBox(height: DizzySpace.lg),
             DizzyTactileButton(
@@ -201,17 +227,22 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.phone_iphone_rounded,
-                      color: Colors.white, size: 20),
+                  const Icon(
+                    Icons.phone_iphone_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     savedPhone == null
                         ? 'Link Phone Number'
                         : (phoneOk
-                            ? 'Phone $savedPhone ✓'
-                            : 'Phone $savedPhone · verify soon'),
+                              ? 'Phone $savedPhone ✓'
+                              : 'Phone $savedPhone · verify soon'),
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -222,14 +253,14 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                 Navigator.pop(ctx);
                 _startEmailLink();
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.email_outlined, color: DizzyVoid.bone, size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.email_outlined, color: ink, size: 20),
+                  const SizedBox(width: 8),
                   Text(
                     'Link Google / Email',
-                    style: TextStyle(color: DizzyVoid.bone, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: ink, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -243,20 +274,31 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
   /// Phone link: number → OTP → verify + merge into one account.
   /// Fail-soft everywhere, Easy English only.
   Future<void> _startPhoneLink() async {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final controller = TextEditingController();
     final phone = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface2,
+        backgroundColor: panel,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: DizzyEdge.hairline,
+          side: BorderSide(color: hairline),
         ),
-        title: const Text('Link Phone Number',
-            style: TextStyle(
-                color: DizzyVoid.bone,
-                fontSize: DizzyType.title,
-                fontWeight: DizzyType.wBold)),
+        title: Text(
+          'Link Phone Number',
+          style: TextStyle(
+            color: ink,
+            fontSize: DizzyType.title,
+            fontWeight: DizzyType.wBold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,22 +306,23 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
             // v1.3.3-T1.3: missed-call verify. Supabase SMS is costly, so the
             // number saves instantly (unverified badge) and verification
             // completes with one free missed call.
-            const Text(
-                'Give one missed call — fully free. Your number saves right away.',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+            Text(
+              'Give one missed call — fully free. Your number saves right away.',
+              style: TextStyle(color: inkSoft, fontSize: 13),
+            ),
             const SizedBox(height: DizzySpace.sm),
             TextField(
               controller: controller,
               keyboardType: TextInputType.phone,
-              style: const TextStyle(color: DizzyVoid.bone),
+              style: TextStyle(color: ink),
               decoration: InputDecoration(
                 hintText: '+91 98765 43210',
-                hintStyle: const TextStyle(color: DizzyVoid.ash),
+                hintStyle: TextStyle(color: inkSoft),
                 filled: true,
-                fillColor: DizzyVoid.surface1,
+                fillColor: well,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: DizzyEdge.hairline,
+                  borderSide: BorderSide(color: hairline),
                 ),
               ),
             ),
@@ -288,7 +331,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: DizzyVoid.ash)),
+            child: Text('Cancel', style: TextStyle(color: inkSoft)),
           ),
           DizzyTactileButton(
             height: 38,
@@ -297,9 +340,10 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               if (v.isEmpty) return;
               Navigator.pop(ctx, v);
             },
-            child: const Text('Continue',
-                style: TextStyle(
-                    color: DizzyVoid.bone, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Continue',
+              style: TextStyle(color: ink, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -321,17 +365,17 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     if (!mounted) return;
     if (res['success'] != true) {
       DizzyNotify.show(
-          context,
-          (res['error']?.toString().isNotEmpty ?? false)
-              ? res['error'].toString()
-              : "Couldn't save number — check it, then try again.",
-          tone: NotifyTone.warn);
+        context,
+        (res['error']?.toString().isNotEmpty ?? false)
+            ? res['error'].toString()
+            : "Couldn't save number — check it, then try again.",
+        tone: NotifyTone.warn,
+      );
       return;
     }
     if (res['status'] == 'verified') {
       setState(() {});
-      DizzyNotify.show(context, 'Phone verified ✓',
-          tone: NotifyTone.success);
+      DizzyNotify.show(context, 'Phone verified ✓', tone: NotifyTone.success);
       return;
     }
     final gateway = res['gateway_number']?.toString() ?? '';
@@ -341,68 +385,88 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
       // unverified badge — verification unlocks with the next update.
       setState(() {});
       DizzyNotify.show(
-          context,
-          'Number saved ✓ missed-call verify opens with the next update.',
-          tone: NotifyTone.success);
+        context,
+        'Number saved ✓ missed-call verify opens with the next update.',
+        tone: NotifyTone.success,
+      );
       return;
     }
     final dialed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: DizzyEdge.hairline,
-        ),
-        title: const Text('Give a missed call',
+      builder: (ctx) {
+        final isLight = AppThemeService.currentPalette.value.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+        final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+        final hairline = isLight
+            ? PrismLight.borderSubtle
+            : Colors.white.withValues(alpha: 0.08);
+        return AlertDialog(
+          backgroundColor: panel,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: hairline),
+          ),
+          title: Text(
+            'Give a missed call',
             style: TextStyle(
-                color: DizzyVoid.bone,
-                fontSize: DizzyType.title,
-                fontWeight: DizzyType.wBold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
+              color: ink,
+              fontSize: DizzyType.title,
+              fontWeight: DizzyType.wBold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
                 'Ring once and cut — fully free, no talk time used.',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 13)),
-            const SizedBox(height: DizzySpace.sm),
-            SelectableText(gateway,
-                style: const TextStyle(
-                    color: DizzyVoid.bone,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child:
-                const Text('Later', style: TextStyle(color: DizzyVoid.ash)),
-          ),
-          DizzyTactileButton(
-            height: 38,
-            onTap: () async {
-              final uri = Uri(scheme: 'tel', path: gateway);
-              try {
-                await launchUrl(uri);
-              } catch (_) {}
-              if (ctx.mounted) Navigator.pop(ctx, true);
-            },
-            child: const Text('Call now',
+                style: TextStyle(color: inkSoft, fontSize: 13),
+              ),
+              const SizedBox(height: DizzySpace.sm),
+              SelectableText(
+                gateway,
                 style: TextStyle(
-                    color: DizzyVoid.bone, fontWeight: FontWeight.bold)),
+                  color: ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Later', style: TextStyle(color: inkSoft)),
+            ),
+            DizzyTactileButton(
+              height: 38,
+              onTap: () async {
+                final uri = Uri(scheme: 'tel', path: gateway);
+                try {
+                  await launchUrl(uri);
+                } catch (_) {}
+                if (ctx.mounted) Navigator.pop(ctx, true);
+              },
+              child: Text(
+                'Call now',
+                style: TextStyle(color: ink, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
     if (dialed != true || !mounted) {
       setState(() {});
       return;
     }
-    DizzyNotify.show(context, 'Waiting for your call...',
-        tone: NotifyTone.info);
+    DizzyNotify.show(
+      context,
+      'Waiting for your call...',
+      tone: NotifyTone.info,
+    );
     bool ok = false;
     try {
       ok = await PhoneLinkService.pollVerified();
@@ -410,48 +474,62 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     if (!mounted) return;
     setState(() {});
     DizzyNotify.show(
-        context,
-        ok
-            ? 'Phone verified ✓'
-            : "Didn't catch the call — try again in a minute.",
-        tone: ok ? NotifyTone.success : NotifyTone.warn);
+      context,
+      ok
+          ? 'Phone verified ✓'
+          : "Didn't catch the call — try again in a minute.",
+      tone: ok ? NotifyTone.success : NotifyTone.warn,
+    );
   }
 
   /// Email link (works with Gmail too): address → OTP → verify + merge.
   Future<void> _startEmailLink() async {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final controller = TextEditingController();
     final email = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface2,
+        backgroundColor: panel,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: DizzyEdge.hairline,
+          side: BorderSide(color: hairline),
         ),
-        title: const Text('Link Google / Email',
-            style: TextStyle(
-                color: DizzyVoid.bone,
-                fontSize: DizzyType.title,
-                fontWeight: DizzyType.wBold)),
+        title: Text(
+          'Link Google / Email',
+          style: TextStyle(
+            color: ink,
+            fontSize: DizzyType.title,
+            fontWeight: DizzyType.wBold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Any email works — Gmail included. We mail you a code.',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+            Text(
+              'Any email works — Gmail included. We mail you a code.',
+              style: TextStyle(color: inkSoft, fontSize: 13),
+            ),
             const SizedBox(height: DizzySpace.sm),
             TextField(
               controller: controller,
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: DizzyVoid.bone),
+              style: TextStyle(color: ink),
               decoration: InputDecoration(
                 hintText: 'you@gmail.com',
-                hintStyle: const TextStyle(color: DizzyVoid.ash),
+                hintStyle: TextStyle(color: inkSoft),
                 filled: true,
-                fillColor: DizzyVoid.surface1,
+                fillColor: well,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: DizzyEdge.hairline,
+                  borderSide: BorderSide(color: hairline),
                 ),
               ),
             ),
@@ -460,7 +538,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: DizzyVoid.ash)),
+            child: Text('Cancel', style: TextStyle(color: inkSoft)),
           ),
           DizzyTactileButton(
             height: 38,
@@ -469,9 +547,10 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               if (v.isEmpty || !v.contains('@')) return;
               Navigator.pop(ctx, v);
             },
-            child: const Text('Send Code',
-                style: TextStyle(
-                    color: DizzyVoid.bone, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Send Code',
+              style: TextStyle(color: ink, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -481,8 +560,11 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     final ok = await DizzyIdentityService.requestEmailOtp(email);
     if (!mounted) return;
     if (!ok) {
-      DizzyNotify.show(context, "Couldn't send code — check net, then try again.",
-          tone: NotifyTone.warn);
+      DizzyNotify.show(
+        context,
+        "Couldn't send code — check net, then try again.",
+        tone: NotifyTone.warn,
+      );
       return;
     }
     _showOtpDialog(email: email);
@@ -492,6 +574,14 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
   /// Resend is cooldown-guarded (30s) so rapid taps don't burn the
   /// Supabase email rate limit.
   void _showOtpDialog({String? phone, String? email}) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final controller = TextEditingController();
     var busy = false;
     var cooldown = 0;
@@ -500,42 +590,47 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          backgroundColor: DizzyVoid.surface2,
+          backgroundColor: panel,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: DizzyEdge.hairline,
+            side: BorderSide(color: hairline),
           ),
-          title: const Text('Enter Code',
-              style: TextStyle(
-                  color: DizzyVoid.bone,
-                  fontSize: DizzyType.title,
-                  fontWeight: DizzyType.wBold)),
+          title: Text(
+            'Enter Code',
+            style: TextStyle(
+              color: ink,
+              fontSize: DizzyType.title,
+              fontWeight: DizzyType.wBold,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                  'Code sent to ${phone ?? email} ✓ check inbox + spam folder. It expires soon.',
-                  style: const TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+                'Code sent to ${phone ?? email} ✓ check inbox + spam folder. It expires soon.',
+                style: TextStyle(color: inkSoft, fontSize: 13),
+              ),
               const SizedBox(height: DizzySpace.sm),
               TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
-                style: const TextStyle(
-                    color: DizzyVoid.bone,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 6),
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 6,
+                ),
                 decoration: InputDecoration(
                   hintText: '••••••',
-                  hintStyle: const TextStyle(color: DizzyVoid.ash),
+                  hintStyle: TextStyle(color: inkSoft),
                   filled: true,
-                  fillColor: DizzyVoid.surface1,
+                  fillColor: well,
                   counterText: '',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: DizzyEdge.hairline,
+                    borderSide: BorderSide(color: hairline),
                   ),
                 ),
               ),
@@ -544,8 +639,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           actions: [
             TextButton(
               onPressed: busy ? null : () => Navigator.pop(ctx),
-              child: const Text('Cancel',
-                  style: TextStyle(color: DizzyVoid.ash)),
+              child: Text('Cancel', style: TextStyle(color: inkSoft)),
             ),
             TextButton(
               onPressed: (busy || cooldown > 0)
@@ -558,16 +652,18 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                       final ok = phone != null
                           ? await DizzyIdentityService.requestPhoneOtp(phone)
                           : await DizzyIdentityService.requestEmailOtp(
-                              email ?? '');
+                              email ?? '',
+                            );
                       if (!ctx.mounted) return;
                       setD(() => busy = false);
                       if (!mounted) return;
                       DizzyNotify.show(
-                          context,
-                          ok
-                              ? 'Fresh code sent ✓ check inbox + spam.'
-                              : "Couldn't resend — check net, then try again.",
-                          tone: ok ? NotifyTone.info : NotifyTone.warn);
+                        context,
+                        ok
+                            ? 'Fresh code sent ✓ check inbox + spam.'
+                            : "Couldn't resend — check net, then try again.",
+                        tone: ok ? NotifyTone.info : NotifyTone.warn,
+                      );
                       // Cooldown ticker: re-enable Resend after 30s.
                       while (cooldown > 0 && ctx.mounted) {
                         await Future.delayed(const Duration(seconds: 1));
@@ -575,8 +671,10 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                         setD(() => cooldown--);
                       }
                     },
-              child: Text(cooldown > 0 ? 'Resend ($cooldown)' : 'Resend',
-                  style: const TextStyle(color: DizzyVoid.ash)),
+              child: Text(
+                cooldown > 0 ? 'Resend ($cooldown)' : 'Resend',
+                style: TextStyle(color: inkSoft),
+              ),
             ),
             DizzyTactileButton(
               height: 38,
@@ -586,8 +684,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                       final code = controller.text.trim();
                       if (code.length < 4) return;
                       setD(() => busy = true);
-                      final ok =
-                          await DizzyIdentityService.verifyOtpAndMerge(
+                      final ok = await DizzyIdentityService.verifyOtpAndMerge(
                         token: code,
                         phone: phone,
                         email: email,
@@ -598,17 +695,22 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                       if (ok) {
                         setState(() {});
                         DizzyNotify.show(
-                            context, 'Account linked! Sync is on everywhere.',
-                            tone: NotifyTone.success);
+                          context,
+                          'Account linked! Sync is on everywhere.',
+                          tone: NotifyTone.success,
+                        );
                       } else {
-                        DizzyNotify.show(context,
-                            'Wrong or expired code — ask for a fresh one.',
-                            tone: NotifyTone.warn);
+                        DizzyNotify.show(
+                          context,
+                          'Wrong or expired code — ask for a fresh one.',
+                          tone: NotifyTone.warn,
+                        );
                       }
                     },
-              child: Text(busy ? 'Checking...' : 'Verify',
-                  style: const TextStyle(
-                      color: DizzyVoid.bone, fontWeight: FontWeight.bold)),
+              child: Text(
+                busy ? 'Checking...' : 'Verify',
+                style: TextStyle(color: ink, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -618,17 +720,33 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final accentText = isLight ? PrismAccent.text(true) : DizzyGlow.beam;
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: SafeArea(
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: DizzySpace.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DizzySpace.md,
+                  ),
                   child: Column(
                     children: [
+                      const SizedBox(height: DizzySpace.sm),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: _ProfileBackButton(),
+                      ),
                       const SizedBox(height: DizzySpace.md),
                       // Top Header: Avatar + Meta
                       Row(
@@ -642,7 +760,10 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF3A1C71), Color(0xFFD76D77)],
                               ),
-                              border: Border.all(color: DizzyGlow.gold, width: 2),
+                              border: Border.all(
+                                color: DizzyGlow.gold,
+                                width: 2,
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: DizzyGlow.gold.withValues(alpha: 0.30),
@@ -665,20 +786,23 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                       child: Text(
                                         '@$_username',
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: DizzyVoid.bone,
+                                        style: TextStyle(
+                                          color: ink,
                                           fontSize: DizzyType.title,
                                           fontWeight: DizzyType.wBold,
                                         ),
                                       ),
                                     ),
                                     const SizedBox(width: 6),
-                                    GestureDetector(
-                                      onTap: _showClaimUsernameDialog,
-                                      child: const Icon(
-                                        Icons.edit_rounded,
-                                        size: 16,
-                                        color: DizzyVoid.ash,
+                                    Tooltip(
+                                      message: 'Edit username',
+                                      child: GestureDetector(
+                                        onTap: _showClaimUsernameDialog,
+                                        child: Icon(
+                                          Icons.edit_rounded,
+                                          size: 16,
+                                          color: inkSoft,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -693,14 +817,13 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                       ),
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(6),
-                                        color: DizzyVoid.surface2,
-                                        border:
-                                            Border.fromBorderSide(DizzyEdge.hairline),
+                                        color: panel,
+                                        border: Border.all(color: hairline),
                                       ),
                                       child: Text(
                                         'DEVICE: $_deviceCode',
-                                        style: const TextStyle(
-                                          color: DizzyGlow.beam,
+                                        style: TextStyle(
+                                          color: accentText,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 0.5,
@@ -721,22 +844,27 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                       Row(
                         children: [
                           Expanded(
-                            child: DizzyTactileCard(
+                            child: PrismCard(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Column(
                                 children: [
                                   Text(
                                     _stats.hoursLabel,
-                                    style: const TextStyle(
-                                      color: DizzyGlow.beam,
+                                    style: TextStyle(
+                                      color: isLight
+                                          ? PrismAccent.text(true)
+                                          : DizzyGlow.beam,
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     'Watched',
-                                    style: TextStyle(color: DizzyVoid.ash, fontSize: 11),
+                                    style: TextStyle(
+                                      color: inkSoft,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -744,7 +872,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                           ),
                           const SizedBox(width: DizzySpace.xs),
                           Expanded(
-                            child: DizzyTactileCard(
+                            child: PrismCard(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               glowColor: DizzyGlow.gold,
                               child: Column(
@@ -752,11 +880,16 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Text('🔥 ', style: TextStyle(fontSize: 16)),
+                                      const Text(
+                                        '🔥 ',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
                                       Text(
                                         '${_stats.currentStreakDays}d',
-                                        style: const TextStyle(
-                                          color: DizzyGlow.gold,
+                                        style: TextStyle(
+                                          color: isLight
+                                              ? PrismAccent.starTextLight
+                                              : DizzyGlow.gold,
                                           fontSize: 20,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -764,9 +897,12 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                     ],
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     'Streak',
-                                    style: TextStyle(color: DizzyVoid.ash, fontSize: 11),
+                                    style: TextStyle(
+                                      color: inkSoft,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -774,22 +910,27 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                           ),
                           const SizedBox(width: DizzySpace.xs),
                           Expanded(
-                            child: DizzyTactileCard(
+                            child: PrismCard(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Column(
                                 children: [
                                   Text(
                                     '$_chaptersRead',
-                                    style: const TextStyle(
-                                      color: DizzyGlow.violet,
+                                    style: TextStyle(
+                                      color: isLight
+                                          ? PrismAccent.text(true)
+                                          : DizzyGlow.violet,
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     'Chapters',
-                                    style: TextStyle(color: DizzyVoid.ash, fontSize: 11),
+                                    style: TextStyle(
+                                      color: inkSoft,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -815,8 +956,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                   kind != null
                                       ? 'Account Linked ✓'
                                       : 'Link Phone / Gmail',
-                                  style: const TextStyle(
-                                    color: DizzyVoid.bone,
+                                  style: TextStyle(
+                                    color: kind != null ? ink : Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -835,31 +976,51 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                 ),
                               );
                             },
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.people_rounded,
-                                    size: 18, color: DizzyVoid.bone),
-                                SizedBox(width: 6),
-                                Text('Friends',
-                                    style: TextStyle(
-                                        color: DizzyVoid.bone,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13)),
+                                Icon(
+                                  Icons.people_rounded,
+                                  size: 18,
+                                  color: ink,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Friends',
+                                  style: TextStyle(
+                                    color: ink,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           const SizedBox(width: DizzySpace.xs),
-                          DizzyTactileButton(
-                            width: 44,
-                            height: 42,
-                            padding: EdgeInsets.zero,
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: 'dizzy://user/$_username'));
-                              DizzyNotify.show(context, 'Profile link copied!',
-                                  tone: NotifyTone.success);
-                            },
-                            child: const Icon(Icons.share_rounded, size: 18, color: DizzyVoid.bone),
+                          Tooltip(
+                            message: 'Copy profile link',
+                            child: DizzyTactileButton(
+                              width: 44,
+                              height: 42,
+                              padding: EdgeInsets.zero,
+                              onTap: () {
+                                Clipboard.setData(
+                                  ClipboardData(
+                                    text: 'dizzy://user/$_username',
+                                  ),
+                                );
+                                DizzyNotify.show(
+                                  context,
+                                  'Profile link copied!',
+                                  tone: NotifyTone.success,
+                                );
+                              },
+                              child: Icon(
+                                Icons.share_rounded,
+                                size: 18,
+                                color: ink,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -878,11 +1039,17 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                     controller: _tabController,
                     indicatorColor: DizzyGlow.red,
                     indicatorWeight: 3,
-                    labelColor: DizzyVoid.bone,
-                    unselectedLabelColor: DizzyVoid.ash,
+                    labelColor: ink,
+                    unselectedLabelColor: inkSoft,
                     tabs: const [
-                      Tab(icon: Icon(Icons.play_circle_outline_rounded), text: 'Watching'),
-                      Tab(icon: Icon(Icons.bookmark_border_rounded), text: 'Saved'),
+                      Tab(
+                        icon: Icon(Icons.play_circle_outline_rounded),
+                        text: 'Watching',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.bookmark_border_rounded),
+                        text: 'Saved',
+                      ),
                       Tab(icon: Icon(Icons.menu_book_rounded), text: 'Read'),
                     ],
                   ),
@@ -892,11 +1059,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           },
           body: TabBarView(
             controller: _tabController,
-            children: [
-              _buildWatchingTab(),
-              _buildSavedTab(),
-              _buildReadTab(),
-            ],
+            children: [_buildWatchingTab(), _buildSavedTab(), _buildReadTab()],
           ),
         ),
       ),
@@ -904,10 +1067,14 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
   }
 
   Widget _buildGridPlaceholder(String text) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Center(
       child: Text(
         text,
-        style: const TextStyle(color: DizzyVoid.ash, fontSize: 13),
+        style: TextStyle(
+          color: isLight ? PrismLight.inkSoft : Colors.white60,
+          fontSize: 13,
+        ),
       ),
     );
   }
@@ -919,7 +1086,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
       builder: (context, items, _) {
         if (items.isEmpty) {
           return _buildGridPlaceholder(
-              'Nothing playing yet — start a movie, it shows up here.');
+            'Nothing playing yet — start a movie, it shows up here.',
+          );
         }
         return _posterGrid(
           count: items.length,
@@ -949,7 +1117,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
       builder: (context, items, _) {
         if (items.isEmpty) {
           return _buildGridPlaceholder(
-              'Your Watchlist is empty — save anything to find it here.');
+            'Your Watchlist is empty — save anything to find it here.',
+          );
         }
         return _posterGrid(
           count: items.length,
@@ -962,8 +1131,7 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
               MaterialPageRoute(
                 builder: (_) => DetailsPage(
                   movie: Movie(
-                    id: it.imdbId ??
-                        (it.tmdbId?.toString() ?? it.uniqueKey),
+                    id: it.imdbId ?? (it.tmdbId?.toString() ?? it.uniqueKey),
                     name: it.title,
                     poster: it.poster,
                     year: it.year?.toString(),
@@ -1029,21 +1197,20 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     try {
       final mangaJson = entry['manga'];
       if (mangaJson is! Map) return;
-      final manga =
-          Manga.fromJson(Map<String, dynamic>.from(mangaJson));
+      final manga = Manga.fromJson(Map<String, dynamic>.from(mangaJson));
       final chaptersRaw = entry['chapters'];
       final chapters = chaptersRaw is List
           ? chaptersRaw
-              .whereType<Map>()
-              .map((c) =>
-                  MangaChapter.fromJson(Map<String, dynamic>.from(c)))
-              .toList()
+                .whereType<Map>()
+                .map((c) => MangaChapter.fromJson(Map<String, dynamic>.from(c)))
+                .toList()
           : <MangaChapter>[];
       final chapterIndex = entry['chapterIndex'] is int
           ? entry['chapterIndex'] as int
           : 0;
-      final pageIndex =
-          entry['pageIndex'] is int ? entry['pageIndex'] as int : 0;
+      final pageIndex = entry['pageIndex'] is int
+          ? entry['pageIndex'] as int
+          : 0;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => MangaReaderPage(
@@ -1055,8 +1222,11 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
         ),
       );
     } catch (_) {
-      DizzyNotify.show(context, "Couldn't open that manga right now.",
-          tone: NotifyTone.warn);
+      DizzyNotify.show(
+        context,
+        "Couldn't open that manga right now.",
+        tone: NotifyTone.warn,
+      );
     }
   }
 
@@ -1071,6 +1241,10 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
     required void Function(int) onTap,
     void Function(int)? onRemove,
   }) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
     return GridView.builder(
       padding: const EdgeInsets.all(DizzySpace.md),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1104,10 +1278,12 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                               height: double.infinity,
                             )
                           : Container(
-                              color: DizzyVoid.surface2,
+                              color: panel,
                               child: const Center(
-                                child: Text('🎬',
-                                    style: TextStyle(fontSize: 28)),
+                                child: Text(
+                                  '🎬',
+                                  style: TextStyle(fontSize: 28),
+                                ),
                               ),
                             ),
                     ),
@@ -1123,8 +1299,11 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                               shape: BoxShape.circle,
                               color: Colors.black54,
                             ),
-                            child: const Icon(Icons.close_rounded,
-                                size: 14, color: Colors.white),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -1135,13 +1314,15 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                         bottom: 0,
                         child: ClipRRect(
                           borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(10)),
+                            bottom: Radius.circular(10),
+                          ),
                           child: LinearProgressIndicator(
                             value: pct.clamp(0.0, 1.0),
                             minHeight: 3,
                             backgroundColor: Colors.black54,
                             valueColor: const AlwaysStoppedAnimation<Color>(
-                                DizzyGlow.red),
+                              DizzyGlow.red,
+                            ),
                           ),
                         ),
                       ),
@@ -1153,22 +1334,56 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                 label(i),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    color: DizzyVoid.bone,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
                 sub(i),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(color: DizzyVoid.ash, fontSize: 10),
+                style: TextStyle(color: inkSoft, fontSize: 11),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Clay back chip. This page is always pushed as a route, so popping is
+/// the correct exit and the header previously gave no hint of one.
+class _ProfileBackButton extends StatelessWidget {
+  const _ProfileBackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    return Semantics(
+      button: true,
+      label: 'Back',
+      child: Material(
+        color: panel,
+        shape: CircleBorder(side: BorderSide(color: hairline)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(context).maybePop(),
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(Icons.arrow_back_rounded, size: 20, color: ink),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1183,11 +1398,13 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: DizzyVoid.voidA,
-      child: _tabBar,
-    );
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final palette = AppThemeService.currentPalette.value;
+    return Container(color: palette.appBarBackgroundColor, child: _tabBar);
   }
 
   @override

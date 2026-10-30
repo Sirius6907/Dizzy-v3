@@ -42,20 +42,10 @@ class NovaScraper extends StreamScraper {
         );
 
         if (tmdbId != null) {
-          try {
-            final uri = Uri.parse(
-              isTv
-                  ? 'https://api.themoviedb.org/3/tv/$tmdbId/external_ids?api_key=b3556f3b206e16f82df4d1f6fd4545e6'
-                  : 'https://api.themoviedb.org/3/movie/$tmdbId?api_key=b3556f3b206e16f82df4d1f6fd4545e6',
-            );
-            final res = await http.get(uri).timeout(const Duration(seconds: 4));
-            if (res.statusCode == 200) {
-              final data = jsonDecode(res.body);
-              if (data is Map && data['imdb_id'] != null) {
-                resolvedImdbId = data['imdb_id'].toString();
-              }
-            }
-          } catch (_) {}
+          resolvedImdbId = await TmdbHelper.fetchImdbId(
+            endpoint: isTv ? 'tv' : 'movie',
+            tmdbId: tmdbId,
+          );
         }
       }
 
@@ -67,10 +57,12 @@ class NovaScraper extends StreamScraper {
             ? '/stream/series/$resolvedImdbId:${season ?? 1}:${episode ?? 1}.json'
             : '/stream/movie/$resolvedImdbId.json';
 
-        final res = await client.get(
-          Uri.parse('$_baseUrl$path'),
-          headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-        ).timeout(const Duration(seconds: 8));
+        final res = await client
+            .get(
+              Uri.parse('$_baseUrl$path'),
+              headers: {'User-Agent': _ua, 'Accept': 'application/json'},
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (res.statusCode != 200) return;
         final data = jsonDecode(res.body);
@@ -82,7 +74,10 @@ class NovaScraper extends StreamScraper {
           final streamUrl = st['url']?.toString();
           if (streamUrl == null || streamUrl.isEmpty) continue;
 
-          final stName = (st['name']?.toString() ?? 'Nova').replaceAll('Nova ', '');
+          final stName = (st['name']?.toString() ?? 'Nova').replaceAll(
+            'Nova ',
+            '',
+          );
           final rawTitle = st['title']?.toString();
           final stTitle = rawTitle != null && rawTitle.contains(' | ')
               ? rawTitle.replaceAll(' | ', ' · ')
@@ -106,10 +101,7 @@ class NovaScraper extends StreamScraper {
             headers: reqHeaders,
             behaviorHints: {
               'notWebReady': false,
-              if (reqHeaders != null)
-                'proxyHeaders': {
-                  'request': reqHeaders,
-                },
+              if (reqHeaders != null) 'proxyHeaders': {'request': reqHeaders},
             },
           );
         }

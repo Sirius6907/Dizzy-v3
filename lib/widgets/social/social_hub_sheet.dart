@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/music/music_listen_together_service.dart';
-import '../../services/theme/app_theme_service.dart';
-import '../guide/guide_trigger.dart';
 
 /// UX8 — Unified Social Hub: Watch Together + Listen Together in ONE sheet.
 ///
@@ -67,248 +67,260 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
     final connected = _svc.isConnected.value;
     final code = _svc.activeRoomCode.value;
     final members = _svc.memberCount.value;
     final isHost = _svc.isHost.value;
 
-    return GuideTrigger(
-      guideKey: 'social_hub',
-      steps: AppGuides.socialHub,
-      child: Container(
-        decoration: BoxDecoration(
-          color: DizzyVoid.surface1,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: PrismShadows.surfaceGradient(
+          AppThemeService.currentPalette.value.isLight,
         ),
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 30),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: PrismShadows.floating(
+          isLight: AppThemeService.currentPalette.value.isLight,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 30),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? PrismLight.inkFaint.withValues(alpha: 0.5)
+                      : Colors.white24,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: palette.primaryColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.group_rounded,
-                      color: palette.primaryColor,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Social Hub',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          'One room. Everyone in sync.',
-                          style: TextStyle(
-                              color: Colors.white54, fontSize: 12.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (connected)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$members here',
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              if (!connected) ...[
-                const Text(
-                  'Listen Together',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: palette.primaryColor,
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: () async {
-                    await _svc.createRoom();
-                    _refresh();
-                  },
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text(
-                    'Start a jam room',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _joinController,
-                        style: const TextStyle(color: Colors.white),
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: InputDecoration(
-                          hintText: 'Friend’s code (like DIZ-1234)',
-                          hintStyle: const TextStyle(
-                              color: Colors.white30, fontSize: 13),
-                          filled: true,
-                          fillColor: DizzyVoid.surface1,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    FilledButton(
-                      onPressed: () async {
-                        final ok = await _svc
-                            .joinRoom(_joinController.text);
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(ok
-                                ? 'Joined! Enjoy together 🎶'
-                                : 'That code did not work. Check again.'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                        _refresh();
-                      },
-                      child: const Text('Join with code'),
-                    ),
-                  ],
-                ),
-              ] else ...[
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(9),
                   decoration: BoxDecoration(
-                    color: DizzyVoid.surface1,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color:
-                          palette.primaryColor.withValues(alpha: 0.3),
-                    ),
+                    color: palette.primaryColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(
+                    Icons.group_rounded,
+                    color: palette.primaryColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isHost ? 'Friends join with:' : 'You joined:',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 12),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        code ?? '—',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 3,
+                        'Social Hub',
+                        style: TextStyle(
+                          color: ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor:
-                                  palette.primaryColor,
-                              foregroundColor: Colors.black,
-                            ),
-                            onPressed: _copyInvite,
-                            icon: const Icon(Icons.copy_rounded,
-                                size: 18),
-                            label: const Text('Copy invite'),
-                          ),
-                          const SizedBox(width: 10),
-                          OutlinedButton(
-                            onPressed: () {
-                              _svc.leaveRoom();
-                              _refresh();
-                            },
-                            child: const Text('Leave'),
-                          ),
-                        ],
+                      Text(
+                        'One room. Everyone in sync.',
+                        style: TextStyle(color: inkSoft, fontSize: 12.5),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                const Center(
-                  child: Text(
-                    'Host plays. All screens follow. Mute anytime. 🎙️',
-                    style: TextStyle(
-                        color: Colors.white38, fontSize: 12),
+                if (connected)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isLight
+                            ? PrismAccent.successTextLight
+                            : Colors.green.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$members here',
+                          style: TextStyle(
+                            color: isLight
+                                ? PrismAccent.successTextLight
+                                : Colors.green,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            if (!connected) ...[
+              Text(
+                'Listen Together',
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: palette.primaryColor,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-              ],
+                onPressed: () async {
+                  await _svc.createRoom();
+                  _refresh();
+                },
+                icon: const Icon(Icons.add_rounded),
+                label: const Text(
+                  'Start a jam room',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _joinController,
+                      style: TextStyle(color: ink),
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        hintText: 'Friend’s code (like DIZ-1234)',
+                        hintStyle: TextStyle(
+                          color: isLight ? PrismLight.inkFaint : Colors.white30,
+                          fontSize: 13,
+                        ),
+                        filled: true,
+                        fillColor: well,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  FilledButton(
+                    onPressed: () async {
+                      final ok = await _svc.joinRoom(_joinController.text);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            ok
+                                ? 'Joined! Enjoy together 🎶'
+                                : 'That code did not work. Check again.',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      _refresh();
+                    },
+                    child: const Text('Join with code'),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: well,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: palette.primaryColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      isHost ? 'Friends join with:' : 'You joined:',
+                      style: TextStyle(color: inkSoft, fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      code ?? '—',
+                      style: TextStyle(
+                        color: ink,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: palette.primaryColor,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: _copyInvite,
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          label: const Text('Copy invite'),
+                        ),
+                        const SizedBox(width: 10),
+                        OutlinedButton(
+                          onPressed: () {
+                            _svc.leaveRoom();
+                            _refresh();
+                          },
+                          child: const Text('Leave'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  'Host plays. All screens follow. Mute anytime. 🎙️',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.inkFaint : Colors.white38,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../settings/appearance/music_player_studio_page.dart';
 import '../../settings/appearance/music_settings_page.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -28,6 +30,8 @@ class MusicTopHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
     final topInset = MediaQuery.paddingOf(context).top;
     final screenW = MediaQuery.sizeOf(context).width;
     final isMobile = screenW < 600;
@@ -44,10 +48,8 @@ class MusicTopHeader extends StatelessWidget {
           0,
         ),
         decoration: BoxDecoration(
-          color: DizzyVoid.voidA.withValues(alpha: 0.85),
-          border: Border(
-            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-          ),
+          gradient: PrismShadows.surfaceGradient(isLight),
+          boxShadow: PrismShadows.raised(isLight: isLight, scale: 0.6),
         ),
         child: Row(
           children: [
@@ -55,12 +57,22 @@ class MusicTopHeader extends StatelessWidget {
               scaleFactor: 1.08,
               child: IconButton(
                 tooltip: 'Back to Home (Esc)',
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                icon: Icon(
+                  Icons.arrow_back_rounded,
+                  color: isLight ? PrismLight.ink : Colors.white,
+                  size: 20,
+                ),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  backgroundColor: isLight
+                      ? PrismLight.raisedTop
+                      : Colors.white.withValues(alpha: 0.08),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                    side: BorderSide(
+                      color: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.12),
+                    ),
                   ),
                   padding: const EdgeInsets.all(8),
                 ),
@@ -72,26 +84,40 @@ class MusicTopHeader extends StatelessWidget {
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
-                  color: DizzyVoid.surface1,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                  gradient: PrismShadows.pressedGradient(isLight),
+                  boxShadow: PrismShadows.pressed(isLight: isLight, scale: 0.8),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 16),
                 child: Row(
                   children: [
-                    Icon(Icons.search_rounded, color: Colors.white54, size: isMobile ? 18 : 20),
+                    Icon(
+                      Icons.search_rounded,
+                      color: isLight ? PrismLight.inkSoft : Colors.white54,
+                      size: isMobile ? 18 : 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: searchController,
                         focusNode: searchFocusNode,
                         onChanged: onSearchChanged,
-                        style: TextStyle(color: Colors.white, fontSize: isMobile ? 13 : 14),
+                        style: TextStyle(
+                          color: isLight ? PrismLight.ink : Colors.white,
+                          fontSize: isMobile ? 13 : 14,
+                        ),
                         decoration: InputDecoration(
                           hintText: isVeryNarrow
                               ? 'Search…'
-                              : (isMobile ? 'Search music…' : 'Search songs, artists, albums, playlists...'),
-                          hintStyle: TextStyle(color: Colors.white38, fontSize: isMobile ? 12 : 13),
+                              : (isMobile
+                                    ? 'Search music…'
+                                    : 'Search songs, artists, albums, playlists...'),
+                          hintStyle: TextStyle(
+                            color: isLight
+                                ? PrismLight.inkSoft
+                                : Colors.white38,
+                            fontSize: isMobile ? 12 : 13,
+                          ),
                           border: InputBorder.none,
                           isDense: true,
                         ),
@@ -101,7 +127,11 @@ class MusicTopHeader extends StatelessWidget {
                       IconButton(
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: isLight ? PrismLight.inkSoft : Colors.white54,
+                          size: 16,
+                        ),
                         onPressed: onClearSearch,
                       ),
                   ],
@@ -116,11 +146,17 @@ class MusicTopHeader extends StatelessWidget {
                 scaleFactor: 1.1,
                 child: IconButton(
                   tooltip: 'Music Player Studio',
-                  icon: const Icon(Icons.dashboard_customize_rounded, color: Colors.white70, size: 20),
+                  icon: Icon(
+                    Icons.dashboard_customize_rounded,
+                    color: isLight ? PrismLight.inkSoft : Colors.white70,
+                    size: 20,
+                  ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MusicPlayerStudioPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const MusicPlayerStudioPage(),
+                      ),
                     );
                   },
                 ),
@@ -130,11 +166,17 @@ class MusicTopHeader extends StatelessWidget {
                 scaleFactor: 1.1,
                 child: IconButton(
                   tooltip: 'Music Atmosphere Settings',
-                  icon: const Icon(Icons.palette_rounded, color: Colors.white70, size: 20),
+                  icon: Icon(
+                    Icons.palette_rounded,
+                    color: isLight ? PrismLight.inkSoft : Colors.white70,
+                    size: 20,
+                  ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MusicSettingsPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const MusicSettingsPage(),
+                      ),
                     );
                   },
                 ),
@@ -145,7 +187,11 @@ class MusicTopHeader extends StatelessWidget {
               scaleFactor: 1.1,
               child: IconButton(
                 tooltip: 'App Settings',
-                icon: const Icon(Icons.settings_rounded, color: Colors.white70, size: 20),
+                icon: Icon(
+                  Icons.settings_rounded,
+                  color: isLight ? PrismLight.inkSoft : Colors.white70,
+                  size: 20,
+                ),
                 onPressed: onSettingsTap,
               ),
             ),
@@ -155,4 +201,3 @@ class MusicTopHeader extends StatelessWidget {
     );
   }
 }
-

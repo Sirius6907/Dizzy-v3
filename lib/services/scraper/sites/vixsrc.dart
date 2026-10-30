@@ -31,7 +31,10 @@ class VixSrcScraper extends StreamScraper {
     final m = reg.firstMatch(text);
     if (m == null || m.group(1) == null) return null;
     var val = m.group(1)!;
-    val = val.replaceAll(r'\u0026', '&').replaceAll(r'\/', '/').replaceAll(r'\', '');
+    val = val
+        .replaceAll(r'\u0026', '&')
+        .replaceAll(r'\/', '/')
+        .replaceAll(r'\', '');
     return val;
   }
 
@@ -56,7 +59,9 @@ class VixSrcScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VixSrcScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VixSrcScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -66,29 +71,38 @@ class VixSrcScraper extends StreamScraper {
             ? '$_baseUrl/api/tv/$tmdbId/${season ?? 1}/${episode ?? 1}'
             : '$_baseUrl/api/movie/$tmdbId';
 
-        final apiRes = await client.get(
-          Uri.parse(apiUrl),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final apiRes = await client
+            .get(Uri.parse(apiUrl), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (apiRes.statusCode != 200) return;
         final apiData = jsonDecode(apiRes.body);
         if (apiData is! Map || apiData['src'] == null) return;
 
         final rawEmbed = apiData['src'].toString();
-        final embedUrl = rawEmbed.startsWith('http') ? rawEmbed : '$_baseUrl$rawEmbed';
+        final embedUrl = rawEmbed.startsWith('http')
+            ? rawEmbed
+            : '$_baseUrl$rawEmbed';
 
-        final embedRes = await client.get(
-          Uri.parse(embedUrl),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final embedRes = await client
+            .get(Uri.parse(embedUrl), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (embedRes.statusCode != 200) return;
         final html = embedRes.body;
 
-        final token = _extract(RegExp(r'''token["']\s*:\s*["']([^"']+)'''), html);
-        final expires = _extract(RegExp(r'''expires["']\s*:\s*["']([^"']+)'''), html);
-        var playlist = _extract(RegExp(r'''url["']\s*:\s*["']([^"']+)'''), html);
+        final token = _extract(
+          RegExp(r'''token["']\s*:\s*["']([^"']+)'''),
+          html,
+        );
+        final expires = _extract(
+          RegExp(r'''expires["']\s*:\s*["']([^"']+)'''),
+          html,
+        );
+        var playlist = _extract(
+          RegExp(r'''url["']\s*:\s*["']([^"']+)'''),
+          html,
+        );
 
         if (token == null || expires == null || playlist == null) return;
 
@@ -96,9 +110,18 @@ class VixSrcScraper extends StreamScraper {
           playlist = '$_baseUrl$playlist';
         }
 
-        final lang = _extract(RegExp(r'''lang(?:uage)?["']\s*:\s*["']([a-z]{2,5})''', caseSensitive: false), html) ?? 'en';
+        final lang =
+            _extract(
+              RegExp(
+                r'''lang(?:uage)?["']\s*:\s*["']([a-z]{2,5})''',
+                caseSensitive: false,
+              ),
+              html,
+            ) ??
+            'en';
         final delim = playlist.contains('?') ? '&' : '?';
-        final rawMasterUrl = '$playlist${delim}token=$token&expires=$expires&h=1&lang=$lang';
+        final rawMasterUrl =
+            '$playlist${delim}token=$token&expires=$expires&h=1&lang=$lang';
 
         final isForeign = lang.isNotEmpty && lang.toLowerCase() != 'en';
         const langMap = {
@@ -118,10 +141,7 @@ class VixSrcScraper extends StreamScraper {
             ? 'VixSrc Master Stream · $langName'
             : 'VixSrc Master Stream';
 
-        final reqHeaders = {
-          ..._headers,
-          'Referer': embedUrl,
-        };
+        final reqHeaders = {..._headers, 'Referer': embedUrl};
 
         yield StreamSource(
           name: 'VixSrc',
@@ -132,9 +152,7 @@ class VixSrcScraper extends StreamScraper {
           headers: reqHeaders,
           behaviorHints: {
             'notWebReady': false,
-            'proxyHeaders': {
-              'request': reqHeaders,
-            },
+            'proxyHeaders': {'request': reqHeaders},
           },
         );
       } finally {

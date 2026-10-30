@@ -60,7 +60,8 @@ class WatchedHistoryImportService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keySimklLastImport, now.toIso8601String());
       debugPrint(
-          '[WatchedImport] Simkl imported ${result.movies.length} movies, ${result.series.length} series');
+        '[WatchedImport] Simkl imported ${result.movies.length} movies, ${result.series.length} series',
+      );
       return total;
     } catch (e) {
       debugPrint('[WatchedImport] Simkl import failed: $e');

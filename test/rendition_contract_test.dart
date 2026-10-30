@@ -17,7 +17,9 @@ void main() {
   group('P9: master playlist parsing', () {
     test('3 variants, labels + relative resolve + best-first', () {
       final r = HlsRenditionParser.parseMaster(
-          _master, 'https://cdn/x/master.m3u8');
+        _master,
+        'https://cdn/x/master.m3u8',
+      );
       expect(r.map((e) => e.label), ['1080p', '720p', '480p']);
       expect(r.first.url, 'https://cdn/x/1080/index.m3u8');
       expect(r[1].url, 'https://cdn/x/720p/index.m3u8');
@@ -39,9 +41,12 @@ b.m3u8
     test('garbage / media playlist / empty → empty (never throws)', () {
       expect(HlsRenditionParser.parseMaster('', 'https://c/m.m3u8'), isEmpty);
       expect(
-          HlsRenditionParser.parseMaster(
-              '#EXTM3U\n#EXTINF:6,\nseg.ts\n', 'https://c/m.m3u8'),
-          isEmpty);
+        HlsRenditionParser.parseMaster(
+          '#EXTM3U\n#EXTINF:6,\nseg.ts\n',
+          'https://c/m.m3u8',
+        ),
+        isEmpty,
+      );
       expect(HlsRenditionParser.parseMaster('💩', '💩'), isEmpty);
     });
   });
@@ -68,7 +73,8 @@ b.m3u8
     test('copyWith carries renditions', () {
       final s = StreamSource(url: 'u', addonName: 'a');
       final c = s.copyWith(
-          renditions: [const Rendition(label: '480p', url: 'u2')]);
+        renditions: [const Rendition(label: '480p', url: 'u2')],
+      );
       expect(c.renditions.map((e) => e.label), ['480p']);
       expect(s.renditions, isEmpty);
     });
@@ -81,8 +87,10 @@ b.m3u8
         addonName: 'a',
         renditions: const [Rendition(label: '720p', url: 'u')],
       );
-      expect(SourceRanker.score(rich, ctx) - SourceRanker.score(plain, ctx),
-          15);
+      expect(
+        SourceRanker.score(rich, ctx) - SourceRanker.score(plain, ctx),
+        15,
+      );
       // Rich source wins the order even listed second.
       final ordered = SourceRanker.order([plain, rich], ctx);
       expect(ordered.first.url, 'https://c/m.m3u8');

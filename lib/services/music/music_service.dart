@@ -144,6 +144,7 @@ class MusicService {
       out.add(a);
       return true;
     }
+
     try {
       const seeds = [
         'Arijit Singh',
@@ -230,7 +231,9 @@ class MusicService {
         for (final row in res) {
           final id = (row['id'] ?? row['slug'] ?? '').toString();
           if (id.isEmpty) continue;
-          final tracksRaw = row['tracks'] is List ? (row['tracks'] as List) : const [];
+          final tracksRaw = row['tracks'] is List
+              ? (row['tracks'] as List)
+              : const [];
           final tracks = tracksRaw
               .whereType<Map<String, dynamic>>()
               .map((m) => MusicTrack.fromJson(m))
@@ -317,11 +320,17 @@ class MusicService {
       };
 
       final chartFuture = _deezer.getChartTracks(limit: 25);
-      final saavnTrendingFuture = _jiosaavn.trending(limit: 15).catchError((_) => <MusicTrack>[]);
+      final saavnTrendingFuture = _jiosaavn
+          .trending(limit: 15)
+          .catchError((_) => <MusicTrack>[]);
       final queryFutures = queries.entries
           .map((e) => _deezer.searchTracks(e.value, limit: 15))
           .toList();
-      final settled = await Future.wait<Object>([chartFuture, saavnTrendingFuture, ...queryFutures]);
+      final settled = await Future.wait<Object>([
+        chartFuture,
+        saavnTrendingFuture,
+        ...queryFutures,
+      ]);
 
       // v1.3.3-T3.0: JioSaavn Trending row
       final saavnTracks = settled[1] as List<MusicTrack>;
@@ -357,7 +366,8 @@ class MusicService {
   }
 
   Future<MusicPlaylistDetails?> fetchPlaylistDetails(String playlistId) async {
-    if (playlistId.startsWith('curated_') && _curatedCache.containsKey(playlistId)) {
+    if (playlistId.startsWith('curated_') &&
+        _curatedCache.containsKey(playlistId)) {
       return _curatedCache[playlistId];
     }
     return _deezer.getPlaylistDetails(playlistId);
@@ -375,58 +385,127 @@ class MusicService {
     MusicTrack track, {
     MusicAudioSource source = MusicAudioSource.flac,
   }) async {
-    if (source == MusicAudioSource.flac) {
+    // Direct Saavn stream — instant, no need to enter the race.
+    final saavn = _saavnResult(track);
+    if (saavn != null) return saavn;
+
+    // Overall start budget: Qobuz gets a 4s head start, YouTube races it
+    // after that, and the whole chain is capped at 12s. First result wins.
+    final resolved = await _raceAudioPaths(
+      track,
+      source,
+    ).timeout(const Duration(seconds: 12), onTimeout: () => null);
+    return resolved ?? _previewResult(track);
+  }
+
+  MusicStreamResult? _saavnResult(MusicTrack track) {
+    final url = track.previewUrl;
+    if (!track.id.startsWith('saavn_') ||
+        url == null ||
+        !url.startsWith('http')) {
+      return null;
+    }
+    return MusicStreamResult(
+      url: url,
+      format: 'm4a',
+      quality: 'JioSaavn HQ',
+      isLossless: false,
+    );
+  }
+
+  MusicStreamResult? _previewResult(MusicTrack track) {
+    final url = track.previewUrl;
+    if (url == null || !url.startsWith('http')) return null;
+    return MusicStreamResult(
+      url: url,
+      format: 'mp3',
+      quality: 'Preview (30s)',
+      isLossless: false,
+    );
+  }
+
+  Future<MusicStreamResult?> _raceAudioPaths(
+    MusicTrack track,
+    MusicAudioSource source,
+  ) {
+    final winner = Completer<MusicStreamResult?>();
+    var active = 0;
+    var youtubeStarted = false;
+    Timer? youtubeStartTimer;
+
+    void maybeFinish() {
+      if (winner.isCompleted) return;
+      if (youtubeStarted && active == 0) winner.complete(null);
+    }
+
+    void startYoutube() {
+      if (youtubeStarted || winner.isCompleted) return;
+      youtubeStarted = true;
+      youtubeStartTimer?.cancel();
+      active++;
+      unawaited(
+        _runYoutubePath(track, winner, () {
+          active--;
+          maybeFinish();
+        }),
+      );
+    }
+
+    Future<void> runQobuz() async {
+      active++;
       try {
-        final flac = await _qobuz.resolveLosslessUrl(track);
-        if (flac != null && flac.url.isNotEmpty) {
-          return MusicStreamResult(
-            url: flac.url,
-            userAgent: flac.headers['User-Agent'],
-            format: flac.format,
-            quality: flac.quality,
-            isLossless: true,
-          );
+        if (source == MusicAudioSource.flac) {
+          final flac = await _qobuz.resolveLosslessUrl(track);
+          if (flac != null && flac.url.isNotEmpty && !winner.isCompleted) {
+            winner.complete(
+              MusicStreamResult(
+                url: flac.url,
+                userAgent: flac.headers['User-Agent'],
+                format: flac.format,
+                quality: flac.quality,
+                isLossless: true,
+              ),
+            );
+          }
         }
       } catch (e) {
         debugPrint('Qobuz FLAC error, falling back to YouTube: $e');
+      } finally {
+        active--;
+        // Qobuz failed fast — don't burn the 4s head start.
+        startYoutube();
+        maybeFinish();
       }
     }
 
-    // Direct Saavn stream if available
-    if (track.id.startsWith('saavn_') &&
-        track.previewUrl != null &&
-        track.previewUrl!.startsWith('http')) {
-      return MusicStreamResult(
-        url: track.previewUrl!,
-        format: 'm4a',
-        quality: 'JioSaavn HQ',
-        isLossless: false,
-      );
-    }
+    youtubeStartTimer = Timer(const Duration(seconds: 4), startYoutube);
+    unawaited(runQobuz());
+    return winner.future;
+  }
 
-    // YouTube Audio Stream (Primary or Fallback)
-    final yt = await _streamResolver.resolveUrl(track);
-    if (yt != null && yt.url.isNotEmpty) {
-      return MusicStreamResult(
-        url: yt.url,
-        userAgent: yt.userAgent,
-        format: 'm4a',
-        quality: 'YouTube HQ',
-        isLossless: false,
-      );
+  Future<void> _runYoutubePath(
+    MusicTrack track,
+    Completer<MusicStreamResult?> winner,
+    VoidCallback onDone,
+  ) async {
+    try {
+      final yt = await _streamResolver.resolveUrl(track);
+      if (yt != null && yt.url.isNotEmpty && !winner.isCompleted) {
+        winner.complete(
+          MusicStreamResult(
+            url: yt.url,
+            userAgent: yt.userAgent,
+            format: 'm4a',
+            quality: 'YouTube HQ',
+            isLossless: false,
+          ),
+        );
+      }
+    } catch (_) {
+      // Falls through to the overall budget + preview fallback.
+    } finally {
+      onDone();
     }
-
-    // Last resort fallback: previewUrl
-    if (track.previewUrl != null && track.previewUrl!.startsWith('http')) {
-      return MusicStreamResult(
-        url: track.previewUrl!,
-        format: 'mp3',
-        quality: 'Preview (30s)',
-        isLossless: false,
-      );
-    }
-
-    return null;
   }
 
   Future<LyricsData> fetchLyrics(MusicTrack track) async {

@@ -76,21 +76,21 @@ class DownloadedMusicTrack {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'artist': artist,
-        'artistId': artistId,
-        'album': album,
-        'albumId': albumId,
-        'coverUrl': coverUrl,
-        'durationSeconds': durationSeconds,
-        'explicit': explicit,
-        'localAudioPath': localAudioPath,
-        'localCoverPath': localCoverPath,
-        'format': format,
-        'quality': quality,
-        'fileSizeBytes': fileSizeBytes,
-        'downloadedAt': downloadedAt.toIso8601String(),
-        if (trackNumber != null) 'trackNumber': trackNumber,
-      };
+    'id': id,
+    'title': title,
+    'artist': artist,
+    'artistId': artistId,
+    'album': album,
+    'albumId': albumId,
+    'coverUrl': coverUrl,
+    'durationSeconds': durationSeconds,
+    'explicit': explicit,
+    'localAudioPath': localAudioPath,
+    'localCoverPath': localCoverPath,
+    'format': format,
+    'quality': quality,
+    'fileSizeBytes': fileSizeBytes,
+    'downloadedAt': downloadedAt.toIso8601String(),
+    if (trackNumber != null) 'trackNumber': trackNumber,
+  };
 }

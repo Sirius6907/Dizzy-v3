@@ -197,7 +197,8 @@ void main() {
                 expect(
                   decision.isAuto,
                   isFalse,
-                  reason: 'metered link ${network.name} must never auto-download '
+                  reason:
+                      'metered link ${network.name} must never auto-download '
                       '(toggle=$toggle hasNext=$hasNext saved=$saved)',
                 );
               }
@@ -326,7 +327,10 @@ void main() {
         DownloadQualityOverride.fromName('q9999'),
         DownloadQualityOverride.auto,
       );
-      expect(DownloadQualityOverride.fromName(null), DownloadQualityOverride.auto);
+      expect(
+        DownloadQualityOverride.fromName(null),
+        DownloadQualityOverride.auto,
+      );
       expect(
         DownloadQualityOverride.fromName('saver480'),
         DownloadQualityOverride.saver480,
@@ -361,10 +365,7 @@ void main() {
     });
 
     test('a failed disk probe never nags the user', () {
-      expect(
-        shouldSuggestStorageCleanup(freeBytes: 0, totalBytes: 0),
-        isFalse,
-      );
+      expect(shouldSuggestStorageCleanup(freeBytes: 0, totalBytes: 0), isFalse);
     });
 
     test('the suggestion fires exactly when downloads start failing', () {
@@ -373,7 +374,14 @@ void main() {
       // must agree with it on *every* disk, not just one boundary. If the
       // two ever disagree, downloads fail while the app says all is well.
       for (final total in [8 * gb, 64 * gb, 128 * gb, 1024 * gb]) {
-        for (final free in [0, 300 * mb, 499 * mb, 500 * mb, 2 * gb, total ~/ 2]) {
+        for (final free in [
+          0,
+          300 * mb,
+          499 * mb,
+          500 * mb,
+          2 * gb,
+          total ~/ 2,
+        ]) {
           expect(
             shouldSuggestStorageCleanup(freeBytes: free, totalBytes: total),
             StorageGuard.decideCritical(freeBytes: free, totalBytes: total),
@@ -385,10 +393,25 @@ void main() {
 
     test('only completed, watched episodes are ever offered', () {
       final tasks = [
-        task(id: 'a', status: DownloadStatus.completed, completedAt: DateTime(2025, 1, 1), episode: 1),
+        task(
+          id: 'a',
+          status: DownloadStatus.completed,
+          completedAt: DateTime(2025, 1, 1),
+          episode: 1,
+        ),
         task(id: 'b', status: DownloadStatus.downloading, episode: 2),
-        task(id: 'c', status: DownloadStatus.completed, completedAt: DateTime(2025, 2, 1), episode: 3),
-        task(id: 'd', status: DownloadStatus.completed, completedAt: DateTime(2025, 3, 1), episode: 4),
+        task(
+          id: 'c',
+          status: DownloadStatus.completed,
+          completedAt: DateTime(2025, 2, 1),
+          episode: 3,
+        ),
+        task(
+          id: 'd',
+          status: DownloadStatus.completed,
+          completedAt: DateTime(2025, 3, 1),
+          episode: 4,
+        ),
       ];
       final ranked = rankStorageSweepCandidates(
         tasks: tasks,
@@ -397,14 +420,32 @@ void main() {
       );
       final ids = ranked.map((s) => s.taskId).toSet();
       expect(ids, {'a', 'c'});
-      expect(ids.contains('b'), isFalse, reason: 'a running download is not offerable');
-      expect(ids.contains('d'), isFalse, reason: 'an unwatched episode is not offerable');
+      expect(
+        ids.contains('b'),
+        isFalse,
+        reason: 'a running download is not offerable',
+      );
+      expect(
+        ids.contains('d'),
+        isFalse,
+        reason: 'an unwatched episode is not offerable',
+      );
     });
 
     test('oldest watched episode is offered first', () {
       final tasks = [
-        task(id: 'new', status: DownloadStatus.completed, completedAt: DateTime(2026, 6, 1), episode: 1),
-        task(id: 'old', status: DownloadStatus.completed, completedAt: DateTime(2024, 1, 1), episode: 2),
+        task(
+          id: 'new',
+          status: DownloadStatus.completed,
+          completedAt: DateTime(2026, 6, 1),
+          episode: 1,
+        ),
+        task(
+          id: 'old',
+          status: DownloadStatus.completed,
+          completedAt: DateTime(2024, 1, 1),
+          episode: 2,
+        ),
       ];
       final ranked = rankStorageSweepCandidates(
         tasks: tasks,
@@ -480,7 +521,10 @@ void main() {
 
     test('a file that was never trashed has no undo', () {
       expect(canUndoStorageSweep(trashedAt: null, now: trashedAt), isFalse);
-      expect(storageSweepUndoRemaining(trashedAt: null, now: trashedAt), isNull);
+      expect(
+        storageSweepUndoRemaining(trashedAt: null, now: trashedAt),
+        isNull,
+      );
     });
 
     test('the countdown reports real remaining time, then stops', () {
@@ -513,7 +557,10 @@ void main() {
       expect(restored!.taskId, 'dl_1');
       expect(restored.bytes, 4096);
       expect(restored.trashedAt, trashedAt);
-      expect(restored.canUndo(now: trashedAt.add(const Duration(days: 1))), isTrue);
+      expect(
+        restored.canUndo(now: trashedAt.add(const Duration(days: 1))),
+        isTrue,
+      );
     });
 
     test('a corrupt ledger row is dropped, not trusted', () {

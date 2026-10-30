@@ -5,8 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
 import '../../services/audiobook/custom_audiobook_service.dart';
@@ -27,7 +26,8 @@ class GenerateAudiobookScreen extends StatefulWidget {
   const GenerateAudiobookScreen({super.key});
 
   @override
-  State<GenerateAudiobookScreen> createState() => _GenerateAudiobookScreenState();
+  State<GenerateAudiobookScreen> createState() =>
+      _GenerateAudiobookScreenState();
 }
 
 class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
@@ -75,7 +75,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     () async {
       await _paperService.refreshAll();
       if (!mounted) return;
-      final hasPending = _paperService.jobs.value.any((j) => !j.isDone && !j.isFailed);
+      final hasPending = _paperService.jobs.value.any(
+        (j) => !j.isDone && !j.isFailed,
+      );
       if (hasPending) {
         _pollingTimer = Timer(const Duration(seconds: 8), _schedulePolling);
       }
@@ -120,36 +122,53 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
 
       if (parts.length > 1) {
         if (!mounted) return;
+        final palette = AppThemeService.currentPalette.value;
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
         final totalWords = parts.fold<int>(0, (a, p) => a + p.wordCount);
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: DizzyVoid.surface1,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: const Row(
+            backgroundColor: palette.cardBackgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            title: Row(
               children: [
-                Icon(Icons.call_split_rounded, color: Color(0xFF7C5CFF)),
-                SizedBox(width: 10),
-                Text('EPUB Exceeds 250k Words', style: TextStyle(color: Colors.white, fontSize: 16)),
+                const Icon(Icons.call_split_rounded, color: Color(0xFF7C5CFF)),
+                const SizedBox(width: 10),
+                Text(
+                  'EPUB Exceeds 250k Words',
+                  style: TextStyle(color: ink, fontSize: 16),
+                ),
               ],
             ),
             content: Text(
               'This book has ~${_formatWords(totalWords)} words. It will automatically be split into ${parts.length} parts along chapter boundaries and queued:\n\n'
               '${parts.map((p) => '• ${p.suggestedName} (~${_formatWords(p.wordCount)} words)').join('\n')}',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: inkSoft, fontSize: 13),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                child: Text('Cancel', style: TextStyle(color: inkSoft)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C5CFF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Split & Generate', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Split & Generate',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -173,9 +192,11 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(parts.length == 1
-              ? 'Upload complete — AI Audiobook generation started!'
-              : 'Uploaded ${parts.length} parts — generation started in background!'),
+          content: Text(
+            parts.length == 1
+                ? 'Upload complete — AI Audiobook generation started!'
+                : 'Uploaded ${parts.length} parts — generation started in background!',
+          ),
           backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
         ),
@@ -184,7 +205,10 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Generation failed: $e'), backgroundColor: Colors.redAccent),
+        SnackBar(
+          content: Text('Generation failed: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -200,7 +224,10 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
 
   void _playGeneratedAudiobook(GeneratedAudiobookJob job) {
     if (!job.isDone) return;
-    final title = job.fileName.replaceAll(RegExp(r'\.epub$', caseSensitive: false), '');
+    final title = job.fileName.replaceAll(
+      RegExp(r'\.epub$', caseSensitive: false),
+      '',
+    );
     final streamOrLocalPath = job.localAudioPath ?? job.downloadUrl!;
 
     final book = Audiobook(
@@ -214,17 +241,13 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       pageUrl: streamOrLocalPath,
     );
 
-    final chapters = [
-      AudiobookChapter(title: title, url: streamOrLocalPath),
-    ];
+    final chapters = [AudiobookChapter(title: title, url: streamOrLocalPath)];
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AudiobookPlayerScreen(
-          audiobook: book,
-          chapters: chapters,
-        ),
+        builder: (_) =>
+            AudiobookPlayerScreen(audiobook: book, chapters: chapters),
       ),
     );
   }
@@ -241,18 +264,31 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   }
 
   Future<void> _deleteGeneratedJob(GeneratedAudiobookJob job) async {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor: palette.cardBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Remove Generation Job?'),
-        content: Text('Remove "${job.fileName}" from the generation list?'),
+        title: Text('Remove Generation Job?', style: TextStyle(color: ink)),
+        content: Text(
+          'Remove "${job.fileName}" from the generation list?',
+          style: TextStyle(color: inkSoft),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: inkSoft)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Remove',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -270,7 +306,16 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   Future<void> _openCustomAudiobookUploadDialog() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['mp3', 'm4b', 'm4a', 'aac', 'flac', 'opus', 'wav', 'ogg'],
+      allowedExtensions: [
+        'mp3',
+        'm4b',
+        'm4a',
+        'aac',
+        'flac',
+        'opus',
+        'wav',
+        'ogg',
+      ],
       allowMultiple: true,
       withData: false,
     );
@@ -285,7 +330,10 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     if (pickedFiles.isEmpty || !mounted) return;
 
     final titleController = TextEditingController(
-      text: p.basenameWithoutExtension(pickedFiles.first.path).replaceAll(RegExp(r'[._]'), ' ').trim(),
+      text: p
+          .basenameWithoutExtension(pickedFiles.first.path)
+          .replaceAll(RegExp(r'[._]'), ' ')
+          .trim(),
     );
     final authorController = TextEditingController(text: 'Unknown Author');
     File? pickedCoverFile;
@@ -294,14 +342,33 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) {
+          final palette = AppThemeService.currentPalette.value;
+          final isLight = palette.isLight;
+          final ink = isLight ? PrismLight.ink : Colors.white;
+          final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+          final field = isLight
+              ? PrismLight.raisedBottom
+              : Colors.white.withValues(alpha: 0.05);
+          final hairline = isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.10);
           return AlertDialog(
-            backgroundColor: DizzyVoid.surface1,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Row(
+            backgroundColor: palette.cardBackgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
               children: [
-                Icon(Icons.upload_file_rounded, color: Color(0xFF7C5CFF)),
-                SizedBox(width: 10),
-                Text('Add Personal Audiobook', style: TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w800)),
+                const Icon(Icons.upload_file_rounded, color: Color(0xFF7C5CFF)),
+                const SizedBox(width: 10),
+                Text(
+                  'Add Personal Audiobook',
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
             content: SizedBox(
@@ -313,47 +380,86 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                   children: [
                     Text(
                       'Selected ${pickedFiles.length} audio file(s):',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: inkSoft,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       constraints: const BoxConstraints(maxHeight: 90),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black26,
+                        color: field,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: hairline),
                       ),
                       child: ListView(
                         shrinkWrap: true,
-                        children: pickedFiles.map((f) => Text(
-                          '• ${p.basename(f.path)}',
-                          style: const TextStyle(color: Colors.white60, fontSize: 11.5),
-                        )).toList(),
+                        children: pickedFiles
+                            .map(
+                              (f) => Text(
+                                '• ${p.basename(f.path)}',
+                                style: TextStyle(
+                                  color: inkSoft,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: titleController,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: ink, fontSize: 14),
                       decoration: InputDecoration(
                         labelText: 'Audiobook Title',
-                        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+                        labelStyle: TextStyle(color: inkSoft, fontSize: 12),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.05),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: field,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: hairline),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: hairline),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: palette.primaryColor,
+                            width: 1.6,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: authorController,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: ink, fontSize: 14),
                       decoration: InputDecoration(
                         labelText: 'Author / Narrator',
-                        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+                        labelStyle: TextStyle(color: inkSoft, fontSize: 12),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.05),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: field,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: hairline),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: hairline),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: palette.primaryColor,
+                            width: 1.6,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -363,31 +469,54 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                         if (pickedCoverFile != null)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.file(pickedCoverFile!, width: 44, height: 44, fit: BoxFit.cover),
+                            child: Image.file(
+                              pickedCoverFile!,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                            ),
                           )
                         else
                           Container(
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: Colors.white10,
+                              color: field,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.image_rounded, color: Colors.white38),
+                            child: Icon(
+                              Icons.image_rounded,
+                              color: isLight
+                                  ? PrismLight.inkFaint
+                                  : Colors.white38,
+                            ),
                           ),
                         const SizedBox(width: 12),
                         TextButton.icon(
-                          icon: const Icon(Icons.photo_library_rounded, size: 16),
-                          label: Text(pickedCoverFile == null ? 'Select Cover Art' : 'Change Cover'),
-                          style: TextButton.styleFrom(foregroundColor: const Color(0xFF7C5CFF)),
+                          icon: const Icon(
+                            Icons.photo_library_rounded,
+                            size: 16,
+                          ),
+                          label: Text(
+                            pickedCoverFile == null
+                                ? 'Select Cover Art'
+                                : 'Change Cover',
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF7C5CFF),
+                          ),
                           onPressed: () async {
-                            final imgResult = await FilePicker.platform.pickFiles(
-                              type: FileType.image,
-                              withData: false,
-                            );
-                            if (imgResult != null && imgResult.files.single.path != null) {
+                            final imgResult = await FilePicker.platform
+                                .pickFiles(
+                                  type: FileType.image,
+                                  withData: false,
+                                );
+                            if (imgResult != null &&
+                                imgResult.files.single.path != null) {
                               setDlgState(() {
-                                pickedCoverFile = File(imgResult.files.single.path!);
+                                pickedCoverFile = File(
+                                  imgResult.files.single.path!,
+                                );
                               });
                             }
                           },
@@ -401,12 +530,14 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                child: Text('Cancel', style: TextStyle(color: inkSoft)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C5CFF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: () async {
                   Navigator.pop(ctx);
@@ -418,7 +549,13 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                   );
                   if (mounted) setState(() {});
                 },
-                child: const Text('Import to Library', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Import to Library',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           );
@@ -434,10 +571,8 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AudiobookPlayerScreen(
-          audiobook: audiobook,
-          chapters: chapters,
-        ),
+        builder: (_) =>
+            AudiobookPlayerScreen(audiobook: audiobook, chapters: chapters),
       ),
     );
   }
@@ -449,13 +584,17 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     // P6 narrow compact: 360px pe long title overflow karta hai.
     final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return Scaffold(
-      backgroundColor: DizzyColors.bg,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.surface1.withValues(alpha: 0.9),
+        backgroundColor: palette.appBarBackgroundColor,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -463,7 +602,11 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
         ),
         title: Row(
           children: [
-            const Icon(Icons.auto_stories_rounded, color: Color(0xFF7C5CFF), size: 22),
+            const Icon(
+              Icons.auto_stories_rounded,
+              color: Color(0xFF7C5CFF),
+              size: 22,
+            ),
             const SizedBox(width: 10),
             Text(
               narrow ? 'Studio' : 'Audiobook Studio & Generator',
@@ -475,22 +618,28 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
           controller: _tabController,
           indicatorColor: palette.primaryColor,
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
-          labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          labelColor: ink,
+          unselectedLabelColor: inkSoft,
+          labelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
           tabs: const [
-            Tab(text: 'AI EPUB Generator (TTS)', icon: Icon(Icons.record_voice_over_rounded, size: 18)),
-            Tab(text: 'My Uploaded Audiobooks', icon: Icon(Icons.library_music_rounded, size: 18)),
+            Tab(
+              text: 'AI EPUB Generator (TTS)',
+              icon: Icon(Icons.record_voice_over_rounded, size: 18),
+            ),
+            Tab(
+              text: 'My Uploaded Audiobooks',
+              icon: Icon(Icons.library_music_rounded, size: 18),
+            ),
           ],
         ),
       ),
       body: AnimatedAmbientBackground(
         child: TabBarView(
           controller: _tabController,
-          children: [
-            _buildGeneratorTab(palette),
-            _buildUploadedTab(palette),
-          ],
+          children: [_buildGeneratorTab(palette), _buildUploadedTab(palette)],
         ),
       ),
     );
@@ -501,6 +650,13 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildGeneratorTab(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
@@ -535,12 +691,16 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: inkSoft,
                         letterSpacing: 1.1,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.white54),
+                      icon: Icon(
+                        Icons.refresh_rounded,
+                        size: 18,
+                        color: isLight ? PrismLight.inkFaint : Colors.white54,
+                      ),
                       tooltip: 'Refresh Status',
                       onPressed: () => _paperService.refreshAll(),
                     ),
@@ -553,22 +713,30 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                     padding: const EdgeInsets.all(32),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
+                      color: panel,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      border: Border.all(color: hairline),
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(Icons.headphones_rounded, size: 40, color: Colors.white24),
-                        SizedBox(height: 12),
+                        Icon(
+                          Icons.headphones_rounded,
+                          size: 40,
+                          color: isLight ? PrismLight.inkFaint : Colors.white24,
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           'No generated audiobooks yet',
-                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Pick an EPUB above to synthesize high-quality voice narrations.',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(color: inkSoft, fontSize: 12),
                         ),
                       ],
                     ),
@@ -584,6 +752,16 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   }
 
   Widget _buildVoiceSelectorCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final field = isLight
+        ? PrismLight.raisedBottom
+        : Colors.white.withValues(alpha: 0.05);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final selectedVoice = kPaper2AudioVoices.firstWhere(
       (v) => v.id == _selectedVoiceId,
       orElse: () => kPaper2AudioVoices.first,
@@ -592,9 +770,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: panel,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,20 +786,28 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                   color: palette.primaryColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.record_voice_over_rounded, color: palette.primaryColor, size: 20),
+                child: Icon(
+                  Icons.record_voice_over_rounded,
+                  color: palette.primaryColor,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'AI Narrator Voice (Kokoro Engine)',
-                      style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: ink,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Text(
                       selectedVoice.description,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5),
+                      style: TextStyle(color: inkSoft, fontSize: 11.5),
                     ),
                   ],
                 ),
@@ -632,16 +818,16 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black26,
+              color: field,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: hairline),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedVoiceId,
                 isExpanded: true,
-                dropdownColor: DizzyVoid.voidB,
-                icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white70),
+                dropdownColor: panel,
+                icon: Icon(Icons.arrow_drop_down_rounded, color: inkSoft),
                 items: kPaper2AudioVoices.map((voice) {
                   return DropdownMenuItem<String>(
                     value: voice.id,
@@ -650,17 +836,30 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                       children: [
                         Text(
                           voice.label,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: isLight
+                                ? PrismLight.raisedBottom
+                                : Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             voice.group,
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              color: inkSoft,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
@@ -679,8 +878,23 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   }
 
   Widget _buildDetectedEpubsSection(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final field = isLight
+        ? PrismLight.raisedBottom
+        : Colors.white.withValues(alpha: 0.08);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     if (_isLoadingEpubs) {
-      return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (_detectedEpubs.isEmpty) {
@@ -698,14 +912,16 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: inkSoft,
                 letterSpacing: 1.1,
               ),
             ),
             TextButton.icon(
               icon: const Icon(Icons.refresh_rounded, size: 14),
               label: const Text('Rescan Books', style: TextStyle(fontSize: 11)),
-              style: TextButton.styleFrom(foregroundColor: palette.primaryColor),
+              style: TextButton.styleFrom(
+                foregroundColor: palette.primaryColor,
+              ),
               onPressed: _loadDownloadedEpubs,
             ),
           ],
@@ -724,9 +940,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                 width: 260,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: DizzyVoid.surface1,
+                  color: panel,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(color: hairline),
                 ),
                 child: Row(
                   children: [
@@ -735,14 +951,22 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                       width: 65,
                       height: 145,
                       decoration: BoxDecoration(
-                        color: Colors.white10,
+                        color: field,
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 4)],
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black45, blurRadius: 4),
+                        ],
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: epub.coverPath != null
                           ? Image.file(File(epub.coverPath!), fit: BoxFit.cover)
-                          : const Icon(Icons.book_rounded, color: Colors.white30, size: 30),
+                          : Icon(
+                              Icons.book_rounded,
+                              color: isLight
+                                  ? PrismLight.inkFaint
+                                  : Colors.white30,
+                              size: 30,
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -754,26 +978,46 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                             epub.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              color: ink,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Size: ${(epub.fileSizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
-                            style: const TextStyle(color: Colors.white38, fontSize: 11),
+                            style: TextStyle(color: inkSoft, fontSize: 11),
                           ),
                           const Spacer(),
                           ElevatedButton.icon(
-                            icon: const Icon(Icons.record_voice_over_rounded, size: 14),
-                            label: const Text('Generate', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            icon: const Icon(
+                              Icons.record_voice_over_rounded,
+                              size: 14,
+                            ),
+                            label: const Text(
+                              'Generate',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: palette.primaryColor,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                             onPressed: _isUploading
                                 ? null
-                                : () => _processAndGenerateFromEpub(File(epub.filePath)),
+                                : () => _processAndGenerateFromEpub(
+                                    File(epub.filePath),
+                                  ),
                           ),
                         ],
                       ),
@@ -789,6 +1033,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   }
 
   Widget _buildUploadExternalCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     return InkWell(
       onTap: _isUploading ? null : _pickAndUploadEpub,
       borderRadius: BorderRadius.circular(18),
@@ -804,7 +1051,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: palette.primaryColor.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: palette.primaryColor.withValues(alpha: 0.3),
+          ),
         ),
         child: Row(
           children: [
@@ -816,8 +1065,18 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                 borderRadius: BorderRadius.circular(14),
               ),
               child: _isUploading
-                  ? const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                  : const Icon(Icons.upload_file_rounded, color: Colors.white, size: 26),
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: CircularProgressIndicator(
+                        color: isLight ? palette.primaryColor : Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Icon(
+                      Icons.upload_file_rounded,
+                      color: isLight ? palette.primaryColor : Colors.white,
+                      size: 26,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -825,18 +1084,28 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isUploading ? 'Analyzing & Uploading Book...' : 'Select External EPUB File',
-                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                    _isUploading
+                        ? 'Analyzing & Uploading Book...'
+                        : 'Select External EPUB File',
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     'Pick any .epub file from your device. Large books (>250k words) are auto-split.',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
+                    style: TextStyle(color: inkSoft, fontSize: 12),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white54, size: 24),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: isLight ? PrismLight.inkFaint : Colors.white54,
+              size: 24,
+            ),
           ],
         ),
       ),
@@ -844,20 +1113,37 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   }
 
   Widget _buildJobCard(GeneratedAudiobookJob job, AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final field = isLight
+        ? PrismLight.raisedBottom
+        : Colors.white.withValues(alpha: 0.10);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
     final isDone = job.isDone;
     final isFailed = job.isFailed;
-    final cleanTitle = job.fileName.replaceAll(RegExp(r'\.epub$', caseSensitive: false), '');
+    final cleanTitle = job.fileName.replaceAll(
+      RegExp(r'\.epub$', caseSensitive: false),
+      '',
+    );
 
     Color statusColor;
     String statusLabel;
     if (isDone) {
-      statusColor = const Color(0xFF10B981);
+      statusColor = isLight
+          ? PrismAccent.successTextLight
+          : const Color(0xFF10B981);
       statusLabel = 'Completed';
     } else if (isFailed) {
       statusColor = Colors.redAccent;
       statusLabel = 'Failed';
     } else {
-      statusColor = const Color(0xFFF59E0B);
+      statusColor = isLight
+          ? PrismAccent.starTextLight
+          : const Color(0xFFF59E0B);
       statusLabel = 'Synthesizing ${(job.progress * 100).round()}%';
     }
 
@@ -865,9 +1151,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: panel,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -879,13 +1165,18 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                 width: 48,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white10,
+                  color: field,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: job.coverPath != null && File(job.coverPath!).existsSync()
+                child:
+                    job.coverPath != null && File(job.coverPath!).existsSync()
                     ? Image.file(File(job.coverPath!), fit: BoxFit.cover)
-                    : const Icon(Icons.headphones_rounded, color: Colors.white30, size: 24),
+                    : Icon(
+                        Icons.headphones_rounded,
+                        color: isLight ? PrismLight.inkFaint : Colors.white30,
+                        size: 24,
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -894,7 +1185,11 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                   children: [
                     Text(
                       cleanTitle,
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -902,21 +1197,31 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 0.8),
+                            border: Border.all(
+                              color: statusColor.withValues(alpha: 0.3),
+                              width: 0.8,
+                            ),
                           ),
                           child: Text(
                             statusLabel,
-                            style: TextStyle(color: statusColor, fontSize: 10.5, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Voice: ${job.voiceId}',
-                          style: const TextStyle(color: Colors.white38, fontSize: 11),
+                          style: TextStyle(color: inkSoft, fontSize: 11),
                         ),
                       ],
                     ),
@@ -925,7 +1230,11 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
               ),
               // Delete Button
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.white38),
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: isLight ? PrismLight.inkFaint : Colors.white38,
+                ),
                 onPressed: () => _deleteGeneratedJob(job),
               ),
             ],
@@ -937,7 +1246,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: job.progress > 0 ? job.progress : null,
-                backgroundColor: Colors.white10,
+                backgroundColor: field,
                 color: palette.primaryColor,
                 minHeight: 5,
               ),
@@ -951,12 +1260,17 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                 Expanded(
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                    label: const Text('Play in App', style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text(
+                      'Play in App',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: palette.primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: PrismAccent.onAccent,
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () => _playGeneratedAudiobook(job),
                   ),
@@ -967,10 +1281,15 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                     icon: const Icon(Icons.link_rounded, size: 16),
                     label: const Text('Copy Stream URL'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      foregroundColor: ink,
+                      side: BorderSide(color: hairline),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () => _copyStreamUrl(job.downloadUrl!),
                   ),
@@ -987,6 +1306,13 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildUploadedTab(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
@@ -1013,7 +1339,9 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -1024,26 +1352,40 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                             color: Color(0x3310B981),
                             borderRadius: BorderRadius.all(Radius.circular(14)),
                           ),
-                          child: const Icon(Icons.library_add_rounded, color: Color(0xFF10B981), size: 26),
+                          child: Icon(
+                            Icons.library_add_rounded,
+                            color: isLight
+                                ? PrismAccent.successTextLight
+                                : const Color(0xFF10B981),
+                            size: 26,
+                          ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Upload Personal Audiobook Files',
-                                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                                style: TextStyle(
+                                  color: ink,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                              SizedBox(height: 3),
+                              const SizedBox(height: 3),
                               Text(
                                 'Import your own .mp3, .m4b, .m4a, or .flac audiobooks to listen offline.',
-                                style: TextStyle(color: Colors.white54, fontSize: 12),
+                                style: TextStyle(color: inkSoft, fontSize: 12),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded, color: Colors.white54, size: 24),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: isLight ? PrismLight.inkFaint : Colors.white54,
+                          size: 24,
+                        ),
                       ],
                     ),
                   ),
@@ -1056,7 +1398,7 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: inkSoft,
                     letterSpacing: 1.1,
                   ),
                 ),
@@ -1067,22 +1409,30 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
                     padding: const EdgeInsets.all(32),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
+                      color: panel,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      border: Border.all(color: hairline),
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(Icons.library_music_rounded, size: 40, color: Colors.white24),
-                        SizedBox(height: 12),
+                        Icon(
+                          Icons.library_music_rounded,
+                          size: 40,
+                          color: isLight ? PrismLight.inkFaint : Colors.white24,
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           'No personal audiobooks added yet',
-                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Tap the banner above to import audio files from your device.',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(color: inkSoft, fontSize: 12),
                         ),
                       ],
                     ),
@@ -1097,16 +1447,29 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
     );
   }
 
-  Widget _buildUploadedBookCard(UserUploadedAudiobook book, AppThemePalette palette) {
+  Widget _buildUploadedBookCard(
+    UserUploadedAudiobook book,
+    AppThemePalette palette,
+  ) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final field = isLight
+        ? PrismLight.raisedBottom
+        : Colors.white.withValues(alpha: 0.10);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
     final sizeMb = (book.totalBytes / (1024 * 1024)).toStringAsFixed(1);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: panel,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: hairline),
       ),
       child: Row(
         children: [
@@ -1115,13 +1478,17 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
             width: 48,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.white10,
+              color: field,
               borderRadius: BorderRadius.circular(8),
             ),
             clipBehavior: Clip.antiAlias,
             child: book.coverPath != null && File(book.coverPath!).existsSync()
                 ? Image.file(File(book.coverPath!), fit: BoxFit.cover)
-                : const Icon(Icons.music_note_rounded, color: Colors.white30, size: 24),
+                : Icon(
+                    Icons.music_note_rounded,
+                    color: isLight ? PrismLight.inkFaint : Colors.white30,
+                    size: 24,
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1130,14 +1497,18 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
               children: [
                 Text(
                   book.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${book.author} • ${book.audioFilePaths.length} part(s) ($sizeMb MB)',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(color: inkSoft, fontSize: 12),
                 ),
               ],
             ),
@@ -1147,26 +1518,49 @@ class _GenerateAudiobookScreenState extends State<GenerateAudiobookScreen>
             label: const Text('Play'),
             style: ElevatedButton.styleFrom(
               backgroundColor: palette.primaryColor,
-              foregroundColor: Colors.white,
+              foregroundColor: PrismAccent.onAccent,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => _playUploadedAudiobook(book),
           ),
           const SizedBox(width: 6),
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.white38),
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              size: 18,
+              color: isLight ? PrismLight.inkFaint : Colors.white38,
+            ),
             onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  backgroundColor: DizzyVoid.surface1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Text('Delete Audiobook?'),
-                  content: Text('Delete "${book.title}" from your library?'),
+                  backgroundColor: palette.cardBackgroundColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Text(
+                    'Delete Audiobook?',
+                    style: TextStyle(color: ink),
+                  ),
+                  content: Text(
+                    'Delete "${book.title}" from your library?',
+                    style: TextStyle(color: inkSoft),
+                  ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.redAccent))),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text('Cancel', style: TextStyle(color: inkSoft)),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
                   ],
                 ),
               );

@@ -84,7 +84,9 @@ class VadapavScraper extends StreamScraper {
               final data = jsonDecode(res.body);
               if (data is Map && data['streams'] is List) {
                 final streams = data['streams'] as List;
-                AppLog.d('[Vadapav] Received ${streams.length} streams for $id');
+                AppLog.d(
+                  '[Vadapav] Received ${streams.length} streams for $id',
+                );
 
                 for (final item in streams) {
                   if (item is! Map) continue;
@@ -104,7 +106,9 @@ class VadapavScraper extends StreamScraper {
 
                   final source = StreamSource(
                     name: rawName.isNotEmpty ? rawName : 'vadapav.mov',
-                    title: rawTitle.isNotEmpty ? rawTitle : 'vadapav.mov • Direct Stream',
+                    title: rawTitle.isNotEmpty
+                        ? rawTitle
+                        : 'vadapav.mov • Direct Stream',
                     description: rawTitle,
                     url: url,
                     addonName: 'vadapav',

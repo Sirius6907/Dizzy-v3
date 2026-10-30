@@ -29,15 +29,20 @@ class Dizzy7Segment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chars = value.padLeft(digits, ' ').split('').reversed.take(digits).toList().reversed.toList();
+    final chars = value
+        .padLeft(digits, ' ')
+        .split('')
+        .reversed
+        .take(digits)
+        .toList()
+        .reversed
+        .toList();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: DizzyVoid.obsidian,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

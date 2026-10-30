@@ -6,8 +6,7 @@ class WatchEmptySources extends StatefulWidget {
   const WatchEmptySources({super.key});
 
   @override
-  State<WatchEmptySources> createState() =>
-      WatchEmptySourcesState();
+  State<WatchEmptySources> createState() => WatchEmptySourcesState();
 }
 
 class WatchEmptySourcesState extends State<WatchEmptySources>

@@ -83,11 +83,9 @@ class VuflixScraper extends StreamScraper {
             if (p is! Map) continue;
             final id = (p['id'] ?? '').toString().trim();
             if (id.isEmpty) continue;
-            final name = (p['publicLabel'] ??
-                    p['providerName'] ??
-                    p['name'] ??
-                    id)
-                .toString();
+            final name =
+                (p['publicLabel'] ?? p['providerName'] ?? p['name'] ?? id)
+                    .toString();
             list.add(_ProviderInfo(id: id, name: name));
           }
           if (list.isNotEmpty) {
@@ -108,11 +106,9 @@ class VuflixScraper extends StreamScraper {
     String rawUrl, {
     Map<String, String>? fallbackHeaders,
   }) {
-    final defaultH = fallbackHeaders ?? {
-      'User-Agent': _ua,
-      'Referer': _referer,
-      'Origin': _origin,
-    };
+    final defaultH =
+        fallbackHeaders ??
+        {'User-Agent': _ua, 'Referer': _referer, 'Origin': _origin};
 
     if (rawUrl.isEmpty) return _UnwrappedUrl(url: '', headers: defaultH);
     if (!rawUrl.contains('v-relay?t=') && !rawUrl.contains('a-relay?t=')) {
@@ -187,7 +183,8 @@ class VuflixScraper extends StreamScraper {
         }
 
         AppLog.d(
-            '[VuflixScraper] Starting concurrent scrape for "$title" (tmdb: $tmdbId, S:${season}E:$episode)');
+          '[VuflixScraper] Starting concurrent scrape for "$title" (tmdb: $tmdbId, S:${season}E:$episode)',
+        );
 
         final baseParams = StringBuffer('type=$mediaType&tmdbId=$tmdbId');
         if (isTv) {
@@ -200,7 +197,8 @@ class VuflixScraper extends StreamScraper {
         final providerTasks = providers.map((prov) async {
           try {
             final uri = Uri.parse(
-                '$_apiBase/api/player/sources?${baseParams.toString()}&provider=${prov.id}');
+              '$_apiBase/api/player/sources?${baseParams.toString()}&provider=${prov.id}',
+            );
             final client = http.Client();
             final res = await client
                 .get(uri, headers: _defaultHeaders)
@@ -214,7 +212,9 @@ class VuflixScraper extends StreamScraper {
             final data = jsonDecode(res.body);
             client.close();
 
-            if (data is! Map || data['ok'] != true || data['sources'] is! List) {
+            if (data is! Map ||
+                data['ok'] != true ||
+                data['sources'] is! List) {
               return;
             }
 
@@ -223,10 +223,9 @@ class VuflixScraper extends StreamScraper {
             for (final item in sourcesList) {
               if (item is! Map) continue;
 
-              final providerName = (item['providerName'] ??
-                      item['publicLabel'] ??
-                      prov.name)
-                  .toString();
+              final providerName =
+                  (item['providerName'] ?? item['publicLabel'] ?? prov.name)
+                      .toString();
               final primaryRawUrl = (item['url'] ?? '').toString().trim();
               final itemType = (item['type'] ?? 'hls').toString().toLowerCase();
               final itemLanguage = (item['language'] ?? '').toString();
@@ -241,13 +240,16 @@ class VuflixScraper extends StreamScraper {
                   if (qRawUrl.isEmpty) continue;
 
                   final unwrapped = _unwrapUrl(qRawUrl);
-                  if (unwrapped.url.isEmpty || seenUrls.contains(unwrapped.url)) {
+                  if (unwrapped.url.isEmpty ||
+                      seenUrls.contains(unwrapped.url)) {
                     continue;
                   }
                   seenUrls.add(unwrapped.url);
 
                   final qQuality = (q['quality'] ?? 'Auto').toString();
-                  final qType = (q['type'] ?? itemType).toString().toUpperCase();
+                  final qType = (q['type'] ?? itemType)
+                      .toString()
+                      .toUpperCase();
                   final streamTitle = '[Vuflix - $providerName] $qQuality';
                   final desc = '$providerName • $qQuality • $qType';
 
@@ -275,13 +277,16 @@ class VuflixScraper extends StreamScraper {
                   if (cRawUrl.isEmpty) continue;
 
                   final unwrapped = _unwrapUrl(cRawUrl);
-                  if (unwrapped.url.isEmpty || seenUrls.contains(unwrapped.url)) {
+                  if (unwrapped.url.isEmpty ||
+                      seenUrls.contains(unwrapped.url)) {
                     continue;
                   }
                   seenUrls.add(unwrapped.url);
 
                   final cQuality = (c['quality'] ?? '1080p').toString();
-                  final cType = (c['type'] ?? itemType).toString().toUpperCase();
+                  final cType = (c['type'] ?? itemType)
+                      .toString()
+                      .toUpperCase();
                   final streamTitle =
                       '[Vuflix - $providerName] Mirror $candIndex • $cQuality';
                   final desc = '$providerName Mirror $candIndex • $cType';
@@ -306,23 +311,28 @@ class VuflixScraper extends StreamScraper {
               if (audioTracks is List && audioTracks.isNotEmpty) {
                 for (final a in audioTracks) {
                   if (a is! Map) continue;
-                  final aRawUrl =
-                      (a['switchUrl'] ?? a['url'] ?? '').toString().trim();
+                  final aRawUrl = (a['switchUrl'] ?? a['url'] ?? '')
+                      .toString()
+                      .trim();
                   if (aRawUrl.isEmpty) continue;
 
                   final unwrapped = _unwrapUrl(aRawUrl);
-                  if (unwrapped.url.isEmpty || seenUrls.contains(unwrapped.url)) {
+                  if (unwrapped.url.isEmpty ||
+                      seenUrls.contains(unwrapped.url)) {
                     continue;
                   }
                   seenUrls.add(unwrapped.url);
 
-                  final rawLabel = (a['label'] ??
-                          a['name'] ??
-                          a['language'] ??
-                          'Audio')
-                      .toString()
+                  final rawLabel =
+                      (a['label'] ?? a['name'] ?? a['language'] ?? 'Audio')
+                          .toString()
+                          .trim();
+                  final cleanLabel = rawLabel
+                      .replaceAll(
+                        RegExp(r'\s*audio\s*$', caseSensitive: false),
+                        '',
+                      )
                       .trim();
-                  final cleanLabel = rawLabel.replaceAll(RegExp(r'\s*audio\s*$', caseSensitive: false), '').trim();
                   final aLabel = cleanLabel.isNotEmpty ? cleanLabel : 'Audio';
                   final streamTitle = '[Vuflix - $providerName] $aLabel Audio';
                   final desc =
@@ -345,7 +355,8 @@ class VuflixScraper extends StreamScraper {
               // 4. Primary URL fallback
               if (primaryRawUrl.isNotEmpty) {
                 final unwrapped = _unwrapUrl(primaryRawUrl);
-                if (unwrapped.url.isNotEmpty && !seenUrls.contains(unwrapped.url)) {
+                if (unwrapped.url.isNotEmpty &&
+                    !seenUrls.contains(unwrapped.url)) {
                   seenUrls.add(unwrapped.url);
 
                   var displayQuality = (item['quality'] ?? '').toString();
@@ -413,9 +424,7 @@ class VuflixScraper extends StreamScraper {
       headers: headers,
       behaviorHints: {
         'notWebReady': false,
-        'proxyHeaders': {
-          'request': headers,
-        },
+        'proxyHeaders': {'request': headers},
       },
     );
   }

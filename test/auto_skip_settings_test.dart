@@ -25,30 +25,82 @@ void main() {
     });
 
     test('auto-skip gate: intro/recap/credits yes, preview never', () {
-      bool shouldAutoSkip(String type,
-          {required bool introOn,
-          required bool recapOn,
-          required bool creditsOn}) =>
-          AutoSkipPolicy.shouldAutoSkip(type,
-              autoSkipIntro: introOn,
-              autoSkipRecap: recapOn,
-              autoSkipCredits: creditsOn);
+      bool shouldAutoSkip(
+        String type, {
+        required bool introOn,
+        required bool recapOn,
+        required bool creditsOn,
+      }) => AutoSkipPolicy.shouldAutoSkip(
+        type,
+        autoSkipIntro: introOn,
+        autoSkipRecap: recapOn,
+        autoSkipCredits: creditsOn,
+      );
 
-      expect(shouldAutoSkip('intro',
-          introOn: true, recapOn: false, creditsOn: false), isTrue);
-      expect(shouldAutoSkip('intro',
-          introOn: false, recapOn: false, creditsOn: false), isFalse);
-      expect(shouldAutoSkip('recap',
-          introOn: false, recapOn: true, creditsOn: false), isTrue);
-      expect(shouldAutoSkip('recap',
-          introOn: true, recapOn: false, creditsOn: false), isFalse);
-      expect(shouldAutoSkip('credits',
-          introOn: false, recapOn: false, creditsOn: true), isTrue);
-      expect(shouldAutoSkip('credits',
-          introOn: true, recapOn: true, creditsOn: false), isFalse);
+      expect(
+        shouldAutoSkip(
+          'intro',
+          introOn: true,
+          recapOn: false,
+          creditsOn: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAutoSkip(
+          'intro',
+          introOn: false,
+          recapOn: false,
+          creditsOn: false,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAutoSkip(
+          'recap',
+          introOn: false,
+          recapOn: true,
+          creditsOn: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAutoSkip(
+          'recap',
+          introOn: true,
+          recapOn: false,
+          creditsOn: false,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAutoSkip(
+          'credits',
+          introOn: false,
+          recapOn: false,
+          creditsOn: true,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAutoSkip(
+          'credits',
+          introOn: true,
+          recapOn: true,
+          creditsOn: false,
+        ),
+        isFalse,
+      );
       // A preview is the tail of a movie — never yanked automatically.
-      expect(shouldAutoSkip('preview',
-          introOn: true, recapOn: true, creditsOn: true), isFalse);
+      expect(
+        shouldAutoSkip(
+          'preview',
+          introOn: true,
+          recapOn: true,
+          creditsOn: true,
+        ),
+        isFalse,
+      );
     });
   });
 }

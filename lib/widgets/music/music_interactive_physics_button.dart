@@ -25,10 +25,12 @@ class MusicInteractivePhysicsButton extends StatefulWidget {
   });
 
   @override
-  State<MusicInteractivePhysicsButton> createState() => _MusicInteractivePhysicsButtonState();
+  State<MusicInteractivePhysicsButton> createState() =>
+      _MusicInteractivePhysicsButtonState();
 }
 
-class _MusicInteractivePhysicsButtonState extends State<MusicInteractivePhysicsButton>
+class _MusicInteractivePhysicsButtonState
+    extends State<MusicInteractivePhysicsButton>
     with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   bool _isPressed = false;
@@ -159,7 +161,9 @@ class _MusicInteractivePhysicsButtonState extends State<MusicInteractivePhysicsB
                         spreadRadius: _isPressed ? 3 : 1,
                       ),
                       BoxShadow(
-                        color: Colors.white.withValues(alpha: _isPressed ? 0.35 : 0.18),
+                        color: Colors.white.withValues(
+                          alpha: _isPressed ? 0.35 : 0.18,
+                        ),
                         blurRadius: 8,
                       ),
                     ]
@@ -187,7 +191,9 @@ class _MusicInteractivePhysicsButtonState extends State<MusicInteractivePhysicsB
                   boxShadow: _isHovered
                       ? [
                           BoxShadow(
-                            color: glow.withValues(alpha: 0.35 * (1.0 - rippleVal * 0.3)),
+                            color: glow.withValues(
+                              alpha: 0.35 * (1.0 - rippleVal * 0.3),
+                            ),
                             blurRadius: 16 + (rippleVal * 12),
                             spreadRadius: rippleVal * 2,
                           ),
@@ -219,7 +225,9 @@ class _MusicInteractivePhysicsButtonState extends State<MusicInteractivePhysicsB
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.35 * (1.0 - rippleVal * 0.4)),
+                                    Colors.white.withValues(
+                                      alpha: 0.35 * (1.0 - rippleVal * 0.4),
+                                    ),
                                     glow.withValues(alpha: 0.15),
                                     Colors.transparent,
                                   ],

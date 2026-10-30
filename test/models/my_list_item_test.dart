@@ -69,14 +69,34 @@ void main() {
 
     group('equality', () {
       test('same uniqueKey means equal', () {
-        final a = MyListItem(traktId: 1, title: 'A', type: 'movie', addedAt: DateTime(2026));
-        final b = MyListItem(traktId: 1, title: 'B', type: 'series', addedAt: DateTime(2025));
+        final a = MyListItem(
+          traktId: 1,
+          title: 'A',
+          type: 'movie',
+          addedAt: DateTime(2026),
+        );
+        final b = MyListItem(
+          traktId: 1,
+          title: 'B',
+          type: 'series',
+          addedAt: DateTime(2025),
+        );
         expect(a, equals(b));
       });
 
       test('different uniqueKey means not equal', () {
-        final a = MyListItem(traktId: 1, title: 'A', type: 'movie', addedAt: DateTime(2026));
-        final b = MyListItem(traktId: 2, title: 'A', type: 'movie', addedAt: DateTime(2026));
+        final a = MyListItem(
+          traktId: 1,
+          title: 'A',
+          type: 'movie',
+          addedAt: DateTime(2026),
+        );
+        final b = MyListItem(
+          traktId: 2,
+          title: 'A',
+          type: 'movie',
+          addedAt: DateTime(2026),
+        );
         expect(a, isNot(equals(b)));
       });
     });
@@ -128,15 +148,30 @@ void main() {
       });
 
       test('source serializes as string', () {
-        final local = MyListItem(title: 'L', type: 'movie', addedAt: DateTime(2026), source: MyListSource.local);
-        final trakt = MyListItem(title: 'T', type: 'movie', addedAt: DateTime(2026), source: MyListSource.trakt);
+        final local = MyListItem(
+          title: 'L',
+          type: 'movie',
+          addedAt: DateTime(2026),
+          source: MyListSource.local,
+        );
+        final trakt = MyListItem(
+          title: 'T',
+          type: 'movie',
+          addedAt: DateTime(2026),
+          source: MyListSource.trakt,
+        );
 
         expect(local.toJson()['source'], 'local');
         expect(trakt.toJson()['source'], 'trakt');
       });
 
       test('unknown source string defaults to local', () {
-        final json = {'title': 'X', 'type': 'movie', 'addedAt': '2026-01-01T00:00:00.000', 'source': 'unknown'};
+        final json = {
+          'title': 'X',
+          'type': 'movie',
+          'addedAt': '2026-01-01T00:00:00.000',
+          'source': 'unknown',
+        };
         final item = MyListItem.fromJson(json);
         expect(item.source, MyListSource.local);
       });
@@ -164,9 +199,21 @@ void main() {
       });
 
       test('maps series and anime types to series', () {
-        final series = MyListItem.fromMovieDetail(id: '1', name: 'Show', type: 'series');
-        final anime = MyListItem.fromMovieDetail(id: '2', name: 'Anime', type: 'anime');
-        final movie = MyListItem.fromMovieDetail(id: '3', name: 'Movie', type: 'movie');
+        final series = MyListItem.fromMovieDetail(
+          id: '1',
+          name: 'Show',
+          type: 'series',
+        );
+        final anime = MyListItem.fromMovieDetail(
+          id: '2',
+          name: 'Anime',
+          type: 'anime',
+        );
+        final movie = MyListItem.fromMovieDetail(
+          id: '3',
+          name: 'Movie',
+          type: 'movie',
+        );
 
         expect(series.type, 'series');
         expect(anime.type, 'series');
@@ -175,20 +222,30 @@ void main() {
 
       test('parses year from string', () {
         final item = MyListItem.fromMovieDetail(
-          id: '1', name: 'Test', type: 'movie', year: '2024',
+          id: '1',
+          name: 'Test',
+          type: 'movie',
+          year: '2024',
         );
         expect(item.year, 2024);
       });
 
       test('handles non-numeric year gracefully', () {
         final item = MyListItem.fromMovieDetail(
-          id: '1', name: 'Test', type: 'movie', year: '2024-present',
+          id: '1',
+          name: 'Test',
+          type: 'movie',
+          year: '2024-present',
         );
         expect(item.year, 2024);
       });
 
       test('sets source to local', () {
-        final item = MyListItem.fromMovieDetail(id: '1', name: 'T', type: 'movie');
+        final item = MyListItem.fromMovieDetail(
+          id: '1',
+          name: 'T',
+          type: 'movie',
+        );
         expect(item.source, MyListSource.local);
       });
     });
@@ -255,8 +312,11 @@ void main() {
     group('copyWith', () {
       test('preserves unchanged fields', () {
         final original = MyListItem(
-          traktId: 1, title: 'Original', type: 'movie',
-          addedAt: DateTime(2026), source: MyListSource.trakt,
+          traktId: 1,
+          title: 'Original',
+          type: 'movie',
+          addedAt: DateTime(2026),
+          source: MyListSource.trakt,
         );
         final copy = original.copyWith(title: 'Updated');
         expect(copy.title, 'Updated');
@@ -267,7 +327,9 @@ void main() {
 
       test('does not mutate original', () {
         final original = MyListItem(
-          title: 'Original', type: 'movie', addedAt: DateTime(2026),
+          title: 'Original',
+          type: 'movie',
+          addedAt: DateTime(2026),
         );
         original.copyWith(title: 'New');
         expect(original.title, 'Original');
@@ -277,7 +339,10 @@ void main() {
     group('edge cases', () {
       test('imdbId passed explicitly is used', () {
         final item = MyListItem.fromMovieDetail(
-          id: 'generic123', name: 'Test', type: 'movie', imdbId: 'tt9999999',
+          id: 'generic123',
+          name: 'Test',
+          type: 'movie',
+          imdbId: 'tt9999999',
         );
         expect(item.imdbId, 'tt9999999');
         expect(item.tmdbId, isNull); // generic123 is not a valid integer
@@ -285,7 +350,10 @@ void main() {
 
       test('tmdbId passed explicitly overrides numeric id parse', () {
         final item = MyListItem.fromMovieDetail(
-          id: '999', name: 'Test', type: 'movie', tmdbId: 500,
+          id: '999',
+          name: 'Test',
+          type: 'movie',
+          tmdbId: 500,
         );
         expect(item.tmdbId, 500);
       });

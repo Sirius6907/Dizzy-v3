@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../widgets/common/horizontal_wheel_scroll.dart';
 import '../../../widgets/common/slider_arrow.dart';
 
@@ -18,10 +20,12 @@ class MusicHorizontalScrollSection extends StatefulWidget {
   });
 
   @override
-  State<MusicHorizontalScrollSection> createState() => _MusicHorizontalScrollSectionState();
+  State<MusicHorizontalScrollSection> createState() =>
+      _MusicHorizontalScrollSectionState();
 }
 
-class _MusicHorizontalScrollSectionState extends State<MusicHorizontalScrollSection> {
+class _MusicHorizontalScrollSectionState
+    extends State<MusicHorizontalScrollSection> {
   late final ScrollController _controller;
   bool _canScrollLeft = false;
   bool _canScrollRight = true;
@@ -47,7 +51,8 @@ class _MusicHorizontalScrollSectionState extends State<MusicHorizontalScrollSect
   void _updateScrollButtons() {
     if (!_controller.hasClients) return;
     final canLeft = _controller.position.pixels > 5;
-    final canRight = _controller.position.pixels < _controller.position.maxScrollExtent - 5;
+    final canRight =
+        _controller.position.pixels < _controller.position.maxScrollExtent - 5;
     if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
       setState(() {
         _canScrollLeft = canLeft;
@@ -60,8 +65,10 @@ class _MusicHorizontalScrollSectionState extends State<MusicHorizontalScrollSect
     if (!_controller.hasClients) return;
     final viewportWidth = _controller.position.viewportDimension;
     final scrollAmount = viewportWidth * 0.75 * multiplier;
-    final target = (_controller.position.pixels + scrollAmount)
-        .clamp(0.0, _controller.position.maxScrollExtent);
+    final target = (_controller.position.pixels + scrollAmount).clamp(
+      0.0,
+      _controller.position.maxScrollExtent,
+    );
 
     _controller.animateTo(
       target,
@@ -89,8 +96,10 @@ class _MusicHorizontalScrollSectionState extends State<MusicHorizontalScrollSect
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
               widget.title!,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: PrismInk.primary(
+                  AppThemeService.currentPalette.value.isLight,
+                ),
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
@@ -160,4 +169,3 @@ class _MusicHorizontalScrollSectionState extends State<MusicHorizontalScrollSect
 // ─────────────────────────────────────────────────────────────────────────────
 // Components & Widgets
 // ─────────────────────────────────────────────────────────────────────────────
-

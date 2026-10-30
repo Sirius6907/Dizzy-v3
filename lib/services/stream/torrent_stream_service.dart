@@ -46,7 +46,8 @@ enum EngineState { stopped, starting, ready, error }
 /// (via ParseTorrentTitle), and real-time swarm statistics.
 class TorrentStreamService {
   // ── Singleton ──────────────────────────────────────────────────────────────
-  static final TorrentStreamService _instance = TorrentStreamService._internal();
+  static final TorrentStreamService _instance =
+      TorrentStreamService._internal();
   factory TorrentStreamService() => _instance;
   TorrentStreamService._internal();
 
@@ -88,7 +89,9 @@ class TorrentStreamService {
       await _controller.start();
       final version = await _controller.echo();
       _setState(EngineState.ready);
-      _log('TorrServer ready at ${_controller.baseUrl} (version: $version, default engine settings)');
+      _log(
+        'TorrServer ready at ${_controller.baseUrl} (version: $version, default engine settings)',
+      );
       return true;
     } catch (e, st) {
       _log('Failed to start TorrServer: $e\n$st');
@@ -119,7 +122,8 @@ class TorrentStreamService {
     }
 
     final rawHash = _extractHash(magnetLink);
-    final formattedMagnet = (rawHash != null && !magnetLink.startsWith('magnet:?'))
+    final formattedMagnet =
+        (rawHash != null && !magnetLink.startsWith('magnet:?'))
         ? 'magnet:?xt=urn:btih:$rawHash'
         : magnetLink;
 
@@ -169,7 +173,9 @@ class TorrentStreamService {
         (f) => f.id == selectedFileId,
         orElse: () => files.first,
       );
-      _log('Selected file #${selectedFile.id}: "${selectedFile.path}" (${_formatBytes(selectedFile.length)})');
+      _log(
+        'Selected file #${selectedFile.id}: "${selectedFile.path}" (${_formatBytes(selectedFile.length)})',
+      );
 
       final streamUri = _controller.streamUrl(hash, fileIndex: selectedFile.id);
       _log('HTTP Stream URL generated: $streamUri');
@@ -292,6 +298,16 @@ class TorrentStreamService {
     }
   }
 
+  /// Cheap synchronous liveness hint: true when this torrent is already
+  /// tracked by the running engine and has bytes ready to serve, so the
+  /// first player request won't wait on metadata/DHT.
+  bool isCached(String magnetOrHash) {
+    final hash = _extractHash(magnetOrHash) ?? magnetOrHash.toLowerCase();
+    final info = _latestUpdates[hash];
+    if (info == null) return false;
+    return info.loadedSize > 0 || info.preloadedBytes > 0;
+  }
+
   /// Returns latest cached or live stats for a torrent.
   TorrentStats? getTorrentStats(String magnetOrHash) {
     final hash = _extractHash(magnetOrHash) ?? magnetOrHash.toLowerCase();
@@ -374,7 +390,9 @@ class TorrentStreamService {
         }
       } catch (_) {}
     }
-    _activeTorrents.removeWhere((h) => !downloadingHashes.contains(h.toLowerCase()));
+    _activeTorrents.removeWhere(
+      (h) => !downloadingHashes.contains(h.toLowerCase()),
+    );
     _log('TorrentStreamService cleanup completed.');
   }
 

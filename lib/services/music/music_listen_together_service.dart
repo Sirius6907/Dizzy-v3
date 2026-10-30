@@ -6,7 +6,8 @@ import 'music_player_controller.dart';
 
 class MusicListenTogetherService {
   MusicListenTogetherService._();
-  static final MusicListenTogetherService instance = MusicListenTogetherService._();
+  static final MusicListenTogetherService instance =
+      MusicListenTogetherService._();
 
   final ValueNotifier<bool> isConnected = ValueNotifier<bool>(false);
   final ValueNotifier<String?> activeRoomCode = ValueNotifier<String?>(null);
@@ -70,7 +71,9 @@ class MusicListenTogetherService {
     if (isHost.value) return;
     await MusicPlayerController.instance.playTrack(track);
     if (positionMs != null && positionMs > 0) {
-      await MusicPlayerController.instance.seekTo(Duration(milliseconds: positionMs));
+      await MusicPlayerController.instance.seekTo(
+        Duration(milliseconds: positionMs),
+      );
     }
   }
 

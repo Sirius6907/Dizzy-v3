@@ -249,6 +249,16 @@ class MediaSessionBridge {
 class MusicMediaSessionWatcher {
   MusicMediaSessionWatcher(this.controller);
 
+  /// The one watcher currently running. A second instance would add a second
+  /// 1 Hz ticker and a second channel handler (seen after error-boundary
+  /// restarts), so `start()` refuses to go live while another is active.
+  static MusicMediaSessionWatcher? _active;
+
+  /// App-wide singleton — construct once, then `start()` / `stop()` it from
+  /// lifecycle code instead of building new watchers.
+  static MusicMediaSessionWatcher get instance =>
+      _active ??= MusicMediaSessionWatcher(MusicPlayerController.instance);
+
   final MusicPlayerController controller;
   Timer? _ticker;
   bool _started = false;
@@ -257,6 +267,8 @@ class MusicMediaSessionWatcher {
 
   Future<void> start() async {
     if (!isSupported || _started) return;
+    if (_active != null && !identical(_active, this)) return;
+    _active = this;
     _started = true;
 
     await MediaSessionBridge.attach(
@@ -309,11 +321,13 @@ class MusicMediaSessionWatcher {
   }
 
   Future<void> stop() async {
+    if (identical(_active, this)) _active = null;
     if (!_started) return;
     _started = false;
     _ticker?.cancel();
     _ticker = null;
     controller.removeListener(_onControllerChanged);
+    // detach() also removes the channel handler, so no orphaned 1 Hz pushes.
     await MediaSessionBridge.detach();
   }
 }

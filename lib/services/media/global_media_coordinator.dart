@@ -14,19 +14,16 @@ import '../music/music_player_controller.dart';
 /// - Navigating away from fullscreen video -> mini-player, never full stop.
 class GlobalMediaCoordinator extends ChangeNotifier {
   GlobalMediaCoordinator._();
-  static final GlobalMediaCoordinator instance =
-      GlobalMediaCoordinator._();
+  static final GlobalMediaCoordinator instance = GlobalMediaCoordinator._();
 
   /// True while a video is on screen (fullscreen or mini-player).
   final ValueNotifier<bool> videoActive = ValueNotifier<bool>(false);
 
   /// True while video is in mini-player (navigated away, still playing).
-  final ValueNotifier<bool> videoMiniPlayerVisible =
-      ValueNotifier<bool>(false);
+  final ValueNotifier<bool> videoMiniPlayerVisible = ValueNotifier<bool>(false);
 
   /// Title shown on the mini-player pill.
-  final ValueNotifier<String> videoMiniTitle =
-      ValueNotifier<String>('');
+  final ValueNotifier<String> videoMiniTitle = ValueNotifier<String>('');
 
   /// PlayerScreen registers here so music can request a video pause.
   VoidCallback? onPauseVideoRequest;
@@ -44,8 +41,7 @@ class GlobalMediaCoordinator extends ChangeNotifier {
 
   void _onMusicChanged() {
     try {
-      if (MusicPlayerController.instance.isPlaying &&
-          videoActive.value) {
+      if (MusicPlayerController.instance.isPlaying && videoActive.value) {
         notifyMusicStarted();
       }
     } catch (_) {}

@@ -71,7 +71,9 @@ void main() {
       print('Testing adding addon with stremio:// protocol: $url');
       final addon = await manager.addAddon(url);
 
-      print('Successfully installed: ${addon.manifest.name} (id: ${addon.manifest.id})');
+      print(
+        'Successfully installed: ${addon.manifest.name} (id: ${addon.manifest.id})',
+      );
       expect(addon.baseUrl, 'https://stremio.vadapav.mov');
       expect(addon.manifest.id, 'org.stremio.vadapav');
     });

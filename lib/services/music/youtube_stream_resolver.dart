@@ -6,7 +6,8 @@ import 'youtube_audio_extractor.dart';
 import 'youtube_rate_limit_guard.dart';
 
 class YoutubeStreamResolver {
-  static final YoutubeStreamResolver instance = YoutubeStreamResolver._internal();
+  static final YoutubeStreamResolver instance =
+      YoutubeStreamResolver._internal();
   YoutubeStreamResolver._internal();
 
   final Map<String, String> _cache = <String, String>{}; // trackId -> videoId
@@ -28,10 +29,9 @@ class YoutubeStreamResolver {
     final cachedVid = _cache[track.id];
     if (cachedVid != null) {
       try {
-        final res = await YoutubeAudioExtractor.instance.getAudioUrl(
-          cachedVid,
-          verifyStream: verifyStream,
-        ).timeout(const Duration(seconds: 8), onTimeout: () => null);
+        final res = await YoutubeAudioExtractor.instance
+            .getAudioUrl(cachedVid, verifyStream: verifyStream)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null);
         if (res != null) {
           _streamCache[track.id] = res;
           return (url: res.url, userAgent: res.userAgent);
@@ -44,14 +44,16 @@ class YoutubeStreamResolver {
     // 3. Fast extraction via YoutubeAudioExtractor (InnerTube)
     try {
       final res = await YoutubeRateLimitGuard.runLowRequest(
-        () => YoutubeAudioExtractor.instance.extract(
-          track.title,
-          track.artist,
-          targetDuration: track.durationSeconds > 0
-              ? Duration(seconds: track.durationSeconds)
-              : null,
-          verifyStream: verifyStream,
-        ).timeout(const Duration(seconds: 12), onTimeout: () => null),
+        () => YoutubeAudioExtractor.instance
+            .extract(
+              track.title,
+              track.artist,
+              targetDuration: track.durationSeconds > 0
+                  ? Duration(seconds: track.durationSeconds)
+                  : null,
+              verifyStream: verifyStream,
+            )
+            .timeout(const Duration(seconds: 12), onTimeout: () => null),
       );
 
       if (res != null) {
@@ -88,7 +90,7 @@ class YoutubeStreamResolver {
           return (
             url: streamUrl,
             userAgent:
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
           );
         }
       } catch (e) {
@@ -102,7 +104,7 @@ class YoutubeStreamResolver {
       return (
         url: track.previewUrl!,
         userAgent:
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       );
     }
 

@@ -88,14 +88,18 @@ class AnimeArabicService {
             ? href.substring(7)
             : href.replaceAll(RegExp(r'^/+'), '');
         final tag = (item['type'] ?? item['status'] ?? '').toString();
-        out.add(ArabicAnimeCard(
-          slug: slug,
-          title: _stripBrand(_decodeEntities((item['title'] ?? '').toString()).trim()),
-          cover: (item['image'] ?? '').toString().isEmpty
-              ? null
-              : item['image'].toString(),
-          tag: tag.isEmpty ? null : tag,
-        ));
+        out.add(
+          ArabicAnimeCard(
+            slug: slug,
+            title: _stripBrand(
+              _decodeEntities((item['title'] ?? '').toString()).trim(),
+            ),
+            cover: (item['image'] ?? '').toString().isEmpty
+                ? null
+                : item['image'].toString(),
+            tag: tag.isEmpty ? null : tag,
+          ),
+        );
       }
       return out;
     } catch (e) {
@@ -133,14 +137,18 @@ class AnimeArabicService {
 
     for (var i = 0; i < headings.length; i++) {
       final h = headings[i];
-      final endIdx = i + 1 < headings.length ? headings[i + 1].start : html.length;
+      final endIdx = i + 1 < headings.length
+          ? headings[i + 1].start
+          : html.length;
       final section = html.substring(h.end, endIdx);
       final cards = _parseCardGrid(section);
       if (cards.isEmpty) continue;
       final t = h.text;
       if (t.contains('آخر الحلقات') || t.contains('Latest')) {
         feed.recentEpisodes = cards;
-      } else if (t.contains('الأكثر شهرة') || t.contains('شعبية هذا') || t.contains('Trending')) {
+      } else if (t.contains('الأكثر شهرة') ||
+          t.contains('شعبية هذا') ||
+          t.contains('Trending')) {
         feed.trending = cards;
       } else if (t.contains('الأفلام الأكثر شعبية') || t.contains('Movies')) {
         feed.popularMovies = cards;
@@ -173,11 +181,13 @@ class AnimeArabicService {
       if (seen.contains(path)) continue;
       seen.add(path);
       final slug = path.substring('/title/'.length);
-      out.add(ArabicAnimeCard(
-        slug: slug,
-        title: _humanizeSlug(slug),
-        cover: m.group(2),
-      ));
+      out.add(
+        ArabicAnimeCard(
+          slug: slug,
+          title: _humanizeSlug(slug),
+          cover: m.group(2),
+        ),
+      );
     }
     return out;
   }
@@ -206,7 +216,9 @@ class AnimeArabicService {
       final alt = m.group(3) ?? '';
       final tA = m.group(4);
       final tB = m.group(5);
-      var title = (tA?.isNotEmpty == true ? tA! : (tB?.isNotEmpty == true ? tB! : alt)).trim();
+      var title =
+          (tA?.isNotEmpty == true ? tA! : (tB?.isNotEmpty == true ? tB! : alt))
+              .trim();
       title = _stripBrand(title);
       if (title.isEmpty || title.toLowerCase().contains('scum of the brave')) {
         title = _humanizeSlug(slug);
@@ -218,20 +230,25 @@ class AnimeArabicService {
       final tagMatch = RegExp(r'media-card-type[^>]*>([^<]+)<').firstMatch(ctx);
       if (tagMatch != null) tag = _stripTags(tagMatch.group(1)!).trim();
       String? rating;
-      final rateMatch = RegExp(r'(?:تقييم|rating)\s*([\d.]+)', caseSensitive: false).firstMatch(ctx);
+      final rateMatch = RegExp(
+        r'(?:تقييم|rating)\s*([\d.]+)',
+        caseSensitive: false,
+      ).firstMatch(ctx);
       if (rateMatch != null) rating = rateMatch.group(1);
       String? episodeBadge;
       final epMatch = RegExp(r'الحلقة\s*(\d+)').firstMatch(ctx);
       if (epMatch != null) episodeBadge = 'الحلقة ${epMatch.group(1)}';
 
-      out.add(ArabicAnimeCard(
-        slug: slug,
-        title: title,
-        cover: cover,
-        tag: tag,
-        rating: rating,
-        episodeBadge: episodeBadge,
-      ));
+      out.add(
+        ArabicAnimeCard(
+          slug: slug,
+          title: title,
+          cover: cover,
+          tag: tag,
+          rating: rating,
+          episodeBadge: episodeBadge,
+        ),
+      );
     }
 
     return out;
@@ -239,8 +256,12 @@ class AnimeArabicService {
 
   ArabicAnimeDetails _parseDetails(String html, String slug) {
     String? title;
-    final ogTitle = RegExp(r'<meta\s+property="og:title"\s+content="([^"]+)"').firstMatch(html);
-    if (ogTitle != null) title = _stripBrand(_decodeEntities(ogTitle.group(1)!));
+    final ogTitle = RegExp(
+      r'<meta\s+property="og:title"\s+content="([^"]+)"',
+    ).firstMatch(html);
+    if (ogTitle != null) {
+      title = _stripBrand(_decodeEntities(ogTitle.group(1)!));
+    }
     title ??= _humanizeSlug(slug);
 
     String? banner;
@@ -251,14 +272,23 @@ class AnimeArabicService {
     if (bannerMatch != null) banner = _normalizeImg(bannerMatch.group(1)!);
 
     String? cover;
-    final coverMatch = RegExp(r'<meta\s+property="og:image"\s+content="([^"]+)"').firstMatch(html);
+    final coverMatch = RegExp(
+      r'<meta\s+property="og:image"\s+content="([^"]+)"',
+    ).firstMatch(html);
     if (coverMatch != null) cover = _normalizeImg(coverMatch.group(1)!);
 
     String? description;
-    final descMatch = RegExp(r'<meta\s+name="description"\s+content="([^"]+)"').firstMatch(html);
-    if (descMatch != null) description = _decodeEntities(descMatch.group(1)!).trim();
+    final descMatch = RegExp(
+      r'<meta\s+name="description"\s+content="([^"]+)"',
+    ).firstMatch(html);
+    if (descMatch != null) {
+      description = _decodeEntities(descMatch.group(1)!).trim();
+    }
 
-    final synopsisRe = RegExp(r'<p[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)</p>', caseSensitive: false);
+    final synopsisRe = RegExp(
+      r'<p[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)</p>',
+      caseSensitive: false,
+    );
     final synopsisMatch = synopsisRe.firstMatch(html);
     if (synopsisMatch != null) {
       final long = _stripTags(synopsisMatch.group(1)!).trim();
@@ -289,7 +319,9 @@ class AnimeArabicService {
     }
 
     final episodes = <ArabicEpisode>[];
-    final epsBlock = RegExp(r'const\s+episodes\s*=\s*\[([\s\S]*?)\];').firstMatch(html);
+    final epsBlock = RegExp(
+      r'const\s+episodes\s*=\s*\[([\s\S]*?)\];',
+    ).firstMatch(html);
     if (epsBlock != null) {
       final body = epsBlock.group(1)!;
       final epRe = RegExp(
@@ -301,14 +333,16 @@ class AnimeArabicService {
         final n = int.tryParse(m.group(1) ?? '') ?? 0;
         final encHref = m.group(3) ?? '';
         final relUrl = decodeHref(encHref) ?? '';
-        episodes.add(ArabicEpisode(
-          number: n,
-          title: _decodeEntities(m.group(2) ?? '').trim(),
-          encodedHref: encHref,
-          watchPath: relUrl,
-          description: _decodeEntities(m.group(4) ?? '').trim(),
-          thumb: m.group(6),
-        ));
+        episodes.add(
+          ArabicEpisode(
+            number: n,
+            title: _decodeEntities(m.group(2) ?? '').trim(),
+            encodedHref: encHref,
+            watchPath: relUrl,
+            description: _decodeEntities(m.group(4) ?? '').trim(),
+            thumb: m.group(6),
+          ),
+        );
       }
     }
     episodes.sort((a, b) => a.number.compareTo(b.number));
@@ -489,7 +523,10 @@ class ArabicAnimeCard {
 
   AnimeMedia toAnimeMedia() {
     final epCount = episodeBadge != null
-        ? int.tryParse(RegExp(r'\d+').firstMatch(episodeBadge ?? '')?.group(0) ?? '') ?? 0
+        ? int.tryParse(
+                RegExp(r'\d+').firstMatch(episodeBadge ?? '')?.group(0) ?? '',
+              ) ??
+              0
         : 0;
     final score = ((double.tryParse(rating ?? '') ?? 0.0) * 10).round();
 
@@ -504,7 +541,9 @@ class ArabicAnimeCard {
       bannerImage: cover ?? '',
       format: (episodeBadge != null && episodeBadge!.isNotEmpty)
           ? episodeBadge!
-          : ((tag?.contains('فيلم') == true || tag?.contains('Movie') == true) ? 'MOVIE' : 'TV'),
+          : ((tag?.contains('فيلم') == true || tag?.contains('Movie') == true)
+                ? 'MOVIE'
+                : 'TV'),
       status: tag ?? 'FINISHED',
       totalEpisodes: epCount,
       averageScore: score,
@@ -546,12 +585,12 @@ class ArabicAnimeDetails {
   String get displayBanner => banner ?? cover ?? '';
 
   ArabicAnimeCard toCard() => ArabicAnimeCard(
-        slug: slug,
-        title: title,
-        cover: cover,
-        tag: status,
-        rating: rating,
-      );
+    slug: slug,
+    title: title,
+    cover: cover,
+    tag: status,
+    rating: rating,
+  );
 
   AnimeMedia toAnimeMedia() {
     final score = ((double.tryParse(rating ?? '') ?? 0.0) * 10).round();
@@ -566,7 +605,9 @@ class ArabicAnimeDetails {
       coverImageLarge: cover ?? '',
       coverImageExtraLarge: cover ?? '',
       bannerImage: displayBanner,
-      format: (status?.contains('فيلم') == true || genres.contains('فيلم')) ? 'MOVIE' : 'TV',
+      format: (status?.contains('فيلم') == true || genres.contains('فيلم'))
+          ? 'MOVIE'
+          : 'TV',
       status: status ?? 'FINISHED',
       totalEpisodes: episodes.length,
       averageScore: score,
@@ -589,13 +630,15 @@ class ArabicAnimeDetails {
       imdbRating: rating,
       genres: genres,
       videos: episodes
-          .map((e) => Video(
-                id: 'arabic_anime:$slug:${e.number}',
-                season: 1,
-                episode: e.number,
-                title: e.title.isNotEmpty ? e.title : 'الحلقة ${e.number}',
-                thumbnail: e.thumb ?? displayBanner,
-              ))
+          .map(
+            (e) => Video(
+              id: 'arabic_anime:$slug:${e.number}',
+              season: 1,
+              episode: e.number,
+              title: e.title.isNotEmpty ? e.title : 'الحلقة ${e.number}',
+              thumbnail: e.thumb ?? displayBanner,
+            ),
+          )
           .toList(),
     );
   }

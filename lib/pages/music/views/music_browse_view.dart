@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
 import '../widgets/music_hoverable.dart';
 
@@ -15,26 +17,68 @@ class MusicBrowseView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final genres = [
-      {'title': 'Bollywood Romance', 'color': const Color(0xFF7C5CFF), 'query': 'Pritam Bollywood'},
-      {'title': 'Dance & Party', 'color': const Color(0xFF7850FF), 'query': 'Bollywood Dance'},
-      {'title': 'Mashup & Remix', 'color': const Color(0xFF00D294), 'query': 'Bollywood Mashup'},
-      {'title': 'Punjabi Party', 'color': const Color(0xFF00D2EF), 'query': 'AP Dhillon'},
-      {'title': 'Desi Hip-Hop', 'color': const Color(0xFFF99C00), 'query': 'Desi Hip Hop'},
-      {'title': 'Indie & Acoustic', 'color': const Color(0xFFE12AFB), 'query': 'Anuv Jain'},
-      {'title': 'Ollywood DJ Mix', 'color': const Color(0xFFFF6568), 'query': 'Sambalpuri DJ'},
-      {'title': 'Lofi Nights', 'color': const Color(0xFFFB2C36), 'query': 'Bollywood LoFi'},
-      {'title': 'Sad & Slow Reverb', 'color': const Color(0xFF625FFF), 'query': 'Slowed Reverb Bollywood'},
-      {'title': '90s Evergreen', 'color': const Color(0xFFFAC800), 'query': 'Kishore Kumar'},
+      {
+        'title': 'Bollywood Romance',
+        'color': const Color(0xFF7C5CFF),
+        'query': 'Pritam Bollywood',
+      },
+      {
+        'title': 'Dance & Party',
+        'color': const Color(0xFF7850FF),
+        'query': 'Bollywood Dance',
+      },
+      {
+        'title': 'Mashup & Remix',
+        'color': const Color(0xFF00D294),
+        'query': 'Bollywood Mashup',
+      },
+      {
+        'title': 'Punjabi Party',
+        'color': const Color(0xFF00D2EF),
+        'query': 'AP Dhillon',
+      },
+      {
+        'title': 'Desi Hip-Hop',
+        'color': const Color(0xFFF99C00),
+        'query': 'Desi Hip Hop',
+      },
+      {
+        'title': 'Indie & Acoustic',
+        'color': const Color(0xFFE12AFB),
+        'query': 'Anuv Jain',
+      },
+      {
+        'title': 'Ollywood DJ Mix',
+        'color': const Color(0xFFFF6568),
+        'query': 'Sambalpuri DJ',
+      },
+      {
+        'title': 'Lofi Nights',
+        'color': const Color(0xFFFB2C36),
+        'query': 'Bollywood LoFi',
+      },
+      {
+        'title': 'Sad & Slow Reverb',
+        'color': const Color(0xFF625FFF),
+        'query': 'Slowed Reverb Bollywood',
+      },
+      {
+        'title': '90s Evergreen',
+        'color': const Color(0xFFFAC800),
+        'query': 'Kishore Kumar',
+      },
     ];
 
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.only(top: 80, left: 24, right: 24, bottom: 150),
       children: [
-        const Text(
+        Text(
           'Browse Moods & Genres',
           style: TextStyle(
-            color: Colors.white,
+            color: PrismInk.primary(
+              AppThemeService.currentPalette.value.isLight,
+            ),
             fontSize: 26,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.6,
@@ -80,8 +124,12 @@ class MusicBrowseView extends StatelessWidget {
                       alignment: Alignment.bottomLeft,
                       child: Text(
                         g['title'] as String,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          // Saturated tiles: pick ink by tile brightness so
+                          // the label survives pale yellows and deep violets.
+                          color: color.computeLuminance() > 0.5
+                              ? Colors.black
+                              : Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.3,

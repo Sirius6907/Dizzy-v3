@@ -127,6 +127,7 @@ class DizzySocialService {
       }
       return {
         'success': false,
+        'code': res is Map ? res['code'] : null,
         'error': res is Map ? res['error'] : 'Could not claim username'
       };
     } catch (e) {

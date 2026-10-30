@@ -54,11 +54,15 @@ class ProfileProgressStore {
       final meta = json['meta'];
       return MediaProgress(
         key: json['key']?.toString() ?? key,
-        positionSeconds: pos is int ? pos : int.tryParse(pos?.toString() ?? '') ?? 0,
-        totalDurationSeconds:
-            total is int ? total : int.tryParse(total?.toString() ?? '') ?? 0,
+        positionSeconds: pos is int
+            ? pos
+            : int.tryParse(pos?.toString() ?? '') ?? 0,
+        totalDurationSeconds: total is int
+            ? total
+            : int.tryParse(total?.toString() ?? '') ?? 0,
         lastWatchedAt:
-            DateTime.tryParse(seen?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+            DateTime.tryParse(seen?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0),
         meta: meta is Map ? Map<String, dynamic>.from(meta) : const {},
       );
     } catch (_) {
@@ -67,12 +71,12 @@ class ProfileProgressStore {
   }
 
   static Map<String, dynamic> _encode(MediaProgress r) => {
-        'key': r.key,
-        'positionSeconds': r.positionSeconds,
-        'totalDurationSeconds': r.totalDurationSeconds,
-        'lastWatchedAt': r.lastWatchedAt.toIso8601String(),
-        'meta': r.meta,
-      };
+    'key': r.key,
+    'positionSeconds': r.positionSeconds,
+    'totalDurationSeconds': r.totalDurationSeconds,
+    'lastWatchedAt': r.lastWatchedAt.toIso8601String(),
+    'meta': r.meta,
+  };
 
   static Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
@@ -103,10 +107,9 @@ class ProfileProgressStore {
       meta: meta,
     );
     final mine = rows.value[key];
-    rows.value = ProgressMerge.merge(
-      mine == null ? {} : {key: mine},
-      {key: incoming},
-    ).$1;
+    rows.value = ProgressMerge.merge(mine == null ? {} : {key: mine}, {
+      key: incoming,
+    }).$1;
     await _persist();
   }
 

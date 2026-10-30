@@ -15,7 +15,9 @@ class MusicRadioService {
 
     try {
       // 1. Fetch tracks from the same artist
-      final artistTracks = await MusicService.instance.searchTracks(seedTrack.artist);
+      final artistTracks = await MusicService.instance.searchTracks(
+        seedTrack.artist,
+      );
       for (final t in artistTracks) {
         if (!seenIds.contains(t.id)) {
           seenIds.add(t.id);
@@ -24,9 +26,14 @@ class MusicRadioService {
       }
 
       // 2. Fetch tracks matching the song title / theme keywords
-      final titleQuery = seedTrack.title.split(RegExp(r'[\(\[\-–]')).first.trim();
+      final titleQuery = seedTrack.title
+          .split(RegExp(r'[\(\[\-–]'))
+          .first
+          .trim();
       if (titleQuery.isNotEmpty && titleQuery != seedTrack.title) {
-        final titleTracks = await MusicService.instance.searchTracks(titleQuery);
+        final titleTracks = await MusicService.instance.searchTracks(
+          titleQuery,
+        );
         for (final t in titleTracks) {
           if (!seenIds.contains(t.id)) {
             seenIds.add(t.id);
@@ -57,7 +64,10 @@ class MusicRadioService {
   }
 
   /// One-touch launcher: builds the radio queue and begins playback
-  Future<void> startRadioForTrack(BuildContext context, MusicTrack seedTrack) async {
+  Future<void> startRadioForTrack(
+    BuildContext context,
+    MusicTrack seedTrack,
+  ) async {
     HapticFeedback.mediumImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -69,13 +79,19 @@ class MusicRadioService {
             const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(color: Color(0xFF7C5CFF), strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: Color(0xFF7C5CFF),
+                strokeWidth: 2,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Tuning into "${seedTrack.title}" Radio...',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -86,7 +102,10 @@ class MusicRadioService {
     );
 
     final queue = await generateSongRadio(seedTrack);
-    await MusicPlayerController.instance.playTrack(seedTrack, playlistQueue: queue);
+    await MusicPlayerController.instance.playTrack(
+      seedTrack,
+      playlistQueue: queue,
+    );
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -102,7 +121,10 @@ class MusicRadioService {
               Expanded(
                 child: Text(
                   'Now Playing: ${seedTrack.artist} Song Radio (${queue.length} songs)',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

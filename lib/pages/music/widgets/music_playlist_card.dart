@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../design/prism_shadows.dart';
+import '../../../design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../models/music/music_track.dart';
 import 'music_cover_image.dart';
 import 'music_hoverable.dart';
@@ -24,19 +27,29 @@ class MusicPlaylistCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: MusicCoverImage(
-                  imageUrl: playlist.coverUrl,
-                  width: 145,
-                  height: 145,
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: PrismFrame.poster(
+                    isLight: AppThemeService.currentPalette.value.isLight,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: MusicCoverImage(
+                    imageUrl: playlist.coverUrl,
+                    width: 145,
+                    height: 145,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 playlist.title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: PrismInk.primary(
+                    AppThemeService.currentPalette.value.isLight,
+                  ),
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -46,8 +59,10 @@ class MusicPlaylistCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 '${playlist.trackCount} tracks',
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: PrismInk.faint(
+                    AppThemeService.currentPalette.value.isLight,
+                  ),
                   fontSize: 11,
                 ),
                 maxLines: 1,
@@ -60,4 +75,3 @@ class MusicPlaylistCard extends StatelessWidget {
     );
   }
 }
-

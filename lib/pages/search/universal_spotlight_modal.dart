@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../models/movie/movie.dart';
@@ -14,7 +15,7 @@ import '../../services/music/music_player_controller.dart';
 import '../../services/music/music_service.dart';
 import '../../services/search/search_history_helper.dart';
 import '../../services/theme/app_theme_service.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 import '../../utils/perf/image_caps.dart';
 import '../anime/anime_details_page.dart';
 import '../details/details_page.dart';
@@ -36,7 +37,8 @@ class UniversalSpotlightModal extends StatefulWidget {
   }
 
   @override
-  State<UniversalSpotlightModal> createState() => _UniversalSpotlightModalState();
+  State<UniversalSpotlightModal> createState() =>
+      _UniversalSpotlightModalState();
 }
 
 enum SpotlightCategory { all, movies, anime, music, artists }
@@ -192,7 +194,11 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
 
   Future<List<AnimeMedia>> _searchAnime(String query) async {
     try {
-      final res = await AnilistService.instance.searchAnime(query, page: 1, perPage: 12);
+      final res = await AnilistService.instance.searchAnime(
+        query,
+        page: 1,
+        perPage: 12,
+      );
       return res;
     } catch (_) {
       return [];
@@ -211,21 +217,17 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
   void _openMovie(Movie movie) {
     _saveQueryToHistory(_searchController.text);
     Navigator.of(context).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => DetailsPage(movie: movie),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => DetailsPage(movie: movie)));
   }
 
   void _openAnime(AnimeMedia anime) {
     _saveQueryToHistory(_searchController.text);
     Navigator.of(context).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AnimeDetailsPage(anime: anime),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => AnimeDetailsPage(anime: anime)));
   }
 
   void _playMusicTrack(MusicTrack track) {
@@ -234,7 +236,6 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Playing "${track.title}" • ${track.artist}'),
-        backgroundColor: DizzyVoid.surface2,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -243,40 +244,56 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = AppThemeService.currentPalette.value;
     final isDesktop = MediaQuery.sizeOf(context).width > 700;
 
-    return Dialog(
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 48 : 16,
-        vertical: isDesktop ? 40 : 20,
-      ),
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 820,
-            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+    return ValueListenableBuilder<AppThemePalette>(
+      valueListenable: AppThemeService.currentPalette,
+      builder: (context, theme, _) {
+        return Dialog(
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 48 : 16,
+            vertical: isDesktop ? 40 : 20,
           ),
-          child: DizzyTactileCard(
-            margin: EdgeInsets.zero,
-            padding: EdgeInsets.zero,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHeader(theme),
-                _buildFilterChips(theme),
-                Divider(color: DizzyEdge.hairline.color, height: 1),
-                Flexible(child: _buildBody(theme)),
-                _buildFooter(),
-              ],
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 820,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+              ),
+              child: PrismCard(
+                margin: EdgeInsets.zero,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildHeader(theme),
+                    _buildFilterChips(theme),
+                    Divider(color: _divider(theme), height: 1),
+                    Flexible(child: _buildBody(theme)),
+                    _buildFooter(theme),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+
+  Color _ink(AppThemePalette p) => p.isLight ? PrismLight.ink : Colors.white;
+
+  Color _inkSoft(AppThemePalette p) =>
+      p.isLight ? PrismLight.inkSoft : Colors.white60;
+
+  Color _divider(AppThemePalette p) => p.isLight
+      ? PrismLight.borderSubtle
+      : Colors.white.withValues(alpha: 0.08);
+
+  Color _tileSurface(AppThemePalette p) =>
+      p.isLight ? PrismLight.raisedTop : PrismDark.raisedTop;
 
   Widget _buildHeader(AppThemePalette theme) {
     return Padding(
@@ -301,15 +318,15 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               controller: _searchController,
               focusNode: _focusNode,
               autofocus: true,
-              style: const TextStyle(
-                color: DizzyVoid.bone,
+              style: TextStyle(
+                color: _ink(theme),
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search movies, series, anime, songs, artists…',
                 hintStyle: TextStyle(
-                  color: DizzyVoid.ash,
+                  color: _inkSoft(theme),
                   fontSize: 15,
                   fontWeight: FontWeight.normal,
                 ),
@@ -325,7 +342,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
           ),
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.close_rounded, color: DizzyVoid.ash, size: 20),
+              icon: Icon(Icons.close_rounded, color: _inkSoft(theme), size: 20),
               onPressed: () {
                 _searchController.clear();
                 _onQueryChanged('');
@@ -333,7 +350,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               tooltip: 'Clear',
             ),
           IconButton(
-            icon: const Icon(Icons.cancel_outlined, color: DizzyVoid.ash, size: 22),
+            icon: Icon(Icons.cancel_outlined, color: _inkSoft(theme), size: 22),
             onPressed: () => Navigator.of(context).pop(),
             tooltip: 'Close (Esc)',
           ),
@@ -352,16 +369,36 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         physics: const BouncingScrollPhysics(),
         children: [
           _categoryChip('All Results', SpotlightCategory.all, theme),
-          _categoryChip('Movies & TV (${_movies.length})', SpotlightCategory.movies, theme),
-          _categoryChip('Anime (${_animeList.length})', SpotlightCategory.anime, theme),
-          _categoryChip('Music (${_tracks.length})', SpotlightCategory.music, theme),
-          _categoryChip('Artists & Albums (${_artists.length + _albums.length})', SpotlightCategory.artists, theme),
+          _categoryChip(
+            'Movies & TV (${_movies.length})',
+            SpotlightCategory.movies,
+            theme,
+          ),
+          _categoryChip(
+            'Anime (${_animeList.length})',
+            SpotlightCategory.anime,
+            theme,
+          ),
+          _categoryChip(
+            'Music (${_tracks.length})',
+            SpotlightCategory.music,
+            theme,
+          ),
+          _categoryChip(
+            'Artists & Albums (${_artists.length + _albums.length})',
+            SpotlightCategory.artists,
+            theme,
+          ),
         ],
       ),
     );
   }
 
-  Widget _categoryChip(String label, SpotlightCategory cat, AppThemePalette theme) {
+  Widget _categoryChip(
+    String label,
+    SpotlightCategory cat,
+    AppThemePalette theme,
+  ) {
     final selected = _activeCategory == cat;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -370,14 +407,14 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         selected: selected,
         onSelected: (_) => setState(() => _activeCategory = cat),
         labelStyle: TextStyle(
-          color: selected ? DizzyVoid.bone : DizzyVoid.ash,
+          color: selected ? _ink(theme) : _inkSoft(theme),
           fontWeight: selected ? FontWeight.bold : FontWeight.w500,
           fontSize: 12.5,
         ),
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor: _tileSurface(theme),
         selectedColor: theme.primaryColor.withValues(alpha: 0.35),
         side: BorderSide(
-          color: selected ? theme.primaryColor : DizzyEdge.hairline.color,
+          color: selected ? theme.primaryColor : _divider(theme),
           width: 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -401,16 +438,21 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               strokeWidth: 2.5,
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Searching across Dizzy Universe…',
-              style: TextStyle(color: Colors.white60, fontSize: 13.5),
+              style: TextStyle(color: _inkSoft(theme), fontSize: 13.5),
             ),
           ],
         ),
       );
     }
 
-    final totalCount = _movies.length + _animeList.length + _tracks.length + _artists.length + _albums.length;
+    final totalCount =
+        _movies.length +
+        _animeList.length +
+        _tracks.length +
+        _artists.length +
+        _albums.length;
     if (totalCount == 0) {
       return Center(
         child: Padding(
@@ -418,20 +460,24 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.search_off_rounded, color: Colors.white24, size: 54),
+              Icon(
+                Icons.search_off_rounded,
+                color: theme.isLight ? PrismLight.inkFaint : Colors.white24,
+                size: 54,
+              ),
               const SizedBox(height: 14),
               Text(
                 'No results for "${_searchController.text.trim()}"',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _ink(theme),
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Try checking the spelling or searching with a different term.',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(color: _inkSoft(theme), fontSize: 13),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -444,16 +490,20 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       physics: const BouncingScrollPhysics(),
       children: [
-        if ((_activeCategory == SpotlightCategory.all || _activeCategory == SpotlightCategory.movies) &&
+        if ((_activeCategory == SpotlightCategory.all ||
+                _activeCategory == SpotlightCategory.movies) &&
             _movies.isNotEmpty)
           _buildMovieSection(theme),
-        if ((_activeCategory == SpotlightCategory.all || _activeCategory == SpotlightCategory.anime) &&
+        if ((_activeCategory == SpotlightCategory.all ||
+                _activeCategory == SpotlightCategory.anime) &&
             _animeList.isNotEmpty)
           _buildAnimeSection(theme),
-        if ((_activeCategory == SpotlightCategory.all || _activeCategory == SpotlightCategory.music) &&
+        if ((_activeCategory == SpotlightCategory.all ||
+                _activeCategory == SpotlightCategory.music) &&
             _tracks.isNotEmpty)
           _buildMusicTracksSection(theme),
-        if ((_activeCategory == SpotlightCategory.all || _activeCategory == SpotlightCategory.artists) &&
+        if ((_activeCategory == SpotlightCategory.all ||
+                _activeCategory == SpotlightCategory.artists) &&
             (_artists.isNotEmpty || _albums.isNotEmpty))
           _buildArtistsAndAlbumsSection(theme),
       ],
@@ -469,10 +519,10 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'RECENT SEARCHES',
                 style: TextStyle(
-                  color: DizzyVoid.ash,
+                  color: _inkSoft(theme),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -480,9 +530,12 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               ),
               TextButton(
                 onPressed: _clearAllHistory,
-                child: const Text(
+                child: Text(
                   'Clear All',
-                  style: TextStyle(color: DizzyGlow.beam, fontSize: 12),
+                  style: TextStyle(
+                    color: PrismAccent.text(theme.isLight),
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -493,12 +546,18 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
             runSpacing: 8,
             children: SearchHistoryHelper.shown(_searchHistory).map((q) {
               return InputChip(
-                avatar: const Icon(Icons.history_rounded, size: 16, color: DizzyVoid.ash),
+                avatar: Icon(
+                  Icons.history_rounded,
+                  size: 16,
+                  color: _inkSoft(theme),
+                ),
                 label: Text(q),
-                labelStyle: const TextStyle(color: DizzyVoid.bone, fontSize: 12.5),
-                backgroundColor: DizzyVoid.surface1,
-                side: BorderSide(color: DizzyEdge.hairline.color),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                labelStyle: TextStyle(color: _ink(theme), fontSize: 12.5),
+                backgroundColor: _tileSurface(theme),
+                side: BorderSide(color: _divider(theme)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 onPressed: () {
                   _searchController.text = q;
                   _searchController.selection = TextSelection.fromPosition(
@@ -507,16 +566,16 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                   _performSearch(q);
                 },
                 onDeleted: () => _removeHistoryItem(q),
-                deleteIconColor: DizzyVoid.ash,
+                deleteIconColor: _inkSoft(theme),
               );
             }).toList(),
           ),
           const SizedBox(height: 24),
         ],
-        const Text(
+        Text(
           'QUICK EXPLORE',
           style: TextStyle(
-            color: DizzyVoid.ash,
+            color: _inkSoft(theme),
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -531,21 +590,25 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               icon: Icons.movie_outlined,
               label: 'Trending Movies',
               query: 'Marvel',
+              theme: theme,
             ),
             _quickTile(
               icon: Icons.tv_rounded,
               label: 'Popular Series',
               query: 'Game of Thrones',
+              theme: theme,
             ),
             _quickTile(
               icon: Icons.animation_rounded,
               label: 'Anime Hits',
               query: 'Demon Slayer',
+              theme: theme,
             ),
             _quickTile(
               icon: Icons.music_note_rounded,
               label: 'Top Music',
               query: 'Arijit Singh',
+              theme: theme,
             ),
           ],
         ),
@@ -557,6 +620,7 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     required IconData icon,
     required String label,
     required String query,
+    required AppThemePalette theme,
   }) {
     return InkWell(
       onTap: () {
@@ -564,17 +628,21 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         _performSearch(query);
       },
       borderRadius: BorderRadius.circular(12),
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: DizzyGlow.beam),
+            Icon(
+              icon,
+              size: 18,
+              color: theme.isLight ? theme.primaryColor : DizzyGlow.beam,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: DizzyVoid.bone,
+              style: TextStyle(
+                color: _ink(theme),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -589,7 +657,12 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Movies & TV Series', _movies.length, Icons.movie_outlined),
+        _sectionHeader(
+          'Movies & TV Series',
+          _movies.length,
+          Icons.movie_outlined,
+          theme,
+        ),
         const SizedBox(height: 10),
         SizedBox(
           height: 160,
@@ -614,17 +687,24 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                           width: 105,
                           height: 120,
                           color: DizzyColors.scrim,
-                          child: movie.poster != null && movie.poster!.isNotEmpty
+                          child:
+                              movie.poster != null && movie.poster!.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: movie.poster!,
                                   memCacheWidth: ImageCaps.kThumb,
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => const Center(
-                                    child: Icon(Icons.movie_rounded, color: Colors.white24),
+                                    child: Icon(
+                                      Icons.movie_rounded,
+                                      color: Colors.white24,
+                                    ),
                                   ),
                                 )
                               : const Center(
-                                  child: Icon(Icons.movie_rounded, color: Colors.white24),
+                                  child: Icon(
+                                    Icons.movie_rounded,
+                                    color: Colors.white24,
+                                  ),
                                 ),
                         ),
                       ),
@@ -633,8 +713,8 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                         movie.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _ink(theme),
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -655,7 +735,12 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Anime', _animeList.length, Icons.animation_rounded),
+        _sectionHeader(
+          'Anime',
+          _animeList.length,
+          Icons.animation_rounded,
+          theme,
+        ),
         const SizedBox(height: 10),
         SizedBox(
           height: 160,
@@ -668,7 +753,9 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               final anime = _animeList[idx];
               final title = anime.titleEnglish.isNotEmpty
                   ? anime.titleEnglish
-                  : (anime.titleRomaji.isNotEmpty ? anime.titleRomaji : 'Anime');
+                  : (anime.titleRomaji.isNotEmpty
+                        ? anime.titleRomaji
+                        : 'Anime');
               return InkWell(
                 onTap: () => _openAnime(anime),
                 borderRadius: BorderRadius.circular(12),
@@ -689,11 +776,17 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                                   memCacheWidth: ImageCaps.kThumb,
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => const Center(
-                                    child: Icon(Icons.animation_rounded, color: Colors.white24),
+                                    child: Icon(
+                                      Icons.animation_rounded,
+                                      color: Colors.white24,
+                                    ),
                                   ),
                                 )
                               : const Center(
-                                  child: Icon(Icons.animation_rounded, color: Colors.white24),
+                                  child: Icon(
+                                    Icons.animation_rounded,
+                                    color: Colors.white24,
+                                  ),
                                 ),
                         ),
                       ),
@@ -702,8 +795,8 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _ink(theme),
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -724,7 +817,12 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Music Tracks', _tracks.length, Icons.music_note_rounded),
+        _sectionHeader(
+          'Music Tracks',
+          _tracks.length,
+          Icons.music_note_rounded,
+          theme,
+        ),
         const SizedBox(height: 6),
         ..._tracks.take(6).map((track) {
           return ListTile(
@@ -735,31 +833,51 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               child: Container(
                 width: 44,
                 height: 44,
-                color: DizzyVoid.surface2,
+                color: _tileSurface(theme),
                 child: track.coverUrl.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: track.coverUrl,
                         memCacheWidth: 88,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white24),
+                        errorWidget: (_, __, ___) => Icon(
+                          Icons.music_note,
+                          color: theme.isLight
+                              ? PrismLight.inkFaint
+                              : Colors.white24,
+                        ),
                       )
-                    : const Icon(Icons.music_note, color: Colors.white24),
+                    : Icon(
+                        Icons.music_note,
+                        color: theme.isLight
+                            ? PrismLight.inkFaint
+                            : Colors.white24,
+                      ),
               ),
             ),
             title: Text(
               track.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: _ink(theme),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             subtitle: Text(
               track.artist,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: _inkSoft(theme), fontSize: 12),
             ),
             trailing: IconButton(
-              icon: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF00E5FF), size: 28),
+              icon: Icon(
+                Icons.play_circle_fill_rounded,
+                color: theme.isLight
+                    ? theme.primaryColor
+                    : const Color(0xFF00E5FF),
+                size: 28,
+              ),
               onPressed: () => _playMusicTrack(track),
               tooltip: 'Play Now',
             ),
@@ -775,7 +893,12 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Artists & Albums', _artists.length + _albums.length, Icons.album_rounded),
+        _sectionHeader(
+          'Artists & Albums',
+          _artists.length + _albums.length,
+          Icons.album_rounded,
+          theme,
+        ),
         const SizedBox(height: 10),
         SizedBox(
           height: 130,
@@ -790,12 +913,17 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                     children: [
                       CircleAvatar(
                         radius: 36,
-                        backgroundColor: DizzyVoid.surface2,
+                        backgroundColor: _tileSurface(theme),
                         backgroundImage: artist.pictureUrl.isNotEmpty
                             ? CachedNetworkImageProvider(artist.pictureUrl)
                             : null,
                         child: artist.pictureUrl.isEmpty
-                            ? const Icon(Icons.person, color: Colors.white24)
+                            ? Icon(
+                                Icons.person,
+                                color: theme.isLight
+                                    ? PrismLight.inkFaint
+                                    : Colors.white24,
+                              )
                             : null,
                       ),
                       const SizedBox(height: 6),
@@ -806,7 +934,11 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: _ink(theme),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -824,14 +956,19 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                         child: Container(
                           width: 72,
                           height: 72,
-                          color: DizzyVoid.surface2,
+                          color: _tileSurface(theme),
                           child: album.coverUrl.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: album.coverUrl,
                                   memCacheWidth: 144,
                                   fit: BoxFit.cover,
                                 )
-                              : const Icon(Icons.album, color: Colors.white24),
+                              : Icon(
+                                  Icons.album,
+                                  color: theme.isLight
+                                      ? PrismLight.inkFaint
+                                      : Colors.white24,
+                                ),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -841,7 +978,11 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
                           album.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: _ink(theme),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -856,15 +997,24 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
     );
   }
 
-  Widget _sectionHeader(String title, int count, IconData icon) {
+  Widget _sectionHeader(
+    String title,
+    int count,
+    IconData icon,
+    AppThemePalette theme,
+  ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF00E5FF)),
+        Icon(
+          icon,
+          size: 16,
+          color: theme.isLight ? theme.primaryColor : const Color(0xFF00E5FF),
+        ),
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _ink(theme),
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -872,42 +1022,52 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
         const SizedBox(width: 6),
         Text(
           '($count)',
-          style: const TextStyle(color: Colors.white38, fontSize: 12),
+          style: TextStyle(color: _inkSoft(theme), fontSize: 12),
         ),
       ],
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(AppThemePalette theme) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: _tileSurface(theme),
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
         ),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              _KeyBadge(label: 'Ctrl+K'),
-              SizedBox(width: 6),
+              _KeyBadge(
+                label: 'Ctrl+K',
+                surface: _tileSurface(theme),
+                borderColor: _divider(theme),
+                textColor: _inkSoft(theme),
+              ),
+              const SizedBox(width: 6),
               Text(
                 'Spotlight everywhere',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 11.5),
+                style: TextStyle(color: _inkSoft(theme), fontSize: 11.5),
               ),
             ],
           ),
           Row(
             children: [
-              _KeyBadge(label: 'Esc'),
-              SizedBox(width: 6),
+              _KeyBadge(
+                label: 'Esc',
+                surface: _tileSurface(theme),
+                borderColor: _divider(theme),
+                textColor: _inkSoft(theme),
+              ),
+              const SizedBox(width: 6),
               Text(
                 'to dismiss',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 11.5),
+                style: TextStyle(color: _inkSoft(theme), fontSize: 11.5),
               ),
             ],
           ),
@@ -919,23 +1079,31 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
 
 class _KeyBadge extends StatelessWidget {
   final String label;
+  final Color surface;
+  final Color borderColor;
+  final Color textColor;
 
-  const _KeyBadge({required this.label});
+  const _KeyBadge({
+    required this.label,
+    required this.surface,
+    required this.borderColor,
+    required this.textColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: surface,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: DizzyEdge.hairline.color),
+        border: Border.all(color: borderColor),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: DizzyVoid.ash,
-          fontSize: 10.5,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 11,
           fontWeight: FontWeight.bold,
           fontFamily: 'monospace',
         ),

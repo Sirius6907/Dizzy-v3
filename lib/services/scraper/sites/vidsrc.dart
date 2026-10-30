@@ -32,8 +32,15 @@ class VidSrcScraper extends StreamScraper {
   }) async {
     final sources = <StreamSource>[];
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
-    final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    AppLog.d('[VidSrcScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    final tmdbId = await TmdbHelper.resolveTmdbId(
+      imdbId: imdbId,
+      title: title,
+      type: mediaType,
+      year: year,
+    );
+    AppLog.d(
+      '[VidSrcScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)',
+    );
     if (tmdbId == null) return sources;
 
     try {
@@ -49,8 +56,12 @@ class VidSrcScraper extends StreamScraper {
         if (episode != null) params['episode'] = episode.toString();
       }
 
-      final uri = Uri.parse('$_apiBase/api.php').replace(queryParameters: params);
-      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      final uri = Uri.parse(
+        '$_apiBase/api.php',
+      ).replace(queryParameters: params);
+      final response = await http
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -62,17 +73,23 @@ class VidSrcScraper extends StreamScraper {
               if (url.isEmpty || !url.startsWith('http')) continue;
               final isHls = url.contains('.m3u8');
 
-              sources.add(StreamSource(
-                name: 'VidSrc',
-                addonName: 'vidsrc',
-                title: rawStreamUrls.length > 1 ? 'VidSrc ${i + 1}' : 'VidSrc',
-                description: isHls ? 'VidSrc Direct HLS Stream' : 'VidSrc Direct Stream Source',
-                url: url,
-                headers: {
-                  'User-Agent': _ua,
-                  'Referer': 'https://cloudorchestranova.com/',
-                },
-              ));
+              sources.add(
+                StreamSource(
+                  name: 'VidSrc',
+                  addonName: 'vidsrc',
+                  title: rawStreamUrls.length > 1
+                      ? 'VidSrc ${i + 1}'
+                      : 'VidSrc',
+                  description: isHls
+                      ? 'VidSrc Direct HLS Stream'
+                      : 'VidSrc Direct Stream Source',
+                  url: url,
+                  headers: {
+                    'User-Agent': _ua,
+                    'Referer': 'https://cloudorchestranova.com/',
+                  },
+                ),
+              );
             }
           }
         }
@@ -84,28 +101,31 @@ class VidSrcScraper extends StreamScraper {
             ? '$_embedBase/embed/tv/$tmdbId/${season ?? 1}/${episode ?? 1}'
             : '$_embedBase/embed/movie/$tmdbId';
 
-        final embedRes = await http.get(Uri.parse(embedUrl), headers: {
-          'User-Agent': _ua,
-          'Referer': 'https://vidsrc.me/',
-        }).timeout(const Duration(seconds: 8));
+        final embedRes = await http
+            .get(
+              Uri.parse(embedUrl),
+              headers: {'User-Agent': _ua, 'Referer': 'https://vidsrc.me/'},
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (embedRes.statusCode == 200) {
           final html = embedRes.body;
-          final m3u8Matches = RegExp(r'https?:\/\/[^"\x27\s]+\.m3u8[^"\x27\s]*').allMatches(html);
+          final m3u8Matches = RegExp(
+            r'https?:\/\/[^"\x27\s]+\.m3u8[^"\x27\s]*',
+          ).allMatches(html);
           for (final m in m3u8Matches) {
             final url = m.group(0);
             if (url != null && url.startsWith('http')) {
-              sources.add(StreamSource(
-                name: 'VidSrc',
-                addonName: 'vidsrc',
-                title: 'VidSrc Direct',
-                description: 'VidSrc Direct HLS Stream',
-                url: url,
-                headers: {
-                  'User-Agent': _ua,
-                  'Referer': 'https://vidsrc.me/',
-                },
-              ));
+              sources.add(
+                StreamSource(
+                  name: 'VidSrc',
+                  addonName: 'vidsrc',
+                  title: 'VidSrc Direct',
+                  description: 'VidSrc Direct HLS Stream',
+                  url: url,
+                  headers: {'User-Agent': _ua, 'Referer': 'https://vidsrc.me/'},
+                ),
+              );
             }
           }
         }

@@ -20,14 +20,15 @@ class MangaService {
   final http.Client _client = http.Client();
 
   /// Bumped whenever the reading history is saved or removed.
-  static final ValueNotifier<int> readingHistoryRevision = ValueNotifier<int>(0);
+  static final ValueNotifier<int> readingHistoryRevision = ValueNotifier<int>(
+    0,
+  );
 
   Map<String, String> get _headers => {
-        'User-Agent': _userAgent,
-        'Accept':
-            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      };
+    'User-Agent': _userAgent,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
 
   Future<String> _fetchHtml(String url) async {
     final response = await _client.get(Uri.parse(url), headers: _headers);
@@ -49,7 +50,11 @@ class MangaService {
 
   // ── Browse / Search ─────────────────────────────────────────────────
 
-  Future<List<Manga>> getManga({int page = 1, String? tag, bool allowAdult = false}) async {
+  Future<List<Manga>> getManga({
+    int page = 1,
+    String? tag,
+    bool allowAdult = false,
+  }) async {
     try {
       final offset = (page - 1) * _pageSize;
       final adult = allowAdult ? 'Any' : 'False';
@@ -67,7 +72,11 @@ class MangaService {
     }
   }
 
-  Future<List<Manga>> searchManga(String query, {int page = 1, bool allowAdult = false}) async {
+  Future<List<Manga>> searchManga(
+    String query, {
+    int page = 1,
+    bool allowAdult = false,
+  }) async {
     try {
       final offset = (page - 1) * _pageSize;
       final adult = allowAdult ? 'Any' : 'False';
@@ -149,7 +158,9 @@ class MangaService {
       }
 
       // Strip unwanted badge prefixes like "Official" if attached
-      title = title.replaceAll(RegExp(r'^Official\s+', caseSensitive: false), '').trim();
+      title = title
+          .replaceAll(RegExp(r'^Official\s+', caseSensitive: false), '')
+          .trim();
 
       // Type from tooltip data-tip matching known types
       String type = '';
@@ -168,7 +179,9 @@ class MangaService {
       List<String> tags = [];
 
       for (final div in article.querySelectorAll('div, li')) {
-        final strong = div.querySelector('strong, b, span.font-bold, span.font-semibold');
+        final strong = div.querySelector(
+          'strong, b, span.font-bold, span.font-semibold',
+        );
         if (strong == null) continue;
         final label = strong.text.trim().toLowerCase();
 
@@ -177,7 +190,9 @@ class MangaService {
           final extracted = <String>[];
           for (final sp in spans) {
             final text = sp.text.replaceAll(',', '').trim();
-            if (text.isNotEmpty && !text.toLowerCase().contains('tag') && !text.toLowerCase().contains('genre')) {
+            if (text.isNotEmpty &&
+                !text.toLowerCase().contains('tag') &&
+                !text.toLowerCase().contains('genre')) {
               extracted.add(text);
             }
           }
@@ -197,7 +212,10 @@ class MangaService {
         } else if (label.contains('author')) {
           final links = div.querySelectorAll('a');
           if (links.isNotEmpty) {
-            author = links.map((a) => a.text.trim()).where((t) => t.isNotEmpty).join(', ');
+            author = links
+                .map((a) => a.text.trim())
+                .where((t) => t.isNotEmpty)
+                .join(', ');
           } else {
             final span = div.querySelector('span');
             if (span != null) author = span.text.trim();
@@ -205,18 +223,20 @@ class MangaService {
         }
       }
 
-      results.add(Manga(
-        id: seriesId,
-        title: title,
-        coverSmall: '$_coverCdn/small/$seriesId.webp',
-        coverNormal: '$_coverCdn/normal/$seriesId.webp',
-        type: type,
-        status: status,
-        year: year,
-        author: author,
-        tags: tags,
-        url: href,
-      ));
+      results.add(
+        Manga(
+          id: seriesId,
+          title: title,
+          coverSmall: '$_coverCdn/small/$seriesId.webp',
+          coverNormal: '$_coverCdn/normal/$seriesId.webp',
+          type: type,
+          status: status,
+          year: year,
+          author: author,
+          tags: tags,
+          url: href,
+        ),
+      );
     }
 
     return results;
@@ -229,23 +249,42 @@ class MangaService {
     final doc = html_parser.parse(html);
 
     String title = doc.querySelector('h1')?.text.trim() ?? '';
-    title = title.replaceAll(RegExp(r'^Official\s+', caseSensitive: false), '').trim();
+    title = title
+        .replaceAll(RegExp(r'^Official\s+', caseSensitive: false), '')
+        .trim();
     if (title.isEmpty) {
-      final ogTitle = doc.querySelector('meta[property="og:title"]')?.attributes['content'] ?? '';
-      title = ogTitle.replaceAll(RegExp(r'\s*-\s*Weeb\s*Central.*$', caseSensitive: false), '').trim();
+      final ogTitle =
+          doc
+              .querySelector('meta[property="og:title"]')
+              ?.attributes['content'] ??
+          '';
+      title = ogTitle
+          .replaceAll(
+            RegExp(r'\s*-\s*Weeb\s*Central.*$', caseSensitive: false),
+            '',
+          )
+          .trim();
     }
 
     // Scope metadata extraction strictly to the left sidebar section
-    final sidebar = doc.querySelector('section.md\\:w-4\\/12') ?? doc.querySelector('section');
+    final sidebar =
+        doc.querySelector('section.md\\:w-4\\/12') ??
+        doc.querySelector('section');
     final details = <String, List<String>>{};
     final items = sidebar != null
         ? sidebar.querySelectorAll('li, div.flex, div.grid')
         : doc.querySelectorAll('li');
 
     for (final element in items) {
-      final strong = element.querySelector('strong, b, span.font-bold, span.font-semibold');
+      final strong = element.querySelector(
+        'strong, b, span.font-bold, span.font-semibold',
+      );
       if (strong == null) continue;
-      final label = strong.text.trim().replaceAll(':', '').replaceAll('(s)', '').trim();
+      final label = strong.text
+          .trim()
+          .replaceAll(':', '')
+          .replaceAll('(s)', '')
+          .trim();
       if (label.isEmpty) continue;
 
       final links = element.querySelectorAll('a');
@@ -253,7 +292,10 @@ class MangaService {
       if (links.isNotEmpty) {
         values = links
             .map((a) => a.text.trim())
-            .where((t) => t.isNotEmpty && t != strong.text.trim() && !t.contains('RSS'))
+            .where(
+              (t) =>
+                  t.isNotEmpty && t != strong.text.trim() && !t.contains('RSS'),
+            )
             .toList();
       } else {
         String rawText = element.text.trim();
@@ -273,7 +315,14 @@ class MangaService {
 
     // Robust year resolution
     String year = '';
-    final possibleYearKeys = ['Released', 'Release Year', 'Year', 'Published', 'Date', 'Release'];
+    final possibleYearKeys = [
+      'Released',
+      'Release Year',
+      'Year',
+      'Published',
+      'Date',
+      'Release',
+    ];
     for (final key in possibleYearKeys) {
       if (details.containsKey(key) && details[key]!.isNotEmpty) {
         final rawVal = details[key]!.first;
@@ -296,7 +345,12 @@ class MangaService {
     }
 
     // Synopsis: target p.whitespace-pre-wrap directly, or clean fallback
-    String synopsis = doc.querySelector('p.whitespace-pre-wrap, .whitespace-pre-wrap')?.text.trim() ?? '';
+    String synopsis =
+        doc
+            .querySelector('p.whitespace-pre-wrap, .whitespace-pre-wrap')
+            ?.text
+            .trim() ??
+        '';
     if (synopsis.isEmpty) {
       for (final p in doc.querySelectorAll('p')) {
         final text = p.text.trim();
@@ -328,8 +382,12 @@ class MangaService {
       title: title,
       coverSmall: '$_coverCdn/small/$seriesId.webp',
       coverNormal: '$_coverCdn/normal/$seriesId.webp',
-      type: (details['Type']?.isNotEmpty ?? false) ? details['Type']!.first : '',
-      status: (details['Status']?.isNotEmpty ?? false) ? details['Status']!.first : '',
+      type: (details['Type']?.isNotEmpty ?? false)
+          ? details['Type']!.first
+          : '',
+      status: (details['Status']?.isNotEmpty ?? false)
+          ? details['Status']!.first
+          : '',
       year: year,
       author: (details['Author'] ?? details['Author(s)'] ?? []).join(', '),
       tags: tags,
@@ -342,8 +400,9 @@ class MangaService {
 
   Future<List<MangaChapter>> getChapters(String seriesId) async {
     try {
-      final html =
-          await _fetchHtml('$_baseUrl/series/$seriesId/full-chapter-list');
+      final html = await _fetchHtml(
+        '$_baseUrl/series/$seriesId/full-chapter-list',
+      );
       final doc = html_parser.parse(html);
 
       final chapters = <MangaChapter>[];
@@ -354,14 +413,19 @@ class MangaService {
         final chapterId = _extractChapterId(href);
         if (chapterId == null) continue;
 
-        final titleSpan = a.querySelector('.grow > span:first-child') ??
-            a.querySelector('span:not([class*="link-info"]):not([class*="me-2"])');
+        final titleSpan =
+            a.querySelector('.grow > span:first-child') ??
+            a.querySelector(
+              'span:not([class*="link-info"]):not([class*="me-2"])',
+            );
 
         String chapterName = titleSpan?.text.trim() ?? '';
 
         if (chapterName.isEmpty) {
           String fullText = a.text.trim();
-          fullText = fullText.replaceAll(RegExp(r'Last Read', caseSensitive: false), '').trim();
+          fullText = fullText
+              .replaceAll(RegExp(r'Last Read', caseSensitive: false), '')
+              .trim();
           chapterName = fullText;
         }
 
@@ -407,9 +471,14 @@ class MangaService {
 
   // ── History & Tracking ──────────────────────────────────────────────
 
-  Future<void> saveProgress(Manga manga, int chapterIndex, int pageIndex, List<MangaChapter> chapters) async {
+  Future<void> saveProgress(
+    Manga manga,
+    int chapterIndex,
+    int pageIndex,
+    List<MangaChapter> chapters,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     final progress = {
       'manga': manga.toJson(),
       'chapterIndex': chapterIndex,
@@ -419,36 +488,48 @@ class MangaService {
     };
 
     final historyJson = prefs.getStringList(_historyKey) ?? [];
-    final history = historyJson.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
-    
+    final history = historyJson
+        .map((e) => jsonDecode(e) as Map<String, dynamic>)
+        .toList();
+
     // Remove existing entry for this manga
     history.removeWhere((h) => h['manga']['id'] == manga.id);
-    
+
     // Add new entry at the beginning
     history.insert(0, progress);
-    
+
     // Keep only last 10 items
     if (history.length > 10) {
       history.removeRange(10, history.length);
     }
-    
-    await prefs.setStringList(_historyKey, history.map((e) => jsonEncode(e)).toList());
+
+    await prefs.setStringList(
+      _historyKey,
+      history.map((e) => jsonEncode(e)).toList(),
+    );
     readingHistoryRevision.value++;
   }
 
   Future<List<Map<String, dynamic>>> getReadingHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final historyJson = prefs.getStringList(_historyKey) ?? [];
-    return historyJson.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+    return historyJson
+        .map((e) => jsonDecode(e) as Map<String, dynamic>)
+        .toList();
   }
 
   Future<void> removeHistory(String mangaId) async {
     final prefs = await SharedPreferences.getInstance();
     final historyJson = prefs.getStringList(_historyKey) ?? [];
-    final history = historyJson.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
-    
+    final history = historyJson
+        .map((e) => jsonDecode(e) as Map<String, dynamic>)
+        .toList();
+
     history.removeWhere((h) => h['manga']['id'] == mangaId);
-    await prefs.setStringList(_historyKey, history.map((e) => jsonEncode(e)).toList());
+    await prefs.setStringList(
+      _historyKey,
+      history.map((e) => jsonEncode(e)).toList(),
+    );
     readingHistoryRevision.value++;
   }
 
@@ -490,12 +571,44 @@ class MangaService {
   // ── Available Tags ──────────────────────────────────────────────────
 
   static const List<String> availableTags = [
-    'Action', 'Adventure', 'Comedy', 'Cooking', 'Doujinshi', 'Drama',
-    'Ecchi', 'Fantasy', 'Gender Bender', 'Harem', 'Historical',
-    'Horror', 'Isekai', 'Josei', 'Lolicon', 'Martial Arts', 'Mature',
-    'Mecha', 'Medical', 'Music', 'Mystery', 'One Shot', 'Psychological',
-    'Romance', 'School Life', 'Sci-Fi', 'Seinen', 'Shotacon', 'Shoujo',
-    'Shoujo Ai', 'Shounen', 'Shounen Ai', 'Slice of Life', 'Smut',
-    'Sports', 'Supernatural', 'Tragedy', 'Yaoi', 'Yuri',
+    'Action',
+    'Adventure',
+    'Comedy',
+    'Cooking',
+    'Doujinshi',
+    'Drama',
+    'Ecchi',
+    'Fantasy',
+    'Gender Bender',
+    'Harem',
+    'Historical',
+    'Horror',
+    'Isekai',
+    'Josei',
+    'Lolicon',
+    'Martial Arts',
+    'Mature',
+    'Mecha',
+    'Medical',
+    'Music',
+    'Mystery',
+    'One Shot',
+    'Psychological',
+    'Romance',
+    'School Life',
+    'Sci-Fi',
+    'Seinen',
+    'Shotacon',
+    'Shoujo',
+    'Shoujo Ai',
+    'Shounen',
+    'Shounen Ai',
+    'Slice of Life',
+    'Smut',
+    'Sports',
+    'Supernatural',
+    'Tragedy',
+    'Yaoi',
+    'Yuri',
   ];
 }

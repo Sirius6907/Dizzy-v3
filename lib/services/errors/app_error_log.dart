@@ -57,7 +57,13 @@ class AppErrorLog {
   static final RegExp _devicePattern = RegExp(r'^[1-9][0-9]{6}$');
 
   static const _platforms = <String>{
-    'android', 'ios', 'windows', 'linux', 'macos', 'fuchsia', 'web',
+    'android',
+    'ios',
+    'windows',
+    'linux',
+    'macos',
+    'fuchsia',
+    'web',
   };
 
   static Timer? _flushTimer;
@@ -142,17 +148,17 @@ class AppErrorLog {
       // build must not throw here. A non-string falls out of the
       // allowlist and lands as 'unknown', which is the fail-soft answer.
       final payload = buildPayload(
-              deviceCode: deviceCode,
-              platform: platform,
-              appVersion: version,
-              screen: (entry['screen'] ?? '').toString(),
-              code: (entry['code'] ?? '').toString(),
-              detail: (entry['detail'] ?? '').toString(),
-              // v1.3.3-T2.3: attach the trail at SEND time, not queue time — the
-              // events nearest the failure are what matter, and they accumulate
-              // while the entry waits offline.
-              trail: SessionTrail.wire(),
-            );
+        deviceCode: deviceCode,
+        platform: platform,
+        appVersion: version,
+        screen: (entry['screen'] ?? '').toString(),
+        code: (entry['code'] ?? '').toString(),
+        detail: (entry['detail'] ?? '').toString(),
+        // v1.3.3-T2.3: attach the trail at SEND time, not queue time — the
+        // events nearest the failure are what matter, and they accumulate
+        // while the entry waits offline.
+        trail: SessionTrail.wire(),
+      );
       try {
         // Any normal return consumes the entry — the server may have
         // chosen not to store it, and retrying that forever would pin the
@@ -170,46 +176,46 @@ class AppErrorLog {
   }
 
   /// The exact wire shape the `report_error` RPC accepts — the six enum
-    /// fields, plus the v1.3.3-T2.3 session trail (tokens only, same
-    /// allowlist discipline) so a crash arrives with the path into it.
-    /// A trail that fails validation is OMITTED, not sent empty: the field
-    /// only exists when it carries usable context.
-    @visibleForTesting
-    static Map<String, dynamic> buildPayload({
-      required String deviceCode,
-      required String platform,
-      required String appVersion,
-      required String screen,
-      required String code,
-      String detail = '',
-      String trail = '',
-    }) {
-      final safeTrail = sanitizeTrail(trail);
-      return <String, dynamic>{
-        'device_code': sanitizeDeviceCode(deviceCode),
-        'platform': sanitizePlatform(platform),
-        'app_version': sanitizeVersion(appVersion),
-        'screen': sanitizeScreen(screen),
-        'code': sanitizeCode(code),
-        'detail': sanitizeDetail(detail),
-        if (safeTrail.isNotEmpty) 'trail': safeTrail,
-      };
-    }
+  /// fields, plus the v1.3.3-T2.3 session trail (tokens only, same
+  /// allowlist discipline) so a crash arrives with the path into it.
+  /// A trail that fails validation is OMITTED, not sent empty: the field
+  /// only exists when it carries usable context.
+  @visibleForTesting
+  static Map<String, dynamic> buildPayload({
+    required String deviceCode,
+    required String platform,
+    required String appVersion,
+    required String screen,
+    required String code,
+    String detail = '',
+    String trail = '',
+  }) {
+    final safeTrail = sanitizeTrail(trail);
+    return <String, dynamic>{
+      'device_code': sanitizeDeviceCode(deviceCode),
+      'platform': sanitizePlatform(platform),
+      'app_version': sanitizeVersion(appVersion),
+      'screen': sanitizeScreen(screen),
+      'code': sanitizeCode(code),
+      'detail': sanitizeDetail(detail),
+      if (safeTrail.isNotEmpty) 'trail': safeTrail,
+    };
+  }
 
-    /// The trail is a `>`-joined token list; every token must pass the enum
-    /// allowlist or the whole trail is dropped (never partially forwarded —
-    /// a half-sanitised breadcrumb is how free text leaks).
-    @visibleForTesting
-    static String sanitizeTrail(String raw) {
-      final v = raw.trim().toLowerCase();
-      if (v.isEmpty) return '';
-      for (final t in v.split('>')) {
-        if (SessionTrail.sanitizeToken(t).isEmpty) return '';
-      }
-      return v.length > SessionTrail.maxWireLength
-          ? v.substring(v.length - SessionTrail.maxWireLength)
-          : v;
+  /// The trail is a `>`-joined token list; every token must pass the enum
+  /// allowlist or the whole trail is dropped (never partially forwarded —
+  /// a half-sanitised breadcrumb is how free text leaks).
+  @visibleForTesting
+  static String sanitizeTrail(String raw) {
+    final v = raw.trim().toLowerCase();
+    if (v.isEmpty) return '';
+    for (final t in v.split('>')) {
+      if (SessionTrail.sanitizeToken(t).isEmpty) return '';
     }
+    return v.length > SessionTrail.maxWireLength
+        ? v.substring(v.length - SessionTrail.maxWireLength)
+        : v;
+  }
 
   // ── privacy gate ──
   // Each of these returns the value only when the WHOLE string matches the
@@ -266,8 +272,10 @@ class AppErrorLog {
   static Future<void> _sendToEdge(Map<String, dynamic> payload) async {
     // Throws when the edge is unreachable or answers non-2xx; the entry
     // then stays queued for the next flush.
-    final res = await CloudClient.db.functions
-        .invoke('report-error', body: payload);
+    final res = await CloudClient.db.functions.invoke(
+      'report-error',
+      body: payload,
+    );
     final data = res.data;
     if (data is! Map || data['ok'] != true) {
       throw StateError('report-error did not acknowledge the report');

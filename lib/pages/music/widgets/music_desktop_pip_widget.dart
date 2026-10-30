@@ -48,11 +48,19 @@ class MusicDesktopPipWidget extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.35),
                 child: Row(
                   children: [
-                    const Icon(Icons.drag_handle_rounded, color: Colors.white30, size: 16),
+                    const Icon(
+                      Icons.drag_handle_rounded,
+                      color: Colors.white30,
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
                     const Text(
                       'Dizzy Mini Player',
-                      style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Spacer(),
                     InkWell(
@@ -62,7 +70,11 @@ class MusicDesktopPipWidget extends StatelessWidget {
                       },
                       child: const Tooltip(
                         message: 'Restore window',
-                        child: Icon(Icons.open_in_full_rounded, color: Colors.white70, size: 14),
+                        child: Icon(
+                          Icons.open_in_full_rounded,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -73,7 +85,10 @@ class MusicDesktopPipWidget extends StatelessWidget {
             // Main Player Bar
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 child: Row(
                   children: [
                     // Artwork Thumbnail
@@ -109,7 +124,10 @@ class MusicDesktopPipWidget extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             track.artist,
-                            style: const TextStyle(color: Colors.white60, fontSize: 11),
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -118,16 +136,23 @@ class MusicDesktopPipWidget extends StatelessWidget {
                           AnimatedBuilder(
                             animation: controller,
                             builder: (context, _) {
-                              final pos = controller.position.inMilliseconds.toDouble();
-                              final dur = controller.duration.inMilliseconds.toDouble();
-                              final progress = dur > 0 ? (pos / dur).clamp(0.0, 1.0) : 0.0;
+                              final pos = controller.position.inMilliseconds
+                                  .toDouble();
+                              final dur = controller.duration.inMilliseconds
+                                  .toDouble();
+                              final progress = dur > 0
+                                  ? (pos / dur).clamp(0.0, 1.0)
+                                  : 0.0;
                               return ClipRRect(
                                 borderRadius: BorderRadius.circular(2),
                                 child: LinearProgressIndicator(
                                   value: progress,
                                   minHeight: 3,
                                   backgroundColor: Colors.white12,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7C5CFF)),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF7C5CFF),
+                                      ),
                                 ),
                               );
                             },
@@ -142,19 +167,29 @@ class MusicDesktopPipWidget extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.skip_previous_rounded, color: Colors.white70, size: 22),
+                          icon: const Icon(
+                            Icons.skip_previous_rounded,
+                            color: Colors.white70,
+                            size: 22,
+                          ),
                           onPressed: controller.playPrevious,
                         ),
                         IconButton(
                           icon: Icon(
-                            controller.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+                            controller.isPlaying
+                                ? Icons.pause_circle_filled_rounded
+                                : Icons.play_circle_fill_rounded,
                             color: const Color(0xFF7C5CFF),
                             size: 32,
                           ),
                           onPressed: controller.togglePlayPause,
                         ),
                         IconButton(
-                          icon: const Icon(Icons.skip_next_rounded, color: Colors.white70, size: 22),
+                          icon: const Icon(
+                            Icons.skip_next_rounded,
+                            color: Colors.white70,
+                            size: 22,
+                          ),
                           onPressed: controller.playNext,
                         ),
                       ],

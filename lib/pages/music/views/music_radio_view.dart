@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
 import '../widgets/music_hoverable.dart';
 
@@ -15,33 +17,70 @@ class MusicRadioView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radioGenres = [
-      {'name': 'Bollywood Romance', 'color': const Color(0xFF7C5CFF), 'query': 'Pritam Bollywood'},
-      {'name': 'Bollywood Party Mix', 'color': const Color(0xFF7850FF), 'query': 'Bollywood Dance'},
-      {'name': 'Mashup Radio', 'color': const Color(0xFF00D294), 'query': 'Bollywood Mashup'},
-      {'name': 'Punjabi Radio', 'color': const Color(0xFF00D2EF), 'query': 'AP Dhillon'},
-      {'name': 'Gully Hip-Hop', 'color': const Color(0xFFF99C00), 'query': 'Desi Hip Hop'},
-      {'name': 'Indie Feels', 'color': const Color(0xFFE12AFB), 'query': 'Anuv Jain'},
-      {'name': 'Ollywood DJ', 'color': const Color(0xFFFF6568), 'query': 'Sambalpuri DJ'},
-      {'name': 'Lofi Nights Radio', 'color': const Color(0xFF625FFF), 'query': 'Bollywood LoFi'},
+      {
+        'name': 'Bollywood Romance',
+        'color': const Color(0xFF7C5CFF),
+        'query': 'Pritam Bollywood',
+      },
+      {
+        'name': 'Bollywood Party Mix',
+        'color': const Color(0xFF7850FF),
+        'query': 'Bollywood Dance',
+      },
+      {
+        'name': 'Mashup Radio',
+        'color': const Color(0xFF00D294),
+        'query': 'Bollywood Mashup',
+      },
+      {
+        'name': 'Punjabi Radio',
+        'color': const Color(0xFF00D2EF),
+        'query': 'AP Dhillon',
+      },
+      {
+        'name': 'Gully Hip-Hop',
+        'color': const Color(0xFFF99C00),
+        'query': 'Desi Hip Hop',
+      },
+      {
+        'name': 'Indie Feels',
+        'color': const Color(0xFFE12AFB),
+        'query': 'Anuv Jain',
+      },
+      {
+        'name': 'Ollywood DJ',
+        'color': const Color(0xFFFF6568),
+        'query': 'Sambalpuri DJ',
+      },
+      {
+        'name': 'Lofi Nights Radio',
+        'color': const Color(0xFF625FFF),
+        'query': 'Bollywood LoFi',
+      },
     ];
 
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.only(top: 80, left: 24, right: 24, bottom: 150),
       children: [
-        const Text(
+        Text(
           'Radio Stations & Live Streams',
           style: TextStyle(
-            color: Colors.white,
+            color: PrismInk.primary(
+              AppThemeService.currentPalette.value.isLight,
+            ),
             fontSize: 26,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.6,
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Continuous music channels tuned to your mood.',
-          style: TextStyle(color: Color(0xFF9E9EA8), fontSize: 14),
+          style: TextStyle(
+            color: PrismInk.faint(AppThemeService.currentPalette.value.isLight),
+            fontSize: 14,
+          ),
         ),
         const SizedBox(height: 20),
         GridView.builder(
@@ -77,6 +116,7 @@ class MusicRadioView extends StatelessWidget {
                         Icon(Icons.radio_rounded, color: color, size: 28),
                         Text(
                           station['name'] as String,
+                          // Tiles sit on dark glass in both themes.
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,

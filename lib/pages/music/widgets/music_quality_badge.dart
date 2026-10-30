@@ -52,7 +52,9 @@ class MusicQualityBadge extends StatelessWidget {
           Icon(
             isLossless ? Icons.album_rounded : Icons.graphic_eq_rounded,
             size: fontSize + 2,
-            color: isLossless ? const Color(0xFFFFB300) : const Color(0xFFB57CFF),
+            color: isLossless
+                ? const Color(0xFFFFB300)
+                : const Color(0xFFB57CFF),
           ),
           const SizedBox(width: 4),
           Text(
@@ -91,10 +93,12 @@ class _MusicQualitySelectorSheet extends StatefulWidget {
   const _MusicQualitySelectorSheet();
 
   @override
-  State<_MusicQualitySelectorSheet> createState() => _MusicQualitySelectorSheetState();
+  State<_MusicQualitySelectorSheet> createState() =>
+      _MusicQualitySelectorSheetState();
 }
 
-class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> {
+class _MusicQualitySelectorSheetState
+    extends State<_MusicQualitySelectorSheet> {
   @override
   Widget build(BuildContext context) {
     final controller = MusicPlayerController.instance;
@@ -126,7 +130,11 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
             const SizedBox(height: 16),
             const Row(
               children: [
-                Icon(Icons.high_quality_rounded, color: Color(0xFF00D2EF), size: 22),
+                Icon(
+                  Icons.high_quality_rounded,
+                  color: Color(0xFF00D2EF),
+                  size: 22,
+                ),
                 SizedBox(width: 10),
                 Text(
                   'Streaming Audio Quality',
@@ -143,7 +151,8 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
             // Option 1: FLAC Hi-Res Lossless
             _buildQualityTile(
               title: 'FLAC Hi-Res Lossless',
-              subtitle: 'Studio Master quality (up to 24-bit / 192kHz). Bit-perfect audio.',
+              subtitle:
+                  'Studio Master quality (up to 24-bit / 192kHz). Bit-perfect audio.',
               icon: Icons.album_rounded,
               accentColor: const Color(0xFFFFB300),
               badgeText: 'HI-RES',
@@ -159,7 +168,8 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
             // Option 2: High Quality Stereo
             _buildQualityTile(
               title: 'YouTube HQ Audio (320 kbps)',
-              subtitle: 'Optimized high bitrate stereo. Instant stream buffering & rich bass.',
+              subtitle:
+                  'Optimized high bitrate stereo. Instant stream buffering & rich bass.',
               icon: Icons.graphic_eq_rounded,
               accentColor: const Color(0xFF7C5CFF),
               badgeText: 'HQ 320K',
@@ -175,7 +185,10 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
             Center(
               child: Text(
                 'Active Stream: ${controller.currentQualityLabel}',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 11,
+                ),
               ),
             ),
           ],
@@ -199,10 +212,14 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.04),
+          color: isSelected
+              ? accentColor.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? accentColor.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08),
+            color: isSelected
+                ? accentColor.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.08),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -233,7 +250,10 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
@@ -252,7 +272,10 @@ class _MusicQualitySelectorSheetState extends State<_MusicQualitySelectorSheet> 
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Colors.white38, fontSize: 11.5),
+                    style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 11.5,
+                    ),
                   ),
                 ],
               ),

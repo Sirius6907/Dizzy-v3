@@ -198,15 +198,15 @@ class _MangaCategoryDropdownState extends State<MangaCategoryDropdown>
               color: _isOpen || _isHovered
                   ? palette.primaryColor.withValues(alpha: 0.16)
                   : (isSelectedGenre
-                      ? palette.primaryColor.withValues(alpha: 0.10)
-                      : DizzyVoid.surface1.withValues(alpha: 0.85)),
+                        ? palette.primaryColor.withValues(alpha: 0.10)
+                        : DizzyVoid.surface1.withValues(alpha: 0.85)),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isOpen
                     ? palette.primaryColor
                     : (_isHovered || isSelectedGenre
-                        ? palette.primaryColor.withValues(alpha: 0.6)
-                        : Colors.white.withValues(alpha: 0.12)),
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : Colors.white.withValues(alpha: 0.12)),
                 width: _isOpen || isSelectedGenre ? 1.5 : 1.0,
               ),
               boxShadow: [
@@ -239,7 +239,9 @@ class _MangaCategoryDropdownState extends State<MangaCategoryDropdown>
                   child: Icon(
                     genreIcon,
                     size: 15,
-                    color: isSelectedGenre ? palette.primaryColor : Colors.white70,
+                    color: isSelectedGenre
+                        ? palette.primaryColor
+                        : Colors.white70,
                   ),
                 ),
                 const SizedBox(width: 9),
@@ -251,9 +253,13 @@ class _MangaCategoryDropdownState extends State<MangaCategoryDropdown>
                     widget.selectedGenre,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isSelectedGenre ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                      color: isSelectedGenre
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.9),
                       fontSize: 13.5,
-                      fontWeight: isSelectedGenre ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: isSelectedGenre
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -308,7 +314,8 @@ class _DropdownOverlayContent extends StatefulWidget {
   });
 
   @override
-  State<_DropdownOverlayContent> createState() => _DropdownOverlayContentState();
+  State<_DropdownOverlayContent> createState() =>
+      _DropdownOverlayContentState();
 }
 
 class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
@@ -380,7 +387,7 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
     final isMobile = widget.screenSize.width < 500;
-    
+
     // Calculate dropdown dimensions
     final menuWidth = isMobile
         ? (widget.screenSize.width - 32).clamp(280.0, 360.0)
@@ -388,7 +395,8 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
     const menuMaxHeight = 440.0;
 
     // Determine horizontal alignment relative to button
-    final bool alignRight = (widget.buttonOffset.dx + menuWidth) > widget.screenSize.width - 16;
+    final bool alignRight =
+        (widget.buttonOffset.dx + menuWidth) > widget.screenSize.width - 16;
     final double leftOffset = alignRight
         ? -(menuWidth - widget.buttonSize.width)
         : 0.0;
@@ -429,7 +437,9 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                       filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                       child: Container(
                         width: menuWidth,
-                        constraints: const BoxConstraints(maxHeight: menuMaxHeight),
+                        constraints: const BoxConstraints(
+                          maxHeight: menuMaxHeight,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -452,7 +462,9 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                               offset: const Offset(0, 12),
                             ),
                             BoxShadow(
-                              color: palette.primaryColor.withValues(alpha: 0.18),
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.18,
+                              ),
                               blurRadius: 20,
                               spreadRadius: 0,
                               offset: const Offset(0, 4),
@@ -464,7 +476,12 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                           children: [
                             // ── Header / Filter Search ──
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                14,
+                                16,
+                                10,
+                              ),
                               child: Column(
                                 children: [
                                   Row(
@@ -486,15 +503,24 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                                       ),
                                       const Spacer(),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(10),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.08,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: Text(
                                           '${widget.genres.length} Tags',
                                           style: TextStyle(
-                                            color: Colors.white.withValues(alpha: 0.6),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.6,
+                                            ),
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -508,38 +534,59 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                                   Container(
                                     height: 38,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.06),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.06,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.08),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.08,
+                                        ),
                                       ),
                                     ),
                                     child: TextField(
                                       controller: _filterController,
-                                      onChanged: (val) => setState(() => _filterQuery = val),
-                                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      onChanged: (val) =>
+                                          setState(() => _filterQuery = val),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                      ),
                                       decoration: InputDecoration(
                                         hintText: 'Filter categories...',
                                         hintStyle: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.35),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.35,
+                                          ),
                                           fontSize: 12.5,
                                         ),
                                         prefixIcon: Icon(
                                           Icons.search_rounded,
                                           size: 18,
-                                          color: palette.primaryColor.withValues(alpha: 0.8),
+                                          color: palette.primaryColor
+                                              .withValues(alpha: 0.8),
                                         ),
                                         suffixIcon: _filterQuery.isNotEmpty
                                             ? IconButton(
-                                                icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white54),
+                                                icon: const Icon(
+                                                  Icons.close_rounded,
+                                                  size: 16,
+                                                  color: Colors.white54,
+                                                ),
                                                 onPressed: () {
                                                   _filterController.clear();
-                                                  setState(() => _filterQuery = '');
+                                                  setState(
+                                                    () => _filterQuery = '',
+                                                  );
                                                 },
                                               )
                                             : null,
                                         border: InputBorder.none,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -563,13 +610,17 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                                           Icon(
                                             Icons.search_off_rounded,
                                             size: 32,
-                                            color: Colors.white.withValues(alpha: 0.3),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.3,
+                                            ),
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
                                             'No matching categories',
                                             style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.5),
+                                              color: Colors.white.withValues(
+                                                alpha: 0.5,
+                                              ),
                                               fontSize: 13,
                                             ),
                                           ),
@@ -577,7 +628,8 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                                       ),
                                     )
                                   : RawScrollbar(
-                                      thumbColor: palette.primaryColor.withValues(alpha: 0.35),
+                                      thumbColor: palette.primaryColor
+                                          .withValues(alpha: 0.35),
                                       radius: const Radius.circular(8),
                                       thickness: 4,
                                       padding: const EdgeInsets.only(right: 4),
@@ -585,16 +637,18 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                                         padding: const EdgeInsets.all(12),
                                         shrinkWrap: true,
                                         physics: const BouncingScrollPhysics(),
-                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          mainAxisSpacing: 8,
-                                          crossAxisSpacing: 8,
-                                          mainAxisExtent: 44,
-                                        ),
+                                        gridDelegate:
+                                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 2,
+                                              mainAxisSpacing: 8,
+                                              crossAxisSpacing: 8,
+                                              mainAxisExtent: 44,
+                                            ),
                                         itemCount: filteredGenres.length,
                                         itemBuilder: (context, index) {
                                           final genre = filteredGenres[index];
-                                          final isSelected = genre == widget.selectedGenre;
+                                          final isSelected =
+                                              genre == widget.selectedGenre;
                                           final icon = _getGenreIcon(genre);
 
                                           return _CategoryItemTile(
@@ -616,18 +670,27 @@ class _DropdownOverlayContentState extends State<_DropdownOverlayContent> {
                                 color: Colors.white.withValues(alpha: 0.08),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
                                 child: InkWell(
                                   onTap: () => widget.onSelect('All'),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: palette.primaryColor.withValues(alpha: 0.12),
+                                      color: palette.primaryColor.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: palette.primaryColor.withValues(alpha: 0.3),
+                                        color: palette.primaryColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                       ),
                                     ),
                                     child: Center(
@@ -708,21 +771,23 @@ class _CategoryItemTileState extends State<_CategoryItemTile> {
             color: widget.isSelected
                 ? widget.palette.primaryColor.withValues(alpha: 0.24)
                 : (_isHovered
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : Colors.white.withValues(alpha: 0.04)),
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.white.withValues(alpha: 0.04)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: widget.isSelected
                   ? widget.palette.primaryColor.withValues(alpha: 0.8)
                   : (_isHovered
-                      ? Colors.white.withValues(alpha: 0.20)
-                      : Colors.white.withValues(alpha: 0.06)),
+                        ? Colors.white.withValues(alpha: 0.20)
+                        : Colors.white.withValues(alpha: 0.06)),
               width: widget.isSelected ? 1.4 : 1.0,
             ),
             boxShadow: widget.isSelected
                 ? [
                     BoxShadow(
-                      color: widget.palette.primaryColor.withValues(alpha: 0.25),
+                      color: widget.palette.primaryColor.withValues(
+                        alpha: 0.25,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -748,7 +813,9 @@ class _CategoryItemTileState extends State<_CategoryItemTile> {
                         ? Colors.white
                         : (_isHovered ? Colors.white : Colors.white70),
                     fontSize: 12.5,
-                    fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontWeight: widget.isSelected
+                        ? FontWeight.w800
+                        : FontWeight.w500,
                     letterSpacing: -0.2,
                   ),
                 ),

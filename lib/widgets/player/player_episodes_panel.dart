@@ -46,9 +46,12 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
     int initialSeason = _seasons.isNotEmpty ? _seasons.first : 1;
     if (widget.currentEpisode != null) {
       for (final entry in _seasonEpisodes.entries) {
-        final hasEp = entry.value.any((v) =>
-            v.id == widget.currentEpisode?.id ||
-            (v.episode != null && v.episode == widget.currentEpisode?.episode));
+        final hasEp = entry.value.any(
+          (v) =>
+              v.id == widget.currentEpisode?.id ||
+              (v.episode != null &&
+                  v.episode == widget.currentEpisode?.episode),
+        );
         if (hasEp) {
           initialSeason = entry.key;
           break;
@@ -91,7 +94,9 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
 
       for (int i = 0; i < sortedVideos.length; i += chunkSize) {
         final batchNum = (i ~/ chunkSize) + 1;
-        final end = (i + chunkSize < sortedVideos.length) ? i + chunkSize : sortedVideos.length;
+        final end = (i + chunkSize < sortedVideos.length)
+            ? i + chunkSize
+            : sortedVideos.length;
         final chunk = sortedVideos.sublist(i, end);
         final startEp = chunk.first.episode ?? (i + 1);
         final endEp = chunk.last.episode ?? end;
@@ -118,13 +123,17 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
     if (!mounted || widget.currentEpisode == null) return;
 
     final currentList = _seasonEpisodes[_selectedSeason] ?? [];
-    final idx = currentList.indexWhere((v) => v.id == widget.currentEpisode?.id);
+    final idx = currentList.indexWhere(
+      (v) => v.id == widget.currentEpisode?.id,
+    );
     if (idx < 0) return;
 
     // Approximate card height: 110px compact, 180px expanded
     final targetOffset = (idx * 116.0).clamp(
       0.0,
-      _scrollController.hasClients ? _scrollController.position.maxScrollExtent : 9999.0,
+      _scrollController.hasClients
+          ? _scrollController.position.maxScrollExtent
+          : 9999.0,
     );
 
     if (immediate) {
@@ -154,7 +163,9 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
     if (idx < 0) return;
     final targetOffset = (idx * 86.0).clamp(
       0.0,
-      _seasonScrollController.hasClients ? _seasonScrollController.position.maxScrollExtent : 9999.0,
+      _seasonScrollController.hasClients
+          ? _seasonScrollController.position.maxScrollExtent
+          : 9999.0,
     );
     if (immediate) {
       if (_seasonScrollController.hasClients) {
@@ -295,9 +306,11 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final video = episodes[index];
-                          final isCurrentPlaying = widget.currentEpisode?.id == video.id ||
+                          final isCurrentPlaying =
+                              widget.currentEpisode?.id == video.id ||
                               (widget.currentEpisode?.season == video.season &&
-                                  widget.currentEpisode?.episode == video.episode);
+                                  widget.currentEpisode?.episode ==
+                                      video.episode);
                           final isSelected = _selectedEpisodeId == video.id;
 
                           return _buildEpisodeCard(
@@ -448,7 +461,10 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                     borderRadius: BorderRadius.circular(10),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isActive
                             ? PlayerTheme.accent.withValues(alpha: 0.28)
@@ -463,7 +479,9 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: PlayerTheme.accent.withValues(alpha: 0.35),
+                                  color: PlayerTheme.accent.withValues(
+                                    alpha: 0.35,
+                                  ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                 ),
@@ -474,9 +492,13 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                       child: Text(
                         tabLabel,
                         style: TextStyle(
-                          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.70),
+                          color: isActive
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.70),
                           fontSize: 12.5,
-                          fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isActive
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
                       ),
                     ),
@@ -545,7 +567,8 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
   }) {
     final epNum = video.episode ?? (index + 1);
     final epTitle = video.title.isNotEmpty ? video.title : 'Episode $epNum';
-    final hasOverview = video.overview != null && video.overview!.trim().isNotEmpty;
+    final hasOverview =
+        video.overview != null && video.overview!.trim().isNotEmpty;
     final isHovered = _hoveredIndex == index;
 
     return MouseRegion(
@@ -565,17 +588,17 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
               color: isSelected
                   ? DizzyVoid.surface1
                   : (isHovered
-                      ? const Color(0x331E2435)
-                      : const Color(0x1F121722)),
+                        ? const Color(0x331E2435)
+                        : const Color(0x1F121722)),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isSelected
                     ? PlayerTheme.accent
                     : (isCurrentPlaying
-                        ? const Color(0xFF10B981).withValues(alpha: 0.70)
-                        : (isHovered
-                            ? Colors.white.withValues(alpha: 0.28)
-                            : Colors.white.withValues(alpha: 0.10))),
+                          ? const Color(0xFF10B981).withValues(alpha: 0.70)
+                          : (isHovered
+                                ? Colors.white.withValues(alpha: 0.28)
+                                : Colors.white.withValues(alpha: 0.10))),
                 width: isSelected ? 1.8 : 1.0,
               ),
               boxShadow: [
@@ -611,11 +634,13 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            if (video.thumbnail != null && video.thumbnail!.isNotEmpty)
+                            if (video.thumbnail != null &&
+                                video.thumbnail!.isNotEmpty)
                               Image.network(
                                 video.thumbnail!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _buildThumbPlaceholder(epNum),
+                                errorBuilder: (_, __, ___) =>
+                                    _buildThumbPlaceholder(epNum),
                               )
                             else
                               _buildThumbPlaceholder(epNum),
@@ -626,7 +651,10 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [Colors.transparent, Color(0x99000000)],
+                                  colors: [
+                                    Colors.transparent,
+                                    Color(0x99000000),
+                                  ],
                                 ),
                               ),
                             ),
@@ -636,7 +664,10 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                               left: 5,
                               bottom: 5,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1.5,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.75),
                                   borderRadius: BorderRadius.circular(4),
@@ -659,8 +690,11 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: (isSelected ? PlayerTheme.accent : Colors.black)
-                                        .withValues(alpha: 0.85),
+                                    color:
+                                        (isSelected
+                                                ? PlayerTheme.accent
+                                                : Colors.black)
+                                            .withValues(alpha: 0.85),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -687,13 +721,20 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                               // "NOW PLAYING" Badge
                               if (isCurrentPlaying) ...[
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   margin: const EdgeInsets.only(right: 6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                                    color: const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.20),
                                     borderRadius: BorderRadius.circular(5),
                                     border: Border.all(
-                                      color: const Color(0xFF10B981).withValues(alpha: 0.60),
+                                      color: const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.60),
                                     ),
                                   ),
                                   child: Row(
@@ -722,7 +763,8 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                                 ),
                               ],
 
-                              if (video.released != null && video.released!.isNotEmpty) ...[
+                              if (video.released != null &&
+                                  video.released!.isNotEmpty) ...[
                                 Text(
                                   video.released!,
                                   style: TextStyle(
@@ -743,7 +785,9 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                             style: TextStyle(
                               color: isSelected
                                   ? const Color(0xFF9D84FF)
-                                  : (isCurrentPlaying ? const Color(0xFF34D399) : Colors.white),
+                                  : (isCurrentPlaying
+                                        ? const Color(0xFF34D399)
+                                        : Colors.white),
                               fontSize: isSelected ? 14.5 : 13.5,
                               fontWeight: isSelected || isCurrentPlaying
                                   ? FontWeight.w700
@@ -805,7 +849,9 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF7C5CFF).withValues(alpha: 0.45),
+                              color: const Color(
+                                0xFF7C5CFF,
+                              ).withValues(alpha: 0.45),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -814,7 +860,11 @@ class _PlayerEpisodesPanelState extends State<PlayerEpisodesPanel> {
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.play_circle_filled_rounded, color: Colors.white, size: 18),
+                            Icon(
+                              Icons.play_circle_filled_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'Select Sources',

@@ -19,7 +19,10 @@ void main() {
           // Valid HLS Manifest
           request.response
             ..statusCode = HttpStatus.ok
-            ..headers.set(HttpHeaders.contentTypeHeader, 'application/vnd.apple.mpegurl')
+            ..headers.set(
+              HttpHeaders.contentTypeHeader,
+              'application/vnd.apple.mpegurl',
+            )
             ..write('#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:10.0,\nsegment1.ts\n');
           await request.response.close();
         } else if (path == '/alive_with_referer.m3u8') {
@@ -28,8 +31,13 @@ void main() {
           if (referer == 'https://vuflix.co/') {
             request.response
               ..statusCode = HttpStatus.ok
-              ..headers.set(HttpHeaders.contentTypeHeader, 'application/vnd.apple.mpegurl')
-              ..write('#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:10.0,\nsegment1.ts\n');
+              ..headers.set(
+                HttpHeaders.contentTypeHeader,
+                'application/vnd.apple.mpegurl',
+              )
+              ..write(
+                '#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:10.0,\nsegment1.ts\n',
+              );
           } else {
             request.response
               ..statusCode = HttpStatus.forbidden
@@ -85,18 +93,19 @@ void main() {
       expect(isAlive, isTrue);
     });
 
-    test('Stream requiring Referer passes when correct headers are provided', () async {
-      final sourceWithReferer = StreamSource(
-        name: 'Alive with Referer',
-        url: 'http://127.0.0.1:$serverPort/alive_with_referer.m3u8',
-        addonName: 'PlayTorrioHTTP',
-        headers: {
-          'Referer': 'https://vuflix.co/',
-        },
-      );
-      final isAlive = await StreamHealthChecker.isAlive(sourceWithReferer);
-      expect(isAlive, isTrue);
-    });
+    test(
+      'Stream requiring Referer passes when correct headers are provided',
+      () async {
+        final sourceWithReferer = StreamSource(
+          name: 'Alive with Referer',
+          url: 'http://127.0.0.1:$serverPort/alive_with_referer.m3u8',
+          addonName: 'PlayTorrioHTTP',
+          headers: {'Referer': 'https://vuflix.co/'},
+        );
+        final isAlive = await StreamHealthChecker.isAlive(sourceWithReferer);
+        expect(isAlive, isTrue);
+      },
+    );
 
     test('Valid MP4 video container passes health check', () async {
       final source = StreamSource(
@@ -128,14 +137,42 @@ void main() {
       expect(isAlive, isFalse);
     });
 
-    test('Torrent source with infoHash always passes health check', () async {
+    test(
+      'Torrent with no seeders fails the instant-play health check',
+      () async {
+        final source = StreamSource(
+          name: 'Torrent Source',
+          infoHash: 'abcdef1234567890abcdef1234567890abcdef12',
+          addonName: 'PlayTorrioHTTP',
+        );
+        // A bare infoHash is not evidence of liveness: it used to pass, then
+        // stall the player for the whole TorrServer timeout.
+        final isAlive = await StreamHealthChecker.isAlive(source);
+        expect(isAlive, isFalse);
+      },
+    );
+
+    test('Torrent with zero seeders fails even when cached', () async {
       final source = StreamSource(
-        name: 'Torrent Source',
+        name: 'Torrent Source · 0 seeds',
         infoHash: 'abcdef1234567890abcdef1234567890abcdef12',
         addonName: 'PlayTorrioHTTP',
       );
-      final isAlive = await StreamHealthChecker.isAlive(source);
-      expect(isAlive, isTrue);
+      expect(source.seeders, 0);
+      expect(await StreamHealthChecker.isAlive(source), isFalse);
     });
+
+    test(
+      'Torrent with seeders but no cached bytes fails (metadata not ready)',
+      () async {
+        final source = StreamSource(
+          name: 'Torrent Source · 50 seeds',
+          infoHash: 'abcdef1234567890abcdef1234567890abcdef12',
+          addonName: 'PlayTorrioHTTP',
+        );
+        expect(source.seeders, 50);
+        expect(await StreamHealthChecker.isAlive(source), isFalse);
+      },
+    );
   });
 }

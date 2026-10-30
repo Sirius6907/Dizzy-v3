@@ -5,7 +5,9 @@ class ProfileAsyncAuthorization {
 
   const ProfileAsyncAuthorization(this.feature);
 
-  static Future<ProfileAsyncAuthorization?> capture(ProfileFeature feature) async {
+  static Future<ProfileAsyncAuthorization?> capture(
+    ProfileFeature feature,
+  ) async {
     return ProfileAsyncAuthorization(feature);
   }
 

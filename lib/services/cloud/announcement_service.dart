@@ -69,8 +69,7 @@ class AnnouncementService {
 
   /// Pure: blank bound = unbounded. Compares dot-separated versions.
   static bool versionOk(String min, String max, String appVersion) {
-    if (min.trim().isNotEmpty &&
-        _cmp(appVersion, min.trim()) < 0) {
+    if (min.trim().isNotEmpty && _cmp(appVersion, min.trim()) < 0) {
       return false;
     }
     if (max.trim().isNotEmpty && _cmp(appVersion, max.trim()) > 0) {

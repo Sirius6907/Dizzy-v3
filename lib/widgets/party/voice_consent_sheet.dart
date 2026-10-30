@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../services/watchparty/party_voice_service.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 
 /// v1.2.0-T2.8: one-tap voice consent + join (no Settings maze).
 /// First voice tap per room → sheet: "Talk while you watch? [Allow] [No thanks]".
@@ -19,9 +20,10 @@ class VoiceConsentSheet {
     if (_asked.contains(code)) return;
     _asked.add(code);
     if (!context.mounted) return;
+    final bgIsLight = AppThemeService.currentPalette.value.isLight;
     final allow = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: bgIsLight ? PrismLight.bg : PrismDark.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -73,14 +75,15 @@ class VoiceConsentSheet {
     );
     if (allow != true) return;
     if (!context.mounted) return;
-    final ok =
-        await PartyVoiceService.join(roomCode: code, asHost: asHost);
+    final ok = await PartyVoiceService.join(roomCode: code, asHost: asHost);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? 'Voice on. You are muted — tap mic to speak.'
-            : "Couldn't start voice. Party still works."),
+        content: Text(
+          ok
+              ? 'Voice on. You are muted — tap mic to speak.'
+              : "Couldn't start voice. Party still works.",
+        ),
       ),
     );
   }

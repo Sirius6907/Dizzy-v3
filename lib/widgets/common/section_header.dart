@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../services/theme/app_theme_service.dart';
+
+import '../prism/prism_header.dart';
 
 /// Clean section header — title on left, optional trailing widget / "See All" on right.
+///
+/// prism/v2-reskin: hard-switched to the Prism skin.
+/// Same props, zero call-site change.
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -18,76 +22,11 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = AppThemeService.currentPalette.value.primaryColor;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    height: 1.1,
-                  ),
-                ),
-                if (subtitle != null && subtitle!.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle!,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.38),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (trailing != null) ...[
-            trailing!,
-            if (onSeeAll != null) const SizedBox(width: 8),
-          ],
-          if (onSeeAll != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: TextButton(
-                onPressed: onSeeAll,
-                style: TextButton.styleFrom(
-                  foregroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'See All',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(width: 2),
-                    Icon(Icons.chevron_right_rounded, size: 20),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+    return PrismSectionHeader(
+      title: title,
+      subtitle: subtitle,
+      onSeeAll: onSeeAll,
+      trailing: trailing,
     );
   }
 }

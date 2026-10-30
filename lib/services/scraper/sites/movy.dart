@@ -38,7 +38,12 @@ class MovyScraper extends StreamScraper {
     {'endpoint': 'houston', 'name': 'Houston', 'note': 'Original audio'},
     {'endpoint': 'austin', 'name': 'Austin', 'note': 'Original audio'},
     {'endpoint': 'boston', 'name': 'Boston', 'note': 'Original audio'},
-    {'endpoint': 'munich', 'name': 'Munich', 'note': 'German audio', 'extra': 'language=german'},
+    {
+      'endpoint': 'munich',
+      'name': 'Munich',
+      'note': 'German audio',
+      'extra': 'language=german',
+    },
     {'endpoint': 'berlin', 'name': 'Berlin', 'note': 'German audio'},
     {'endpoint': 'paris', 'name': 'Paris', 'note': 'French audio'},
     {'endpoint': 'delhi', 'name': 'Delhi', 'note': 'Hindi audio'},
@@ -57,7 +62,9 @@ class MovyScraper extends StreamScraper {
     try {
       final client = http.Client();
       final uri = Uri.parse('$_apiBase/seed?mediaId=$tmdbId');
-      final res = await client.get(uri, headers: _defaultHeaders).timeout(const Duration(seconds: 8));
+      final res = await client
+          .get(uri, headers: _defaultHeaders)
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final seed = data['seed']?.toString() ?? '';
@@ -108,7 +115,9 @@ class MovyScraper extends StreamScraper {
           return;
         }
 
-        AppLog.d('[MovyScraper] Starting scrape for "$title" (tmdb: $tmdbId, year: $year, S:${season}E:$episode)');
+        AppLog.d(
+          '[MovyScraper] Starting scrape for "$title" (tmdb: $tmdbId, year: $year, S:${season}E:$episode)',
+        );
 
         final encTitle = Uri.encodeComponent(title);
         final qBuilder = StringBuffer();
@@ -120,7 +129,9 @@ class MovyScraper extends StreamScraper {
           if (episode != null) qBuilder.write('&episodeId=$episode');
         }
         qBuilder.write('&tmdbId=$tmdbId');
-        if (imdbId != null && imdbId.isNotEmpty) qBuilder.write('&imdbId=$imdbId');
+        if (imdbId != null && imdbId.isNotEmpty) {
+          qBuilder.write('&imdbId=$imdbId');
+        }
         qBuilder.write('&enc=2&seed=$seed');
 
         final baseQuery = qBuilder.toString();
@@ -154,14 +165,19 @@ class MovyScraper extends StreamScraper {
                     for (final src in sourcesList) {
                       if (src is! Map) continue;
                       final streamUrl = src['url']?.toString() ?? '';
-                      if (streamUrl.isEmpty || seenUrls.contains(streamUrl)) continue;
+                      if (streamUrl.isEmpty || seenUrls.contains(streamUrl)) {
+                        continue;
+                      }
                       seenUrls.add(streamUrl);
 
                       final rawQuality = src['quality']?.toString() ?? 'Auto';
                       final cleanQuality = _formatQuality(rawQuality);
-                      final isSpecificAudio = note.toLowerCase().contains('audio') &&
+                      final isSpecificAudio =
+                          note.toLowerCase().contains('audio') &&
                           !note.toLowerCase().contains('original');
-                      final langLabel = isSpecificAudio ? note.split(' ').first : '';
+                      final langLabel = isSpecificAudio
+                          ? note.split(' ').first
+                          : '';
                       final streamTitle = isSpecificAudio
                           ? '[Movy - $serverName · $langLabel] $cleanQuality'
                           : '[Movy - $serverName] $cleanQuality';
@@ -173,18 +189,12 @@ class MovyScraper extends StreamScraper {
                         description: desc,
                         url: streamUrl,
                         addonName: 'movy',
-                        headers: {
-                          'User-Agent': _ua,
-                          'Referer': _referer,
-                        },
+                        headers: {'User-Agent': _ua, 'Referer': _referer},
                         behaviorHints: {
                           'notWebReady': false,
                           'proxyHeaders': {
-                            'request': {
-                              'User-Agent': _ua,
-                              'Referer': _referer,
-                            }
-                          }
+                            'request': {'User-Agent': _ua, 'Referer': _referer},
+                          },
                         },
                       );
 
@@ -262,7 +272,8 @@ class MovyScraper extends StreamScraper {
   static int _u(int e, int t) {
     final shift = t & 31;
     if (shift == 0) return e & 0xFFFFFFFF;
-    return (((e << shift) & 0xFFFFFFFF) | ((e & 0xFFFFFFFF) >>> (32 - shift))) & 0xFFFFFFFF;
+    return (((e << shift) & 0xFFFFFFFF) | ((e & 0xFFFFFFFF) >>> (32 - shift))) &
+        0xFFFFFFFF;
   }
 
   static int _fnv1a(String str) {

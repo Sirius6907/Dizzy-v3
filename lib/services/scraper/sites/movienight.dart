@@ -55,16 +55,22 @@ class MovieNightScraper extends StreamScraper {
     );
 
     if (tmdbId == null && (imdbId == null || imdbId.isEmpty)) {
-      AppLog.d('[MovieNightScraper] Could not resolve TMDb or IMDb ID for "$title"');
+      AppLog.d(
+        '[MovieNightScraper] Could not resolve TMDb or IMDb ID for "$title"',
+      );
       return sources;
     }
 
     final idToUse = tmdbId ?? imdbId;
-    AppLog.d('[MovieNightScraper] Scraping MovieNight for "$title" (id: $idToUse, type: $mediaType)');
+    AppLog.d(
+      '[MovieNightScraper] Scraping MovieNight for "$title" (id: $idToUse, type: $mediaType)',
+    );
 
     final encTitle = Uri.encodeComponent(title);
     final yearQuery = year != null ? '&year=$year' : '';
-    final imdbQuery = (imdbId != null && imdbId.isNotEmpty) ? '&imdbId=$imdbId' : '';
+    final imdbQuery = (imdbId != null && imdbId.isNotEmpty)
+        ? '&imdbId=$imdbId'
+        : '';
 
     final serverTasks = _priorityServers.map((server) async {
       final serverId = server['id']!;
@@ -88,7 +94,9 @@ class MovieNightScraper extends StreamScraper {
         final request = http.Request('GET', uri);
         request.headers.addAll(_headers);
 
-        final response = await client.send(request).timeout(const Duration(seconds: 4));
+        final response = await client
+            .send(request)
+            .timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
           final bodyBytes = await response.stream.toBytes();
@@ -101,7 +109,11 @@ class MovieNightScraper extends StreamScraper {
             if (dataIdx != -1) {
               final jsonStart = dataIdx + 6;
               final jsonEnd = bodyStr.indexOf('\n', jsonStart);
-              final jsonText = (jsonEnd != -1 ? bodyStr.substring(jsonStart, jsonEnd) : bodyStr.substring(jsonStart)).trim();
+              final jsonText =
+                  (jsonEnd != -1
+                          ? bodyStr.substring(jsonStart, jsonEnd)
+                          : bodyStr.substring(jsonStart))
+                      .trim();
 
               try {
                 final data = jsonDecode(jsonText) as Map<String, dynamic>;
@@ -116,21 +128,26 @@ class MovieNightScraper extends StreamScraper {
                     final quality = src['quality']?.toString() ?? 'Auto';
                     final titleQuality = quality != 'Auto' ? ' ($quality)' : '';
 
-                    sources.add(StreamSource(
-                      name: 'MovieNight',
-                      addonName: 'movienight',
-                      title: 'MovieNight $serverLabel$titleQuality',
-                      description: 'MovieNight · $serverLabel · Quality: $quality HLS',
-                      url: rawUrl,
-                      headers: {
-                        'User-Agent': _ua,
-                        'Referer': 'https://movienig.ht/',
-                      },
-                    ));
+                    sources.add(
+                      StreamSource(
+                        name: 'MovieNight',
+                        addonName: 'movienight',
+                        title: 'MovieNight $serverLabel$titleQuality',
+                        description:
+                            'MovieNight · $serverLabel · Quality: $quality HLS',
+                        url: rawUrl,
+                        headers: {
+                          'User-Agent': _ua,
+                          'Referer': 'https://movienig.ht/',
+                        },
+                      ),
+                    );
                   }
                 }
               } catch (e) {
-                AppLog.d('[MovieNightScraper] JSON parse error for $serverId: $e');
+                AppLog.d(
+                  '[MovieNightScraper] JSON parse error for $serverId: $e',
+                );
               }
             }
           }

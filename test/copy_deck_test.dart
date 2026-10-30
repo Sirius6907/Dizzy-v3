@@ -33,16 +33,9 @@ void main() {
 
   List<String> deck() {
     final lines = <String>[];
-    // P7: every guide card of every feature, straight from the content map
-    // so a new guide can never slip past this gate.
-    for (final entry in AppGuides.byKey.entries) {
-      for (final s in entry.value) {
-        lines.add('${entry.key}: ${s.title}');
-        lines.add('${entry.key}: ${s.line}');
-      }
-    }
-    // Retired 4-card party flow, still linked from copy-deck callers.
-    for (final s in AppGuides.watchParty) {
+    // The opt-in tour cards, straight from the content list so a new card can
+    // never slip past this gate.
+    for (final s in AppGuides.tour) {
       lines.add(s.title);
       lines.add(s.line);
     }
@@ -92,8 +85,7 @@ void main() {
     test('every line non-empty and short', () {
       for (final l in deck()) {
         expect(l.trim(), isNotEmpty);
-        expect(l.length, lessThanOrEqualTo(120),
-            reason: 'too long: $l');
+        expect(l.length, lessThanOrEqualTo(120), reason: 'too long: $l');
       }
     });
 
@@ -101,8 +93,7 @@ void main() {
       for (final l in deck()) {
         final low = l.toLowerCase();
         for (final b in banned) {
-          expect(low.contains(b), isFalse,
-              reason: '"$b" leaked in: "$l"');
+          expect(low.contains(b), isFalse, reason: '"$b" leaked in: "$l"');
         }
       }
     });

@@ -34,11 +34,17 @@ class AddonManager {
 
   void _ensureBuiltInsExist() {
     bool changed = false;
-    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy')) {
+    if (!_addons.any(
+      (a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy',
+    )) {
       _addons.add(playTorrioBuiltin);
       changed = true;
     }
-    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp')) {
+    if (!_addons.any(
+      (a) =>
+          a.manifest.id == 'builtin.dizzyhttp' ||
+          a.baseUrl == 'builtin:dizzyhttp',
+    )) {
       _addons.add(playTorrioHttpBuiltin);
       changed = true;
     }
@@ -74,7 +80,9 @@ class AddonManager {
 
   List<InstalledAddon> get activeStreamAddons {
     _ensureBuiltInsExist();
-    return _addons.where((a) => a.isStreamsActive && !a.baseUrl.startsWith('builtin:')).toList();
+    return _addons
+        .where((a) => a.isStreamsActive && !a.baseUrl.startsWith('builtin:'))
+        .toList();
   }
 
   bool get isDizzyActive {
@@ -89,7 +97,9 @@ class AddonManager {
   bool get isDizzyHttpActive {
     _ensureBuiltInsExist();
     final http = _addons.firstWhere(
-      (a) => a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp',
+      (a) =>
+          a.manifest.id == 'builtin.dizzyhttp' ||
+          a.baseUrl == 'builtin:dizzyhttp',
       orElse: () => playTorrioHttpBuiltin,
     );
     return http.isStreamsActive;
@@ -124,7 +134,8 @@ class AddonManager {
       id: 'builtin.dizzy',
       name: 'Dizzy',
       version: '3.0.0',
-      description: 'Built-in BitTorrent P2P streaming engine (TorrServer). Plays torrents, magnets, and infohashes directly.',
+      description:
+          'Built-in BitTorrent P2P streaming engine (TorrServer). Plays torrents, magnets, and infohashes directly.',
       resources: ['stream'],
       types: ['movie', 'series', 'anime'],
       idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'mal:'],
@@ -143,7 +154,8 @@ class AddonManager {
       id: 'builtin.dizzyhttp',
       name: 'DizzyHTTP',
       version: '3.0.0',
-      description: 'Built-in fast HTTP stream scrapers (111477, Cinejoy, Vuflix, Movy, RiveStream, Vadapav, VidCore, VidSrc, etc.)',
+      description:
+          'Built-in fast HTTP stream scrapers (111477, Cinejoy, Vuflix, Movy, RiveStream, Vadapav, VidCore, VidSrc, etc.)',
       resources: ['stream'],
       types: ['movie', 'series', 'anime'],
       idPrefixes: ['tt', 'tmdb:', 'kitsu:', 'mal:'],
@@ -185,13 +197,19 @@ class AddonManager {
     }
 
     // Ensure Dizzy P2P engine is registered in the list
-    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy')) {
+    if (!_addons.any(
+      (a) => a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy',
+    )) {
       _addons.add(playTorrioBuiltin);
       await _save();
     }
 
     // Ensure DizzyHTTP is registered in the list
-    if (!_addons.any((a) => a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp')) {
+    if (!_addons.any(
+      (a) =>
+          a.manifest.id == 'builtin.dizzyhttp' ||
+          a.baseUrl == 'builtin:dizzyhttp',
+    )) {
       _addons.add(playTorrioHttpBuiltin);
       await _save();
     }
@@ -258,7 +276,8 @@ class AddonManager {
       baseUrl = 'https://${baseUrl.substring('stremio://'.length)}';
     } else if (baseUrl.startsWith('stremio:')) {
       baseUrl = 'https://${baseUrl.substring('stremio:'.length)}';
-    } else if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+    } else if (!baseUrl.startsWith('http://') &&
+        !baseUrl.startsWith('https://')) {
       baseUrl = 'https://$baseUrl';
     }
 
@@ -403,8 +422,9 @@ class AddonManager {
     if (addon.manifest.types.any((t) => types.contains(t.toLowerCase()))) {
       return true;
     }
-    return addon.manifest.catalogs
-        .any((c) => types.contains(c.type.toLowerCase()));
+    return addon.manifest.catalogs.any(
+      (c) => types.contains(c.type.toLowerCase()),
+    );
   }
 
   /// Home/search fan-outs call this: adult addons pass ONLY when the
@@ -422,8 +442,9 @@ class AddonManager {
   /// Fetch all home page sections from every active addon's catalogs.
   /// Each addon's catalogs are fetched concurrently.
   Future<List<MovieSection>> fetchAllHomeSections() async {
-    final active =
-        activeCatalogAddons.where(_allowAddon).toList(growable: false);
+    final active = activeCatalogAddons
+        .where(_allowAddon)
+        .toList(growable: false);
 
     final addonFutures = active.map(_fetchAddonSections);
     final results = await Future.wait(addonFutures);
@@ -438,8 +459,9 @@ class AddonManager {
 
   /// Streams home page sections one by one as they load, so the UI can populate dynamically.
   Stream<MovieSection> streamHomeSections() async* {
-    final active =
-        activeCatalogAddons.where(_allowAddon).toList(growable: false);
+    final active = activeCatalogAddons
+        .where(_allowAddon)
+        .toList(growable: false);
     final List<Future<MovieSection?>> sectionFutures = [];
 
     // 1. Kick off all network requests concurrently
@@ -479,9 +501,7 @@ class AddonManager {
     }
   }
 
-  Future<List<MovieSection>> _fetchAddonSections(
-    InstalledAddon addon,
-  ) async {
+  Future<List<MovieSection>> _fetchAddonSections(InstalledAddon addon) async {
     // Fetch all catalogs that the addon provides
     final catalogsToFetch = addon.manifest.catalogs;
 
@@ -517,8 +537,9 @@ class AddonManager {
   /// Search across all active addons that support search.
   /// 18+ Heaven addons answer only when the gate is open.
   Future<List<MovieSection>> searchAll(String query) async {
-    final active =
-        activeSearchAddons.where(_allowAddon).toList(growable: false);
+    final active = activeSearchAddons
+        .where(_allowAddon)
+        .toList(growable: false);
     final futures = <Future<MovieSection?>>[];
 
     for (final addon in active) {
@@ -538,13 +559,17 @@ class AddonManager {
 
             if (movies.isEmpty) return null;
 
-            // Sort movies within this section by relevance score
+            // Sort movies within this section: relevance, then newer wins.
             final sortedMovies = List<Movie>.from(movies);
-            sortedMovies.sort((a, b) {
-              final scoreA = RelevanceScorer.score(title: a.name, query: query);
-              final scoreB = RelevanceScorer.score(title: b.name, query: query);
-              return scoreB.compareTo(scoreA);
-            });
+            sortedMovies.sort(
+              (a, b) => RelevanceScorer.compare(
+                titleA: a.name,
+                yearA: int.tryParse(a.year ?? ''),
+                titleB: b.name,
+                yearB: int.tryParse(b.year ?? ''),
+                query: query,
+              ),
+            );
 
             return MovieSection(
               title: _catalogDisplayName(catalog),
@@ -567,11 +592,17 @@ class AddonManager {
         .cast<MovieSection>()
         .toList();
 
-    // Sort sections by the relevance score of their top match
+    // Sort sections by the relevance of their top match (newer breaks ties)
     validSections.sort((a, b) {
-      final topScoreA = a.movies.isNotEmpty ? RelevanceScorer.score(title: a.movies.first.name, query: query) : 0.0;
-      final topScoreB = b.movies.isNotEmpty ? RelevanceScorer.score(title: b.movies.first.name, query: query) : 0.0;
-      return topScoreB.compareTo(topScoreA);
+      final topA = a.movies.first;
+      final topB = b.movies.first;
+      return RelevanceScorer.compare(
+        titleA: topA.name,
+        yearA: int.tryParse(topA.year ?? ''),
+        titleB: topB.name,
+        yearB: int.tryParse(topB.year ?? ''),
+        query: query,
+      );
     });
 
     return validSections;
@@ -580,15 +611,17 @@ class AddonManager {
   /// Fetch catalogs filtered by a specific genre across all active addons.
   /// 18+ Heaven addons answer only when the gate is open.
   Future<List<MovieSection>> fetchByGenre(String genre) async {
-    final active =
-        activeCatalogAddons.where(_allowAddon).toList(growable: false);
+    final active = activeCatalogAddons
+        .where(_allowAddon)
+        .toList(growable: false);
     final futures = <Future<MovieSection?>>[];
 
     for (final addon in active) {
       // Find catalogs that explicitly support filtering by genre via their 'extra' properties.
       final genreCatalogs = addon.manifest.catalogs.where((c) {
         final supportsGenre = c.genres.isNotEmpty;
-        final isCinemetaTop = addon.manifest.id == 'com.linvo.cinemeta' && c.id == 'top';
+        final isCinemetaTop =
+            addon.manifest.id == 'com.linvo.cinemeta' && c.id == 'top';
         return supportsGenre || isCinemetaTop;
       }).toList();
 
@@ -633,19 +666,24 @@ class AddonManager {
     // raw renders duplicate section titles ("Popular" ×2) on the home
     // page. Qualify generic names with the content-type label instead.
     const genericNames = {
-      'popular', 'new', 'featured', 'top', 'trending', 'latest', 'recent',
+      'popular',
+      'new',
+      'featured',
+      'top',
+      'trending',
+      'latest',
+      'recent',
     };
     final rawName = (catalog.name ?? '').trim();
-    if (rawName.isNotEmpty &&
-        !genericNames.contains(rawName.toLowerCase())) {
+    if (rawName.isNotEmpty && !genericNames.contains(rawName.toLowerCase())) {
       return rawName;
     }
 
     final typeLabel = catalog.type == 'series'
         ? 'Series'
         : (catalog.type == 'anime'
-            ? 'Anime'
-            : (catalog.type == 'movie' ? 'Movies' : catalog.type));
+              ? 'Anime'
+              : (catalog.type == 'movie' ? 'Movies' : catalog.type));
 
     switch (catalog.id) {
       case 'top':
@@ -656,8 +694,9 @@ class AddonManager {
         return 'Top Rated $typeLabel';
       default:
         final id = catalog.id;
-        final capitalized =
-            id.isEmpty ? id : '${id[0].toUpperCase()}${id.substring(1)}';
+        final capitalized = id.isEmpty
+            ? id
+            : '${id[0].toUpperCase()}${id.substring(1)}';
         return '$capitalized $typeLabel';
     }
   }

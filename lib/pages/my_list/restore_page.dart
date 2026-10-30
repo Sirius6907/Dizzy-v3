@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/profiles/device_merge_policy.dart';
 import '../../services/profiles/restore_service.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/tactile/dizzy_tactile_button.dart';
 
@@ -23,6 +25,11 @@ class RestorePage extends StatefulWidget {
 
 class _RestorePageState extends State<RestorePage> {
   final TextEditingController _codeController = TextEditingController();
+
+  bool get _isLight => AppThemeService.currentPalette.value.isLight;
+  Color get _ink => _isLight ? PrismLight.ink : DizzyVoid.bone;
+  Color get _inkSoft => _isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+  Color get _well => _isLight ? PrismLight.raisedBottom : DizzyVoid.voidA;
 
   @override
   void initState() {
@@ -73,10 +80,11 @@ class _RestorePageState extends State<RestorePage> {
     final result = RestoreService.instance.result;
 
     return OfflineAwareScaffold(
-      backgroundColor: const Color(0xFF080A0F),
+      backgroundColor:
+          AppThemeService.currentPalette.value.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Bring things back', style: TextStyle(color: DizzyVoid.bone)),
+        title: Text('Bring things back', style: TextStyle(color: _ink)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(DizzySpace.lg),
@@ -104,9 +112,9 @@ class _RestorePageState extends State<RestorePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Open Dizzy and tap "Bring things back". Read out the short code it shows.',
-            style: TextStyle(color: DizzyVoid.ash, height: 1.4),
+            style: TextStyle(color: _inkSoft, height: 1.4),
           ),
           const SizedBox(height: DizzySpace.md),
           FutureBuilder<String?>(
@@ -114,9 +122,9 @@ class _RestorePageState extends State<RestorePage> {
             builder: (context, snap) {
               final code = snap.data;
               if (code == null || code.isEmpty) {
-                return const Text(
+                return Text(
                   'No code on this phone yet? Get one below.',
-                  style: TextStyle(color: DizzyVoid.ash, fontSize: 12),
+                  style: TextStyle(color: _inkSoft, fontSize: 12),
                 );
               }
               return Row(
@@ -135,7 +143,7 @@ class _RestorePageState extends State<RestorePage> {
                   IconButton(
                     tooltip: 'Copy',
                     onPressed: () => _copyCode(code),
-                    icon: const Icon(Icons.copy, color: DizzyVoid.ash),
+                    icon: Icon(Icons.copy, color: _inkSoft),
                   ),
                 ],
               );
@@ -149,7 +157,7 @@ class _RestorePageState extends State<RestorePage> {
             onTap: _busy ? null : _getCode,
             child: Text(
               _busy ? 'Working...' : 'Get a code for this phone',
-              style: const TextStyle(color: DizzyVoid.bone),
+              style: TextStyle(color: _ink),
             ),
           ),
         ],
@@ -164,9 +172,9 @@ class _RestorePageState extends State<RestorePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Type the code you read out. We keep your lists, your history and where you stopped.',
-            style: TextStyle(color: DizzyVoid.ash, height: 1.4),
+            style: TextStyle(color: _inkSoft, height: 1.4),
           ),
           const SizedBox(height: DizzySpace.md),
           TextField(
@@ -175,17 +183,13 @@ class _RestorePageState extends State<RestorePage> {
             textCapitalization: TextCapitalization.characters,
             keyboardType: TextInputType.text,
             maxLength: 8,
-            style: const TextStyle(
-              color: DizzyVoid.bone,
-              fontSize: 24,
-              letterSpacing: 6,
-            ),
+            style: TextStyle(color: _ink, fontSize: 24, letterSpacing: 6),
             decoration: InputDecoration(
               counterText: '',
               hintText: 'CODE',
-              hintStyle: const TextStyle(color: DizzyVoid.ash, letterSpacing: 6),
+              hintStyle: TextStyle(color: _inkSoft, letterSpacing: 6),
               filled: true,
-              fillColor: DizzyVoid.voidA,
+              fillColor: _well,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: DizzyEdge.hairline,
@@ -205,7 +209,7 @@ class _RestorePageState extends State<RestorePage> {
             onTap: _busy ? null : _redeem,
             child: Text(
               _busy ? 'Bringing back...' : 'Bring everything back',
-              style: const TextStyle(color: DizzyVoid.bone, fontSize: 16),
+              style: TextStyle(color: _ink, fontSize: 16),
             ),
           ),
         ],
@@ -215,11 +219,11 @@ class _RestorePageState extends State<RestorePage> {
 
   Widget _statusLine(RestoreStage stage) {
     final (IconData icon, Color color) = switch (stage) {
-      RestoreStage.checking => (Icons.hourglass_top, DizzyVoid.ash),
+      RestoreStage.checking => (Icons.hourglass_top, _inkSoft),
       RestoreStage.merging => (Icons.sync, DizzyGlow.volt),
       RestoreStage.done => (Icons.check_circle, DizzyGlow.volt),
       RestoreStage.failed => (Icons.info_outline, DizzyGlow.red),
-      RestoreStage.idle => (Icons.info_outline, DizzyVoid.ash),
+      RestoreStage.idle => (Icons.info_outline, _inkSoft),
     };
     return Row(
       children: [
@@ -235,10 +239,7 @@ class _RestorePageState extends State<RestorePage> {
           const SizedBox(width: DizzySpace.sm),
         ],
         Expanded(
-          child: Text(
-            _line,
-            style: const TextStyle(color: DizzyVoid.bone, height: 1.3),
-          ),
+          child: Text(_line, style: TextStyle(color: _ink, height: 1.3)),
         ),
       ],
     );
@@ -253,9 +254,9 @@ class _RestorePageState extends State<RestorePage> {
     ].where((r) => r.$2 > 0).toList();
 
     if (rows.isEmpty) {
-      return const Text(
+      return Text(
         'Nothing new came back. That is fine — you can try the code again later.',
-        style: TextStyle(color: DizzyVoid.ash),
+        style: TextStyle(color: _inkSoft),
       );
     }
     return Column(
@@ -267,12 +268,12 @@ class _RestorePageState extends State<RestorePage> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(r.$1, style: const TextStyle(color: DizzyVoid.ash)),
+                  child: Text(r.$1, style: TextStyle(color: _inkSoft)),
                 ),
                 Text(
                   '${r.$2}',
-                  style: const TextStyle(
-                    color: DizzyVoid.bone,
+                  style: TextStyle(
+                    color: _ink,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -292,7 +293,7 @@ class _RestorePageState extends State<RestorePage> {
               RestoreService.instance.reset();
               Navigator.of(context).maybePop();
             },
-      child: const Text('Close', style: TextStyle(color: DizzyVoid.ash)),
+      child: Text('Close', style: TextStyle(color: _inkSoft)),
     );
   }
 
@@ -310,8 +311,8 @@ class _RestorePageState extends State<RestorePage> {
             const SizedBox(width: DizzySpace.sm),
             Text(
               title,
-              style: const TextStyle(
-                color: DizzyVoid.bone,
+              style: TextStyle(
+                color: _ink,
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),

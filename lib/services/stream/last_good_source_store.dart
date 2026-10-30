@@ -30,14 +30,11 @@ class LastGoodSourceStore {
       if (decoded is! Map) return {};
       return decoded.map((k, v) {
         final inner = (v is Map) ? v : const {};
-        return MapEntry(
-          k.toString(),
-          {
-            'addonName': inner['addonName']?.toString() ?? '',
-            'fingerprint': inner['fingerprint']?.toString() ?? '',
-            'name': inner['name']?.toString() ?? '',
-          },
-        );
+        return MapEntry(k.toString(), {
+          'addonName': inner['addonName']?.toString() ?? '',
+          'fingerprint': inner['fingerprint']?.toString() ?? '',
+          'name': inner['name']?.toString() ?? '',
+        });
       });
     } catch (e) {
       AppLog.d('[LastGoodSourceStore] load failed: $e');

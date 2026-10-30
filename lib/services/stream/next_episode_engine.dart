@@ -68,14 +68,15 @@ class NextEpisodeEngine {
     if (episodes.isEmpty) return null;
 
     // Order episodes: season asc, then episode number asc (nulls last).
-    final sorted = List<Video>.of(episodes)..sort((a, b) {
-      final sa = a.season ?? 0;
-      final sb = b.season ?? 0;
-      if (sa != sb) return sa.compareTo(sb);
-      final ea = a.episode ?? 0;
-      final eb = b.episode ?? 0;
-      return ea.compareTo(eb);
-    });
+    final sorted = List<Video>.of(episodes)
+      ..sort((a, b) {
+        final sa = a.season ?? 0;
+        final sb = b.season ?? 0;
+        if (sa != sb) return sa.compareTo(sb);
+        final ea = a.episode ?? 0;
+        final eb = b.episode ?? 0;
+        return ea.compareTo(eb);
+      });
 
     // Find index of current episode in the sorted list.
     int idx = -1;
@@ -95,7 +96,10 @@ class NextEpisodeEngine {
 
     if (idx + 1 >= sorted.length) {
       return NextEpisode(
-        episode: Video(id: '', title: ''), // sentinel for callers to check isSeriesFinale
+        episode: Video(
+          id: '',
+          title: '',
+        ), // sentinel for callers to check isSeriesFinale
         isSeriesFinale: true,
       );
     }
@@ -132,7 +136,9 @@ class NextEpisodeEngine {
     _prefetchedEpisode = nextEp;
     _running = true;
 
-    AppLog.d('[NextEpisodeEngine] Prefetching S${nextEp.season}E${nextEp.episode}...');
+    AppLog.d(
+      '[NextEpisodeEngine] Prefetching S${nextEp.season}E${nextEp.episode}...',
+    );
 
     // 1. Trusted embedded streams (debrid direct links) probe in 0ms.
     if (nextEp.streams.isNotEmpty) {
@@ -151,7 +157,9 @@ class NextEpisodeEngine {
         // (Old code offered them to a race then close()d it synchronously,
         // which settled the winner to null before probes ran.)
         _prefetchedSource = await withRenditions(embeddedHindi.first);
-        AppLog.d('[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.');
+        AppLog.d(
+          '[NextEpisodeEngine] Embedded stream ready for S${nextEp.season}E${nextEp.episode}.',
+        );
         _running = false;
         return;
       }
@@ -173,46 +181,47 @@ class NextEpisodeEngine {
     final embeddedFallback = List<StreamSource>.from(_embeddedFallbackPool);
     _embeddedFallbackPool.clear();
 
-    _scrapeSub = StreamService.fetchStreams(
-      type: type,
-      id: id,
-      title: title,
-      year: year,
-      season: nextEp.season,
-      episode: nextEp.episode,
-    ).listen(
-      (source) {
-        // Dub-mode gate: next-episode autoplay must stay in the selected
-        // language. Non-hindi sources wait in the fallback pool.
-        if (DubModeService.isHindi &&
-            !source.hasAudioLanguage('hindi', mediaTitle: title)) {
-          nonHindiPool.add(source);
-          return;
-        }
-        race.offer(source);
-      },
-      onError: (Object e) {
-        AppLog.d('[NextEpisodeEngine] Scrape error: $e');
-      },
-      onDone: () {
-        // English fallback: zero hindi found → release non-hindi sources
-        // (incl. embedded english debrid links) so the winner is still a
-        // healthy (english) source.
-        if (DubModeService.isHindi &&
-            race.verifiedSources.isEmpty &&
-            (nonHindiPool.isNotEmpty || embeddedFallback.isNotEmpty)) {
-          for (final s in nonHindiPool) {
-            race.offer(s);
-          }
-          for (final s in embeddedFallback) {
-            race.offerEmbedded(s);
-          }
-        }
-        // Drain (not hard-close): fallback offers above still need their
-        // probes to land, else the Hindi-English fallback silently drops.
-        race.closeDrain();
-      },
-    );
+    _scrapeSub =
+        StreamService.fetchStreams(
+          type: type,
+          id: id,
+          title: title,
+          year: year,
+          season: nextEp.season,
+          episode: nextEp.episode,
+        ).listen(
+          (source) {
+            // Dub-mode gate: next-episode autoplay must stay in the selected
+            // language. Non-hindi sources wait in the fallback pool.
+            if (DubModeService.isHindi &&
+                !source.hasAudioLanguage('hindi', mediaTitle: title)) {
+              nonHindiPool.add(source);
+              return;
+            }
+            race.offer(source);
+          },
+          onError: (Object e) {
+            AppLog.d('[NextEpisodeEngine] Scrape error: $e');
+          },
+          onDone: () {
+            // English fallback: zero hindi found → release non-hindi sources
+            // (incl. embedded english debrid links) so the winner is still a
+            // healthy (english) source.
+            if (DubModeService.isHindi &&
+                race.verifiedSources.isEmpty &&
+                (nonHindiPool.isNotEmpty || embeddedFallback.isNotEmpty)) {
+              for (final s in nonHindiPool) {
+                race.offer(s);
+              }
+              for (final s in embeddedFallback) {
+                race.offerEmbedded(s);
+              }
+            }
+            // Drain (not hard-close): fallback offers above still need their
+            // probes to land, else the Hindi-English fallback silently drops.
+            race.closeDrain();
+          },
+        );
 
     _prefetchedSource = await winnerFuture;
     _running = false;
@@ -224,11 +233,15 @@ class NextEpisodeEngine {
     }
 
     if (_prefetchedSource != null) {
-      AppLog.d('[NextEpisodeEngine] Prefetch ready: '
-          '${_prefetchedSource!.name ?? "?"} (${_prefetchedSource!.addonName}) '
-          'for S${nextEp.season}E${nextEp.episode}.');
+      AppLog.d(
+        '[NextEpisodeEngine] Prefetch ready: '
+        '${_prefetchedSource!.name ?? "?"} (${_prefetchedSource!.addonName}) '
+        'for S${nextEp.season}E${nextEp.episode}.',
+      );
     } else {
-      AppLog.d('[NextEpisodeEngine] No playable source found for next episode.');
+      AppLog.d(
+        '[NextEpisodeEngine] No playable source found for next episode.',
+      );
     }
   }
 
@@ -241,7 +254,13 @@ class NextEpisodeEngine {
     Future<String?> Function(Uri uri, Map<String, String> headers)? fetchBody,
   }) async {
     final url = source.url ?? '';
-    if (!url.toLowerCase().split('?').first.split('#').first.endsWith('.m3u8')) {
+    if (!url
+        .toLowerCase()
+        .split('?')
+        .first
+        .split('#')
+        .first
+        .endsWith('.m3u8')) {
       return source;
     }
     if (source.renditions.isNotEmpty) return source;
@@ -255,14 +274,17 @@ class NextEpisodeEngine {
       return source.copyWith(renditions: parsed);
     } catch (_) {
       // P15: silent-but-logged — prefetch never blocks the handoff.
-      unawaited(AppErrorLog.log(
-          code: 'prefetch_renditions', screen: 'next_episode'));
+      unawaited(
+        AppErrorLog.log(code: 'prefetch_renditions', screen: 'next_episode'),
+      );
       return source;
     }
   }
 
   static Future<String?> _getMasterBody(
-      Uri uri, Map<String, String> headers) async {
+    Uri uri,
+    Map<String, String> headers,
+  ) async {
     // P10: bounded retry (1s/2s/4s + jitter, transient-only) — a flaky
     // master playlist fetch must not kill the auto-quality ladder.
     // Fail-soft preserved: null → source plays without renditions.
@@ -272,7 +294,10 @@ class NextEpisodeEngine {
             .get(uri, headers: headers)
             .timeout(const Duration(seconds: 8));
         if (res.statusCode == 200) return res.body;
-        if (NetRetry.shouldRetry(Exception('http'), statusCode: res.statusCode)) {
+        if (NetRetry.shouldRetry(
+          Exception('http'),
+          statusCode: res.statusCode,
+        )) {
           throw HttpException('master ${res.statusCode}');
         }
         return null;

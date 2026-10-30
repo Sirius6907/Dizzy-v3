@@ -16,10 +16,12 @@ class MusicDynamicCanvasBackground extends StatefulWidget {
   });
 
   @override
-  State<MusicDynamicCanvasBackground> createState() => _MusicDynamicCanvasBackgroundState();
+  State<MusicDynamicCanvasBackground> createState() =>
+      _MusicDynamicCanvasBackgroundState();
 }
 
-class _MusicDynamicCanvasBackgroundState extends State<MusicDynamicCanvasBackground>
+class _MusicDynamicCanvasBackgroundState
+    extends State<MusicDynamicCanvasBackground>
     with SingleTickerProviderStateMixin {
   late MusicTrackPalette _palette;
   late final AnimationController _animController;
@@ -52,7 +54,9 @@ class _MusicDynamicCanvasBackgroundState extends State<MusicDynamicCanvasBackgro
   }
 
   Future<void> _loadRealPalette() async {
-    final real = await MusicArtworkPaletteService.instance.extractPalette(widget.track);
+    final real = await MusicArtworkPaletteService.instance.extractPalette(
+      widget.track,
+    );
     if (mounted) {
       setState(() {
         _palette = real;
@@ -64,7 +68,9 @@ class _MusicDynamicCanvasBackgroundState extends State<MusicDynamicCanvasBackgro
   void didUpdateWidget(covariant MusicDynamicCanvasBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.track.id != widget.track.id) {
-      _palette = MusicArtworkPaletteService.instance.getFastPalette(widget.track);
+      _palette = MusicArtworkPaletteService.instance.getFastPalette(
+        widget.track,
+      );
       _loadRealPalette();
     }
   }

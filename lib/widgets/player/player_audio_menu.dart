@@ -44,12 +44,18 @@ class PlayerAudioMenu extends StatelessWidget {
     if (l.contains('en') || l.contains('eng')) return '🇺🇸';
     if (l.contains('ar') || l.contains('ara')) return '🇸🇦';
     if (l.contains('es') || l.contains('spa')) return '🇪🇸';
-    if (l.contains('fr') || l.contains('fre') || l.contains('fra')) return '🇫🇷';
-    if (l.contains('de') || l.contains('ger') || l.contains('deu')) return '🇩🇪';
+    if (l.contains('fr') || l.contains('fre') || l.contains('fra')) {
+      return '🇫🇷';
+    }
+    if (l.contains('de') || l.contains('ger') || l.contains('deu')) {
+      return '🇩🇪';
+    }
     if (l.contains('it') || l.contains('ita')) return '🇮🇹';
     if (l.contains('ja') || l.contains('jpn')) return '🇯🇵';
     if (l.contains('ko') || l.contains('kor')) return '🇰🇷';
-    if (l.contains('zh') || l.contains('chi') || l.contains('zho')) return '🇨🇳';
+    if (l.contains('zh') || l.contains('chi') || l.contains('zho')) {
+      return '🇨🇳';
+    }
     if (l.contains('ru') || l.contains('rus')) return '🇷🇺';
     if (l.contains('pt') || l.contains('por')) return '🇧🇷';
     if (l.contains('hi') || l.contains('hin')) return '🇮🇳';
@@ -66,7 +72,11 @@ class PlayerAudioMenu extends StatelessWidget {
       parts.add(track.codec!.toUpperCase());
     }
     if (track.channels != null && track.channels! > 0) {
-      parts.add(track.channels == 6 ? '5.1 Surround' : (track.channels == 8 ? '7.1 Surround' : '${track.channels} ch'));
+      parts.add(
+        track.channels == 6
+            ? '5.1 Surround'
+            : (track.channels == 8 ? '7.1 Surround' : '${track.channels} ch'),
+      );
     }
     return parts.isEmpty ? null : parts.join(' · ');
   }
@@ -116,7 +126,10 @@ class PlayerAudioMenu extends StatelessWidget {
                     ),
                     if (hasTracks)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: PlayerTheme.raised,
                           borderRadius: BorderRadius.circular(999),
@@ -166,16 +179,23 @@ class PlayerAudioMenu extends StatelessWidget {
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               margin: const EdgeInsets.only(bottom: 4),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFF7C5CFF).withValues(alpha: 0.18)
+                                    ? const Color(
+                                        0xFF7C5CFF,
+                                      ).withValues(alpha: 0.18)
                                     : Colors.white.withValues(alpha: 0.03),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
-                                      ? const Color(0xFF7C5CFF).withValues(alpha: 0.6)
+                                      ? const Color(
+                                          0xFF7C5CFF,
+                                        ).withValues(alpha: 0.6)
                                       : Colors.white.withValues(alpha: 0.06),
                                   width: isSelected ? 1.4 : 1.0,
                                 ),
@@ -186,16 +206,26 @@ class PlayerAudioMenu extends StatelessWidget {
                                     width: 20,
                                     height: 20,
                                     decoration: BoxDecoration(
-                                      color: isSelected ? const Color(0xFF7C5CFF) : Colors.white.withValues(alpha: 0.08),
+                                      color: isSelected
+                                          ? const Color(0xFF7C5CFF)
+                                          : Colors.white.withValues(
+                                              alpha: 0.08,
+                                            ),
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: isSelected ? const Color(0xFF7C5CFF) : Colors.white30,
+                                        color: isSelected
+                                            ? const Color(0xFF7C5CFF)
+                                            : Colors.white30,
                                         width: 1.5,
                                       ),
                                     ),
                                     alignment: Alignment.center,
                                     child: isSelected
-                                        ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            size: 13,
+                                            color: Colors.white,
+                                          )
                                         : null,
                                   ),
                                   const SizedBox(width: 10),
@@ -206,14 +236,19 @@ class PlayerAudioMenu extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           track.title,
                                           style: TextStyle(
-                                            color: isSelected ? Colors.white : Colors.white70,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.white70,
                                             fontSize: 13,
-                                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -225,7 +260,9 @@ class PlayerAudioMenu extends StatelessWidget {
                                             style: TextStyle(
                                               color: isSelected
                                                   ? const Color(0xFF00D2EF)
-                                                  : Colors.white.withValues(alpha: 0.4),
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.4,
+                                                    ),
                                               fontSize: 10.5,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 0.4,
@@ -243,14 +280,24 @@ class PlayerAudioMenu extends StatelessWidget {
                       },
                     )
                   : const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 16,
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.audiotrack_rounded, size: 16, color: Colors.white38),
+                          Icon(
+                            Icons.audiotrack_rounded,
+                            size: 16,
+                            color: Colors.white38,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Default audio stream playing.',
-                            style: TextStyle(color: Colors.white54, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -277,7 +324,11 @@ class PlayerAudioMenu extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.sync_rounded, size: 14, color: Colors.white70),
+                          const Icon(
+                            Icons.sync_rounded,
+                            size: 14,
+                            color: Colors.white70,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             'Audio Sync Offset',
@@ -292,22 +343,31 @@ class PlayerAudioMenu extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: delaySec != 0
-                                  ? const Color(0xFF7C5CFF).withValues(alpha: 0.25)
+                                  ? const Color(
+                                      0xFF7C5CFF,
+                                    ).withValues(alpha: 0.25)
                                   : Colors.white.withValues(alpha: 0.06),
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(
                                 color: delaySec != 0
-                                    ? const Color(0xFF7C5CFF).withValues(alpha: 0.5)
+                                    ? const Color(
+                                        0xFF7C5CFF,
+                                      ).withValues(alpha: 0.5)
                                     : Colors.transparent,
                               ),
                             ),
                             child: Text(
                               '${delaySec > 0 ? "+" : ""}${delaySec.toStringAsFixed(2)}s',
                               style: TextStyle(
-                                color: delaySec != 0 ? const Color(0xFF00D2EF) : Colors.white60,
+                                color: delaySec != 0
+                                    ? const Color(0xFF00D2EF)
+                                    : Colors.white60,
                                 fontSize: isCompactH ? 11.5 : 12.5,
                                 fontWeight: FontWeight.w800,
                                 fontFamily: 'monospace',
@@ -337,13 +397,27 @@ class PlayerAudioMenu extends StatelessWidget {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                            padding: EdgeInsets.symmetric(vertical: isCompactH ? 3 : 6),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isCompactH ? 3 : 6,
+                            ),
                             minimumSize: Size(0, isCompactH ? 26 : 32),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(7),
+                            ),
                           ),
-                          onPressed: () => onDelayChanged(((delaySec - 0.5) * 10).round() / 10.0),
-                          child: Text('−0.5s', style: TextStyle(fontSize: isCompactH ? 10 : 11.5, fontWeight: FontWeight.w600)),
+                          onPressed: () => onDelayChanged(
+                            ((delaySec - 0.5) * 10).round() / 10.0,
+                          ),
+                          child: Text(
+                            '−0.5s',
+                            style: TextStyle(
+                              fontSize: isCompactH ? 10 : 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -352,13 +426,27 @@ class PlayerAudioMenu extends StatelessWidget {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                            padding: EdgeInsets.symmetric(vertical: isCompactH ? 3 : 6),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isCompactH ? 3 : 6,
+                            ),
                             minimumSize: Size(0, isCompactH ? 26 : 32),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(7),
+                            ),
                           ),
-                          onPressed: () => onDelayChanged(((delaySec - 0.1) * 10).round() / 10.0),
-                          child: Text('−0.1s', style: TextStyle(fontSize: isCompactH ? 10 : 11.5, fontWeight: FontWeight.w600)),
+                          onPressed: () => onDelayChanged(
+                            ((delaySec - 0.1) * 10).round() / 10.0,
+                          ),
+                          child: Text(
+                            '−0.1s',
+                            style: TextStyle(
+                              fontSize: isCompactH ? 10 : 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -367,13 +455,27 @@ class PlayerAudioMenu extends StatelessWidget {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                            padding: EdgeInsets.symmetric(vertical: isCompactH ? 3 : 6),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isCompactH ? 3 : 6,
+                            ),
                             minimumSize: Size(0, isCompactH ? 26 : 32),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(7),
+                            ),
                           ),
-                          onPressed: () => onDelayChanged(((delaySec + 0.1) * 10).round() / 10.0),
-                          child: Text('+0.1s', style: TextStyle(fontSize: isCompactH ? 10 : 11.5, fontWeight: FontWeight.w600)),
+                          onPressed: () => onDelayChanged(
+                            ((delaySec + 0.1) * 10).round() / 10.0,
+                          ),
+                          child: Text(
+                            '+0.1s',
+                            style: TextStyle(
+                              fontSize: isCompactH ? 10 : 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -382,13 +484,27 @@ class PlayerAudioMenu extends StatelessWidget {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                            padding: EdgeInsets.symmetric(vertical: isCompactH ? 3 : 6),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isCompactH ? 3 : 6,
+                            ),
                             minimumSize: Size(0, isCompactH ? 26 : 32),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(7),
+                            ),
                           ),
-                          onPressed: () => onDelayChanged(((delaySec + 0.5) * 10).round() / 10.0),
-                          child: Text('+0.5s', style: TextStyle(fontSize: isCompactH ? 10 : 11.5, fontWeight: FontWeight.w600)),
+                          onPressed: () => onDelayChanged(
+                            ((delaySec + 0.5) * 10).round() / 10.0,
+                          ),
+                          child: Text(
+                            '+0.5s',
+                            style: TextStyle(
+                              fontSize: isCompactH ? 10 : 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ],

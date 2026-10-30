@@ -20,4 +20,3 @@ abstract final class WatchSpace {
   static const md = 16.0;
   static const lg = 24.0;
 }
-

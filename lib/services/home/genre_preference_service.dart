@@ -61,8 +61,7 @@ class GenrePreferenceService {
         total += s[g.trim().toLowerCase()] ?? 0.0;
       }
       return (item: c, score: total);
-    }).toList()
-      ..sort((a, b) => b.score.compareTo(a.score));
+    }).toList()..sort((a, b) => b.score.compareTo(a.score));
     return scored.map((e) => e.item).toList();
   }
 

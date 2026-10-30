@@ -3,6 +3,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_shadows.dart';
+import '../../design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import '../../models/book/book_result.dart';
@@ -15,10 +18,7 @@ import 'pdf_reader_page.dart';
 class BookDetailSheet extends StatefulWidget {
   final BookResult book;
 
-  const BookDetailSheet({
-    super.key,
-    required this.book,
-  });
+  const BookDetailSheet({super.key, required this.book});
 
   static Future<void> show(BuildContext context, BookResult book) {
     return showModalBottomSheet(
@@ -138,15 +138,28 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
     final book = widget.book;
     final progress = ContinueReadingService.getProgress(book.md5);
     final hasProgress = progress != null && progress.progressPercent > 0;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final accent = palette.primaryColor;
+    final accentText = PrismAccent.text(isLight);
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final panel = isLight ? PrismLight.raisedTop : DizzyVoid.surface2;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.surface3;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : DizzyEdge.hairline.color;
 
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(DizzyRadius.xl)),
-        boxShadow: DizzyShadow.dock,
+        gradient: PrismShadows.surfaceGradient(isLight),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(DizzyRadius.xl),
+        ),
+        boxShadow: PrismShadows.floating(isLight: isLight),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -157,10 +170,16 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 44,
-              height: 4.5,
+              height: 5,
               decoration: BoxDecoration(
-                color: DizzyVoid.ash.withValues(alpha: 0.3),
+                gradient: PrismShadows.pressedGradient(
+                  AppThemeService.currentPalette.value.isLight,
+                ),
                 borderRadius: BorderRadius.circular(3),
+                boxShadow: PrismShadows.pressed(
+                  isLight: AppThemeService.currentPalette.value.isLight,
+                  scale: 0.5,
+                ),
               ),
             ),
           ),
@@ -196,22 +215,34 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                     memCacheWidth: ImageCaps.kCardW,
                                     maxWidthDiskCache: ImageCaps.kCardW,
                                     placeholder: (_, __) => Container(
-                                      color: DizzyVoid.surface2,
-                                      child: const Center(
-                                        child: Icon(Icons.menu_book_rounded, color: DizzyVoid.ash, size: 36),
+                                      color: well,
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.menu_book_rounded,
+                                          color: inkSoft,
+                                          size: 36,
+                                        ),
                                       ),
                                     ),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: DizzyVoid.surface2,
-                                      child: const Center(
-                                        child: Icon(Icons.menu_book_rounded, color: DizzyVoid.ash, size: 36),
+                                      color: well,
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.menu_book_rounded,
+                                          color: inkSoft,
+                                          size: 36,
+                                        ),
                                       ),
                                     ),
                                   )
                                 : Container(
-                                    color: DizzyVoid.surface2,
-                                    child: const Center(
-                                      child: Icon(Icons.menu_book_rounded, color: DizzyVoid.ash, size: 36),
+                                    color: well,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.menu_book_rounded,
+                                        color: inkSoft,
+                                        size: 36,
+                                      ),
                                     ),
                                   ),
                           ),
@@ -226,11 +257,11 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                           children: [
                             Text(
                               book.displayTitle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: DizzyType.fontFamily,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: DizzyVoid.bone,
+                                color: ink,
                                 height: 1.25,
                               ),
                               maxLines: 3,
@@ -239,10 +270,10 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             const SizedBox(height: 6),
                             Text(
                               book.displayAuthor,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: DizzyType.fontFamily,
                                 fontSize: 13,
-                                color: DizzyVoid.ash,
+                                color: inkSoft,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -257,22 +288,34 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                 _buildBadge(
                                   book.bookFiletype.toUpperCase(),
                                   bgColor: book.isEpub
-                                      ? DizzyGlow.violet.withValues(alpha: 0.25)
+                                      ? accent.withValues(alpha: 0.14)
                                       : book.isPdf
-                                          ? DizzyGlow.red.withValues(alpha: 0.25)
-                                          : DizzyVoid.surface3,
+                                      ? PrismAccent.danger.withValues(
+                                          alpha: 0.14,
+                                        )
+                                      : well,
                                   textColor: book.isEpub
-                                      ? DizzyGlow.violet
+                                      ? accentText
                                       : book.isPdf
-                                          ? DizzyGlow.red
-                                          : DizzyVoid.ash,
+                                      ? (isLight
+                                            ? PrismAccent.accentTextLight
+                                            : PrismAccent.danger)
+                                      : inkSoft,
                                 ),
                                 if (book.bookSize.isNotEmpty)
-                                  _buildBadge(book.bookSize, textColor: DizzyVoid.ash),
+                                  _buildBadge(
+                                    book.bookSize,
+                                    textColor: inkSoft,
+                                  ),
                                 if (book.year.isNotEmpty)
-                                  _buildBadge(book.year, textColor: DizzyVoid.ash),
+                                  _buildBadge(book.year, textColor: inkSoft),
                                 if (book.bookLang.isNotEmpty)
-                                  _buildBadge(book.bookLang, textColor: DizzyGlow.beam),
+                                  _buildBadge(
+                                    book.bookLang,
+                                    textColor: isLight
+                                        ? PrismLight.inkSoft
+                                        : DizzyGlow.beam,
+                                  ),
                               ],
                             ),
                           ],
@@ -287,9 +330,9 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: DizzyVoid.surface2,
+                        color: panel,
                         borderRadius: BorderRadius.circular(DizzyRadius.lg),
-                        border: Border.all(color: DizzyEdge.hairline.color),
+                        border: Border.all(color: hairline),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,20 +344,20 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                                 progress.fileType == 'pdf'
                                     ? 'Page ${progress.currentPage} of ${progress.totalPages}'
                                     : 'Chapter ${progress.chapterIndex + 1} of ${progress.totalChapters}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: DizzyType.fontFamily,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: DizzyVoid.ash,
+                                  color: inkSoft,
                                 ),
                               ),
                               Text(
                                 '${(progress.progressPercent * 100).round()}% Completed',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: DizzyType.fontFamily,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: DizzyGlow.violet,
+                                  color: accentText,
                                 ),
                               ),
                             ],
@@ -324,8 +367,8 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: progress.progressPercent,
-                              backgroundColor: DizzyVoid.surface3,
-                              color: DizzyGlow.violet,
+                              backgroundColor: well,
+                              color: accent,
                               minHeight: 5,
                             ),
                           ),
@@ -342,27 +385,33 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                       Expanded(
                         flex: 3,
                         child: ElevatedButton.icon(
-                          onPressed: _checkingStatus || _isDownloading ? null : _startReadOrDownload,
+                          onPressed: _checkingStatus || _isDownloading
+                              ? null
+                              : _startReadOrDownload,
                           icon: _isDownloading
                               ? SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
-                                    value: _downloadProgress > 0.05 ? _downloadProgress : null,
+                                    value: _downloadProgress > 0.05
+                                        ? _downloadProgress
+                                        : null,
                                     strokeWidth: 2.5,
-                                    color: DizzyVoid.bone,
+                                    color: PrismAccent.onAccent,
                                   ),
                                 )
                               : Icon(
-                                  hasProgress ? Icons.play_arrow_rounded : Icons.auto_stories_rounded,
+                                  hasProgress
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.auto_stories_rounded,
                                   size: 22,
                                 ),
                           label: Text(
                             _isDownloading
                                 ? 'Downloading ${(_downloadProgress * 100).round()}%...'
                                 : hasProgress
-                                    ? 'Resume Reading'
-                                    : 'Read Now',
+                                ? 'Resume Reading'
+                                : 'Read Now',
                             style: const TextStyle(
                               fontFamily: DizzyType.fontFamily,
                               fontSize: 14,
@@ -370,11 +419,13 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: DizzyGlow.violet,
-                            foregroundColor: DizzyVoid.bone,
+                            backgroundColor: accent,
+                            foregroundColor: PrismAccent.onAccent,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                              borderRadius: BorderRadius.circular(
+                                DizzyRadius.lg,
+                              ),
                             ),
                             elevation: 0,
                             shadowColor: Colors.transparent,
@@ -385,20 +436,27 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                       if (book.isEpub) ...[
                         const SizedBox(width: 10),
                         IconButton.filledTonal(
-                          icon: const Icon(Icons.record_voice_over_rounded, color: DizzyGlow.violet),
+                          icon: Icon(
+                            Icons.record_voice_over_rounded,
+                            color: accentText,
+                          ),
                           tooltip: 'Generate AI Audiobook (TTS)',
                           onPressed: () async {
                             Navigator.pop(context);
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const GenerateAudiobookScreen(),
+                              ),
                             );
                           },
                           style: IconButton.styleFrom(
-                            backgroundColor: DizzyGlow.violet.withValues(alpha: 0.2),
+                            backgroundColor: accent.withValues(alpha: 0.16),
                             padding: const EdgeInsets.all(14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                              borderRadius: BorderRadius.circular(
+                                DizzyRadius.lg,
+                              ),
                             ),
                           ),
                         ),
@@ -407,7 +465,10 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                       if (_isDownloaded) ...[
                         const SizedBox(width: 10),
                         IconButton.filledTonal(
-                          icon: const Icon(Icons.delete_outline_rounded, color: DizzyGlow.red),
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: PrismAccent.danger,
+                          ),
                           tooltip: 'Delete downloaded file',
                           onPressed: () async {
                             await BookDownloadService.instance.deleteBook(
@@ -417,10 +478,12 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             _checkDownloadStatus();
                           },
                           style: IconButton.styleFrom(
-                            backgroundColor: DizzyVoid.surface3,
+                            backgroundColor: well,
                             padding: const EdgeInsets.all(14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                              borderRadius: BorderRadius.circular(
+                                DizzyRadius.lg,
+                              ),
                             ),
                           ),
                         ),
@@ -430,23 +493,25 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                   const SizedBox(height: 24),
 
                   // Metadata Details List
-                  if (book.publisher.isNotEmpty || book.isbn.isNotEmpty || book.series.isNotEmpty) ...[
-                    const Text(
+                  if (book.publisher.isNotEmpty ||
+                      book.isbn.isNotEmpty ||
+                      book.series.isNotEmpty) ...[
+                    Text(
                       'Information',
                       style: TextStyle(
                         fontFamily: DizzyType.fontFamily,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: DizzyVoid.bone,
+                        color: ink,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: DizzyVoid.surface2,
+                        color: panel,
                         borderRadius: BorderRadius.circular(DizzyRadius.lg),
-                        border: Border.all(color: DizzyEdge.hairline.color),
+                        border: Border.all(color: hairline),
                       ),
                       child: Column(
                         children: [
@@ -458,7 +523,10 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
                             _buildInfoRow('ISBN', book.isbn),
                           if (book.bookLang.isNotEmpty)
                             _buildInfoRow('Language', book.bookLang),
-                          _buildInfoRow('File Format', book.bookFiletype.toUpperCase()),
+                          _buildInfoRow(
+                            'File Format',
+                            book.bookFiletype.toUpperCase(),
+                          ),
                           if (book.bookSize.isNotEmpty)
                             _buildInfoRow('Size', book.bookSize),
                         ],
@@ -469,22 +537,22 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
 
                   // Description
                   if (book.description.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Overview',
                       style: TextStyle(
                         fontFamily: DizzyType.fontFamily,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: DizzyVoid.bone,
+                        color: ink,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       book.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: DizzyType.fontFamily,
                         fontSize: 13,
-                        color: DizzyVoid.ash,
+                        color: inkSoft,
                         height: 1.5,
                       ),
                     ),
@@ -499,10 +567,12 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
   }
 
   Widget _buildBadge(String text, {Color? bgColor, required Color textColor}) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor ?? DizzyVoid.surface3,
+        color:
+            bgColor ?? (isLight ? PrismLight.raisedBottom : DizzyVoid.surface3),
         borderRadius: BorderRadius.circular(DizzyRadius.md),
       ),
       child: Text(
@@ -518,6 +588,7 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -525,20 +596,20 @@ class _BookDetailSheetState extends State<BookDetailSheet> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: DizzyType.fontFamily,
               fontSize: 12,
-              color: DizzyVoid.ash,
+              color: isLight ? PrismLight.inkSoft : DizzyVoid.ash,
             ),
           ),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: DizzyType.fontFamily,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: DizzyVoid.bone,
+                color: isLight ? PrismLight.ink : DizzyVoid.bone,
               ),
               textAlign: TextAlign.right,
               maxLines: 1,

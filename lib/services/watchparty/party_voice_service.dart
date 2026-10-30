@@ -26,7 +26,10 @@ class PartyVoiceService {
 
   /// Pure: token-request payload. Unit tested.
   static Map<String, dynamic> buildTokenRequest(
-      String roomCode, String deviceCode, bool isHost) {
+    String roomCode,
+    String deviceCode,
+    bool isHost,
+  ) {
     return {
       'room_code': roomCode.trim().toUpperCase(),
       'device_code': deviceCode,
@@ -36,13 +39,16 @@ class PartyVoiceService {
 
   /// Pure: LiveKit grant shape the edge function must return for this role.
   static Map<String, bool> grantsFor(bool isHost) => {
-        'roomJoin': true,
-        'canPublish': isHost,
-        'canSubscribe': true,
-        'canPublishData': true,
-      };
+    'roomJoin': true,
+    'canPublish': isHost,
+    'canSubscribe': true,
+    'canPublishData': true,
+  };
 
-  static Future<bool> join({required String roomCode, bool asHost = false}) async {
+  static Future<bool> join({
+    required String roomCode,
+    bool asHost = false,
+  }) async {
     if (!CloudClient.isReady) return false;
     await leave();
     try {
@@ -54,8 +60,9 @@ class PartyVoiceService {
         body: {'room_code': code},
       );
       final data = res.data;
-      final Map<String, dynamic> json =
-          data is Map ? Map<String, dynamic>.from(data) : {};
+      final Map<String, dynamic> json = data is Map
+          ? Map<String, dynamic>.from(data)
+          : {};
       final token = json['token']?.toString() ?? '';
       final url = json['url']?.toString() ?? '';
       if (token.isEmpty || url.isEmpty) return false;
@@ -120,7 +127,10 @@ class PartyVoiceService {
   }
 
   /// Pure: mute-user edge payload. Unit tested.
-  static Map<String, dynamic> muteUserRequest(String roomCode, String identity) {
+  static Map<String, dynamic> muteUserRequest(
+    String roomCode,
+    String identity,
+  ) {
     return {
       'room_code': roomCode.trim().toUpperCase(),
       'action': 'mute_user',
@@ -131,8 +141,7 @@ class PartyVoiceService {
   /// Returns true when the mic actually switched. False = still off
   /// (no channel, deafened, permission denied, or publish rejected) —
   /// callers MUST toast on false so the button never looks dead.
-  static Future<bool> toggleMic() async =>
-      setMicEnabled(!micOn.value);
+  static Future<bool> toggleMic() async => setMicEnabled(!micOn.value);
 
   static Future<bool> setMicEnabled(bool enabled) async {
     final room = _room;
@@ -189,8 +198,7 @@ class PartyVoiceService {
     }
   }
 
-  static Future<void> toggleDeafen() async =>
-      setDeafened(!deafened.value);
+  static Future<void> toggleDeafen() async => setDeafened(!deafened.value);
 
   /// Host-only: server-mutes ONE user (edge `mute_user`).
   /// Needs a redeploy of the party-voice-admin function (mute_user action).

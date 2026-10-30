@@ -27,10 +27,9 @@ class VidVaultScraper extends StreamScraper {
 
   Future<String?> _getToken(http.Client client) async {
     try {
-      final res = await client.get(
-        Uri.parse('$_baseUrl/api/get-token'),
-        headers: _headers,
-      ).timeout(const Duration(seconds: 6));
+      final res = await client
+          .get(Uri.parse('$_baseUrl/api/get-token'), headers: _headers)
+          .timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -63,7 +62,9 @@ class VidVaultScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidVaultScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidVaultScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -79,15 +80,17 @@ class VidVaultScraper extends StreamScraper {
           if (isTv) 'episode': (episode ?? 1).toString(),
         };
 
-        final res = await client.post(
-          Uri.parse('$_baseUrl/api/download-proxy'),
-          headers: {
-            ..._headers,
-            'Content-Type': 'application/json',
-            'x-request-token': token,
-          },
-          body: jsonEncode(payload),
-        ).timeout(const Duration(seconds: 10));
+        final res = await client
+            .post(
+              Uri.parse('$_baseUrl/api/download-proxy'),
+              headers: {
+                ..._headers,
+                'Content-Type': 'application/json',
+                'x-request-token': token,
+              },
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (res.statusCode != 200) return;
         final data = jsonDecode(res.body);
@@ -131,9 +134,7 @@ class VidVaultScraper extends StreamScraper {
                 headers: _headers,
                 behaviorHints: {
                   'notWebReady': false,
-                  'proxyHeaders': {
-                    'request': _headers,
-                  },
+                  'proxyHeaders': {'request': _headers},
                 },
               );
             }
@@ -159,9 +160,7 @@ class VidVaultScraper extends StreamScraper {
               headers: _headers,
               behaviorHints: {
                 'notWebReady': false,
-                'proxyHeaders': {
-                  'request': _headers,
-                },
+                'proxyHeaders': {'request': _headers},
               },
             );
           }
@@ -191,14 +190,13 @@ class VidVaultScraper extends StreamScraper {
                 name: 'VidVault',
                 addonName: 'vidvault',
                 title: parts.join(' · '),
-                description: 'VidVault Direct MKV · $eLang $eCountry $eSize'.trim(),
+                description: 'VidVault Direct MKV · $eLang $eCountry $eSize'
+                    .trim(),
                 url: eUrl,
                 headers: _headers,
                 behaviorHints: {
                   'notWebReady': false,
-                  'proxyHeaders': {
-                    'request': _headers,
-                  },
+                  'proxyHeaders': {'request': _headers},
                 },
               );
             }

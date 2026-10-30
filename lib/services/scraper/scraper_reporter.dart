@@ -11,8 +11,7 @@ import '../errors/app_log.dart';
 class ScraperReporter {
   static const _prefix = 'scraper_vote_at_v1_';
 
-  static Future<void> reportEmpty(String scraperName,
-      {String kind = 'empty'}) {
+  static Future<void> reportEmpty(String scraperName, {String kind = 'empty'}) {
     return _send(scraperName, kind);
   }
 
@@ -36,11 +35,7 @@ class ScraperReporter {
 
       await CloudClient.db.functions.invoke(
         'scraper-ingest',
-        body: {
-          'scraper': name,
-          'kind': kind,
-          'app_version': '1.2.0',
-        },
+        body: {'scraper': name, 'kind': kind, 'app_version': '1.2.0'},
       );
     } catch (e) {
       AppLog.d('[ScraperReporter] vote failed (soft): $e');

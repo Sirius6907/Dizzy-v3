@@ -97,7 +97,8 @@ class ScraperQuarantineService {
       if (raw != null) {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         _quarantineMap = decoded.map(
-          (k, v) => MapEntry(k, DateTime.tryParse(v.toString()) ?? DateTime.now()),
+          (k, v) =>
+              MapEntry(k, DateTime.tryParse(v.toString()) ?? DateTime.now()),
         );
       }
     } catch (_) {}
@@ -152,7 +153,9 @@ class ScraperQuarantineService {
   static Future<void> _persist() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final map = _quarantineMap.map((k, v) => MapEntry(k, v.toIso8601String()));
+      final map = _quarantineMap.map(
+        (k, v) => MapEntry(k, v.toIso8601String()),
+      );
       await prefs.setString(_key, jsonEncode(map));
     } catch (_) {}
   }

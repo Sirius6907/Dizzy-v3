@@ -47,21 +47,19 @@ bool _isLightTheme() {
 abstract final class DizzyEdge {
   /// Subtle 1px physical light-catch border on raised panels.
   static BorderSide get hairline => BorderSide(
-        color: _isLightTheme() ? const Color(0xFFB8BEC8) : const Color(0x1FE2E8F0),
-        width: 1.0,
-      );
+    color: _isLightTheme() ? const Color(0xFFB8BEC8) : const Color(0x1FE2E8F0),
+    width: 1.0,
+  );
 
   /// Focused / active border.
   static BorderSide get hairlineStrong => BorderSide(
-        color: _isLightTheme() ? const Color(0xFF8A93A3) : const Color(0x38E2E8F0),
-        width: 1.2,
-      );
+    color: _isLightTheme() ? const Color(0xFF8A93A3) : const Color(0x38E2E8F0),
+    width: 1.2,
+  );
 
   /// Laser-cut neon border for active states, speaking indicators, and badges.
-  static BorderSide neon(Color color, {double width = 1.2}) => BorderSide(
-        color: color.withValues(alpha: 0.65),
-        width: width,
-      );
+  static BorderSide neon(Color color, {double width = 1.2}) =>
+      BorderSide(color: color.withValues(alpha: 0.65), width: width);
 }
 
 abstract final class DizzyGlow {
@@ -86,71 +84,31 @@ abstract final class DizzyGlow {
 
 abstract final class DizzyShadow {
   static const List<BoxShadow> _darkDock = [
-    BoxShadow(
-      color: Color(0xA6000000),
-      blurRadius: 28,
-      offset: Offset(0, 14),
-    ),
-    BoxShadow(
-      color: Color(0x14FFFFFF),
-      blurRadius: 0,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0xA6000000), blurRadius: 28, offset: Offset(0, 14)),
+    BoxShadow(color: Color(0x14FFFFFF), blurRadius: 0, offset: Offset(0, 1)),
   ];
 
   static const List<BoxShadow> _lightDock = [
-    BoxShadow(
-      color: Color(0x331A1D26),
-      blurRadius: 28,
-      offset: Offset(0, 14),
-    ),
-    BoxShadow(
-      color: Color(0x1A1A1D26),
-      blurRadius: 0,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x331A1D26), blurRadius: 28, offset: Offset(0, 14)),
+    BoxShadow(color: Color(0x1A1A1D26), blurRadius: 0, offset: Offset(0, 1)),
   ];
 
   static const List<BoxShadow> _darkCard = [
-    BoxShadow(
-      color: Color(0x8C000000),
-      blurRadius: 18,
-      offset: Offset(0, 8),
-    ),
-    BoxShadow(
-      color: Color(0x12FFFFFF),
-      blurRadius: 0,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x8C000000), blurRadius: 18, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x12FFFFFF), blurRadius: 0, offset: Offset(0, 1)),
   ];
 
   static const List<BoxShadow> _lightCard = [
-    BoxShadow(
-      color: Color(0x331A1D26),
-      blurRadius: 18,
-      offset: Offset(0, 8),
-    ),
-    BoxShadow(
-      color: Color(0x141A1D26),
-      blurRadius: 0,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x331A1D26), blurRadius: 18, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x141A1D26), blurRadius: 0, offset: Offset(0, 1)),
   ];
 
   static const List<BoxShadow> _darkPressed = [
-    BoxShadow(
-      color: Color(0x80000000),
-      blurRadius: 8,
-      offset: Offset(0, 2),
-    ),
+    BoxShadow(color: Color(0x80000000), blurRadius: 8, offset: Offset(0, 2)),
   ];
 
   static const List<BoxShadow> _lightPressed = [
-    BoxShadow(
-      color: Color(0x241A1D26),
-      blurRadius: 8,
-      offset: Offset(0, 2),
-    ),
+    BoxShadow(color: Color(0x241A1D26), blurRadius: 8, offset: Offset(0, 2)),
   ];
 
   /// Floating dock physical drop shadow + subtle top edge catch.
@@ -161,17 +119,19 @@ abstract final class DizzyShadow {
 
   /// Center Action FAB glowing tactile shadow.
   static List<BoxShadow> fab(Color glowColor) => [
-        BoxShadow(
-          color: glowColor.withValues(alpha: 0.45),
-          blurRadius: 22,
-          offset: const Offset(0, 6),
-        ),
-        BoxShadow(
-          color: _isLightTheme() ? const Color(0x331A1D26) : const Color(0x99000000),
-          blurRadius: 14,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: glowColor.withValues(alpha: 0.45),
+      blurRadius: 22,
+      offset: const Offset(0, 6),
+    ),
+    BoxShadow(
+      color: _isLightTheme()
+          ? const Color(0x331A1D26)
+          : const Color(0x99000000),
+      blurRadius: 14,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   /// Inset pressed shadow simulation (zero-cost static list).
   static List<BoxShadow> get pressed =>
@@ -237,10 +197,12 @@ abstract final class DizzyGradients {
   );
 
   /// Card-body gradient; automatically selects dark metal or light aluminum.
-  static LinearGradient get surface => _isLightTheme() ? _lightSurface : _darkSurface;
+  static LinearGradient get surface =>
+      _isLightTheme() ? _lightSurface : _darkSurface;
 
   /// Floating control gradient; automatically selects the active theme tier.
-  static LinearGradient get raised => _isLightTheme() ? _lightRaised : _darkRaised;
+  static LinearGradient get raised =>
+      _isLightTheme() ? _lightRaised : _darkRaised;
 
   /// Inverted tactile gradient for depressed button states.
   static LinearGradient get pressed =>
@@ -264,13 +226,14 @@ abstract final class DizzyGradients {
 
   /// Top-edge inner highlight simulation without shaders.
   static LinearGradient topInnerGlow([double opacity = 0.12]) => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.center,
-        colors: [
-          (_isLightTheme() ? const Color(0xFF1A1D26) : Colors.white)
-              .withValues(alpha: opacity),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.40],
-      );
+    begin: Alignment.topCenter,
+    end: Alignment.center,
+    colors: [
+      (_isLightTheme() ? const Color(0xFF1A1D26) : Colors.white).withValues(
+        alpha: opacity,
+      ),
+      Colors.transparent,
+    ],
+    stops: const [0.0, 0.40],
+  );
 }

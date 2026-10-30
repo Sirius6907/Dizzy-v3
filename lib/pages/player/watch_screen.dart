@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import 'package:url_launcher/url_launcher.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
 
 import '../../models/movie/link.dart';
@@ -23,6 +22,7 @@ import '../../services/scraper/sites/tmdb_helper.dart';
 import '../../services/scraper/stream_scraper.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/theme/glass_settings.dart';
+import '../../widgets/prism/prism_chip.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
 import 'widgets/watch_source_card.dart';
 import 'widgets/watch_shimmer_card.dart';
@@ -86,7 +86,8 @@ class _WatchScreenState extends State<WatchScreen>
       final a = allAddons[i];
       map[a.manifest.name.toLowerCase()] = i;
       map[a.manifest.id.toLowerCase()] = i;
-      if (a.manifest.id == 'builtin.dizzyhttp' || a.baseUrl == 'builtin:dizzyhttp') {
+      if (a.manifest.id == 'builtin.dizzyhttp' ||
+          a.baseUrl == 'builtin:dizzyhttp') {
         map['dizzyhttp'] = i;
       }
       if (a.manifest.id == 'builtin.dizzy' || a.baseUrl == 'builtin:dizzy') {
@@ -137,11 +138,11 @@ class _WatchScreenState extends State<WatchScreen>
       embeddedStreams: widget.selectedEpisode?.streams ?? const [],
       isMounted: () => mounted,
       shouldAutoOpen: () =>
-          !_userPickedSource &&
-          PlayerSettings.autoplayFirstVerified.value,
+          !_userPickedSource && PlayerSettings.autoplayFirstVerified.value,
       hindiCountReader: () => _sources
-          .where((s) => s.hasAudioLanguage('hindi',
-              mediaTitle: widget.detail.name))
+          .where(
+            (s) => s.hasAudioLanguage('hindi', mediaTitle: widget.detail.name),
+          )
           .length,
       onBatch: (batch) {
         if (!mounted) return;
@@ -161,7 +162,8 @@ class _WatchScreenState extends State<WatchScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'Is content ka Hindi dub nahi mila — English (default) play kar raha hoon'),
+              'Is content ka Hindi dub nahi mila — English (default) play kar raha hoon',
+            ),
             duration: Duration(seconds: 4),
           ),
         );
@@ -209,8 +211,10 @@ class _WatchScreenState extends State<WatchScreen>
   String? _selectedAddonFilter;
   String? _selectedSizeFilter;
   String _selectedTypeFilter = 'all'; // 'all', 'debrid', 'torrent', 'direct'
-  String _selectedSeederFilter = 'all'; // 'all', 'most', '50+', '20+', '5+', '1+'
-  String _selectedAudioFilter = 'all'; // 'all', 'multi', 'english', 'hindi', 'german', 'french', 'spanish', 'russian', 'japanese', 'italian'
+  String _selectedSeederFilter =
+      'all'; // 'all', 'most', '50+', '20+', '5+', '1+'
+  String _selectedAudioFilter =
+      'all'; // 'all', 'multi', 'english', 'hindi', 'german', 'french', 'spanish', 'russian', 'japanese', 'italian'
 
   List<StreamSource> get _filteredSources {
     var list = List<StreamSource>.from(_sources);
@@ -235,19 +239,25 @@ class _WatchScreenState extends State<WatchScreen>
         case '1-5gb':
           list = list.where((s) {
             final sz = s.sizeBytes;
-            return sz != null && sz >= 1024 * 1024 * 1024 && sz <= 5.0 * 1024 * 1024 * 1024;
+            return sz != null &&
+                sz >= 1024 * 1024 * 1024 &&
+                sz <= 5.0 * 1024 * 1024 * 1024;
           }).toList();
           break;
         case '5-15gb':
           list = list.where((s) {
             final sz = s.sizeBytes;
-            return sz != null && sz > 5.0 * 1024 * 1024 * 1024 && sz <= 15.0 * 1024 * 1024 * 1024;
+            return sz != null &&
+                sz > 5.0 * 1024 * 1024 * 1024 &&
+                sz <= 15.0 * 1024 * 1024 * 1024;
           }).toList();
           break;
         case '15-30gb':
           list = list.where((s) {
             final sz = s.sizeBytes;
-            return sz != null && sz > 15.0 * 1024 * 1024 * 1024 && sz <= 30.0 * 1024 * 1024 * 1024;
+            return sz != null &&
+                sz > 15.0 * 1024 * 1024 * 1024 &&
+                sz <= 30.0 * 1024 * 1024 * 1024;
           }).toList();
           break;
         case '>30gb':
@@ -272,8 +282,12 @@ class _WatchScreenState extends State<WatchScreen>
     // Filter by audio language / dub
     if (_selectedAudioFilter != 'all') {
       list = list
-          .where((s) => s.hasAudioLanguage(_selectedAudioFilter,
-              mediaTitle: widget.detail.name))
+          .where(
+            (s) => s.hasAudioLanguage(
+              _selectedAudioFilter,
+              mediaTitle: widget.detail.name,
+            ),
+          )
           .toList();
     }
 
@@ -286,9 +300,11 @@ class _WatchScreenState extends State<WatchScreen>
       // ('flystream', 'vidsrc', ...). Legacy 'dizzyhttp' labels from
       // pre-v1.2.0 Continue Watching rows are filtered too.
       list = list
-          .where((s) =>
-              !ScraperManager.instance.isBuiltinHttpSource(s.addonName) &&
-              s.addonName.toLowerCase() != 'dizzyhttp')
+          .where(
+            (s) =>
+                !ScraperManager.instance.isBuiltinHttpSource(s.addonName) &&
+                s.addonName.toLowerCase() != 'dizzyhttp',
+          )
           .toList();
     }
 
@@ -300,7 +316,11 @@ class _WatchScreenState extends State<WatchScreen>
     } else if (_selectedSizeFilter == 'largest') {
       list.sort((a, b) => (b.sizeBytes ?? 0).compareTo(a.sizeBytes ?? 0));
     } else if (_selectedSizeFilter == 'smallest') {
-      list.sort((a, b) => (a.sizeBytes ?? double.infinity).compareTo(b.sizeBytes ?? double.infinity));
+      list.sort(
+        (a, b) => (a.sizeBytes ?? double.infinity).compareTo(
+          b.sizeBytes ?? double.infinity,
+        ),
+      );
     } else {
       list.sort((a, b) {
         final orderA = addonOrder[a.addonName.toLowerCase()] ?? 999;
@@ -409,5 +429,4 @@ class _WatchScreenState extends State<WatchScreen>
   // Backdrop
   // ─────────────────────────────────────────────────────────────────────────
   bool _synopsisExpanded = false;
-
 }

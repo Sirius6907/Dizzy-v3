@@ -40,7 +40,9 @@ class M3uParser {
         final attrPart = commaIdx > 0
             ? line.substring('#EXTINF'.length, commaIdx)
             : line.substring('#EXTINF'.length);
-        final namePart = commaIdx > 0 ? line.substring(commaIdx + 1).trim() : '';
+        final namePart = commaIdx > 0
+            ? line.substring(commaIdx + 1).trim()
+            : '';
 
         final attrs = _parseAttrs(attrPart);
         pendingTvgId = attrs['tvg-id'] ?? '';
@@ -67,20 +69,23 @@ class M3uParser {
         continue;
       }
 
-      out.add(M3uChannel(
-        name: pendingName ?? url,
-        url: url,
-        logo: pendingLogo,
-        group: pendingGroup,
-        tvgId: pendingTvgId,
-        tvgName: pendingTvgName,
-      ));
+      out.add(
+        M3uChannel(
+          name: pendingName ?? url,
+          url: url,
+          logo: pendingLogo,
+          group: pendingGroup,
+          tvgId: pendingTvgId,
+          tvgName: pendingTvgName,
+        ),
+      );
       resetPending();
     }
 
     if (out.isEmpty) {
       throw const FormatException(
-          'No channels found — is this a valid M3U playlist?');
+        'No channels found — is this a valid M3U playlist?',
+      );
     }
     return out;
   }

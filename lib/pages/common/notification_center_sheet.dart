@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
+import 'package:dizzy/services/notification/notification_history.dart';
 import 'package:dizzy/services/notification/notification_inbox.dart';
 import 'package:dizzy/services/notification/notification_prefs.dart';
 import 'package:dizzy/services/notification/notification_service.dart';
@@ -24,10 +28,16 @@ class NotificationCenterSheet extends StatefulWidget {
 }
 
 class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
+  List<InboxItem> _remote = const <InboxItem>[];
+
   @override
   void initState() {
     super.initState();
     NotificationInbox.load();
+    NotificationHistory.fetch().then((rows) {
+      if (!mounted) return;
+      setState(() => _remote = rows);
+    });
     // The saved gate arrives asynchronously — refresh the toggles with it.
     NotificationService.initialize().then((_) {
       if (!mounted) return;
@@ -48,13 +58,22 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.82,
-      decoration: const BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        gradient: PrismShadows.surfaceGradient(
+          AppThemeService.currentPalette.value.isLight,
+        ),
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(DizzyRadius.lg),
           topRight: Radius.circular(DizzyRadius.lg),
+        ),
+        boxShadow: PrismShadows.floating(
+          isLight: AppThemeService.currentPalette.value.isLight,
         ),
       ),
       child: Column(
@@ -63,11 +82,17 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
           const SizedBox(height: DizzySpace.sm),
           Center(
             child: Container(
-              width: 40,
-              height: 4,
+              width: 44,
+              height: 5,
               decoration: BoxDecoration(
-                color: DizzyVoid.surface3,
-                borderRadius: BorderRadius.circular(2),
+                gradient: PrismShadows.pressedGradient(
+                  AppThemeService.currentPalette.value.isLight,
+                ),
+                borderRadius: BorderRadius.circular(3),
+                boxShadow: PrismShadows.pressed(
+                  isLight: AppThemeService.currentPalette.value.isLight,
+                  scale: 0.5,
+                ),
               ),
             ),
           ),
@@ -83,7 +108,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                 Text(
                   'Notifications',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: DizzyVoid.bone,
+                    color: ink,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -111,15 +136,20 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
             child: ValueListenableBuilder<List<InboxItem>>(
               valueListenable: NotificationInbox.items,
               builder: (context, items, _) {
-                if (items.isEmpty) {
+                final merged = NotificationHistory.merge(
+                  items,
+                  _remote,
+                  clearBeforeMs: NotificationInbox.clearedAtMs,
+                );
+                if (merged.isEmpty) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(DizzySpace.lg),
                       child: Text(
-                        'Nothing yet.\nDownload news, updates and messages\nland here.',
+                        'Nothing yet.\nNew releases, download news and messages\nland here.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: DizzyVoid.ash,
+                          color: inkSoft,
                           height: 1.5,
                         ),
                       ),
@@ -133,21 +163,30 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                     DizzySpace.md,
                     DizzySpace.lg,
                   ),
-                  itemCount: items.length,
+                  itemCount: merged.length,
                   separatorBuilder: (_, __) =>
                       const SizedBox(height: DizzySpace.sm),
                   itemBuilder: (context, i) {
-                    final it = items[i];
+                    final it = merged[i];
+                    final panel = isLight
+                        ? PrismLight.raisedTop
+                        : DizzyVoid.voidB.withValues(alpha: 0.85);
+                    final well = isLight
+                        ? PrismLight.raisedBottom
+                        : DizzyVoid.voidB.withValues(alpha: 0.45);
+                    final hairline = isLight
+                        ? PrismLight.borderSubtle
+                        : DizzyVoid.surface3.withValues(alpha: 0.35);
                     return Container(
                       decoration: BoxDecoration(
-                        color: it.read
-                            ? DizzyVoid.voidB.withValues(alpha: 0.45)
-                            : DizzyVoid.voidB.withValues(alpha: 0.85),
+                        color: it.read ? well : panel,
                         borderRadius: BorderRadius.circular(DizzyRadius.md),
                         border: Border.all(
                           color: it.read
-                              ? DizzyVoid.surface3.withValues(alpha: 0.35)
-                              : DizzyGlow.beam.withValues(alpha: 0.35),
+                              ? hairline
+                              : (isLight
+                                    ? PrismAccent.accent.withValues(alpha: 0.45)
+                                    : DizzyGlow.beam.withValues(alpha: 0.35)),
                         ),
                       ),
                       padding: const EdgeInsets.all(DizzySpace.md),
@@ -159,7 +198,11 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                               Icon(
                                 _iconFor(it.kind),
                                 size: 15,
-                                color: it.read ? DizzyVoid.ash : DizzyGlow.beam,
+                                color: it.read
+                                    ? inkSoft
+                                    : (isLight
+                                          ? PrismAccent.text(true)
+                                          : DizzyGlow.beam),
                               ),
                               const SizedBox(width: DizzySpace.sm),
                               Expanded(
@@ -167,9 +210,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                                   it.title,
                                   style: Theme.of(context).textTheme.titleSmall
                                       ?.copyWith(
-                                        color: it.read
-                                            ? DizzyVoid.ash
-                                            : DizzyVoid.bone,
+                                        color: it.read ? inkSoft : ink,
                                         fontWeight: FontWeight.w700,
                                       ),
                                 ),
@@ -177,7 +218,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                               Text(
                                 _when(it.atMs),
                                 style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(color: DizzyVoid.ash),
+                                    ?.copyWith(color: inkSoft),
                               ),
                             ],
                           ),
@@ -187,7 +228,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: DizzyVoid.ash, height: 1.35),
+                                ?.copyWith(color: inkSoft, height: 1.35),
                           ),
                         ],
                       ),
@@ -206,6 +247,8 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
     switch (kind) {
       case NotificationKind.update:
         return Icons.system_update_alt_rounded;
+      case NotificationKind.release:
+        return Icons.local_movies_rounded;
       case NotificationKind.download:
         return Icons.download_rounded;
       case NotificationKind.social:
@@ -219,13 +262,21 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
     return ValueListenableBuilder<NotificationGate>(
       valueListenable: _gateNotifier,
       builder: (context, gate, _) {
+        final isLight = AppThemeService.currentPalette.value.isLight;
+        final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+        final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+        final well = isLight
+            ? PrismLight.raisedBottom
+            : DizzyVoid.voidB.withValues(alpha: 0.6);
+        final hairline = isLight
+            ? PrismLight.borderSubtle
+            : DizzyVoid.surface3.withValues(alpha: 0.5);
+
         return Container(
           decoration: BoxDecoration(
-            color: DizzyVoid.voidB.withValues(alpha: 0.6),
+            color: well,
             borderRadius: BorderRadius.circular(DizzyRadius.md),
-            border: Border.all(
-              color: DizzyVoid.surface3.withValues(alpha: 0.5),
-            ),
+            border: Border.all(color: hairline),
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: DizzySpace.sm,
@@ -241,7 +292,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                     _channelLabel(kind),
                     style: Theme.of(
                       context,
-                    ).textTheme.bodyMedium?.copyWith(color: DizzyVoid.bone),
+                    ).textTheme.bodyMedium?.copyWith(color: ink),
                   ),
                   value: gate.kindEnabled(kind),
                   onChanged: (v) async {
@@ -257,7 +308,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                   'Quiet hours (no banners at night)',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: DizzyVoid.bone),
+                  ).textTheme.bodyMedium?.copyWith(color: ink),
                 ),
                 subtitle: Text(
                   gate.quietEnabled
@@ -266,7 +317,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                       : 'Off',
                   style: Theme.of(
                     context,
-                  ).textTheme.labelSmall?.copyWith(color: DizzyVoid.ash),
+                  ).textTheme.labelSmall?.copyWith(color: inkSoft),
                 ),
                 value: gate.quietEnabled,
                 onChanged: (v) async {
@@ -327,6 +378,8 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
     switch (kind) {
       case NotificationKind.update:
         return 'App updates';
+      case NotificationKind.release:
+        return 'New releases';
       case NotificationKind.download:
         return 'Downloads';
       case NotificationKind.social:

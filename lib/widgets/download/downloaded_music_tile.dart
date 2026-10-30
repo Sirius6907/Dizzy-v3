@@ -43,7 +43,10 @@ class DownloadedMusicTile extends StatelessWidget {
                     track.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 3),
                   Row(
@@ -53,14 +56,22 @@ class DownloadedMusicTile extends StatelessWidget {
                           '${track.artist} • ${track.album}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFF00E5FF,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -75,7 +86,10 @@ class DownloadedMusicTile extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         formatDownloadedMusicBytes(track.fileSizeBytes),
-                        style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -92,7 +106,11 @@ class DownloadedMusicTile extends StatelessWidget {
               tooltip: 'Play',
             ),
             IconButton(
-              icon: Icon(Icons.delete_outline_rounded, color: scheme.onSurfaceVariant, size: 20),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: scheme.onSurfaceVariant,
+                size: 20,
+              ),
               onPressed: onDelete,
               tooltip: 'Delete',
             ),
@@ -121,16 +139,18 @@ class _Cover extends StatelessWidget {
             ? Image.file(
                 File(local),
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white38),
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.music_note, color: Colors.white38),
               )
             : (track.coverUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: track.coverUrl,
-                    memCacheWidth: 100,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => const Icon(Icons.music_note, color: Colors.white38),
-                  )
-                : const Icon(Icons.music_note, color: Colors.white38)),
+                  ? CachedNetworkImage(
+                      imageUrl: track.coverUrl,
+                      memCacheWidth: 100,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) =>
+                          const Icon(Icons.music_note, color: Colors.white38),
+                    )
+                  : const Icon(Icons.music_note, color: Colors.white38)),
       ),
     );
   }

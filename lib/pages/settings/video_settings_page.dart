@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../utils/perf/performance_mode.dart';
@@ -18,19 +18,32 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.35);
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          icon: Icon(Icons.arrow_back_ios_rounded, size: 20, color: ink),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Video & Upscaling',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 19,
+            color: ink,
+          ),
         ),
       ),
       body: Center(
@@ -76,12 +89,12 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Anime4K Neural Upscaling',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: ink,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -89,7 +102,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                             'Real-time GLSL anime upscaling and line reconstruction running directly on libmpv GPU shaders.',
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: inkSoft,
                               height: 1.35,
                             ),
                           ),
@@ -108,7 +121,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -149,7 +162,9 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                         subtitle:
                             'Default. Smooth on WiFi without heating the phone (48MB phone).',
                         tag: 'Recommended',
-                        tagColor: Colors.white38,
+                        tagColor: isLight
+                            ? PrismLight.inkFaint
+                            : Colors.white38,
                         icon: Icons.balance_rounded,
                         isSelected: current == PlaybackProfile.medium,
                         palette: palette,
@@ -178,7 +193,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -192,61 +207,77 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                       _buildPresetCard(
                         preset: Anime4KPreset.off,
                         title: 'Disabled (Off)',
-                        subtitle: 'Standard video playback without GLSL neural filters. Lowest GPU overhead.',
+                        subtitle:
+                            'Standard video playback without GLSL neural filters. Lowest GPU overhead.',
                         tag: 'Standard',
-                        tagColor: Colors.white38,
+                        tagColor: isLight
+                            ? PrismLight.inkFaint
+                            : Colors.white38,
                         icon: Icons.block_rounded,
                         isSelected: currentPreset == Anime4KPreset.off,
                         palette: palette,
-                        onTap: () => PlayerSettings.setAnime4kPreset(Anime4KPreset.off),
+                        onTap: () =>
+                            PlayerSettings.setAnime4kPreset(Anime4KPreset.off),
                       ),
                       const SizedBox(height: 10),
                       _buildPresetCard(
                         preset: Anime4KPreset.modeAFast,
                         title: 'Mode A — Fast / Balanced',
-                        subtitle: 'Sharp line restoration & 2x CNN upscale. Best for 1080p anime and balanced GPU power.',
+                        subtitle:
+                            'Sharp line restoration & 2x CNN upscale. Best for 1080p anime and balanced GPU power.',
                         tag: 'Recommended',
                         tagColor: const Color(0xFF10B981),
                         icon: Icons.speed_rounded,
                         isSelected: currentPreset == Anime4KPreset.modeAFast,
                         palette: palette,
-                        onTap: () => PlayerSettings.setAnime4kPreset(Anime4KPreset.modeAFast),
+                        onTap: () => PlayerSettings.setAnime4kPreset(
+                          Anime4KPreset.modeAFast,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _buildPresetCard(
                         preset: Anime4KPreset.modeAHQ,
                         title: 'Mode A — High Quality (Ultra)',
-                        subtitle: 'Maximum perceptual fidelity using Very Large CNNs. Recommended for discrete GPUs (RTX/Radeon).',
+                        subtitle:
+                            'Maximum perceptual fidelity using Very Large CNNs. Recommended for discrete GPUs (RTX/Radeon).',
                         tag: 'Ultra Quality',
                         tagColor: const Color(0xFF7C5CFF),
                         icon: Icons.diamond_rounded,
                         isSelected: currentPreset == Anime4KPreset.modeAHQ,
                         palette: palette,
-                        onTap: () => PlayerSettings.setAnime4kPreset(Anime4KPreset.modeAHQ),
+                        onTap: () => PlayerSettings.setAnime4kPreset(
+                          Anime4KPreset.modeAHQ,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _buildPresetCard(
                         preset: Anime4KPreset.modeB,
                         title: 'Mode B — Soft / Denoise',
-                        subtitle: 'Smooth line reconstruction and artifact reduction. Best for blurry, compressed, or older anime.',
+                        subtitle:
+                            'Smooth line reconstruction and artifact reduction. Best for blurry, compressed, or older anime.',
                         tag: 'Denoise',
                         tagColor: const Color(0xFF00E5FF),
                         icon: Icons.blur_linear_rounded,
                         isSelected: currentPreset == Anime4KPreset.modeB,
                         palette: palette,
-                        onTap: () => PlayerSettings.setAnime4kPreset(Anime4KPreset.modeB),
+                        onTap: () => PlayerSettings.setAnime4kPreset(
+                          Anime4KPreset.modeB,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _buildPresetCard(
                         preset: Anime4KPreset.modeC,
                         title: 'Mode C — Deblur & Scale',
-                        subtitle: 'Aggressive deblurring and scaling. Best for 480p and 720p low-resolution anime episodes.',
+                        subtitle:
+                            'Aggressive deblurring and scaling. Best for 480p and 720p low-resolution anime episodes.',
                         tag: 'Deblur',
                         tagColor: const Color(0xFFF59E0B),
                         icon: Icons.high_quality_rounded,
                         isSelected: currentPreset == Anime4KPreset.modeC,
                         palette: palette,
-                        onTap: () => PlayerSettings.setAnime4kPreset(Anime4KPreset.modeC),
+                        onTap: () => PlayerSettings.setAnime4kPreset(
+                          Anime4KPreset.modeC,
+                        ),
                       ),
                     ],
                   );
@@ -261,7 +292,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: inkFaint,
                   letterSpacing: 1.1,
                 ),
               ),
@@ -270,28 +301,45 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: DizzyVoid.voidB,
+                  color: isLight ? PrismLight.raisedTop : PrismDark.raised,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(
+                    color: isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
                 ),
                 child: Column(
                   children: [
                     _buildInfoRow(
                       icon: Icons.info_outline_rounded,
                       title: 'Playback Start Application',
-                      description: 'Shaders are configured before playback begins. Changing a preset applies to the next opened stream or video.',
+                      description:
+                          'Shaders are configured before playback begins. Changing a preset applies to the next opened stream or video.',
                     ),
-                    const Divider(color: Colors.white10, height: 24),
+                    Divider(
+                      color: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.08),
+                      height: 24,
+                    ),
                     _buildInfoRow(
                       icon: Icons.memory_rounded,
                       title: 'Hardware Decoder Acceleration',
-                      description: 'media_kit uses native auto-safe hardware decoding to feed GPU texture memory directly into the GLSL shader pass.',
+                      description:
+                          'media_kit uses native auto-safe hardware decoding to feed GPU texture memory directly into the GLSL shader pass.',
                     ),
-                    const Divider(color: Colors.white10, height: 24),
+                    Divider(
+                      color: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.08),
+                      height: 24,
+                    ),
                     _buildInfoRow(
                       icon: Icons.devices_rounded,
                       title: 'Platform Recommendation',
-                      description: 'For desktop (Windows/macOS/Linux), Mode A HQ provides crystal-clear lines. For mobile devices, Mode A Fast offers smooth 60fps playback.',
+                      description:
+                          'For desktop (Windows/macOS/Linux), Mode A HQ provides crystal-clear lines. For mobile devices, Mode A Fast offers smooth 60fps playback.',
                     ),
                   ],
                 ),
@@ -307,12 +355,17 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
-                      color: palette.primaryColor,
+                      color: isLight
+                          ? PrismAccent.text(isLight)
+                          : palette.primaryColor,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: palette.primaryColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -320,9 +373,11 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     child: Text(
                       'Android',
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: PrismType.micro,
                         fontWeight: FontWeight.bold,
-                        color: palette.primaryColor,
+                        color: isLight
+                            ? PrismAccent.text(isLight)
+                            : palette.primaryColor,
                       ),
                     ),
                   ),
@@ -337,12 +392,14 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     decoration: BoxDecoration(
                       color: isSurface
                           ? palette.primaryColor.withValues(alpha: 0.08)
-                          : DizzyVoid.voidB,
+                          : (isLight ? PrismLight.raisedTop : PrismDark.raised),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSurface
                             ? palette.primaryColor
-                            : Colors.white.withValues(alpha: 0.08),
+                            : (isLight
+                                  ? PrismLight.borderSubtle
+                                  : Colors.white.withValues(alpha: 0.08)),
                         width: isSurface ? 1.5 : 1.0,
                       ),
                     ),
@@ -354,12 +411,14 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                           decoration: BoxDecoration(
                             color: isSurface
                                 ? palette.primaryColor.withValues(alpha: 0.20)
-                                : Colors.white.withValues(alpha: 0.05),
+                                : (isLight
+                                      ? PrismLight.raisedBottom
+                                      : Colors.white.withValues(alpha: 0.05)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             Icons.layers_rounded,
-                            color: isSurface ? palette.primaryColor : Colors.white70,
+                            color: isSurface ? palette.primaryColor : inkSoft,
                             size: 22,
                           ),
                         ),
@@ -370,28 +429,41 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                             children: [
                               Row(
                                 children: [
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
                                       'Direct Surface (SurfaceView)',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                                        color: ink,
                                       ),
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: (isSurface ? const Color(0xFF10B981) : Colors.amber).withValues(alpha: 0.15),
+                                      color:
+                                          (isSurface
+                                                  ? const Color(0xFF10B981)
+                                                  : Colors.amber)
+                                              .withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      isSurface ? 'Zero-Copy' : 'Off (TextureView)',
+                                      isSurface
+                                          ? 'Zero-Copy'
+                                          : 'Off (TextureView)',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: PrismType.micro,
                                         fontWeight: FontWeight.w700,
-                                        color: isSurface ? const Color(0xFF10B981) : Colors.amber,
+                                        color: isLight
+                                            ? ink
+                                            : (isSurface
+                                                  ? const Color(0xFF10B981)
+                                                  : Colors.amber),
                                       ),
                                     ),
                                   ),
@@ -402,7 +474,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                                 'Uses Flutter SurfaceProducer to render frames directly to hardware surface without texture blitting. Significantly boosts 4K/60fps playback and reduces battery usage on Android. (Keep disabled if your device experiences display glitches).',
                                 style: TextStyle(
                                   fontSize: 12.5,
-                                  color: Colors.white.withValues(alpha: 0.55),
+                                  color: inkSoft,
                                   height: 1.35,
                                 ),
                               ),
@@ -442,18 +514,24 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: DizzyVoid.voidB,
+                        color: isLight
+                            ? PrismLight.raisedTop
+                            : PrismDark.raised,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08)),
+                          color: isLight
+                              ? PrismLight.borderSubtle
+                              : Colors.white.withValues(alpha: 0.08),
+                        ),
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: palette.primaryColor
-                                  .withValues(alpha: 0.15),
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
@@ -463,7 +541,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                             ),
                           ),
                           const SizedBox(width: 14),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -472,15 +550,15 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.white,
+                                    color: ink,
                                   ),
                                 ),
-                                SizedBox(height: 5),
+                                const SizedBox(height: 5),
                                 Text(
                                   'Change how subtitles look — style, size, bold. Preview included.',
                                   style: TextStyle(
                                     fontSize: 12.5,
-                                    color: Colors.white70,
+                                    color: inkSoft,
                                     height: 1.35,
                                   ),
                                 ),
@@ -489,24 +567,32 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: palette.primaryColor
-                                  .withValues(alpha: 0.15),
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               preset.label,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: PrismType.micro,
                                 fontWeight: FontWeight.w700,
-                                color: palette.primaryColor,
+                                color: isLight
+                                    ? PrismAccent.text(isLight)
+                                    : palette.primaryColor,
                               ),
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: Colors.white38, size: 22),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: inkFaint,
+                            size: 22,
+                          ),
                         ],
                       ),
                     ),
@@ -529,6 +615,11 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
 
   /// Autoplay / binge / failover / skip-intro toggles (Phase 4.3).
   Widget _buildPlaybackIntelligenceSection(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -536,24 +627,20 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
           children: [
             Icon(Icons.bolt_rounded, size: 20, color: palette.primaryColor),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Playback Intelligence',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: ink,
               ),
             ),
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Instant-play UX engine: parallel source racing, binge autoplay, silent failover and skip helpers.',
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Color(0x8CFFFFFF),
-            height: 1.35,
-          ),
+          style: TextStyle(fontSize: 12.5, color: inkSoft, height: 1.35),
         ),
         const SizedBox(height: 14),
         ValueListenableBuilder<bool>(
@@ -679,8 +766,12 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
             icon: const Icon(Icons.cleaning_services_rounded, size: 18),
             label: const Text('Clear learned source history'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white70,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+              foregroundColor: inkSoft,
+              side: BorderSide(
+                color: isLight
+                    ? PrismLight.borderSubtle
+                    : Colors.white.withValues(alpha: 0.18),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -700,12 +791,21 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.voidB.withValues(alpha: 0.9),
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.07),
+        ),
       ),
       child: Row(
         children: [
@@ -725,20 +825,16 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: ink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    height: 1.3,
-                  ),
+                  style: TextStyle(fontSize: 12, color: inkSoft, height: 1.3),
                 ),
               ],
             ),
@@ -776,6 +872,11 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     required bool isSelected,
     required AppThemePalette palette,
   }) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return InkWell(
       onTap: () => PlayerSettings.setPlaybackProfile(profile),
       borderRadius: BorderRadius.circular(16),
@@ -785,12 +886,14 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? palette.primaryColor.withValues(alpha: 0.08)
-              : DizzyVoid.voidB,
+              : (isLight ? PrismLight.raisedTop : PrismDark.raised),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
                 ? palette.primaryColor
-                : Colors.white.withValues(alpha: 0.08),
+                : (isLight
+                      ? PrismLight.borderSubtle
+                      : Colors.white.withValues(alpha: 0.08)),
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -802,7 +905,9 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? palette.primaryColor.withValues(alpha: 0.14)
-                    : Colors.white.withValues(alpha: 0.05),
+                    : (isLight
+                          ? PrismLight.raisedBottom
+                          : Colors.white.withValues(alpha: 0.05)),
                 borderRadius: BorderRadius.circular(11),
               ),
               child: Icon(icon, size: 20, color: palette.primaryColor),
@@ -817,16 +922,18 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: ink,
                           ),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: tagColor.withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(8),
@@ -834,9 +941,9 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                         child: Text(
                           tag,
                           style: TextStyle(
-                            fontSize: 10.5,
+                            fontSize: PrismType.micro,
                             fontWeight: FontWeight.w800,
-                            color: tagColor,
+                            color: isLight ? inkSoft : tagColor,
                           ),
                         ),
                       ),
@@ -845,11 +952,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      height: 1.3,
-                    ),
+                    style: TextStyle(fontSize: 12, color: inkSoft, height: 1.3),
                   ),
                 ],
               ),
@@ -871,6 +974,11 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     required AppThemePalette palette,
     required VoidCallback onTap,
   }) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -880,12 +988,14 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? palette.primaryColor.withValues(alpha: 0.08)
-              : DizzyVoid.voidB,
+              : (isLight ? PrismLight.raisedTop : PrismDark.raised),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
                 ? palette.primaryColor
-                : Colors.white.withValues(alpha: 0.08),
+                : (isLight
+                      ? PrismLight.borderSubtle
+                      : Colors.white.withValues(alpha: 0.08)),
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -897,12 +1007,14 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? palette.primaryColor.withValues(alpha: 0.20)
-                    : Colors.white.withValues(alpha: 0.05),
+                    : (isLight
+                          ? PrismLight.raisedBottom
+                          : Colors.white.withValues(alpha: 0.05)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? palette.primaryColor : Colors.white70,
+                color: isSelected ? palette.primaryColor : inkSoft,
                 size: 22,
               ),
             ),
@@ -919,23 +1031,28 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                            color: ink,
                           ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: tagColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: tagColor.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: tagColor.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Text(
                           tag,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: PrismType.micro,
                             fontWeight: FontWeight.w700,
-                            color: tagColor,
+                            color: isLight ? inkSoft : tagColor,
                           ),
                         ),
                       ),
@@ -946,7 +1063,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: inkSoft,
                       height: 1.35,
                     ),
                   ),
@@ -957,8 +1074,12 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Icon(
-                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-                color: isSelected ? palette.primaryColor : Colors.white24,
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: isSelected
+                    ? palette.primaryColor
+                    : (isLight ? PrismLight.inkFaint : Colors.white24),
                 size: 22,
               ),
             ),
@@ -973,10 +1094,20 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     required String title,
     required String description,
   }) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: const Color(0xFF00E5FF), size: 20),
+        Icon(
+          icon,
+          color: isLight ? PrismLight.inkSoft : const Color(0xFF00E5FF),
+          size: 20,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -984,20 +1115,16 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: ink,
                 ),
               ),
               const SizedBox(height: 3),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.55),
-                  height: 1.35,
-                ),
+                style: TextStyle(fontSize: 12, color: inkSoft, height: 1.35),
               ),
             ],
           ),

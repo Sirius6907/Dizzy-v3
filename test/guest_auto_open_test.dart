@@ -48,12 +48,14 @@ void main() {
       final s = PartySession.instance;
       s.end();
       // Outsider (no party) → no-op.
-      await GuestAutoOpen.handle(const WatchSyncMessage(
-        mediaRef: 'tmdb:movie:550',
-        positionMs: 0,
-        playing: true,
-        hostSentAtMs: 1,
-      ));
+      await GuestAutoOpen.handle(
+        const WatchSyncMessage(
+          mediaRef: 'tmdb:movie:550',
+          positionMs: 0,
+          playing: true,
+          hostSentAtMs: 1,
+        ),
+      );
       expect(GuestAutoOpen.busy, isFalse);
       s.end();
     });
@@ -72,12 +74,14 @@ void main() {
       // wired PlayerScreen. Har ref shape parse honi chahiye warna guest
       // "Couldn't open this one" par atakta hai.
       expect(
-          GuestAutoOpen.parseRef('tmdb:movie:550', title: 'Fight Club'),
-          isNotNull);
+        GuestAutoOpen.parseRef('tmdb:movie:550', title: 'Fight Club'),
+        isNotNull,
+      );
       expect(GuestAutoOpen.parseRef('tmdb:tv:123:S2:E5'), isNotNull);
       expect(
-          GuestAutoOpen.parseRef('imdb:tt1234567', title: 'Some Movie'),
-          isNotNull);
+        GuestAutoOpen.parseRef('imdb:tt1234567', title: 'Some Movie'),
+        isNotNull,
+      );
       // host position ke saath wala msg bhi usable hona chahiye.
       const msg = WatchSyncMessage(
         mediaRef: 'tmdb:movie:550',
@@ -87,8 +91,10 @@ void main() {
         hostSentAtMs: 1,
       );
       expect(msg.isUsable, isTrue);
-      expect(GuestAutoOpen.parseRef(msg.mediaRef, title: msg.mediaTitle),
-          isNotNull);
+      expect(
+        GuestAutoOpen.parseRef(msg.mediaRef, title: msg.mediaTitle),
+        isNotNull,
+      );
     });
 
     test('guest opens near host position, never 0:00 mid-title', () {

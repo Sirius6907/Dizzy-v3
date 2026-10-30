@@ -49,7 +49,8 @@ void main() {
 
     test('round-trip keeps the switch usable', () {
       final back = WatchSyncMessage.fromJson(
-          WatchSyncMessage.fromJson(msg(prefetch: true)).toJson());
+        WatchSyncMessage.fromJson(msg(prefetch: true)).toJson(),
+      );
       expect(back.isUsable, isTrue);
       expect(back.mediaRef, 'tmdb:123');
       expect(back.prefetchReady, isTrue);

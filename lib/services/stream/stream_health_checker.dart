@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import '../../models/stream/stream_model.dart';
 import '../player/player_settings.dart';
+import 'torrent_stream_service.dart';
 
 /// Production-grade HTTP/HLS/MP4 Stream Health & Liveness Checker for built-in sources.
 ///
@@ -11,11 +12,16 @@ class StreamHealthChecker {
   /// Tests if a [StreamSource] is alive and delivers a valid video/audio stream.
   /// Automatically accepts cookies from responses & redirects and attaches them back to [source.headers].
   ///
-  /// Torrent streams (`infoHash != null`) are always considered alive by this checker.
+  /// Torrent streams are only "alive" for instant play when they expose
+  /// seeders and the TorrServer engine already has bytes cached; otherwise
+  /// they win the race and then stall waiting for metadata/DHT.
   static Future<bool> isAlive(StreamSource source) async {
-    // Torrents are managed by TorrServer / DHT on-demand
-    if (source.infoHash != null && source.infoHash!.isNotEmpty) {
-      return true;
+    if (source.infoHash != null &&
+        source.infoHash!.isNotEmpty &&
+        !source.isDebrid) {
+      final seeders = source.seeders;
+      if (seeders != null && seeders <= 0) return false;
+      return TorrentStreamService().isCached(source.infoHash!);
     }
 
     final rawUrl = source.url ?? source.externalUrl;
@@ -24,16 +30,23 @@ class StreamHealthChecker {
     }
 
     // Resolve complete headers (including Referer, Origin, User-Agent)
-    final effectiveHeaders = PlayerSettings.resolveStreamHeaders(rawUrl, source.headers);
+    final effectiveHeaders = PlayerSettings.resolveStreamHeaders(
+      rawUrl,
+      source.headers,
+    );
     final cookiesCaptured = <String>[];
 
     final alive = await _probeUrl(rawUrl, effectiveHeaders, 0, cookiesCaptured);
 
     // Accept captured cookies and persist them into the source headers
     if (alive && cookiesCaptured.isNotEmpty) {
-      final existingCookie = source.headers?['Cookie'] ?? source.headers?['cookie'] ?? '';
+      final existingCookie =
+          source.headers?['Cookie'] ?? source.headers?['cookie'] ?? '';
       source.headers ??= {};
-      source.headers!['Cookie'] = _mergeCookies(existingCookie, cookiesCaptured);
+      source.headers!['Cookie'] = _mergeCookies(
+        existingCookie,
+        cookiesCaptured,
+      );
     }
 
     return alive;
@@ -93,17 +106,25 @@ class StreamHealthChecker {
         ..badCertificateCallback = ((_, __, ___) => allowInsecure);
 
       // 1. Send fast HEAD request (0 MB downloaded!)
-      final req = await client.openUrl('HEAD', uri).timeout(const Duration(seconds: 4));
+      final req = await client
+          .openUrl('HEAD', uri)
+          .timeout(const Duration(seconds: 4));
       req.followRedirects = false;
 
       headers.forEach((k, v) {
-        if (v.isNotEmpty && k.toLowerCase() != 'range' && k.toLowerCase() != 'content-length') {
+        if (v.isNotEmpty &&
+            k.toLowerCase() != 'range' &&
+            k.toLowerCase() != 'content-length') {
           try {
             req.headers.set(k, v);
           } catch (_) {}
         }
       });
-      req.headers.set('User-Agent', headers['User-Agent'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      req.headers.set(
+        'User-Agent',
+        headers['User-Agent'] ??
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      );
       req.headers.set('Accept', '*/*');
 
       final resp = await req.close().timeout(const Duration(seconds: 4));
@@ -115,17 +136,33 @@ class StreamHealthChecker {
       }
 
       // Handle 3xx Redirects
-      if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
+      if (code == 301 ||
+          code == 302 ||
+          code == 303 ||
+          code == 307 ||
+          code == 308) {
         final loc = resp.headers.value(HttpHeaders.locationHeader);
         if (loc != null && loc.isNotEmpty) {
           final redirectedUri = uri.resolve(loc).toString();
-          final redirectHeaders = PlayerSettings.resolveStreamHeaders(redirectedUri, headers);
+          final redirectHeaders = PlayerSettings.resolveStreamHeaders(
+            redirectedUri,
+            headers,
+          );
           if (cookiesCaptured != null && cookiesCaptured.isNotEmpty) {
-            final existing = redirectHeaders['Cookie'] ?? redirectHeaders['cookie'] ?? '';
-            redirectHeaders['Cookie'] = _mergeCookies(existing, cookiesCaptured);
+            final existing =
+                redirectHeaders['Cookie'] ?? redirectHeaders['cookie'] ?? '';
+            redirectHeaders['Cookie'] = _mergeCookies(
+              existing,
+              cookiesCaptured,
+            );
           }
           client.close(force: true);
-          return await _probeUrl(redirectedUri, redirectHeaders, redirectCount + 1, cookiesCaptured);
+          return await _probeUrl(
+            redirectedUri,
+            redirectHeaders,
+            redirectCount + 1,
+            cookiesCaptured,
+          );
         }
         return false;
       }
@@ -133,7 +170,10 @@ class StreamHealthChecker {
       // If HEAD returns 200 or 206, verify it's not an HTML/JSON error page
       if (code == 200 || code == 206) {
         final ct = (resp.headers.contentType?.mimeType ?? '').toLowerCase();
-        final isDead = ct.contains('text/html') || ct.contains('application/json') || ct.contains('text/xml');
+        final isDead =
+            ct.contains('text/html') ||
+            ct.contains('application/json') ||
+            ct.contains('text/xml');
         if (!isDead || _isKnownMediaUrl(url)) return true;
         return false;
       }
@@ -143,15 +183,25 @@ class StreamHealthChecker {
       // Any other 4xx/5xx fails fast — no second request (v1.1.9 halves
       // slow-network probe cost per dead source).
       if (code != 405 && code != 501) return false;
-      final getReq = await client.openUrl('GET', uri).timeout(const Duration(seconds: 4));
+      final getReq = await client
+          .openUrl('GET', uri)
+          .timeout(const Duration(seconds: 4));
       getReq.followRedirects = true;
       getReq.maxRedirects = 4;
       headers.forEach((k, v) {
-        if (v.isNotEmpty && k.toLowerCase() != 'range' && k.toLowerCase() != 'content-length') {
-          try { getReq.headers.set(k, v); } catch (_) {}
+        if (v.isNotEmpty &&
+            k.toLowerCase() != 'range' &&
+            k.toLowerCase() != 'content-length') {
+          try {
+            getReq.headers.set(k, v);
+          } catch (_) {}
         }
       });
-      getReq.headers.set('User-Agent', headers['User-Agent'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      getReq.headers.set(
+        'User-Agent',
+        headers['User-Agent'] ??
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      );
       getReq.headers.set('Accept', '*/*');
       getReq.headers.set('Range', 'bytes=0-512');
 
@@ -165,7 +215,10 @@ class StreamHealthChecker {
       // 200 (OK), 206 (Partial), 416 (Range Not Satisfiable = endpoint is active video server)
       if (getCode == 200 || getCode == 206 || getCode == 416) {
         final ct = (getResp.headers.contentType?.mimeType ?? '').toLowerCase();
-        final isDead = (ct.contains('text/html') || ct.contains('application/json') || ct.contains('text/xml')) &&
+        final isDead =
+            (ct.contains('text/html') ||
+                ct.contains('application/json') ||
+                ct.contains('text/xml')) &&
             !_isKnownMediaUrl(url);
         await getResp.drain();
         return !isDead;

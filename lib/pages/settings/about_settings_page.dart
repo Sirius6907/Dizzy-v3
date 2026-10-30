@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 
 class AboutSettingsPage extends StatelessWidget {
@@ -8,6 +9,14 @@ class AboutSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.6);
+    final cardBorder = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
 
     return Scaffold(
       backgroundColor: palette.scaffoldBackgroundColor,
@@ -16,6 +25,7 @@ class AboutSettingsPage extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -65,23 +75,29 @@ class AboutSettingsPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
-                        colors: [
-                          Colors.white,
-                          palette.silverAccent,
-                          const Color(0xFFCBD5E1),
-                          palette.primaryColor.withValues(alpha: 0.9),
-                        ],
-                        stops: const [0.0, 0.35, 0.70, 1.0],
+                        colors: isLight
+                            ? [
+                                palette.primaryColor,
+                                PrismLight.ink,
+                                palette.primaryColor,
+                              ]
+                            : [
+                                Colors.white,
+                                palette.silverAccent,
+                                const Color(0xFFCBD5E1),
+                                palette.primaryColor.withValues(alpha: 0.9),
+                              ],
+                        stops: isLight ? null : const [0.0, 0.35, 0.70, 1.0],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ).createShader(bounds),
-                      child: const Text(
+                      child: Text(
                         'Dizzy',
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
-                          color: Colors.white,
+                          color: ink,
                         ),
                       ),
                     ),
@@ -89,12 +105,16 @@ class AboutSettingsPage extends StatelessWidget {
                     FutureBuilder<PackageInfo>(
                       future: PackageInfo.fromPlatform(),
                       builder: (context, snapshot) {
-                        final version = snapshot.hasData ? snapshot.data!.version : '1.1.5';
+                        final version = snapshot.hasData
+                            ? snapshot.data!.version
+                            : '1.1.5';
                         return Text(
                           'Version $version • by Sirius',
                           style: TextStyle(
                             fontSize: 13,
-                            color: palette.amberAccent.withValues(alpha: 0.7),
+                            color: isLight
+                                ? PrismAccent.starTextLight
+                                : palette.amberAccent.withValues(alpha: 0.7),
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
                           ),
@@ -147,12 +167,12 @@ class AboutSettingsPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Developed by Sirius',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: ink,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -160,7 +180,7 @@ class AboutSettingsPage extends StatelessWidget {
                             'github.com/Sirius6907',
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: palette.primaryColor,
+                              color: PrismAccent.text(isLight),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -179,21 +199,17 @@ class AboutSettingsPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: palette.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: palette.isMetallic
-                        ? palette.silverAccent.withValues(alpha: 0.1)
-                        : Colors.white.withValues(alpha: 0.08),
-                  ),
+                  border: Border.all(color: cardBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Universal Entertainment Ecosystem',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: ink,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -201,7 +217,7 @@ class AboutSettingsPage extends StatelessWidget {
                       'Dizzy is an all-in-one entertainment client bringing together movies, TV series, anime, live IPTV, music, manga, and audiobooks into a unified, high-performance interface with custom Liquid Glass visuals and metallic aesthetic.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: inkSoft,
                         height: 1.45,
                       ),
                     ),
@@ -217,7 +233,9 @@ class AboutSettingsPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: palette.silverAccent.withValues(alpha: 0.45),
+                  color: isLight
+                      ? PrismLight.inkFaint
+                      : palette.silverAccent.withValues(alpha: 0.45),
                   letterSpacing: 1.1,
                 ),
               ),
@@ -226,25 +244,29 @@ class AboutSettingsPage extends StatelessWidget {
               _buildTechTile(
                 palette: palette,
                 title: 'High-Performance Video Engine',
-                subtitle: 'Powered by embedded media_kit / libmpv with hardware-accelerated decoding.',
+                subtitle:
+                    'Powered by embedded media_kit / libmpv with hardware-accelerated decoding.',
               ),
               const SizedBox(height: 10),
               _buildTechTile(
                 palette: palette,
                 title: 'Debrid & Multi-Source Scrapers',
-                subtitle: 'Direct high-speed cloud playback via Real-Debrid, TorBox, and Stremio addons.',
+                subtitle:
+                    'Direct high-speed cloud playback via Real-Debrid, TorBox, and Stremio addons.',
               ),
               const SizedBox(height: 10),
               _buildTechTile(
                 palette: palette,
                 title: 'Liquid Glass GLSL Shaders',
-                subtitle: 'Custom real-time optical refraction, lenses, and fluid physics.',
+                subtitle:
+                    'Custom real-time optical refraction, lenses, and fluid physics.',
               ),
               const SizedBox(height: 10),
               _buildTechTile(
                 palette: palette,
                 title: 'Trakt & Cloud Synchronization',
-                subtitle: 'Cross-platform watchlist, episode tracking, and playback scrobbling.',
+                subtitle:
+                    'Cross-platform watchlist, episode tracking, and playback scrobbling.',
               ),
             ],
           ),
@@ -258,14 +280,15 @@ class AboutSettingsPage extends StatelessWidget {
     required String title,
     required String subtitle,
   }) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: palette.cardBackgroundColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: palette.isMetallic
-              ? palette.silverAccent.withValues(alpha: 0.08)
+          color: isLight
+              ? PrismLight.borderSubtle
               : Colors.white.withValues(alpha: 0.05),
         ),
       ),
@@ -294,10 +317,10 @@ class AboutSettingsPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: isLight ? PrismLight.ink : Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -305,7 +328,9 @@ class AboutSettingsPage extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.45),
                   ),
                 ),
               ],

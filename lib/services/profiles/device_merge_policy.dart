@@ -58,17 +58,19 @@ class DeviceMergeResult {
     if (alreadyMerged) return 'This code was already used. Nothing changed.';
     if (totalAdded == 0) return 'No new titles found for this code.';
     final n = totalAdded;
-    return n == 1 ? '1 thing came back with you.' : '$n things came back with you.';
+    return n == 1
+        ? '1 thing came back with you.'
+        : '$n things came back with you.';
   }
 
   Map<String, dynamic> toJson() => {
-        'watchlistAdded': watchlistAdded,
-        'historyAdded': historyAdded,
-        'friendsAdded': friendsAdded,
-        'progressAdded': progressAdded,
-        'progressAdvanced': progressAdvanced,
-        'alreadyMerged': alreadyMerged,
-      };
+    'watchlistAdded': watchlistAdded,
+    'historyAdded': historyAdded,
+    'friendsAdded': friendsAdded,
+    'progressAdded': progressAdded,
+    'progressAdvanced': progressAdvanced,
+    'alreadyMerged': alreadyMerged,
+  };
 }
 
 /// The merge rules. Everything is a set operation — no overwrites.

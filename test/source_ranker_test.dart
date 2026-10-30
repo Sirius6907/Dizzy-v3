@@ -33,9 +33,7 @@ void main() {
         url: 'https://cdn.example/file.mkv',
         name: 'CDN 1080p',
       );
-      const ctx = RankerContext(
-        lastGoodByAddon: {'TorboxAddon': 'x'},
-      );
+      const ctx = RankerContext(lastGoodByAddon: {'TorboxAddon': 'x'});
       final ordered = SourceRanker.order([fresh, hist], ctx);
       expect(ordered.first, hist);
     });
@@ -72,8 +70,10 @@ void main() {
       final o1 = SourceRanker.order([a, b], ctx);
       final o2 = SourceRanker.order([a, b], ctx);
       expect(identical(o1, o2), isFalse);
-      expect(o1.map(SourceRanker.fingerprint).toList(),
-          o2.map(SourceRanker.fingerprint).toList());
+      expect(
+        o1.map(SourceRanker.fingerprint).toList(),
+        o2.map(SourceRanker.fingerprint).toList(),
+      );
     });
 
     test('fingerprint is stable across copyWith', () {
@@ -84,12 +84,9 @@ void main() {
       );
     });
 
-    test('hindi mode: hindi-tagged source beats english same-addon source',
-        () {
-      final hindi = _src(
-          url: 'https://x/h.mkv', name: 'Movie Hindi Dub 1080p');
-      final english = _src(
-          url: 'https://x/e.mkv', name: 'Movie 1080p BluRay');
+    test('hindi mode: hindi-tagged source beats english same-addon source', () {
+      final hindi = _src(url: 'https://x/h.mkv', name: 'Movie Hindi Dub 1080p');
+      final english = _src(url: 'https://x/e.mkv', name: 'Movie 1080p BluRay');
       const ctx = RankerContext(preferredLang: 'hindi');
       final ordered = SourceRanker.order([english, hindi], ctx);
       expect(ordered.first, hindi);
@@ -99,13 +96,15 @@ void main() {
       // Real-world bug: history (+40) buried fresh hindi sources, so Hindi
       // mode kept autoplaying English. Language match must beat history.
       final hindi = _src(
-          addon: 'NewAddon',
-          url: 'https://new/x/h.mkv',
-          name: 'Movie Hindi Dub 1080p');
+        addon: 'NewAddon',
+        url: 'https://new/x/h.mkv',
+        name: 'Movie Hindi Dub 1080p',
+      );
       final english = _src(
-          addon: 'KnownGood',
-          url: 'https://known/x/e.mkv',
-          name: 'Movie 1080p BluRay');
+        addon: 'KnownGood',
+        url: 'https://known/x/e.mkv',
+        name: 'Movie 1080p BluRay',
+      );
       const ctx = RankerContext(
         lastGoodByAddon: {'KnownGood': 'x'},
         preferredLang: 'hindi',
@@ -117,10 +116,11 @@ void main() {
     test('english mode: no language boost changes baseline order', () {
       final a = _src(url: 'https://x/a.mkv', name: '1080p');
       final b = _src(url: 'https://x/b.mkv', name: '720p');
-      final plain = SourceRanker.order(
-          [b, a], const RankerContext(preferredLang: 'eng'));
-      final noLang =
-          SourceRanker.order([b, a], const RankerContext());
+      final plain = SourceRanker.order([
+        b,
+        a,
+      ], const RankerContext(preferredLang: 'eng'));
+      final noLang = SourceRanker.order([b, a], const RankerContext());
       expect(
         plain.map(SourceRanker.fingerprint).toList(),
         noLang.map(SourceRanker.fingerprint).toList(),
@@ -135,10 +135,14 @@ void main() {
 
     test('record then addonHistoryFor returns the addon', () async {
       final src = StreamSource(
-          addonName: 'BestAddon', url: 'https://x/y.mkv', name: 'n');
-      await LastGoodSourceStore.record(
-          titleKey: 'imdb:tt1', source: src);
-      final hist = await LastGoodSourceStore.addonHistoryFor(titleKey: 'imdb:tt1');
+        addonName: 'BestAddon',
+        url: 'https://x/y.mkv',
+        name: 'n',
+      );
+      await LastGoodSourceStore.record(titleKey: 'imdb:tt1', source: src);
+      final hist = await LastGoodSourceStore.addonHistoryFor(
+        titleKey: 'imdb:tt1',
+      );
       expect(hist, containsPair('BestAddon', anything));
     });
 
@@ -151,11 +155,19 @@ void main() {
 
     test('episode key recorded alongside title key', () async {
       final src = StreamSource(
-          addonName: 'Ep', url: 'https://x/e.mkv', name: 'n');
+        addonName: 'Ep',
+        url: 'https://x/e.mkv',
+        name: 'n',
+      );
       await LastGoodSourceStore.record(
-          titleKey: 'imdb:tt2', episodeKey: 'imdb:tt2:S1E3', source: src);
+        titleKey: 'imdb:tt2',
+        episodeKey: 'imdb:tt2:S1E3',
+        source: src,
+      );
       final hist = await LastGoodSourceStore.addonHistoryFor(
-          titleKey: 'imdb:tt2', episodeKey: 'imdb:tt2:S1E3');
+        titleKey: 'imdb:tt2',
+        episodeKey: 'imdb:tt2:S1E3',
+      );
       expect(hist.containsKey('Ep'), isTrue);
     });
 

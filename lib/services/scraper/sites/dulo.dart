@@ -32,7 +32,9 @@ class DuloScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[DuloScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[DuloScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -42,7 +44,9 @@ class DuloScraper extends StreamScraper {
 
       await for (final s in stream) {
         final headers = DuloClient.instance.playbackHeaders;
-        final qualityLabel = s.quality.isNotEmpty && s.quality != 'Auto' ? s.quality : '1080p';
+        final qualityLabel = s.quality.isNotEmpty && s.quality != 'Auto'
+            ? s.quality
+            : '1080p';
         final titleLabel = s.title.isNotEmpty ? s.title : 'Stream';
 
         yield StreamSource(
@@ -54,9 +58,7 @@ class DuloScraper extends StreamScraper {
           headers: headers,
           behaviorHints: {
             'notWebReady': false,
-            'proxyHeaders': {
-              'request': headers,
-            },
+            'proxyHeaders': {'request': headers},
           },
         );
       }

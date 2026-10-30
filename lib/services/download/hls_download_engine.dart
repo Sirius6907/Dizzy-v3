@@ -5,13 +5,16 @@ import 'package:flutter/foundation.dart';
 import 'package:pointycastle/export.dart' as pc;
 
 import '../../models/download/download_task_model.dart';
+import '../../utils/download/atomic_file_swap.dart';
 
 class HlsDownloadEngine {
   /// Checks whether a given URL points to an HLS (.m3u8) playlist.
   static bool isHlsUrl(String? url) {
     if (url == null) return false;
     final lower = url.toLowerCase();
-    return lower.contains('.m3u8') || lower.contains('/playlist/') || lower.contains('/hls/');
+    return lower.contains('.m3u8') ||
+        lower.contains('/playlist/') ||
+        lower.contains('/hls/');
   }
 
   /// Downloads an HLS stream by parsing the playlist, resolving master variants,
@@ -53,7 +56,10 @@ class HlsDownloadEngine {
 
     // Step 2: Handle Master Playlist (choose highest bitrate variant)
     if (initialManifestText.contains('#EXT-X-STREAM-INF')) {
-      final bestVariantUri = _selectBestVariantUri(initialUri, initialManifestText);
+      final bestVariantUri = _selectBestVariantUri(
+        initialUri,
+        initialManifestText,
+      );
       if (bestVariantUri != null) {
         mediaPlaylistUri = bestVariantUri;
         mediaManifestText = await _fetchText(bestVariantUri, headers);
@@ -61,32 +67,54 @@ class HlsDownloadEngine {
     }
 
     // Step 3: Parse Media Playlist segments & encryption
-    final parsedPlaylist = await _parseMediaPlaylist(mediaPlaylistUri, mediaManifestText, headers);
+    final parsedPlaylist = await _parseMediaPlaylist(
+      mediaPlaylistUri,
+      mediaManifestText,
+      headers,
+    );
     final segments = parsedPlaylist.segments;
     if (segments.isEmpty) {
       throw Exception('HLS playlist contains 0 media segments');
     }
 
-    // Step 4: Check if resuming from previous progress
+    // Step 4: Check if resuming from previous progress. The meta is the only
+    // truth: the part file is appended to, so a part length that disagrees
+    // with the recorded count means the tail segment is torn — restart.
     int startSegmentIndex = 0;
-    int totalBytesWritten = 0;
+    int bytesWritten = 0;
+    bool canResume = false;
 
-    if (await metaFile.exists() && await partFile.exists()) {
+    if (metaFile.existsSync() && partFile.existsSync()) {
       try {
         final metaJson = jsonDecode(await metaFile.readAsString());
-        startSegmentIndex = metaJson['lastSegmentIndex'] as int? ?? 0;
-        totalBytesWritten = await partFile.length();
+        final metaIndex = metaJson['lastSegmentIndex'] as int? ?? 0;
+        // Meta written before the counter existed has no bytesWritten: treat
+        // it as 0, which never matches a non-empty part → full restart.
+        final metaBytes = metaJson['bytesWritten'] as int? ?? 0;
+        if (metaIndex > 0 &&
+            metaBytes > 0 &&
+            partFile.lengthSync() == metaBytes) {
+          startSegmentIndex = metaIndex;
+          bytesWritten = metaBytes;
+          canResume = true;
+        } else {
+          await partFile.delete();
+        }
       } catch (_) {}
     }
 
-    final mode = (startSegmentIndex > 0 && await partFile.exists()) ? FileMode.append : FileMode.write;
-    final sink = partFile.openWrite(mode: mode);
+    final sink = partFile.openWrite(
+      mode: canResume ? FileMode.append : FileMode.write,
+    );
 
     // If starting fresh and init segment exists (fMP4), write it first
     if (startSegmentIndex == 0 && parsedPlaylist.initSegmentUri != null) {
-      final initBytes = await _fetchBytes(parsedPlaylist.initSegmentUri!, headers);
+      final initBytes = await _fetchBytes(
+        parsedPlaylist.initSegmentUri!,
+        headers,
+      );
       sink.add(initBytes);
-      totalBytesWritten += initBytes.length;
+      bytesWritten += initBytes.length;
     }
 
     int bytesInLastSecond = 0;
@@ -105,15 +133,19 @@ class HlsDownloadEngine {
 
         // Decrypt if AES-128 encrypted
         if (segment.encryptionKey != null) {
-          chunkBytes = _decryptAes128(chunkBytes, segment.encryptionKey!, segment.iv);
+          chunkBytes = _decryptAes128(
+            chunkBytes,
+            segment.encryptionKey!,
+            segment.iv,
+          );
         }
 
         sink.add(chunkBytes);
-        totalBytesWritten += chunkBytes.length;
+        bytesWritten += chunkBytes.length;
         bytesInLastSecond += chunkBytes.length;
 
         // Estimate total bytes from average chunk size
-        final avgChunkSize = totalBytesWritten / (i + 1);
+        final avgChunkSize = bytesWritten / (i + 1);
         final estimatedTotalBytes = (avgChunkSize * segments.length).round();
 
         // Calculate speed & ETA
@@ -128,45 +160,51 @@ class HlsDownloadEngine {
         }
 
         int? eta;
-        if (speed > 0 && estimatedTotalBytes > totalBytesWritten) {
-          eta = ((estimatedTotalBytes - totalBytesWritten) / speed).ceil();
+        if (speed > 0 && estimatedTotalBytes > bytesWritten) {
+          eta = ((estimatedTotalBytes - bytesWritten) / speed).ceil();
         }
 
-        // Save progress metadata
-        await metaFile.writeAsString(jsonEncode({
-          'lastSegmentIndex': i + 1,
-          'totalSegments': segments.length,
-          'bytesWritten': totalBytesWritten,
-        }));
+        // Flush before recording progress: the meta promises the bytes are on
+        // disk, and a resume trusts that promise.
+        await sink.flush();
+        await metaFile.writeAsString(
+          jsonEncode({
+            'lastSegmentIndex': i + 1,
+            'totalSegments': segments.length,
+            'bytesWritten': bytesWritten,
+          }),
+        );
 
-        onProgress(task.copyWith(
-          status: DownloadStatus.downloading,
-          receivedBytes: totalBytesWritten,
-          totalBytes: estimatedTotalBytes,
-          speedBytesPerSec: speed,
-          etaSeconds: eta,
-        ));
+        onProgress(
+          task.copyWith(
+            status: DownloadStatus.downloading,
+            receivedBytes: bytesWritten,
+            totalBytes: estimatedTotalBytes,
+            speedBytesPerSec: speed,
+            etaSeconds: eta,
+          ),
+        );
       }
 
       await sink.flush();
       await sink.close();
 
-      // Rename .part to targetFilePath
-      final finalFile = File(task.targetFilePath);
-      if (await finalFile.exists()) await finalFile.delete();
-      await partFile.rename(task.targetFilePath);
+      // Promote .part to the target, restoring any previous file on failure.
+      await promoteFile(partFile, task.targetFilePath);
 
       // Clean up metadata
       if (await metaFile.exists()) await metaFile.delete();
 
-      onProgress(task.copyWith(
-        status: DownloadStatus.completed,
-        receivedBytes: totalBytesWritten,
-        totalBytes: totalBytesWritten,
-        speedBytesPerSec: 0.0,
-        etaSeconds: 0,
-        completedAt: DateTime.now(),
-      ));
+      onProgress(
+        task.copyWith(
+          status: DownloadStatus.completed,
+          receivedBytes: bytesWritten,
+          totalBytes: bytesWritten,
+          speedBytesPerSec: 0.0,
+          etaSeconds: 0,
+          completedAt: DateTime.now(),
+        ),
+      );
     } catch (e) {
       try {
         await sink.flush();
@@ -267,12 +305,14 @@ class HlsDownloadEngine {
               bd.setUint64(8, sequence, Endian.big);
             }
 
-            segments.add(_HlsSegment(
-              uri: segUri,
-              encryptionKey: currentKeyBytes,
-              iv: segIv,
-              sequenceNumber: sequence,
-            ));
+            segments.add(
+              _HlsSegment(
+                uri: segUri,
+                encryptionKey: currentKeyBytes,
+                iv: segIv,
+                sequenceNumber: sequence,
+              ),
+            );
             sequence++;
             i = j;
             break;
@@ -306,7 +346,10 @@ class HlsDownloadEngine {
     }
   }
 
-  static Future<Uint8List> _fetchBytes(Uri uri, Map<String, String> headers) async {
+  static Future<Uint8List> _fetchBytes(
+    Uri uri,
+    Map<String, String> headers,
+  ) async {
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 20);
     try {
@@ -314,7 +357,9 @@ class HlsDownloadEngine {
       headers.forEach((k, v) => req.headers.set(k, v));
       final res = await req.close();
       if (res.statusCode != 200 && res.statusCode != 206) {
-        throw Exception('Failed to fetch segment ${uri.path}: HTTP ${res.statusCode}');
+        throw Exception(
+          'Failed to fetch segment ${uri.path}: HTTP ${res.statusCode}',
+        );
       }
       final bytes = await res.fold<List<int>>([], (p, e) => p..addAll(e));
       return Uint8List.fromList(bytes);
@@ -325,7 +370,11 @@ class HlsDownloadEngine {
 
   // ── Crypto Helpers ─────────────────────────────────────────────────────────
 
-  static Uint8List _decryptAes128(Uint8List encrypted, Uint8List key, Uint8List? iv) {
+  static Uint8List _decryptAes128(
+    Uint8List encrypted,
+    Uint8List key,
+    Uint8List? iv,
+  ) {
     try {
       final effectiveIv = iv ?? Uint8List(16);
       final cipher = pc.CBCBlockCipher(pc.AESEngine());
@@ -341,7 +390,10 @@ class HlsDownloadEngine {
       // If PKCS7 unpadding fails, return raw or decrypted blocks directly
       try {
         final cipher = pc.CBCBlockCipher(pc.AESEngine());
-        final params = pc.ParametersWithIV(pc.KeyParameter(key), iv ?? Uint8List(16));
+        final params = pc.ParametersWithIV(
+          pc.KeyParameter(key),
+          iv ?? Uint8List(16),
+        );
         cipher.init(false, params);
         final out = Uint8List(encrypted.length);
         for (int offset = 0; offset < encrypted.length; offset += 16) {
@@ -385,8 +437,5 @@ class _ParsedMediaPlaylist {
   final List<_HlsSegment> segments;
   final Uri? initSegmentUri;
 
-  const _ParsedMediaPlaylist({
-    required this.segments,
-    this.initSegmentUri,
-  });
+  const _ParsedMediaPlaylist({required this.segments, this.initSegmentUri});
 }

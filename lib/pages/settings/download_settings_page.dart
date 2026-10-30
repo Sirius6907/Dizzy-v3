@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import 'package:dizzy/services/download/download_prefs.dart';
 
@@ -10,13 +12,19 @@ class DownloadSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+
     return OfflineAwareScaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -30,23 +38,23 @@ class DownloadSettingsPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             children: [
-              DizzyTactileCard(
+              PrismCard(
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Download Settings',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: ink,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Manage where files are saved and how downloads behave.',
-                      style: TextStyle(color: Colors.white60, fontSize: 13),
+                      style: TextStyle(color: inkSoft, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     _buildSettingRow(
@@ -91,14 +99,21 @@ class DownloadSettingsPage extends StatelessWidget {
     String subtitle,
     IconData trailing,
   ) {
-    return DizzyTactileCard(
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return PrismCard(
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08),
+          ),
         ),
         child: Row(
           children: [
@@ -118,8 +133,8 @@ class DownloadSettingsPage extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: ink,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -127,12 +142,16 @@ class DownloadSettingsPage extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    style: TextStyle(color: inkSoft, fontSize: 12),
                   ),
                 ],
               ),
             ),
-            Icon(trailing, color: Colors.white54, size: 16),
+            Icon(
+              trailing,
+              color: isLight ? PrismLight.inkFaint : Colors.white54,
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -185,23 +204,26 @@ class _WifiOnlyCardState extends State<_WifiOnlyCard> {
 
   @override
   Widget build(BuildContext context) {
-    return DizzyTactileCard(
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return PrismCard(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: SwitchListTile.adaptive(
         value: _wifiOnly,
         onChanged: _loaded ? _set : null,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-        title: const Text(
+        title: Text(
           'Wi-Fi only downloads',
           style: TextStyle(
-            color: Colors.white,
+            color: ink,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
         ),
-        subtitle: const Text(
+        subtitle: Text(
           'Big files wait until you are on Wi-Fi',
-          style: TextStyle(color: Colors.white60, fontSize: 12),
+          style: TextStyle(color: inkSoft, fontSize: 12),
         ),
       ),
     );

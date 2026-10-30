@@ -90,16 +90,14 @@ class MegaPlayExtractor {
       };
 
       final playerResponse = await _client
-          .get(
-            Uri.parse(playerUrl),
-            headers: playerHeaders,
-          )
+          .get(Uri.parse(playerUrl), headers: playerHeaders)
           .timeout(const Duration(seconds: 12));
 
       if (playerResponse.statusCode != 200) {
         if (kDebugMode) {
           debugPrint(
-              '[MegaPlay] Failed player HTML: ${playerResponse.statusCode}');
+            '[MegaPlay] Failed player HTML: ${playerResponse.statusCode}',
+          );
         }
         return null;
       }
@@ -107,7 +105,8 @@ class MegaPlayExtractor {
       var html = playerResponse.body;
       var doc = html_parser.parse(html);
 
-      var dataId = doc.getElementById('megaplay-player')?.attributes['data-id'] ??
+      var dataId =
+          doc.getElementById('megaplay-player')?.attributes['data-id'] ??
           doc.querySelector('[data-id]')?.attributes['data-id'];
       var currentDomain = baseUrl;
       var currentReferer = playerUrl;
@@ -119,8 +118,8 @@ class MegaPlayExtractor {
             iframeSrc.startsWith('//')
                 ? 'https:$iframeSrc'
                 : (iframeSrc.startsWith('http')
-                    ? iframeSrc
-                    : '$baseUrl$iframeSrc'),
+                      ? iframeSrc
+                      : '$baseUrl$iframeSrc'),
           );
           currentDomain = '${iframeUri.scheme}://${iframeUri.host}';
           currentReferer = iframeUri.toString();
@@ -171,16 +170,14 @@ class MegaPlayExtractor {
       };
 
       final sourcesRes = await _client
-          .get(
-            Uri.parse(sourcesUrl),
-            headers: sourcesHeaders,
-          )
+          .get(Uri.parse(sourcesUrl), headers: sourcesHeaders)
           .timeout(const Duration(seconds: 12));
 
       if (sourcesRes.statusCode != 200) {
         if (kDebugMode) {
           debugPrint(
-              '[MegaPlay] Failed sources response: ${sourcesRes.statusCode}');
+            '[MegaPlay] Failed sources response: ${sourcesRes.statusCode}',
+          );
         }
         return null;
       }

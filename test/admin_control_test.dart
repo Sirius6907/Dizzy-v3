@@ -7,7 +7,8 @@ void main() {
   group('RemoteConfigService.parseKillMap', () {
     test('parses kill map keys lowercase', () {
       final kill = RemoteConfigService.parseKillMap(
-          '{"VidFast": "dead", "VIDGOD": "down"}');
+        '{"VidFast": "dead", "VIDGOD": "down"}',
+      );
       expect(kill, {'vidfast', 'vidgod'});
     });
 
@@ -22,8 +23,9 @@ void main() {
     test('missing key returns fallback', () {
       expect(RemoteConfigService.featureEnabled('nope'), isTrue);
       expect(
-          RemoteConfigService.featureEnabled('nope', fallback: false),
-          isFalse);
+        RemoteConfigService.featureEnabled('nope', fallback: false),
+        isFalse,
+      );
     });
   });
 

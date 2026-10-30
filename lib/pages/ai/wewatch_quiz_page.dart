@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../utils/perf/image_caps.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 
 import '../../models/movie/movie.dart';
 import '../../services/addon/addon_manager.dart';
@@ -80,16 +81,19 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
       return;
     }
 
-    _searchDebouncers[index] = Timer(const Duration(milliseconds: 300), () async {
-      if (!mounted) return;
-      setState(() => _isSearching[index] = true);
-      final results = await WeWatchService.searchMedia(trimmed);
-      if (!mounted) return;
-      setState(() {
-        _searchResults[index] = results;
-        _isSearching[index] = false;
-      });
-    });
+    _searchDebouncers[index] = Timer(
+      const Duration(milliseconds: 300),
+      () async {
+        if (!mounted) return;
+        setState(() => _isSearching[index] = true);
+        final results = await WeWatchService.searchMedia(trimmed);
+        if (!mounted) return;
+        setState(() {
+          _searchResults[index] = results;
+          _isSearching[index] = false;
+        });
+      },
+    );
   }
 
   void _selectMedia(int index, WeWatchMediaItem item) {
@@ -219,13 +223,18 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
 
     Future.delayed(const Duration(milliseconds: 1400), () {
       if (mounted && _isGenerating) {
-        setState(() => _generationStep = 'Finding high-precision cinema matches...');
+        setState(
+          () => _generationStep = 'Finding high-precision cinema matches...',
+        );
       }
     });
 
     Future.delayed(const Duration(milliseconds: 3200), () {
       if (mounted && _isGenerating) {
-        setState(() => _generationStep = 'Polishing your personalized recommendations...');
+        setState(
+          () => _generationStep =
+              'Polishing your personalized recommendations...',
+        );
       }
     });
 
@@ -247,7 +256,9 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
 
   void _openDetails(WeWatchRecommendation rec) async {
     try {
-      final searchResults = await AddonManager.instance.searchAll('${rec.title} ${rec.year ?? ''}');
+      final searchResults = await AddonManager.instance.searchAll(
+        '${rec.title} ${rec.year ?? ''}',
+      );
       Movie? matchedMovie;
 
       for (final sec in searchResults) {
@@ -260,7 +271,8 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
         if (matchedMovie != null) break;
       }
 
-      matchedMovie ??= (searchResults.isNotEmpty && searchResults.first.movies.isNotEmpty)
+      matchedMovie ??=
+          (searchResults.isNotEmpty && searchResults.first.movies.isNotEmpty)
           ? searchResults.first.movies.first
           : Movie(
               id: 'tmdb:${rec.tmdbId}',
@@ -293,9 +305,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
       body: Stack(
         children: [
           // Ambient Wallpaper & Animated Glow Layer
-          const Positioned.fill(
-            child: AnimatedAmbientBackground(),
-          ),
+          const Positioned.fill(child: AnimatedAmbientBackground()),
 
           // Main Scrollable Content
           SafeArea(
@@ -309,8 +319,8 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                       child: _isGenerating
                           ? _buildCinematicLoadingView(palette)
                           : (_recommendations != null
-                              ? _buildRecommendationsView(palette, isMobile)
-                              : _buildQuizForm(palette, isMobile)),
+                                ? _buildRecommendationsView(palette, isMobile)
+                                : _buildQuizForm(palette, isMobile)),
                     ),
                   ],
                 ),
@@ -326,19 +336,24 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
     // P6 narrow compact: 360px pe back button + AI pill + title ek line me
     // nahi samate. Compact mode: info pill chhupta hai, title chhota hota hai.
     final narrow = MediaQuery.sizeOf(context).width < 420;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final accentText = isLight ? PrismAccent.text(true) : palette.primaryColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: palette.appBarBackgroundColor.withValues(alpha: 0.7),
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-        ),
+        border: Border(bottom: BorderSide(color: hairline)),
       ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: ink, size: 20),
             tooltip: 'Go back',
             splashRadius: 20,
             onPressed: () => Navigator.pop(context),
@@ -350,19 +365,21 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
               decoration: BoxDecoration(
                 color: palette.primaryColor.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: palette.primaryColor.withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.auto_awesome_rounded, size: 14, color: palette.primaryColor),
+                  Icon(Icons.auto_awesome_rounded, size: 14, color: accentText),
                   const SizedBox(width: 5),
                   Text(
                     'AI TASTE MATCH',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
-                      color: palette.primaryColor,
+                      color: accentText,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -377,7 +394,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white,
+                color: ink,
                 fontSize: narrow ? 16 : 17,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
@@ -387,11 +404,17 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
           if (_recommendations != null)
             TextButton.icon(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.white70,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                foregroundColor: inkSoft,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Retake', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Retake',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
               onPressed: () => setState(() => _recommendations = null),
             ),
         ],
@@ -402,13 +425,24 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
   Widget _buildQuizForm(AppThemePalette palette, bool isMobile) {
     final rated = _ratedCount;
     final progress = (rated / 3.0).clamp(0.0, 1.0);
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.surface3;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.15);
 
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 20, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 20,
+        vertical: 16,
+      ),
       children: [
         // Taste Profile Header Card
-        DizzyTactileCard(
+        PrismCard(
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,32 +450,35 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'What do you like to watch?',
                     style: TextStyle(
-                      color: DizzyVoid.bone,
+                      color: ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.3,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _canSubmit
                           ? DizzyGlow.volt.withValues(alpha: 0.18)
-                          : DizzyVoid.surface3,
+                          : well,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _canSubmit
                             ? DizzyGlow.volt.withValues(alpha: 0.4)
-                            : DizzyEdge.hairline.color,
+                            : hairline,
                       ),
                     ),
                     child: Text(
                       '$rated/3 rated',
                       style: TextStyle(
-                        color: _canSubmit ? DizzyGlow.volt : DizzyVoid.ash,
+                        color: _canSubmit ? PrismAccent.text(isLight) : inkSoft,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
                       ),
@@ -450,13 +487,9 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                 ],
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Rate 3 or more movies or TV shows. Choose what you liked or disliked, and select key elements to generate pinpoint AI recommendations.',
-                style: TextStyle(
-                  color: DizzyVoid.ash,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
+                style: TextStyle(color: inkSoft, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 14),
 
@@ -466,7 +499,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 5,
-                  backgroundColor: DizzyVoid.surface3,
+                  backgroundColor: well,
                   valueColor: AlwaysStoppedAnimation(
                     _canSubmit ? DizzyGlow.volt : palette.primaryColor,
                   ),
@@ -484,18 +517,26 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
             decoration: BoxDecoration(
               color: Colors.redAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
+              border: Border.all(
+                color: Colors.redAccent.withValues(alpha: 0.35),
+              ),
             ),
             child: Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(height: 14),
         ],
 
         // Movie/Show Input Cards
-        ..._picks.asMap().entries.map((entry) => _buildPickCard(entry.key, entry.value, palette, isMobile)),
+        ..._picks.asMap().entries.map(
+          (entry) => _buildPickCard(entry.key, entry.value, palette, isMobile),
+        ),
 
         const SizedBox(height: 12),
 
@@ -504,13 +545,21 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
           Center(
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                foregroundColor: ink,
+                side: BorderSide(color: hairline),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Another Title', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              label: const Text(
+                'Add Another Title',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
               onPressed: _addAnotherTitle,
             ),
           ),
@@ -520,10 +569,14 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
         // Generate Recommendations Action
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: _canSubmit ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
-            foregroundColor: _canSubmit ? Colors.white : Colors.white38,
+            backgroundColor: _canSubmit
+                ? palette.primaryColor
+                : (isLight ? PrismLight.raisedBottom : well),
+            foregroundColor: _canSubmit ? PrismAccent.onAccent : inkFaint,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             elevation: _canSubmit ? 4 : 0,
           ),
           onPressed: _canSubmit ? _generateRecommendations : null,
@@ -533,12 +586,17 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
               Icon(
                 Icons.auto_awesome_rounded,
                 size: 18,
-                color: _canSubmit ? Colors.white : Colors.white38,
+                color: _canSubmit ? PrismAccent.onAccent : inkFaint,
               ),
               const SizedBox(width: 8),
               Text(
-                _canSubmit ? 'Discover Recommendations ($rated Titles)' : 'Rate 3 Titles to Unlock Recommendations',
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+                _canSubmit
+                    ? 'Discover Recommendations ($rated Titles)'
+                    : 'Rate 3 Titles to Unlock Recommendations',
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
@@ -549,14 +607,30 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
     );
   }
 
-  Widget _buildPickCard(int index, WeWatchUserPick pick, AppThemePalette palette, bool isMobile) {
+  Widget _buildPickCard(
+    int index,
+    WeWatchUserPick pick,
+    AppThemePalette palette,
+    bool isMobile,
+  ) {
     final hasSelectedMedia = pick.title.isNotEmpty;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.35);
+    final panel = isLight ? PrismLight.raisedTop : DizzyVoid.voidB;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.voidB;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.1);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.all(16),
-        borderColor: pick.isValid ? palette.primaryColor.withValues(alpha: 0.4) : DizzyEdge.hairline.color,
+        glowColor: pick.isValid ? palette.primaryColor : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -570,18 +644,20 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                       width: 22,
                       height: 22,
                       decoration: BoxDecoration(
-                        color: pick.isValid
-                            ? palette.primaryColor
-                            : DizzyVoid.surface3,
+                        color: pick.isValid ? palette.primaryColor : well,
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: pick.isValid
-                            ? const Icon(Icons.check_rounded, size: 13, color: DizzyVoid.bone)
+                            ? const Icon(
+                                Icons.check_rounded,
+                                size: 13,
+                                color: PrismAccent.onAccent,
+                              )
                             : Text(
                                 '${index + 1}',
-                                style: const TextStyle(
-                                  color: DizzyVoid.ash,
+                                style: TextStyle(
+                                  color: inkSoft,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -591,20 +667,23 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                     const SizedBox(width: 10),
                     Text(
                       hasSelectedMedia ? pick.title : 'Title #${index + 1}',
-                      style: const TextStyle(
-                        color: DizzyVoid.bone,
+                      style: TextStyle(
+                        color: ink,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     if (pick.year != null && pick.year!.isNotEmpty) ...[
                       const SizedBox(width: 6),
-                      Text('(${pick.year})', style: const TextStyle(color: DizzyVoid.ash, fontSize: 13)),
+                      Text(
+                        '(${pick.year})',
+                        style: TextStyle(color: inkSoft, fontSize: 13),
+                      ),
                     ],
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18, color: DizzyVoid.ash),
+                  icon: Icon(Icons.close_rounded, size: 18, color: inkSoft),
                   splashRadius: 18,
                   onPressed: () => _removeTitle(index),
                 ),
@@ -617,314 +696,406 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
             if (!hasSelectedMedia) ...[
               Container(
                 decoration: BoxDecoration(
-                  color: DizzyVoid.voidB.withValues(alpha: 0.8),
+                  color: well,
                   borderRadius: BorderRadius.circular(DizzyRadius.md),
-                  border: Border.all(color: DizzyEdge.hairline.color),
+                  border: Border.all(color: hairline),
                 ),
                 child: TextField(
                   controller: _searchControllers[index],
-                  style: const TextStyle(color: DizzyVoid.bone, fontSize: 14),
+                  style: TextStyle(color: ink, fontSize: 14),
                   onChanged: (q) => _onSearchChanged(index, q),
                   decoration: InputDecoration(
                     hintText: 'Search movie or TV series...',
-                    hintStyle: TextStyle(color: DizzyVoid.ash.withValues(alpha: 0.35), fontSize: 13),
-                    prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor, size: 18),
+                    hintStyle: TextStyle(color: inkFaint, fontSize: 13),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: palette.primaryColor,
+                      size: 18,
+                    ),
                     suffixIcon: (_isSearching[index] ?? false)
                         ? Padding(
                             padding: const EdgeInsets.all(12),
                             child: SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: palette.primaryColor),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: palette.primaryColor,
+                              ),
                             ),
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ),
 
-                  // Search Auto-Suggestions Dropdown
-                  if ((_searchResults[index] ?? []).isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 220),
-                      decoration: BoxDecoration(
-                        color: DizzyVoid.voidB,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                      ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _searchResults[index]!.length,
-                        separatorBuilder: (_, __) => Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-                        itemBuilder: (context, rIdx) {
-                          final item = _searchResults[index]![rIdx];
-                          return ListTile(
-                            dense: true,
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: item.posterUrl != null
-                                  ? CachedNetworkImage(
-                                      imageUrl: item.posterUrl!,
-                                      width: 28,
-                                      height: 42,
-                                      fit: BoxFit.cover,
-                                      // P12: 28px thumb must never decode full-res.
-                                      memCacheWidth: ImageCaps.kThumb,
-                                      memCacheHeight: ImageCaps.kThumb,
-                                      maxWidthDiskCache: ImageCaps.kThumb,
-                                    )
-                                  : Container(width: 28, height: 42, color: Colors.white10),
-                            ),
-                            title: Text(
-                              item.title,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                            subtitle: Text(
-                              '${item.year ?? ''} • ${item.mediaType == 'movie' ? 'Movie' : 'TV Series'}',
-                              style: const TextStyle(color: Colors.white54, fontSize: 11),
-                            ),
-                            onTap: () => _selectMedia(index, item),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 10),
-
-                  // Need Ideas Toggle
-                  InkWell(
-                    onTap: () => setState(() => _showStarterPicks[index] = !(_showStarterPicks[index] ?? false)),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.lightbulb_outline_rounded, size: 14, color: palette.primaryColor),
-                          const SizedBox(width: 6),
-                          const Text('Need ideas?', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 4),
-                          Icon(
-                            (_showStarterPicks[index] ?? false)
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            size: 16,
-                            color: Colors.white54,
-                          ),
-                        ],
-                      ),
-                    ),
+              // Search Auto-Suggestions Dropdown
+              if ((_searchResults[index] ?? []).isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 220),
+                  decoration: BoxDecoration(
+                    color: panel,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: hairline),
                   ),
-
-                  // Popular Starter Picks Drawer
-                  if (_showStarterPicks[index] ?? false) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 120,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: WeWatchService.starterPicks.length,
-                        itemBuilder: (context, sIdx) {
-                          final starter = WeWatchService.starterPicks[sIdx];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: InkWell(
-                              onTap: () => _selectStarterPick(index, starter),
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                width: 72,
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.04),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-                                ),
-                                child: Column(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
-                                      child: CachedNetworkImage(
-                                        imageUrl: starter.posterUrl,
-                                        width: 64,
-                                        height: 86,
-                                        fit: BoxFit.cover,
-                                        // P12: capped thumb.
-                                        memCacheWidth: ImageCaps.kThumb,
-                                        memCacheHeight: ImageCaps.kThumb,
-                                        maxWidthDiskCache: ImageCaps.kThumb,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      starter.label,
-                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ] else ...[
-                  // 2. Selected Media: Poster + Sentiment Buttons + Dynamic Reason Pills
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (pick.posterUrl != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: CachedNetworkImage(
-                            imageUrl: pick.posterUrl!,
-                            width: 64,
-                            height: 96,
-                            fit: BoxFit.cover,
-                            // P12: capped thumb.
-                            memCacheWidth: ImageCaps.kThumb,
-                            memCacheHeight: ImageCaps.kThumb,
-                            maxWidthDiskCache: ImageCaps.kThumb,
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _searchResults[index]!.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: hairline),
+                    itemBuilder: (context, rIdx) {
+                      final item = _searchResults[index]![rIdx];
+                      return ListTile(
+                        dense: true,
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: item.posterUrl != null
+                              ? CachedNetworkImage(
+                                  imageUrl: item.posterUrl!,
+                                  width: 28,
+                                  height: 42,
+                                  fit: BoxFit.cover,
+                                  // P12: 28px thumb must never decode full-res.
+                                  memCacheWidth: ImageCaps.kThumb,
+                                  memCacheHeight: ImageCaps.kThumb,
+                                  maxWidthDiskCache: ImageCaps.kThumb,
+                                )
+                              : Container(width: 28, height: 42, color: well),
+                        ),
+                        title: Text(
+                          item.title,
+                          style: TextStyle(
+                            color: ink,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
                         ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'How was your experience with it?',
-                              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Sentiment Selector
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                _buildSentimentButton(index, 'loved', 'Loved it ❤️', palette),
-                                _buildSentimentButton(index, 'liked', 'Liked it 👍', palette),
-                                _buildSentimentButton(index, 'meh', 'It was okay 😐', palette),
-                                _buildSentimentButton(index, 'hated', 'Disliked 👎', palette),
-                              ],
-                            ),
-                          ],
+                        subtitle: Text(
+                          '${item.year ?? ''} • ${item.mediaType == 'movie' ? 'Movie' : 'TV Series'}',
+                          style: TextStyle(color: inkSoft, fontSize: 11),
                         ),
+                        onTap: () => _selectMedia(index, item),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 10),
+
+              // Need Ideas Toggle
+              InkWell(
+                onTap: () => setState(
+                  () => _showStarterPicks[index] =
+                      !(_showStarterPicks[index] ?? false),
+                ),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: well,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: hairline),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 14,
+                        color: PrismAccent.text(isLight),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Need ideas?',
+                        style: TextStyle(
+                          color: ink,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        (_showStarterPicks[index] ?? false)
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 16,
+                        color: inkSoft,
                       ),
                     ],
                   ),
+                ),
+              ),
 
-                  // Dynamic AI Reason Pills
-                  if (pick.sentiment != null) ...[
-                    const SizedBox(height: 14),
-                    const Text(
-                      'What stood out? (Pick key elements or write a note):',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-
-                    Builder(
-                      builder: (context) {
-                        final cacheKey = '${pick.title}_${pick.year}_${pick.sentiment}';
-                        final isLoading = _loadingPills[cacheKey] ?? false;
-                        final pills = _reasonPillsCache[cacheKey] ?? [];
-
-                        if (isLoading && pills.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
+              // Popular Starter Picks Drawer
+              if (_showStarterPicks[index] ?? false) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: WeWatchService.starterPicks.length,
+                    itemBuilder: (context, sIdx) {
+                      final starter = WeWatchService.starterPicks[sIdx];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: InkWell(
+                          onTap: () => _selectStarterPick(index, starter),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 72,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: well,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: hairline),
+                            ),
+                            child: Column(
                               children: [
-                                SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: palette.primaryColor),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: CachedNetworkImage(
+                                    imageUrl: starter.posterUrl,
+                                    width: 64,
+                                    height: 86,
+                                    fit: BoxFit.cover,
+                                    // P12: capped thumb.
+                                    memCacheWidth: ImageCaps.kThumb,
+                                    memCacheHeight: ImageCaps.kThumb,
+                                    maxWidthDiskCache: ImageCaps.kThumb,
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text('Fetching reason tags...', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  starter.label,
+                                  style: TextStyle(
+                                    color: ink,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
                               ],
                             ),
-                          );
-                        }
-
-                        return Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: pills.map((pill) {
-                            final isSelected = pick.selectedPills.contains(pill);
-                            return ChoiceChip(
-                              label: Text(pill),
-                              selected: isSelected,
-                              selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                              backgroundColor: DizzyVoid.voidB.withValues(alpha: 0.6),
-                              labelStyle: TextStyle(
-                                color: isSelected ? palette.primaryColor : Colors.white70,
-                                fontSize: 11.5,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              ),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? palette.primaryColor.withValues(alpha: 0.6)
-                                    : Colors.white.withValues(alpha: 0.08),
-                              ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              onSelected: (_) => _togglePill(index, pill),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // User Comment / Note
-                    TextField(
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      maxLines: 2,
-                      onChanged: (val) => pick.reason = val,
-                      decoration: InputDecoration(
-                        hintText: 'Additional notes or specifics (optional)...',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12),
-                        filled: true,
-                        fillColor: DizzyVoid.voidB.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                          ),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: palette.primaryColor.withValues(alpha: 0.4)),
-                        ),
-                        contentPadding: const EdgeInsets.all(10),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ] else ...[
+              // 2. Selected Media: Poster + Sentiment Buttons + Dynamic Reason Pills
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (pick.posterUrl != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: CachedNetworkImage(
+                        imageUrl: pick.posterUrl!,
+                        width: 64,
+                        height: 96,
+                        fit: BoxFit.cover,
+                        // P12: capped thumb.
+                        memCacheWidth: ImageCaps.kThumb,
+                        memCacheHeight: ImageCaps.kThumb,
+                        maxWidthDiskCache: ImageCaps.kThumb,
                       ),
                     ),
-],
-                ],
-              ],
-            ),
-          ),
-        );
-      }
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'How was your experience with it?',
+                          style: TextStyle(
+                            color: inkSoft,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-  Widget _buildSentimentButton(int index, String value, String label, AppThemePalette palette) {
+                        // Sentiment Selector
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _buildSentimentButton(
+                              index,
+                              'loved',
+                              'Loved it ❤️',
+                              palette,
+                            ),
+                            _buildSentimentButton(
+                              index,
+                              'liked',
+                              'Liked it 👍',
+                              palette,
+                            ),
+                            _buildSentimentButton(
+                              index,
+                              'meh',
+                              'It was okay 😐',
+                              palette,
+                            ),
+                            _buildSentimentButton(
+                              index,
+                              'hated',
+                              'Disliked 👎',
+                              palette,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Dynamic AI Reason Pills
+              if (pick.sentiment != null) ...[
+                const SizedBox(height: 14),
+                Text(
+                  'What stood out? (Pick key elements or write a note):',
+                  style: TextStyle(
+                    color: inkSoft,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                Builder(
+                  builder: (context) {
+                    final cacheKey =
+                        '${pick.title}_${pick.year}_${pick.sentiment}';
+                    final isLoading = _loadingPills[cacheKey] ?? false;
+                    final pills = _reasonPillsCache[cacheKey] ?? [];
+
+                    if (isLoading && pills.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: palette.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Fetching reason tags...',
+                              style: TextStyle(color: inkSoft, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: pills.map((pill) {
+                        final isSelected = pick.selectedPills.contains(pill);
+                        return ChoiceChip(
+                          label: Text(pill),
+                          selected: isSelected,
+                          selectedColor: palette.primaryColor.withValues(
+                            alpha: 0.25,
+                          ),
+                          backgroundColor: well,
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? PrismAccent.text(isLight)
+                                : inkSoft,
+                            fontSize: 11.5,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                          side: BorderSide(
+                            color: isSelected
+                                ? palette.primaryColor.withValues(alpha: 0.6)
+                                : hairline,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          onSelected: (_) => _togglePill(index, pill),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // User Comment / Note
+                TextField(
+                  style: TextStyle(color: ink, fontSize: 13),
+                  maxLines: 2,
+                  onChanged: (val) => pick.reason = val,
+                  decoration: InputDecoration(
+                    hintText: 'Additional notes or specifics (optional)...',
+                    hintStyle: TextStyle(color: inkFaint, fontSize: 12),
+                    filled: true,
+                    fillColor: well,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: hairline),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: hairline),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: palette.primaryColor.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(10),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSentimentButton(
+    int index,
+    String value,
+    String label,
+    AppThemePalette palette,
+  ) {
     final isSelected = _picks[index].sentiment == value;
+    final isLight = palette.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.voidB;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.1);
 
     return InkWell(
       onTap: () => _setSentiment(index, value),
@@ -932,17 +1103,19 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? palette.primaryColor.withValues(alpha: 0.22) : DizzyVoid.voidB.withValues(alpha: 0.6),
+          color: isSelected
+              ? palette.primaryColor.withValues(alpha: 0.22)
+              : well,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
+            color: isSelected ? palette.primaryColor : hairline,
             width: isSelected ? 1.4 : 1.0,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? PrismAccent.text(isLight) : inkSoft,
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
           ),
@@ -952,12 +1125,16 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
   }
 
   Widget _buildCinematicLoadingView(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: DizzyTactileCard(
+        child: PrismCard(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-          borderColor: palette.primaryColor.withValues(alpha: 0.3),
+          glowColor: palette.primaryColor,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -972,13 +1149,17 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
               const SizedBox(height: 24),
               Text(
                 _generationStep,
-                style: const TextStyle(color: DizzyVoid.bone, fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Synthesizing taste vectors with multi-signal AI...',
-                style: TextStyle(color: DizzyVoid.ash, fontSize: 12.5),
+                style: TextStyle(color: inkSoft, fontSize: 12.5),
               ),
             ],
           ),
@@ -989,10 +1170,22 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
 
   Widget _buildRecommendationsView(AppThemePalette palette, bool isMobile) {
     final recs = _recommendations!;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.surface2;
+    final accentText = PrismAccent.text(isLight);
+    final successText = isLight
+        ? PrismAccent.successTextLight
+        : const Color(0xFF10B981);
+    final starText = isLight ? PrismAccent.starTextLight : DizzyGlow.gold;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 20, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 20,
+        vertical: 16,
+      ),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1000,14 +1193,19 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Your Personalized Matches',
-                  style: TextStyle(color: DizzyVoid.bone, fontSize: 19, fontWeight: FontWeight.w900, letterSpacing: -0.3),
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${recs.length} cinema picks tailored to your taste profile',
-                  style: const TextStyle(color: DizzyVoid.ash, fontSize: 12.5),
+                  style: TextStyle(color: inkSoft, fontSize: 12.5),
                 ),
               ],
             ),
@@ -1020,7 +1218,7 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
         ...recs.map((rec) {
           return Container(
             margin: const EdgeInsets.only(bottom: 14),
-            child: DizzyTactileCard(
+            child: PrismCard(
               padding: const EdgeInsets.all(14),
               child: InkWell(
                 onTap: () => _openDetails(rec),
@@ -1045,113 +1243,134 @@ class _WeWatchQuizPageState extends State<WeWatchQuizPage> {
                           : Container(
                               width: isMobile ? 80 : 96,
                               height: isMobile ? 120 : 144,
-                              color: DizzyVoid.surface2,
+                              color: well,
                             ),
-                        ),
-                        const SizedBox(width: 14),
+                    ),
+                    const SizedBox(width: 14),
 
-                        // Movie Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    // Movie Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      rec.title,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                              Expanded(
+                                child: Text(
+                                  rec.title,
+                                  style: TextStyle(
+                                    color: ink,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF10B981).withValues(alpha: 0.18),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
-                                    ),
-                                    child: Text(
-                                      '${rec.matchConfidence}% MATCH',
-                                      style: const TextStyle(
-                                        color: Color(0xFF10B981),
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (isLight
+                                              ? PrismAccent.successTextLight
+                                              : const Color(0xFF10B981))
+                                          .withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color:
+                                        (isLight
+                                                ? PrismAccent.successTextLight
+                                                : const Color(0xFF10B981))
+                                            .withValues(alpha: 0.4),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  if (rec.year != null)
-                                    Text(rec.year!, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                                  if (rec.mediaType.isNotEmpty) ...[
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '•  ${rec.mediaType == 'movie' ? 'Movie' : 'TV Series'}',
-                                      style: const TextStyle(color: Colors.white54, fontSize: 12),
-                                    ),
-                                  ],
-                                  if (rec.voteAverage != null) ...[
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '•  ★ ${rec.voteAverage!.toStringAsFixed(1)}',
-                                      style: const TextStyle(
-                                        color: DizzyGlow.gold,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Why it fits
-                              Text(
-                                rec.reasoning,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 12,
-                                  height: 1.35,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 6),
-
-                              // Match Explanation
-                              Text(
-                                rec.matchExplanation,
-                                style: TextStyle(
-                                  color: palette.accentColor,
-                                  fontSize: 11.5,
-                                  fontStyle: FontStyle.italic,
+                                child: Text(
+                                  '${rec.matchConfidence}% MATCH',
+                                  style: TextStyle(
+                                    color: successText,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                        ),
-                        ],
-                    ),
-                  ),
-              ),
-            );
-          }),
-          const SizedBox(height: 30),
-        ],
-      );
-    }
-  }
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (rec.year != null)
+                                Text(
+                                  rec.year!,
+                                  style: TextStyle(
+                                    color: inkSoft,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              if (rec.mediaType.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  '•  ${rec.mediaType == 'movie' ? 'Movie' : 'TV Series'}',
+                                  style: TextStyle(
+                                    color: inkSoft,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                              if (rec.voteAverage != null) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  '•  ★ ${rec.voteAverage!.toStringAsFixed(1)}',
+                                  style: TextStyle(
+                                    color: starText,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
 
+                          // Why it fits
+                          Text(
+                            rec.reasoning,
+                            style: TextStyle(
+                              color: inkSoft,
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+
+                          // Match Explanation
+                          Text(
+                            rec.matchExplanation,
+                            style: TextStyle(
+                              color: accentText,
+                              fontSize: 11.5,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 30),
+      ],
+    );
+  }
+}

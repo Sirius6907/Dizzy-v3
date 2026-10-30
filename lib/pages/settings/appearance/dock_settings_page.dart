@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../services/theme/dock_settings.dart';
-import '../../../widgets/common/app_liquid_dock.dart';
+import '../../../widgets/prism/prism_dock.dart';
 
 class DockSettingsPage extends StatefulWidget {
   const DockSettingsPage({super.key});
@@ -13,10 +14,20 @@ class DockSettingsPage extends StatefulWidget {
 class _DockSettingsPageState extends State<DockSettingsPage> {
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white54;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -40,10 +51,10 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                 ),
               );
             },
-            icon: const Icon(Icons.restore_rounded, size: 18, color: Colors.white70),
-            label: const Text(
+            icon: Icon(Icons.restore_rounded, size: 18, color: inkSoft),
+            label: Text(
               'Reset',
-              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
+              style: TextStyle(color: inkSoft, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(width: 8),
@@ -56,16 +67,21 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
                   children: [
                     // Header Description Card
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: DizzyVoid.surface1,
+                        color: panel,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF7C5CFF).withValues(alpha: 0.3),
+                          color: const Color(
+                            0xFF7C5CFF,
+                          ).withValues(alpha: isLight ? 0.22 : 0.3),
                         ),
                       ),
                       child: Row(
@@ -74,7 +90,9 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF7C5CFF).withValues(alpha: 0.15),
+                              color: const Color(
+                                0xFF7C5CFF,
+                              ).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -84,7 +102,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                             ),
                           ),
                           const SizedBox(width: 14),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -93,14 +111,14 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                                    color: ink,
                                   ),
                                 ),
-                                SizedBox(height: 3),
+                                const SizedBox(height: 3),
                                 Text(
                                   'Choose which navigation items appear in your bottom liquid glass dock across all screens. Home & Settings are essential and stay pinned.',
                                   style: TextStyle(
-                                    color: Colors.white54,
+                                    color: inkSoft,
                                     fontSize: 12.5,
                                     height: 1.35,
                                   ),
@@ -119,7 +137,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                       padding: const EdgeInsets.only(left: 4, bottom: 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.tune_rounded, size: 16, color: Colors.white54),
+                          Icon(Icons.tune_rounded, size: 16, color: inkFaint),
                           const SizedBox(width: 8),
                           Text(
                             'NAVIGATION SHORTCUTS',
@@ -127,7 +145,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: inkFaint,
                             ),
                           ),
                         ],
@@ -149,7 +167,10 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                                 isEnabled: isEnabled,
                                 onToggle: (val) async {
                                   if (!item.isRemovable) return;
-                                  await DockSettings.setItemEnabled(item.key, val);
+                                  await DockSettings.setItemEnabled(
+                                    item.key,
+                                    val,
+                                  );
                                   setState(() {});
                                 },
                               ),
@@ -169,12 +190,8 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.only(top: 12, bottom: 20),
                 decoration: BoxDecoration(
-                  color: DizzyVoid.voidB,
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
+                  color: palette.appBarBackgroundColor,
+                  border: Border(top: BorderSide(color: hairline)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -182,14 +199,14 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                     Text(
                       'LIVE DOCK PREVIEW',
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.0,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: inkFaint,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const AppLiquidDock(),
+                    const PrismDock(),
                   ],
                 ),
               ),
@@ -206,17 +223,28 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
     required ValueChanged<bool> onToggle,
   }) {
     final isPinned = !item.isRemovable;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+    final successText = isLight
+        ? PrismAccent.successTextLight
+        : const Color(0xFF34D399);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: panel,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isEnabled
-              ? const Color(0xFF7C5CFF).withValues(alpha: 0.35)
-              : Colors.white.withValues(alpha: 0.06),
+              ? const Color(0xFF7C5CFF).withValues(alpha: isLight ? 0.3 : 0.35)
+              : hairline,
           width: 1,
         ),
       ),
@@ -228,14 +256,14 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
             decoration: BoxDecoration(
               color: isEnabled
                   ? const Color(0xFF7C5CFF).withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.04),
+                  : (isLight
+                        ? PrismLight.raisedBottom
+                        : Colors.white.withValues(alpha: 0.04)),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               item.icon,
-              color: isEnabled
-                  ? const Color(0xFF7C5CFF)
-                  : Colors.white.withValues(alpha: 0.3),
+              color: isEnabled ? const Color(0xFF7C5CFF) : inkFaint,
               size: 20,
             ),
           ),
@@ -251,26 +279,29 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: isEnabled ? Colors.white : Colors.white60,
+                        color: isEnabled ? ink : inkSoft,
                       ),
                     ),
                     if (isPinned) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          color: PrismAccent.success.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                            color: PrismAccent.success.withValues(alpha: 0.3),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'REQUIRED',
                           style: TextStyle(
-                            fontSize: 9.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF34D399),
+                            color: successText,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -281,10 +312,7 @@ class _DockSettingsPageState extends State<DockSettingsPage> {
                 const SizedBox(height: 2),
                 Text(
                   item.description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
+                  style: TextStyle(fontSize: 12, color: inkSoft),
                 ),
               ],
             ),

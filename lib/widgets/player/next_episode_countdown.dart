@@ -70,12 +70,9 @@ class _NextEpisodeCountdownState extends State<NextEpisodeCountdown>
     final ep = widget.nextEpisode;
     final sNum = ep.season ?? 1;
     final eNum = ep.episode ?? 1;
-    final epTitle =
-        ep.title.isNotEmpty ? ep.title : 'Episode $eNum';
+    final epTitle = ep.title.isNotEmpty ? ep.title : 'Episode $eNum';
 
-    final thumb = ep.thumbnail ??
-        widget.backdropUrl ??
-        ep.thumbnail;
+    final thumb = ep.thumbnail ?? widget.backdropUrl ?? ep.thumbnail;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -150,8 +147,9 @@ class _NextEpisodeCountdownState extends State<NextEpisodeCountdown>
                               color: Colors.black.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color:
-                                    palette.primaryColor.withValues(alpha: 0.4),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.4,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -218,12 +216,12 @@ class _NextEpisodeCountdownState extends State<NextEpisodeCountdown>
                                 child: OutlinedButton(
                                   style: OutlinedButton.styleFrom(
                                     side: BorderSide(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
                                     ),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                   onPressed: widget.onCancel,
@@ -280,8 +278,7 @@ class _RingButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: onTap,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -295,8 +292,7 @@ class _RingButton extends StatelessWidget {
                           value: progress.clamp(0.0, 1.0),
                           strokeWidth: 2.5,
                           color: color,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.15),
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
                         ),
                         Center(
                           child: Text(

@@ -20,10 +20,12 @@ class AudiobookWaveformSeekbar extends StatefulWidget {
   });
 
   @override
-  State<AudiobookWaveformSeekbar> createState() => _AudiobookWaveformSeekbarState();
+  State<AudiobookWaveformSeekbar> createState() =>
+      _AudiobookWaveformSeekbarState();
 }
 
-class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> with SingleTickerProviderStateMixin {
+class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar>
+    with SingleTickerProviderStateMixin {
   bool _isDragging = false;
   double _dragProgress = 0.0;
   late final AnimationController _waveAnimController;
@@ -68,7 +70,8 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
   double get _currentProgress {
     if (_isDragging) return _dragProgress;
     if (widget.duration.inMilliseconds <= 0) return 0.0;
-    return (widget.position.inMilliseconds / widget.duration.inMilliseconds).clamp(0.0, 1.0);
+    return (widget.position.inMilliseconds / widget.duration.inMilliseconds)
+        .clamp(0.0, 1.0);
   }
 
   String _formatDuration(Duration d) {
@@ -97,7 +100,10 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
     final posDuration = _isDragging
-        ? Duration(milliseconds: (_dragProgress * widget.duration.inMilliseconds).round())
+        ? Duration(
+            milliseconds: (_dragProgress * widget.duration.inMilliseconds)
+                .round(),
+          )
         : widget.position;
 
     return Column(
@@ -116,7 +122,9 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
                   thumbColor: palette.primaryColor,
                   overlayColor: palette.primaryColor.withValues(alpha: 0.2),
                   trackHeight: 4,
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 7,
+                  ),
                 ),
                 child: Slider(
                   value: _currentProgress,
@@ -177,7 +185,9 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
                           borderRadius: BorderRadius.circular(3),
                           boxShadow: [
                             BoxShadow(
-                              color: palette.primaryColor.withValues(alpha: 0.5),
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.5,
+                              ),
                               blurRadius: 10,
                             ),
                           ],
@@ -185,7 +195,10 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
                       ),
                       // Scrubber Thumb
                       Positioned(
-                        left: (width * _currentProgress - 8).clamp(0.0, width - 16),
+                        left: (width * _currentProgress - 8).clamp(
+                          0.0,
+                          width - 16,
+                        ),
                         child: Container(
                           width: 16,
                           height: 16,
@@ -194,7 +207,9 @@ class _AudiobookWaveformSeekbarState extends State<AudiobookWaveformSeekbar> wit
                             color: Colors.white,
                             boxShadow: [
                               BoxShadow(
-                                color: palette.primaryColor.withValues(alpha: 0.7),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.7,
+                                ),
                                 blurRadius: 8,
                               ),
                             ],
@@ -357,7 +372,11 @@ class _WaveformPainter extends CustomPainter {
     // Thumb dot
     final dotPaint = Paint()..color = primaryColor;
     canvas.drawCircle(Offset(currentX, midY), 4.5, dotPaint);
-    canvas.drawCircle(Offset(currentX, midY), 2.0, Paint()..color = Colors.white);
+    canvas.drawCircle(
+      Offset(currentX, midY),
+      2.0,
+      Paint()..color = Colors.white,
+    );
   }
 
   @override

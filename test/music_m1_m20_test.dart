@@ -67,7 +67,9 @@ void main() {
         ],
       );
 
-      final jsonStr = MusicPlaylistSharingService.instance.exportToJson(playlist);
+      final jsonStr = MusicPlaylistSharingService.instance.exportToJson(
+        playlist,
+      );
       expect(jsonStr.contains('dizzy_playlist_v3'), isTrue);
       expect(jsonStr.contains('Synthwave Neon'), isTrue);
       expect(jsonStr.contains('Turbo Killer'), isTrue);

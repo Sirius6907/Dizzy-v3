@@ -18,37 +18,36 @@ enum DeviceTier { budget, midTier, flagship }
 
 abstract final class PerformanceMode {
   /// Current mitigation level. Written by ResourceGovernor, read by UI/player.
-  static final ValueNotifier<PerfLevel> level =
-      ValueNotifier<PerfLevel>(PerfLevel.normal);
+  static final ValueNotifier<PerfLevel> level = ValueNotifier<PerfLevel>(
+    PerfLevel.normal,
+  );
 
   /// Master kill-switch for the animated ambient background + blur wallpaper.
   /// P2: OFF on caution+, or when the user enables Smooth Mode / Low-End Mode.
-  static final ValueNotifier<bool> ambientAllowed =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> ambientAllowed = ValueNotifier<bool>(true);
 
   /// Master kill-switch for liquid-glass lenses. OFF on critical, or when
   /// the screen already hosts too many lenses (P2 cap), or Smooth Mode / Low-End Mode.
-  static final ValueNotifier<bool> glassAllowed =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> glassAllowed = ValueNotifier<bool>(true);
 
   /// User-facing Smooth Mode (defaults ON on ≤3GB-RAM phones, P17).
   /// Forces ambient OFF + glass OFF + eco player buffers.
-  static final ValueNotifier<bool> smoothMode =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> smoothMode = ValueNotifier<bool>(false);
 
   /// UX3: Adaptive Device Tier detected at runtime.
-  static final ValueNotifier<DeviceTier> deviceTier =
-      ValueNotifier<DeviceTier>(DeviceTier.flagship);
+  static final ValueNotifier<DeviceTier> deviceTier = ValueNotifier<DeviceTier>(
+    DeviceTier.flagship,
+  );
 
   /// UX3: Low-End Device Mode toggle.
   /// Disables heavy Gaussian blurs (solid acrylic fallback) and clamps decode caps.
-  static final ValueNotifier<bool> lowEndDeviceMode =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> lowEndDeviceMode = ValueNotifier<bool>(
+    false,
+  );
 
   /// P33: Target frame rate (60, 90, or 120 FPS).
   /// Set by ResourceGovernor based on device tier and resource level.
-  static final ValueNotifier<int> targetFrameRate =
-      ValueNotifier<int>(120);
+  static final ValueNotifier<int> targetFrameRate = ValueNotifier<int>(120);
 
   /// True on phones with ≤3GB total RAM (set once at startup from
   /// DeviceInfo / /proc/meminfo; defaults to false on unknown).

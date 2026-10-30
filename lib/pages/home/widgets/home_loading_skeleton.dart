@@ -11,8 +11,7 @@ class HomeLoadingSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final heroHeight =
-        screenWidth < DizzyBreakpoints.mobile ? 420.0 : 520.0;
+    final heroHeight = screenWidth < DizzyBreakpoints.mobile ? 420.0 : 520.0;
     return ListView(
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
@@ -62,11 +61,13 @@ class HomeLoadingSkeleton extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: 4,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: DizzySpace.sm),
+              separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.sm),
               itemBuilder: (context, _) => ClipRRect(
                 borderRadius: DizzyRadius.mdAll,
-                child: SizedBox(width: cardWidth, child: const PosterSkeleton()),
+                child: SizedBox(
+                  width: cardWidth,
+                  child: const PosterSkeleton(),
+                ),
               ),
             ),
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../design/prism_shadows.dart';
+import '../../../design/prism_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/home/home_page_settings.dart';
 import '../../../services/player/dub_mode_service.dart';
@@ -12,7 +14,8 @@ class HomeGlassAppBar extends StatelessWidget {
   final void Function(Offset?) onSearchTap;
   final void Function(Offset?) onSettingsTap;
 
-  const HomeGlassAppBar({super.key,
+  const HomeGlassAppBar({
+    super.key,
     required this.topPadding,
     required this.onSearchTap,
     required this.onSettingsTap,
@@ -35,21 +38,26 @@ class HomeGlassAppBar extends StatelessWidget {
           right: narrow ? 4 : 8,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              palette.appBarBackgroundColor.withValues(alpha: 0.95),
-              palette.appBarBackgroundColor.withValues(alpha: 0.85),
-            ],
-          ),
-          border: Border(
-            bottom: BorderSide(
-              color: palette.isMetallic
-                  ? palette.accentColor.withValues(alpha: 0.12)
-                  : Colors.white.withValues(alpha: 0.06),
-            ),
-          ),
+          gradient: palette.isLight
+              // Light clay, not white: the near-white top of the shared clay
+              // gradient read as a blank band against the page.
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFEEF2F8), Color(0xFFE3E8F0)],
+                )
+              : PrismShadows.surfaceGradient(false),
+          boxShadow: PrismShadows.raised(isLight: palette.isLight, scale: 0.6),
+          // Dark keeps the original hairline; light is a solid clay surface.
+          border: palette.isLight
+              ? const Border(
+                  bottom: BorderSide(color: PrismLight.borderSubtle),
+                )
+              : Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
         ),
         child: Row(
           children: [
@@ -63,11 +71,13 @@ class HomeGlassAppBar extends StatelessWidget {
             SizedBox(width: narrow ? 6 : 10),
             ShaderMask(
               shaderCallback: (bounds) => LinearGradient(
-                colors: [
-                  Colors.white,
-                  palette.silverAccent,
-                  const Color(0xFFCBD5E1),
-                ],
+                colors: palette.isLight
+                    ? const [PrismLight.ink, PrismLight.ink]
+                    : [
+                        Colors.white,
+                        palette.silverAccent,
+                        const Color(0xFFCBD5E1),
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
@@ -116,7 +126,9 @@ class HomeGlassAppBar extends StatelessWidget {
                 return IconButton(
                   icon: Icon(
                     Icons.calendar_month_rounded,
-                    color: Colors.white.withValues(alpha: 0.75),
+                    color: palette.isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.75),
                     size: 22,
                   ),
                   tooltip: 'TV Airing Calendar',
@@ -147,25 +159,44 @@ class HomeGlassAppBar extends StatelessWidget {
                           ? 'Hindi Dub mode ON — English pe switch karo'
                           : 'Hindi Dub mode enable karo (Movies & Series)',
                       child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: narrow ? 7 : 10,
-                        vertical: 6,
-                      ),
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: narrow ? 7 : 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: isHindi
                               ? const Color(0xFFFF9933).withValues(alpha: 0.18)
-                              : Colors.white.withValues(alpha: 0.07),
+                              : null,
+                          gradient: isHindi
+                              ? null
+                              : PrismShadows.surfaceGradient(palette.isLight),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isHindi
                                 ? const Color(
                                     0xFFFF9933,
                                   ).withValues(alpha: 0.65)
+                                : palette.isLight
+                                ? PrismLight.borderSubtle
                                 : Colors.white.withValues(alpha: 0.14),
                             width: 1.1,
                           ),
+                          boxShadow: isHindi
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFFF9933,
+                                    ).withValues(alpha: 0.35),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : PrismShadows.raised(
+                                  isLight: palette.isLight,
+                                  scale: 0.4,
+                                ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -184,7 +215,11 @@ class HomeGlassAppBar extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.6,
                                   color: isHindi
-                                      ? const Color(0xFFFFB366)
+                                      ? (palette.isLight
+                                            ? PrismLight.ink
+                                            : const Color(0xFFFFB366))
+                                      : palette.isLight
+                                      ? PrismLight.ink
                                       : Colors.white.withValues(alpha: 0.72),
                                 ),
                               ),
@@ -202,11 +237,12 @@ class HomeGlassAppBar extends StatelessWidget {
             if (narrow)
               PopupMenuButton<int>(
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 icon: Icon(
                   Icons.more_vert_rounded,
-                  color: Colors.white.withValues(alpha: 0.65),
+                  color: palette.isLight
+                      ? PrismLight.inkSoft
+                      : Colors.white.withValues(alpha: 0.65),
                   size: 21,
                 ),
                 tooltip: 'More',
@@ -270,9 +306,7 @@ class HomeGlassAppBar extends StatelessWidget {
                   } else if (value == 1) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const TvCalendarPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const TvCalendarPage()),
                     );
                   } else {
                     final isHindi =
@@ -287,15 +321,18 @@ class HomeGlassAppBar extends StatelessWidget {
             Builder(
               builder: (context) {
                 return IconButton(
-                  visualDensity:
-                      narrow ? VisualDensity.compact : VisualDensity.standard,
+                  visualDensity: narrow
+                      ? VisualDensity.compact
+                      : VisualDensity.standard,
                   padding: narrow ? EdgeInsets.zero : null,
                   constraints: narrow
                       ? const BoxConstraints(minWidth: 36, minHeight: 36)
                       : null,
                   icon: Icon(
                     Icons.search_rounded,
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: palette.isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.65),
                     size: narrow ? 22 : 25,
                   ),
                   onPressed: () {
@@ -312,15 +349,18 @@ class HomeGlassAppBar extends StatelessWidget {
             Builder(
               builder: (context) {
                 return IconButton(
-                  visualDensity:
-                      narrow ? VisualDensity.compact : VisualDensity.standard,
+                  visualDensity: narrow
+                      ? VisualDensity.compact
+                      : VisualDensity.standard,
                   padding: narrow ? EdgeInsets.zero : null,
                   constraints: narrow
                       ? const BoxConstraints(minWidth: 36, minHeight: 36)
                       : null,
                   icon: Icon(
                     Icons.settings_rounded,
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: palette.isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.65),
                     size: narrow ? 21 : 24,
                   ),
                   onPressed: () {
@@ -335,15 +375,18 @@ class HomeGlassAppBar extends StatelessWidget {
             ),
             // Profile
             IconButton(
-              visualDensity:
-                  narrow ? VisualDensity.compact : VisualDensity.standard,
+              visualDensity: narrow
+                  ? VisualDensity.compact
+                  : VisualDensity.standard,
               padding: narrow ? EdgeInsets.zero : null,
               constraints: narrow
                   ? const BoxConstraints(minWidth: 36, minHeight: 36)
                   : null,
               icon: Icon(
                 Icons.person_rounded,
-                color: Colors.white.withValues(alpha: 0.65),
+                color: palette.isLight
+                    ? PrismLight.inkSoft
+                    : Colors.white.withValues(alpha: 0.65),
                 size: narrow ? 21 : 24,
               ),
               tooltip: 'Profile',
@@ -366,4 +409,3 @@ class HomeGlassAppBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Hero Carousel — rotates through a handful of featured titles.
 // ─────────────────────────────────────────────────────────────────────────────
-

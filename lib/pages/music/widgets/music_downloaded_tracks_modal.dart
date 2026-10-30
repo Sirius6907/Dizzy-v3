@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_download_service.dart';
 import '../../../services/music/music_library_service.dart';
@@ -21,10 +22,12 @@ class MusicDownloadedTracksModal extends StatefulWidget {
   });
 
   @override
-  State<MusicDownloadedTracksModal> createState() => _MusicDownloadedTracksModalState();
+  State<MusicDownloadedTracksModal> createState() =>
+      _MusicDownloadedTracksModalState();
 }
 
-class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal> {
+class _MusicDownloadedTracksModalState
+    extends State<MusicDownloadedTracksModal> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -44,10 +47,18 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
 
     final filtered = _searchQuery.isEmpty
         ? allDownloaded
-        : allDownloaded.where((t) =>
-            t.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            t.artist.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            t.album.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+        : allDownloaded
+              .where(
+                (t) =>
+                    t.title.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ||
+                    t.artist.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ||
+                    t.album.toLowerCase().contains(_searchQuery.toLowerCase()),
+              )
+              .toList();
 
     final size = MediaQuery.sizeOf(context);
     final isMobile = size.width < 700;
@@ -61,9 +72,9 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
             width: isMobile ? size.width - 24 : 760,
             height: isMobile ? size.height * 0.88 : 660,
             decoration: BoxDecoration(
-              color: DizzyVoid.surface1,
+              gradient: PrismShadows.surfaceGradient(false),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              boxShadow: PrismShadows.floating(isLight: false),
             ),
             padding: const EdgeInsets.all(22),
             child: Column(
@@ -106,13 +117,19 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                           const SizedBox(height: 2),
                           Text(
                             '${allDownloaded.length} offline tracks • $sizeMb MB storage',
-                            style: const TextStyle(color: Colors.white54, fontSize: 12.5),
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12.5,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                      ),
                       onPressed: widget.onClose,
                     ),
                   ],
@@ -137,49 +154,85 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                         ),
                         onPressed: () {
-                          final tracks = filtered.map((d) => d.toMusicTrack()).toList();
+                          final tracks = filtered
+                              .map((d) => d.toMusicTrack())
+                              .toList();
                           widget.onPlayTrack(tracks.first, tracks);
                         },
                         icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                        label: const Text('Play All', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Play All',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                         ),
                         onPressed: () {
-                          final tracks = filtered.map((d) => d.toMusicTrack()).toList()..shuffle();
+                          final tracks =
+                              filtered.map((d) => d.toMusicTrack()).toList()
+                                ..shuffle();
                           widget.onPlayTrack(tracks.first, tracks);
                         },
                         icon: const Icon(Icons.shuffle_rounded, size: 18),
                         label: const Text('Shuffle'),
                       ),
                     ],
-                    if (MusicLibraryService.instance.likedTracks.isNotEmpty) ...[
+                    if (MusicLibraryService
+                        .instance
+                        .likedTracks
+                        .isNotEmpty) ...[
                       const SizedBox(width: 8),
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF00B4DB),
-                          side: BorderSide(color: const Color(0xFF00B4DB).withValues(alpha: 0.4)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          side: BorderSide(
+                            color: const Color(
+                              0xFF00B4DB,
+                            ).withValues(alpha: 0.4),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         onPressed: () {
-                          downloadService.downloadAllLikedTracks(MusicLibraryService.instance.likedTracks);
+                          downloadService.downloadAllLikedTracks(
+                            MusicLibraryService.instance.likedTracks,
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Queued all liked songs for offline download! 📥')),
+                            const SnackBar(
+                              content: Text(
+                                'Queued all liked songs for offline download! 📥',
+                              ),
+                            ),
                           );
                         },
-                        icon: const Icon(Icons.download_for_offline_rounded, size: 18),
+                        icon: const Icon(
+                          Icons.download_for_offline_rounded,
+                          size: 18,
+                        ),
                         label: const Text('Download Liked'),
                       ),
                     ],
@@ -190,21 +243,37 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                       child: TextField(
                         controller: _searchController,
                         onChanged: (v) => setState(() => _searchQuery = v),
-                        style: const TextStyle(color: Colors.white, fontSize: 12.5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Search offline...',
-                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
-                          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF00B4DB), size: 16),
+                          hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.35),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            color: Color(0xFF00B4DB),
+                            size: 16,
+                          ),
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.05),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 0,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                            borderSide: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                            borderSide: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
                         ),
                       ),
@@ -224,7 +293,9 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                _searchQuery.isNotEmpty ? Icons.search_off_rounded : Icons.cloud_download_rounded,
+                                _searchQuery.isNotEmpty
+                                    ? Icons.search_off_rounded
+                                    : Icons.cloud_download_rounded,
                                 color: Colors.white24,
                                 size: 48,
                               ),
@@ -234,39 +305,58 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                                     ? 'No downloaded tracks match "$_searchQuery"'
                                     : 'No offline downloads yet.\nTap the download icon on any song, album, or playlist to listen offline.',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.white54, fontSize: 13.5, height: 1.4),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 13.5,
+                                  height: 1.4,
+                                ),
                               ),
                             ],
                           ),
                         )
                       : ListView.separated(
                           itemCount: filtered.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 6),
                           itemBuilder: (context, index) {
                             final item = filtered[index];
                             final track = item.toMusicTrack();
-                            final itemSizeMb = (item.fileSizeBytes / (1024 * 1024)).toStringAsFixed(1);
+                            final itemSizeMb =
+                                (item.fileSizeBytes / (1024 * 1024))
+                                    .toStringAsFixed(1);
                             final isFlac = item.format.toLowerCase() == 'flac';
 
                             return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                               tileColor: DizzyVoid.surface1,
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: item.localCoverPath.isNotEmpty && File(item.localCoverPath).existsSync()
+                                child:
+                                    item.localCoverPath.isNotEmpty &&
+                                        File(item.localCoverPath).existsSync()
                                     ? Image.file(
                                         File(item.localCoverPath),
                                         width: 46,
                                         height: 46,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => _buildFallbackCover(track),
+                                        errorBuilder: (_, __, ___) =>
+                                            _buildFallbackCover(track),
                                       )
                                     : _buildFallbackCover(track),
                               ),
                               title: Text(
                                 item.title,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.5,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -275,24 +365,38 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                                   Expanded(
                                     child: Text(
                                       '${item.artist} • ${item.album}',
-                                      style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 11.5,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 1.5,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isFlac
-                                          ? const Color(0xFF7C5CFF).withValues(alpha: 0.25)
-                                          : const Color(0xFF00B0FF).withValues(alpha: 0.2),
+                                          ? const Color(
+                                              0xFF7C5CFF,
+                                            ).withValues(alpha: 0.25)
+                                          : const Color(
+                                              0xFF00B0FF,
+                                            ).withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      isFlac ? 'FLAC' : item.format.toUpperCase(),
+                                      isFlac
+                                          ? 'FLAC'
+                                          : item.format.toUpperCase(),
                                       style: TextStyle(
-                                        color: isFlac ? const Color(0xFFB39DDB) : const Color(0xFF00E5FF),
+                                        color: isFlac
+                                            ? const Color(0xFFB39DDB)
+                                            : const Color(0xFF00E5FF),
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -301,7 +405,10 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                                   const SizedBox(width: 6),
                                   Text(
                                     '$itemSizeMb MB',
-                                    style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+                                    style: const TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 10.5,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -309,30 +416,60 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.white38, size: 20),
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.white38,
+                                      size: 20,
+                                    ),
                                     tooltip: 'Delete from downloads',
                                     onPressed: () async {
                                       final confirm = await showDialog<bool>(
                                         context: context,
                                         builder: (c) => AlertDialog(
                                           backgroundColor: DizzyVoid.surface1,
-                                          title: const Text('Delete Downloaded Song', style: TextStyle(color: Colors.white)),
-                                          content: Text('Delete "${item.title}" from offline storage?', style: const TextStyle(color: Colors.white70)),
+                                          title: const Text(
+                                            'Delete Downloaded Song',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          content: Text(
+                                            'Delete "${item.title}" from offline storage?',
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                           actions: [
                                             TextButton(
-                                              onPressed: () => Navigator.pop(c, false),
-                                              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                                              onPressed: () =>
+                                                  Navigator.pop(c, false),
+                                              child: const Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                  color: Colors.white60,
+                                                ),
+                                              ),
                                             ),
                                             ElevatedButton(
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                              onPressed: () => Navigator.pop(c, true),
-                                              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    Colors.redAccent,
+                                              ),
+                                              onPressed: () =>
+                                                  Navigator.pop(c, true),
+                                              child: const Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),
                                       );
                                       if (confirm == true) {
-                                        await downloadService.deleteDownloadedTrack(item.id);
+                                        await downloadService
+                                            .deleteDownloadedTrack(item.id);
                                         setState(() {});
                                       }
                                     },
@@ -340,7 +477,9 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                                 ],
                               ),
                               onTap: () {
-                                final allTracks = filtered.map((d) => d.toMusicTrack()).toList();
+                                final allTracks = filtered
+                                    .map((d) => d.toMusicTrack())
+                                    .toList();
                                 widget.onPlayTrack(track, allTracks);
                               },
                             );
@@ -369,7 +508,11 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
           width: 46,
           height: 46,
           color: DizzyVoid.surface2,
-          child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 24),
+          child: const Icon(
+            Icons.music_note_rounded,
+            color: Colors.white38,
+            size: 24,
+          ),
         ),
       );
     }
@@ -377,13 +520,22 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
       width: 46,
       height: 46,
       color: DizzyVoid.surface2,
-      child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 24),
+      child: const Icon(
+        Icons.music_note_rounded,
+        color: Colors.white38,
+        size: 24,
+      ),
     );
   }
 
-  Widget _buildQueueBanner(List<MusicDownloadTask> queue, MusicDownloadService service) {
+  Widget _buildQueueBanner(
+    List<MusicDownloadTask> queue,
+    MusicDownloadService service,
+  ) {
     final activeTask = queue.firstWhere(
-      (t) => t.status == MusicDownloadStatus.downloading || t.status == MusicDownloadStatus.extracting,
+      (t) =>
+          t.status == MusicDownloadStatus.downloading ||
+          t.status == MusicDownloadStatus.extracting,
       orElse: () => queue.first,
     );
     final isExtracting = activeTask.status == MusicDownloadStatus.extracting;
@@ -394,7 +546,9 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
       decoration: BoxDecoration(
         color: const Color(0xFF0083B0).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF00B4DB).withValues(alpha: 0.35)),
+        border: Border.all(
+          color: const Color(0xFF00B4DB).withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +570,11 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
                   isExtracting
                       ? 'Extracting stream for "${activeTask.track.title}"...'
                       : 'Downloading "${activeTask.track.title}" (${(progress * 100).toInt()}%)',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -424,14 +582,22 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
               const SizedBox(width: 8),
               Text(
                 '${queue.length} in queue',
-                style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 11, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Color(0xFF00E5FF),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(width: 6),
               InkWell(
                 onTap: () => service.cancelTask(activeTask.track.id),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.close_rounded, color: Colors.white60, size: 16),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: Colors.white60,
+                    size: 16,
+                  ),
                 ),
               ),
             ],
@@ -442,7 +608,9 @@ class _MusicDownloadedTracksModalState extends State<MusicDownloadedTracksModal>
             child: LinearProgressIndicator(
               value: isExtracting ? null : progress,
               backgroundColor: Colors.white10,
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF00E5FF),
+              ),
               minHeight: 3,
             ),
           ),

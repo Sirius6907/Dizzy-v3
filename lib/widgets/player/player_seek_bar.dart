@@ -60,7 +60,8 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
 
   void _commitSeek() {
     if (_scrubFraction != null && widget.duration.inMilliseconds > 0) {
-      final targetMs = (_scrubFraction! * widget.duration.inMilliseconds).round();
+      final targetMs = (_scrubFraction! * widget.duration.inMilliseconds)
+          .round();
       widget.onSeek(Duration(milliseconds: targetMs));
     }
     setState(() {
@@ -89,12 +90,20 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
     return _buildRow(context, widget.position, widget.buffered);
   }
 
-  Widget _buildRow(BuildContext context, Duration currentPosition, Duration? currentBuffered) {
+  Widget _buildRow(
+    BuildContext context,
+    Duration currentPosition,
+    Duration? currentBuffered,
+  ) {
     final totalMs = widget.duration.inMilliseconds;
     final currentMs = currentPosition.inMilliseconds;
-    final currentFraction = totalMs > 0 ? (currentMs / totalMs).clamp(0.0, 1.0) : 0.0;
+    final currentFraction = totalMs > 0
+        ? (currentMs / totalMs).clamp(0.0, 1.0)
+        : 0.0;
     final bufferedMs = currentBuffered?.inMilliseconds ?? 0;
-    final bufferedFraction = totalMs > 0 ? (bufferedMs / totalMs).clamp(0.0, 1.0) : 0.0;
+    final bufferedFraction = totalMs > 0
+        ? (bufferedMs / totalMs).clamp(0.0, 1.0)
+        : 0.0;
     final activeFraction = _scrubFraction ?? currentFraction;
 
     final remainingDuration = widget.duration - currentPosition;
@@ -105,9 +114,11 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
         Container(
           constraints: const BoxConstraints(minWidth: 46),
           child: Text(
-            _formatDuration(_scrubFraction != null
-                ? Duration(milliseconds: (_scrubFraction! * totalMs).round())
-                : currentPosition),
+            _formatDuration(
+              _scrubFraction != null
+                  ? Duration(milliseconds: (_scrubFraction! * totalMs).round())
+                  : currentPosition,
+            ),
             style: const TextStyle(
               color: PlayerTheme.inkMuted,
               fontSize: 12.5,
@@ -129,10 +140,16 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                 cursor: SystemMouseCursors.click,
                 onEnter: (e) => setState(() {
                   _isHovered = true;
-                  _hoverFraction = (e.localPosition.dx / trackWidth).clamp(0.0, 1.0);
+                  _hoverFraction = (e.localPosition.dx / trackWidth).clamp(
+                    0.0,
+                    1.0,
+                  );
                 }),
                 onHover: (e) => setState(() {
-                  _hoverFraction = (e.localPosition.dx / trackWidth).clamp(0.0, 1.0);
+                  _hoverFraction = (e.localPosition.dx / trackWidth).clamp(
+                    0.0,
+                    1.0,
+                  );
                 }),
                 onExit: (_) => setState(() {
                   _isHovered = false;
@@ -172,7 +189,7 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                           height: (_isHovered || _isScrubbing) ? 8 : 6,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: Colors.white.withValues(alpha: 0.16),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Stack(
@@ -183,7 +200,9 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                                   widthFactor: bufferedFraction,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                   ),
@@ -192,9 +211,18 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                               // Skip Segments Highlights (Intro, Recap, Credits)
                               if (totalMs > 0 && widget.skipSegments.isNotEmpty)
                                 ...widget.skipSegments.map((seg) {
-                                  final sFrac = ((seg.startMs ?? 0) / totalMs).clamp(0.0, 1.0);
-                                  final eFrac = ((seg.endMs ?? totalMs) / totalMs).clamp(0.0, 1.0);
-                                  final segWidth = ((eFrac - sFrac) * trackWidth).clamp(2.0, trackWidth);
+                                  final sFrac = ((seg.startMs ?? 0) / totalMs)
+                                      .clamp(0.0, 1.0);
+                                  final eFrac =
+                                      ((seg.endMs ?? totalMs) / totalMs).clamp(
+                                        0.0,
+                                        1.0,
+                                      );
+                                  final segWidth =
+                                      ((eFrac - sFrac) * trackWidth).clamp(
+                                        2.0,
+                                        trackWidth,
+                                      );
                                   final isCredits = seg.type == 'credits';
                                   final color = isCredits
                                       ? const Color(0x9910B981)
@@ -229,7 +257,9 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF7C5CFF).withValues(alpha: 0.5),
+                                color: const Color(
+                                  0xFF7C5CFF,
+                                ).withValues(alpha: 0.5),
                                 blurRadius: 6,
                                 offset: const Offset(0, 1),
                               ),
@@ -239,24 +269,23 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
 
                         // Interactive Scrubber Thumb Dot
                         Positioned(
-                          left: (trackWidth * activeFraction - ((_isHovered || _isScrubbing) ? 8 : 6))
-                              .clamp(0.0, trackWidth - 16),
+                          left:
+                              (trackWidth * activeFraction -
+                                      ((_isHovered || _isScrubbing) ? 8 : 6))
+                                  .clamp(0.0, trackWidth - 16),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             width: (_isHovered || _isScrubbing) ? 16 : 12,
                             height: (_isHovered || _isScrubbing) ? 16 : 12,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: PlayerTheme.ink,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                                BoxShadow(
-                                  color: const Color(0xFF7C5CFF).withValues(alpha: 0.8),
-                                  blurRadius: 4,
+                                  color: const Color(
+                                    0xFF7C5CFF,
+                                  ).withValues(alpha: 0.8),
+                                  blurRadius: 6,
                                   spreadRadius: 1,
                                 ),
                               ],
@@ -265,30 +294,35 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                         ),
 
                         // Floating Timestamp Preview Bubble on Hover / Scrub
-                        if ((_isHovered || _isScrubbing) && (_hoverFraction != null || _scrubFraction != null)) ...[
+                        if ((_isHovered || _isScrubbing) &&
+                            (_hoverFraction != null ||
+                                _scrubFraction != null)) ...[
                           Positioned(
-                            left: (trackWidth * (_scrubFraction ?? _hoverFraction!) - 28)
-                                .clamp(0.0, trackWidth - 56),
+                            left:
+                                (trackWidth *
+                                            (_scrubFraction ??
+                                                _hoverFraction!) -
+                                        28)
+                                    .clamp(0.0, trackWidth - 56),
                             top: -32,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xF0080C12),
+                                color: PlayerTheme.elevated,
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: PlayerTheme.edge),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black54,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
+                                border: Border.all(color: PlayerTheme.edgeSoft),
+                                boxShadow: PlayerTheme.buttonShadow,
                               ),
                               child: Text(
                                 _formatDuration(
                                   Duration(
                                     milliseconds:
-                                        ((_scrubFraction ?? _hoverFraction!) * totalMs).round(),
+                                        ((_scrubFraction ?? _hoverFraction!) *
+                                                totalMs)
+                                            .round(),
                                   ),
                                 ),
                                 style: const TextStyle(

@@ -49,9 +49,10 @@ async function doLogin() {
     if (error) throw error;
     // must be an admin: admin_users (roles) OR legacy admins allowlist.
     // my_admin_role raises for non-admins, returns the role otherwise.
-    try {
-      await sb.rpc('my_admin_role', {});
-    } catch (_) {
+    // supabase-js v2 resolves with {error} instead of throwing, so the
+    // gate has to look at the error, not at the promise.
+    const { error: roleErr } = await sb.rpc('my_admin_role', {});
+    if (roleErr) {
       await sb.auth.signOut();
       throw new Error('This account is not an admin.');
     }
@@ -76,17 +77,18 @@ function enterApp(email) {
   $('cloudDot').textContent = '● live';
   loadOverview();
   startOverviewLive();          // default tab is Overview
+  rtStart();                    // live updates for every tab
   loadMyRole();                 // v1.3.3-T2.0: role badge + tab gating
 }
 
 // ── v1.3.3-T2.0: per-admin roles ──
 // Server is source of truth (require_role); the dashboard only hides
 // buttons. Legacy admins fall back to owner via my_admin_role().
-let MY_ROLE = 'owner';
+let MY_ROLE = 'viewer';
 async function loadMyRole() {
   try {
-    MY_ROLE = await rpc('my_admin_role', {}) || 'owner';
-  } catch (_) { MY_ROLE = 'owner'; }
+    MY_ROLE = (await rpc('my_admin_role', {})) || 'viewer';
+  } catch (_) { MY_ROLE = 'viewer'; }
   const badge = $('meRole');
   if (badge) badge.textContent = 'Administrator · ' + MY_ROLE;
   const nav = $('navAdmins');
@@ -124,7 +126,7 @@ function show(name) {
   if (name === 'scrapers') loadScrapers();
   if (name === 'overview') startOverviewLive(); else stopOverviewLive();
   if (name === 'users') { loadUsers(); loadDevices(); startFleetLive(); } else stopFleetLive();
-  if (name === 'push') loadAnn();
+  if (name === 'push') { loadAnn(); loadPushLog(); }
   if (name === 'config') loadCfg();
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
@@ -138,6 +140,86 @@ async function rpc(name, params) {
   if (error) throw error;
   return data;
 }
+
+// ── realtime ─────────────────────────────────────────────────────────
+// One websocket drives every tab: a change lands, the owning loader runs,
+// no polling and no manual refresh. A 400 ms debounce collapses bursts
+// (a heartbeat flood from 50 devices is one repaint), and loaders only run
+// for the tab that is actually on screen. Polling remains as a slow
+// safety net in case the socket drops.
+const RT_MAP = {
+  devices: ['overview', 'users'],
+  device_logs: ['devicelogs'],
+  user_reports: ['moderation'],
+  ban_appeals: ['moderation'],
+  room_reports: ['rooms'],
+  support_tickets: ['support'],
+  announcements: ['push'],
+  remote_config: ['config', 'scrapers'],
+  admin_audit: ['audit'],
+  curated_playlists: ['curated'],
+  rooms: ['rooms'],
+  push_send_log: ['push'],
+};
+const RT_LOADERS = {
+  overview: () => loadUsage(),
+  users: () => { loadFleetLive(); loadDevices(); },
+  devicelogs: () => loadDeviceLogs(),
+  moderation: () => { loadUserReports(); loadAppeals(); },
+  rooms: () => loadRooms(),
+  support: () => { loadTickets(); loadSupportStats(); },
+  push: () => { loadAnn(); loadPushLog(); },
+  config: () => loadCfg(),
+  scrapers: () => loadScrapers(),
+  audit: () => loadAudit(),
+  curated: () => loadCurated(),
+};
+
+const _rtTimers = new Map();
+let _rtChannel = null;
+
+function rtFire(tab) {
+  const sec = $('s-' + tab);
+  if (!sec || !sec.classList.contains('on')) return;
+  // Audit and device logs keep their explicit Live switch.
+  if (tab === 'audit' && !($('auditLive') || {}).checked) return;
+  if (tab === 'devicelogs' && !($('dlLive') || {}).checked) return;
+  const fn = RT_LOADERS[tab];
+  if (!fn) return;
+  clearTimeout(_rtTimers.get(tab));
+  _rtTimers.set(tab, setTimeout(() => {
+    _rtTimers.delete(tab);
+    try { fn(); } catch (_) { /* keep the socket alive */ }
+  }, 400));
+}
+
+function rtStart() {
+  if (_rtChannel || !sb) return;
+  let ch = sb.channel('admin-live');
+  Object.entries(RT_MAP).forEach(([table, tabs]) => {
+    ch = ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => tabs.forEach(rtFire));
+  });
+  _rtChannel = ch.subscribe((status) => {
+    const dot = $('cloudDot');
+    if (dot) dot.textContent = status === 'SUBSCRIBED' ? '● live' : '○ reconnecting';
+  });
+}
+
+function rtStop() {
+  if (!_rtChannel) return;
+  sb.removeChannel(_rtChannel);
+  _rtChannel = null;
+}
+
+// A tab left open for hours may outlive the socket; refresh the visible tab
+// when the window comes back rather than waiting for the next event.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  const sec = document.querySelector('main section.on');
+  if (!sec) return;
+  const fn = RT_LOADERS[sec.id.replace(/^s-/, '')];
+  if (fn) { try { fn(); } catch (_) {} }
+});
 
 // ── overview ──
 async function loadOverview() {
@@ -202,7 +284,7 @@ async function loadOverview() {
         <div class="hbox"><span class="hi">🚩</span><div><b>${fmtNum(o.reports_pending)}</b><span>pending reports</span></div></div>
         <div class="hbox"><span class="hi">📣</span><div><b>${fmtNum(o.announcements)}</b><span>active announcements</span></div></div>
       </div>
-      <div class="health-foot"><span class="dot dot-grn"></span> Supabase connected · edge functions assumed active · refresh for latest</div>`;
+      <div class="health-foot"><span class="dot dot-grn"></span> Supabase connected · live updates streamed as they happen</div>`;
     $('ovUpdated').textContent = 'updated ' + ago(new Date().toISOString());
   } catch (e) {
     $('breakdown').innerHTML = emptyState('⚠️', 'Breakdown unavailable', e.message);
@@ -317,11 +399,12 @@ async function loadUsage() {
   paintDownloads();
 }
 
-// 30s poll, ONLY while the Overview tab is open (show() starts/stops it).
+// Realtime does the instant updates; this slow poll only exists in case the
+// websocket drops, and only while the Overview tab is open.
 function startOverviewLive() {
   loadUsage();
   if (_ovTimer) clearInterval(_ovTimer);
-  _ovTimer = setInterval(loadUsage, 30000);
+  _ovTimer = setInterval(loadUsage, 120000);
 }
 function stopOverviewLive() {
   if (_ovTimer) { clearInterval(_ovTimer); _ovTimer = null; }
@@ -926,6 +1009,9 @@ async function loadFindUser() {
           <div class="rep-meta">profiles: ${prof || '<span class="mut">none</span>'}</div>
           <div class="hist">${historyRows(u.history)}</div>
           <div class="rowbtns">
+            <button class="btn btn-ghost btn-sm" onclick="banUser('${esc(u.user_id)}','social')">🟠 Social ban</button>
+            <button class="btn btn-ghost btn-sm" onclick="banUser('${esc(u.user_id)}','full')">⛔ Full ban</button>
+            <button class="btn btn-ghost btn-sm" onclick="unbanUser('${esc(u.user_id)}')">🔓 Unban</button>
             <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','progress')">Reset progress</button>
             <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','profile')">Reset profile</button>
           </div>
@@ -1054,10 +1140,12 @@ async function loadFleetLive() {
   }
 }
 
+// Realtime pushes device changes instantly; this is only the drop-socket
+// safety net.
 function startFleetLive() {
   loadFleetLive();
   if (_fleetTimer) clearInterval(_fleetTimer);
-  _fleetTimer = setInterval(loadFleetLive, 30000);
+  _fleetTimer = setInterval(loadFleetLive, 120000);
 }
 function stopFleetLive() {
   if (_fleetTimer) { clearInterval(_fleetTimer); _fleetTimer = null; }
@@ -1155,7 +1243,7 @@ async function banUser(userId, level) {
   if (!confirm(`Apply ${level} ban for ${days === 0 ? 'PERMANENTLY' : days + ' day(s)'}? offence_count will increase.`)) return;
   try {
     await rpc('admin_ban_user', { p_user_id: userId, p_level: level, p_days: days, p_reason: reason });
-    toast(`Banned (${level}) ⛔`, 'ok'); loadUserReports();
+    toast(`Banned (${level}) ⛔`, 'ok'); refreshUserViews();
   } catch (e) { toast('Ban failed: ' + e.message, 'err'); }
 }
 
@@ -1163,8 +1251,15 @@ async function unbanUser(userId) {
   if (!confirm('Lift this ban + restore their revoked devices?')) return;
   try {
     await rpc('admin_unban_user', { p_user_id: userId });
-    toast('Unbanned 🔓', 'ok'); loadUserReports();
+    toast('Unbanned 🔓', 'ok'); refreshUserViews();
   } catch (e) { toast('Unban failed: ' + e.message, 'err'); }
+}
+
+// Ban/unban is reachable from two places — the reported-users list and a
+// plain Fleet search — so refresh whichever lists actually have a query.
+function refreshUserViews() {
+  if ($('userRepList')) loadUserReports();
+  if (($('fuSearch') || {}).value && String($('fuSearch').value).trim()) loadFindUser();
 }
 
 async function dismissReports(userId) {
@@ -1246,8 +1341,8 @@ function resetAnn() {
   $('annUrl').value = ''; $('annMin').value = ''; $('annMax').value = '';
   $('annActive').value = 'true'; $('annFormTitle').textContent = 'New announcement';
 }
-async function saveAnn() {
-  const btn = event && event.target && event.target.closest ? event.target.closest('.btn') : null;
+async function saveAnn(ev) {
+  const btn = ev && ev.target && ev.target.closest ? ev.target.closest('.btn') : null;
   try {
     await withLoading(btn, () => rpc('admin_announce_upsert', {
       p_id: $('annId').value || '', p_title: $('annTitle').value.trim(),
@@ -1379,18 +1474,12 @@ async function saveHotfix(key, isJson) {
 }
 
 // ── audit ──
-// Live mode (15s poll) + action pills for readability.
-let _auditTimer = null;
+// Live is a realtime switch now (see rtFire); it persists across tabs.
 function toggleAuditLive() {
   const on = document.getElementById('auditLive').checked;
-  if (_auditTimer) { clearInterval(_auditTimer); _auditTimer = null; }
-  if (on) { loadAudit(); _auditTimer = setInterval(loadAudit, 15000); toast('Audit live mode on', 'info'); }
+  if (on) { loadAudit(); toast('Audit live mode on', 'info'); }
 }
-function stopAuditLive() {
-  if (_auditTimer) { clearInterval(_auditTimer); _auditTimer = null; }
-  const box = document.getElementById('auditLive');
-  if (box) box.checked = false;
-}
+function stopAuditLive() { /* nothing to tear down — the socket is shared */ }
 function auditPill(action) {
   const a = String(action || '').toLowerCase();
   if (a.includes('delete') || a.includes('kill') || a.includes('ban')) return 'p-adult';
@@ -1418,7 +1507,6 @@ async function loadAudit() {
 // RLS allows SELECT for is_admin() only, so this table is simply not
 // readable by the anon key used by sb.
 const DEVICE_LOG_LIMIT = 100;
-let _dlTimer = null;
 let _dlCodePrefix = '';
 
 function deviceCodeFilter() {
@@ -1438,16 +1526,12 @@ function setDeviceErrorCodeFilter(prefix) {
     b.classList.toggle('on', (b.dataset.pre || '') === _dlCodePrefix));
   loadDeviceLogs();
 }
+// Live is a realtime switch now (see rtFire); it persists across tabs.
 function toggleDeviceLogsLive() {
   const on = document.getElementById('dlLive').checked;
-  if (_dlTimer) { clearInterval(_dlTimer); _dlTimer = null; }
-  if (on) { loadDeviceLogs(); _dlTimer = setInterval(loadDeviceLogs, 10000); toast('Device log live mode on', 'info'); }
+  if (on) { loadDeviceLogs(); toast('Device log live mode on', 'info'); }
 }
-function stopDeviceLogsLive() {
-  if (_dlTimer) { clearInterval(_dlTimer); _dlTimer = null; }
-  const box = document.getElementById('dlLive');
-  if (box) box.checked = false;
-}
+function stopDeviceLogsLive() { /* nothing to tear down — the socket is shared */ }
 // v1.3.3-T2.3: render the enum session trail as a compact timeline.
 // The trail is already enum-only (validated client + edge + RPC), so this
 // is display sugar — but it still escapes, because "validated" is not a
@@ -1530,4 +1614,103 @@ async function removeAdmin(uid) {
     toast('Removed ✓', 'ok');
     loadAdmins();
   } catch (e) { toast('Remove failed: ' + e.message, 'err'); }
+}
+
+// ── device push (v1.3.3 Phase 4) ──
+// Thin wrappers over the two edge functions. The dashboard sends its own
+// admin JWT; push-send and push-brain both accept a real admin, so nothing
+// secret ever ships in this static bundle.
+async function pushFn(name, payload) {
+  const cfg = window.DIZZY_CONFIG || {};
+  const { data } = await sb.auth.getSession();
+  const token = (data && data.session && data.session.access_token) || '';
+  const res = await fetch(cfg.url + '/functions/v1/' + name, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+    },
+    body: JSON.stringify(payload || {}),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(out.error || ('HTTP ' + res.status));
+  return out;
+}
+function pushOut(obj) {
+  const el = $('rpOut');
+  if (!el) return;
+  el.style.display = 'block';
+  el.textContent = JSON.stringify(obj, null, 2);
+}
+async function sendPush(mode) {
+  const title = ($('rpTitle') || {}).value || '';
+  const body = ($('rpBody') || {}).value || '';
+  const dry = !!($('rpDry') || {}).checked;
+  if (!title.trim() && !body.trim()) {
+    toast('Title or body required', 'warn');
+    return;
+  }
+  if (mode === 'broadcast' && !dry) {
+    const ok = await confirmDialog({
+      title: 'Broadcast to every phone?',
+      message: 'Every device with notifications enabled gets this right now.',
+      okText: 'Broadcast',
+    });
+    if (!ok) return;
+  }
+  try {
+    const out = await pushFn('push-send', {
+      mode,
+      kind: ($('rpKind') || {}).value || 'releases',
+      title: title.trim(),
+      body: body.trim(),
+      dry_run: dry,
+    });
+    pushOut(out);
+    const label = out.dry_run ? 'previewed' : 'sent';
+    toast('Push ' + label + ' · ' + (out.sent || 0) + '/' + (out.tokens || 0), 'ok');
+    loadPushLog();
+  } catch (e) {
+    toast('Push failed: ' + e.message, 'err');
+  }
+}
+async function runBrain() {
+  try {
+    const out = await pushFn('push-brain', { dry_run: true, max_users: 5 });
+    pushOut(out);
+    toast('Brain preview · ' + (out.users || 0) + ' user(s)', 'info');
+  } catch (e) {
+    toast('Brain failed: ' + e.message, 'err');
+  }
+}
+async function loadPushLog() {
+  const box = $('rpLog');
+  if (!box) return;
+  box.innerHTML = skLines(4);
+  try {
+    const { data, error } = await sb
+      .from('push_send_log')
+      .select('id, user_id, kind, title, status, error, created_at')
+      .order('created_at', { ascending: false })
+      .limit(40);
+    if (error) throw error;
+    box.innerHTML = (data || []).map((r) => {
+      const pill =
+        r.status === 'sent' ? 'p-live'
+          : r.status === 'failed' ? 'p-closed'
+          : r.status === 'queued' ? 'p-lobby' : '';
+      return `<div class="ann">
+        <div class="ann-top"><span class="ann-title">${esc(r.title || '—')}</span>
+          <span class="pill ${pill}">${esc(r.status)}</span></div>
+        <div class="ann-meta">
+          <span class="chip">${esc(r.kind)}</span>
+          <span class="chip">${shortId(r.user_id)}</span>
+          <span class="chip" title="${esc(fmtAbs(r.created_at))}">${ago(r.created_at)}</span>
+        </div>
+        ${r.error ? `<div class="ann-body" style="opacity:.6">${esc(String(r.error).slice(0, 140))}</div>` : ''}
+      </div>`;
+    }).join('') || emptyState('📭', 'No sends yet', 'The brain writes here when it ships a title.');
+  } catch (e) {
+    box.innerHTML = '<p class="hint">Log failed: ' + esc(e.message) + '</p>';
+  }
 }

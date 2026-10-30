@@ -55,7 +55,9 @@ class MusicHomeView extends StatelessWidget {
       child: ListView(
         controller: scrollController,
         padding: EdgeInsets.only(top: 75, bottom: bottomPad),
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         children: [
           if (MusicSettings.enableSpotlight.value && heroTrack != null)
             MusicHeroBillboard(

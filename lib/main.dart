@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -22,8 +23,7 @@ import './services/updater/update_state_machine.dart';
 import './services/books/continue_reading_service.dart';
 import './services/books/reader_settings.dart';
 import './services/continue_watching/continue_watching_service.dart';
-import './services/theme/custom_background_service.dart';
-import './services/theme/custom_accent_service.dart';
+
 import './services/media/global_media_coordinator.dart';
 import './services/theme/dock_settings.dart';
 import './services/theme/glass_settings.dart';
@@ -35,6 +35,8 @@ import './services/cloud/remote_config_service.dart';
 import './services/device/device_id_service.dart';
 import './services/social/dizzy_identity_service.dart';
 import './services/social/phone_link_service.dart';
+import './services/social/username_gate_state.dart';
+import './services/taste/taste_event_service.dart';
 import './services/profiles/dizzy_profile_service.dart';
 import './services/scraper/scraper_quarantine_service.dart';
 import './services/audiobook/audiobook_settings.dart';
@@ -65,6 +67,7 @@ import './services/messaging/dm_outbox.dart';
 import './services/messaging/oem_kill_detector.dart';
 import './services/notification/notification_service.dart';
 import './services/notification/notification_triggers.dart';
+import './services/push/push_service.dart';
 import './services/social/dizzy_social_service.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
@@ -75,21 +78,38 @@ import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
 import './services/heartbeat/heartbeat_service.dart';
 import './services/media/media_session_bridge.dart';
-import './services/music/music_player_controller.dart';
 import './services/watchparty/voice_background_gate.dart';
 import './services/watchparty/guest_auto_open.dart';
 
+/// Runs one boot initializer in isolation: a single failing service must not
+/// abort boot before runApp (that used to leave a permanent black window).
+Future<void> _safeInit(String name, Future<void> Function() fn) async {
+  try {
+    await fn();
+  } catch (e, st) {
+    unawaited(
+      AppErrorLog.log(code: 'E_BOOT', screen: 'boot', detail: '$name: $e'),
+    );
+    if (kDebugMode) debugPrint('[boot] $name failed: $e\n$st');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // v1.2.0-T3.2: global error boundary — branded screen, never white-screen.
+  // Installed BEFORE boot work: anything below may throw, and without this
+  // the process would idle on a black window because runApp never runs.
+  installGlobalErrorHandlers(restartApp: () => runApp(const DizzyApp()));
   // Desktop DB FIRST (2026-10-10): sqflite has no Windows/Linux plugin —
   // without the FFI backend, CachedNetworkImage's disk cache throws on
   // first write and every remote image stays blank. Must run before any
-  // widget/painting touches an image.
-  await DesktopDatabase.initialize();
-  MediaKit.ensureInitialized();
+  // widget/painting touches an image. A failure degrades image caching only;
+  // boot continues (a black window is strictly worse).
+  await _safeInit('desktop_db', DesktopDatabase.initialize);
+  await _safeInit('mediakit', () async => MediaKit.ensureInitialized());
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    await windowManager.ensureInitialized();
-    await WindowService.instance.initialize();
+    await _safeInit('window_manager', windowManager.ensureInitialized);
+    await _safeInit('window_service', WindowService.instance.initialize);
   }
   // P0/P1: platform-aware in-memory image caps. Phones share RAM with the
   // OS — 200 entries / 150MB; desktops keep 500 / 300MB. Every remote
@@ -106,21 +126,30 @@ void main() async {
   PerformanceMode.isLowRamDevice = isMobile && await _isLowRamPhone();
   PerformanceMode.detectDeviceTier(isMobile: isMobile);
   // P17 / UX3: Smooth Mode & Low-End Mode defaults ON for ≤3GB-RAM phones.
-  final prefs = await SharedPreferences.getInstance();
-  final lowEndSaved = prefs.getBool('perf_low_end_device_mode');
+  SharedPreferences? prefs;
+  await _safeInit('prefs', () async {
+    prefs = await SharedPreferences.getInstance();
+  });
+  final lowEndSaved = prefs?.getBool('perf_low_end_device_mode');
   if (lowEndSaved ?? PerformanceMode.isLowRamDevice) {
     PerformanceMode.setLowEndDeviceMode(true);
   } else {
-    final smoothSaved = prefs.getBool('perf_smooth_mode');
+    final smoothSaved = prefs?.getBool('perf_smooth_mode');
     PerformanceMode.setSmoothMode(
       smoothSaved ?? PerformanceMode.isLowRamDevice,
     );
   }
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  await EnvService.initialize();
-  await PlayerSettings.initialize();
+  // Edge-to-edge draws under transparent system bars; bar colors AND icon
+  // brightness are owned per-frame by the AnnotatedRegion in [DizzyApp], so
+  // no bootstrap overlay style here (it would be stale on theme toggle).
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+    overlays: SystemUiOverlay.values,
+  );
+  await _safeInit('env', EnvService.initialize);
+  await _safeInit('player_settings', PlayerSettings.initialize);
   // WP-P0: device code first — cloud install upsert needs it.
-  await DeviceIdService.initialize();
+  await _safeInit('device_id', DeviceIdService.initialize);
   // S2 (v1.1.9): cloud LAST + non-blocking — never delays startup.
   // v1.2.0-ADMIN: after auth, pull remote config + announcements (cached, soft).
   // Phase 3: identity boot registers this device (devices table was 0 rows
@@ -135,44 +164,58 @@ void main() async {
     // v1.3.3-T1.1: reload saved @username (local cache, then cloud refresh).
     // ignore: unawaited_futures
     DizzySocialService.loadCurrentUsername();
+    // v1.3.3: first-run gate needs server truth as early as possible.
+    // ignore: unawaited_futures
+    UsernameGateState.ensureResolved();
+    // v1.3.3 Phase 2: drain any personalisation events queued offline.
+    // ignore: unawaited_futures
+    TasteEventService.ensureLoaded().then((_) => TasteEventService.flush());
+    // v1.3.3 Phase 3: FCM wiring + token registration (phones only, and
+    // only after the user granted notifications).
+    // ignore: unawaited_futures
+    PushService.initialize();
     var appVersion = 'unknown';
     try {
       appVersion = (await PackageInfo.fromPlatform()).version;
     } catch (_) {}
     RemoteConfigService.initialize();
-        AnnouncementService.initialize(appVersion: appVersion);
-        // v1.3.3-T4: offline FAQ bundle (tier 1 support answers, zero network).
-        unawaited(SupportAgentService.initialize());
+    AnnouncementService.initialize(appVersion: appVersion);
+    // v1.3.3-T4: offline FAQ bundle (tier 1 support answers, zero network).
+    unawaited(SupportAgentService.initialize());
     // v1.2.0-T2.2: opted-in error queue flush (no-op when consent OFF).
     AppErrorLog.schedulePeriodicFlush();
     AppErrorLog.flushOnStart();
   });
+  // IPTV controller reads IptvSettings.defaultScrapeSource during init
+  // (iptv_controller.dart:161) — settings must land first or the source is
+  // always the fallback.
+  await _safeInit('iptv_settings', IptvSettings.initialize);
   await Future.wait([
-    AddonManager.instance.initialize(),
-    AdultSectionGate.ensureLoaded(),
-    AppThemeService.initialize(),
-    AudiobookSettings.initialize(),
-    ContinueWatchingService.initialize(),
-    ContinueReadingService.initialize(),
-    ReaderSettings.initialize(),
-    CustomBackgroundService.initialize(),
-    CustomAccentService.initialize(),
-    DockSettings.initialize(),
-    GlassSettings.initialize(),
-    HomePageSettings.initialize(),
-    DubModeService.initialize(),
-    IptvController.instance.init(),
-    IptvSettings.initialize(),
-    MangaSettings.initialize(),
-    MusicSettings.initialize(),
-    MusicDownloadService.instance.init(),
-    QobuzMusicService.instance.initialize(),
-    MyListService.initialize(),
-    P2pSettingsService.initialize(),
-    DownloadService.instance.initialize(),
-    DiscordRpcService.instance.initialize(),
-    DizzyProfileService.initialize(),
-    ScraperQuarantineService.initialize(),
+    _safeInit('addons', () => AddonManager.instance.initialize()),
+    _safeInit('adult_gate', () => AdultSectionGate.ensureLoaded()),
+    _safeInit('app_theme', () => AppThemeService.initialize()),
+    _safeInit('audiobook_settings', () => AudiobookSettings.initialize()),
+    _safeInit('continue_watching', () => ContinueWatchingService.initialize()),
+    _safeInit('continue_reading', () => ContinueReadingService.initialize()),
+    _safeInit('reader_settings', () => ReaderSettings.initialize()),
+    _safeInit('dock_settings', () => DockSettings.initialize()),
+    _safeInit('glass_settings', () => GlassSettings.initialize()),
+    _safeInit('home_page_settings', () => HomePageSettings.initialize()),
+    _safeInit('dub_mode', () => DubModeService.initialize()),
+    _safeInit('iptv_controller', () => IptvController.instance.init()),
+    _safeInit('manga_settings', () => MangaSettings.initialize()),
+    _safeInit('music_settings', () => MusicSettings.initialize()),
+    _safeInit('music_download', () => MusicDownloadService.instance.init()),
+    _safeInit('qobuz', () => QobuzMusicService.instance.initialize()),
+    _safeInit('my_list', () => MyListService.initialize()),
+    _safeInit('p2p_settings', () => P2pSettingsService.initialize()),
+    _safeInit('download_service', () => DownloadService.instance.initialize()),
+    _safeInit('discord_rpc', () => DiscordRpcService.instance.initialize()),
+    _safeInit('dizzy_profile', () => DizzyProfileService.initialize()),
+    _safeInit(
+      'scraper_quarantine',
+      () => ScraperQuarantineService.initialize(),
+    ),
   ]);
   // v1.2.0-P3: guest follow lifecycle (auto-open host titles anywhere).
   PartySession.onGuestStart = GuestFollowService.arm;
@@ -180,8 +223,6 @@ void main() async {
     // ignore: unawaited_futures
     GuestFollowService.disarm();
   };
-  // v1.2.0-T3.2: global error boundary — branded screen, never white-screen.
-  installGlobalErrorHandlers(restartApp: () => runApp(const DizzyApp()));
   // UX5: video<->music conflict resolution (one sound at a time).
   GlobalMediaCoordinator.instance.attach();
   runApp(const DizzyApp());
@@ -214,8 +255,25 @@ class _PerfLifecycleObserver with WidgetsBindingObserver {
         state == AppLifecycleState.inactive) {
       DownloadService.instance.pauseForNetworkLoss();
       DiscordRpcService.instance.clearToIdle();
+      // Background timers have no user to serve: stop the process samplers
+      // (PowerShell/nvidia-smi spawns), presence beats, outbox retries and
+      // the OEM keep-alive tick. Voice/party are deliberately untouched.
+      ResourceGovernor.instance.pause();
+      NotificationTriggers.pause();
+      HeartbeatService.instance.stop();
+      DmOutbox.stopScheduler();
+      // Personalisation queue drains before the process loses the network.
+      unawaited(TasteEventService.flush());
+      _DizzyAppState._markAliveTimer?.cancel();
+      _DizzyAppState._markAliveTimer = null;
     } else if (state == AppLifecycleState.resumed) {
       DownloadService.instance.resumeAfterNetworkReturn();
+      ResourceGovernor.instance.resume();
+      NotificationTriggers.resume();
+      unawaited(TasteEventService.flush());
+      unawaited(HeartbeatService.instance.start());
+      DmOutbox.startScheduler(_DizzyAppState._sendOutboxEntry);
+      _DizzyAppState._ensureMarkAliveTimer();
     }
   }
 }
@@ -246,25 +304,27 @@ class DizzyApp extends StatefulWidget {
 class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
   static bool _hasCheckedInitialUpdate = false;
   static bool _isShowingUpdateDialog = false;
+  static Timer? _markAliveTimer;
   bool _revokedShown = false;
   bool _updateBlockedShown = false;
+
+  // Resume herd guard: focus changes can emit several `resumed` events in a
+  // burst; one debounced pass per burst, and no two passes inside 30s.
+  Timer? _resumeDebounce;
+  DateTime? _lastResumeAt;
+  bool _resumeBusy = false;
 
   /// Phase K4: app came back to the foreground → flush the DM outbox now
   /// instead of waiting for the scheduler tick (poll-on-resume).
   /// Phase P: an instant forced heartbeat so dashboard "Active now" flips
   /// the moment the app opens — `force` bypasses the client throttle (the
   /// server still no-ops identical beats inside 60s). On `paused` nothing
-  /// is sent: the timer keeps beating while the process lives, and if the
-  /// OS kills it the device ages out of the 10-min window — that IS the
-  /// correct "active" semantics.
+  /// is sent: the beat timers are suspended with the app (see
+  /// [_PerfLifecycleObserver]) and resume with it.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(DmOutbox.flush(send: _sendOutboxEntry));
-      unawaited(AnnouncementService.refresh());
-      unawaited(HeartbeatService.instance.beat(force: true));
-      // v1.3.3-T5: hot-fix pull rides the resume heartbeat (forced, TTL-bypassed).
-      unawaited(RemoteConfigService.refresh(force: true));
+      _scheduleResumeWork();
       return;
     }
     if (state != AppLifecycleState.paused) return;
@@ -280,6 +340,48 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     }
   }
 
+  void _scheduleResumeWork() {
+    if (_resumeDebounce != null) return;
+    _resumeDebounce = Timer(const Duration(milliseconds: 350), () {
+      _resumeDebounce = null;
+      unawaited(_resumeWork());
+    });
+  }
+
+  Future<void> _resumeWork() async {
+    if (_resumeBusy) return;
+    final now = DateTime.now();
+    final last = _lastResumeAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 30)) {
+      return;
+    }
+    _lastResumeAt = now;
+    _resumeBusy = true;
+    try {
+      await Future.wait([
+        _soft(DmOutbox.flush(send: _sendOutboxEntry)),
+        _soft(AnnouncementService.refresh()),
+        _soft(HeartbeatService.instance.beat(force: true)),
+        // v1.3.3-T5: hot-fix pull rides the resume heartbeat (forced,
+        // TTL-bypassed).
+        _soft(RemoteConfigService.refresh(force: true)),
+        // v1.3.3 Phase 3: a token registered while offline retries here;
+        // already-registered tokens are a no-op.
+        _soft(PushService.registerToken()),
+      ]);
+    } finally {
+      _resumeBusy = false;
+    }
+  }
+
+  /// Resume refreshes are best-effort — one unreachable service must not
+  /// cancel the others in the herd.
+  static Future<void> _soft(Future<dynamic> task) async {
+    try {
+      await task;
+    } catch (_) {}
+  }
+
   static Future<bool> _sendOutboxEntry(OutboxEntry e) =>
       DizzySocialService.sendDirectMessage(
         recipientUid: e.recipientUid,
@@ -291,16 +393,22 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
   Future<void> _bootOutbox() async {
     await DmOutbox.load();
     DmOutbox.startScheduler(_sendOutboxEntry);
+    _ensureMarkAliveTimer();
     unawaited(OemKillDetector.markAlive());
-    Timer.periodic(const Duration(minutes: 1), (_) {
-      unawaited(OemKillDetector.markAlive());
-    });
     final suggest = await OemKillDetector.considerBoot(
       pendingCount: DmOutbox.entries.value.length,
     );
     if (!suggest || !mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _showBatteryGuide();
+    });
+  }
+
+  /// One 1-minute keep-alive ticker for the process — created once and
+  /// reused across restarts, cancelled while backgrounded / disposed.
+  static void _ensureMarkAliveTimer() {
+    _markAliveTimer ??= Timer.periodic(const Duration(minutes: 1), (_) {
+      unawaited(OemKillDetector.markAlive());
     });
   }
 
@@ -377,10 +485,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
     unawaited(HeartbeatService.instance.start());
     // Phase K1: a system media session (now-playing notification, lock
     // screen / Bluetooth controls) follows the music player. No-ops off
-    // Android, so desktop and web behaviour is untouched.
-    unawaited(
-      MusicMediaSessionWatcher(MusicPlayerController.instance).start(),
-    );
+    // Android, so desktop and web behaviour is untouched. The watcher is an
+    // app-wide singleton — a restart must not add a second 1 Hz ticker.
+    unawaited(MusicMediaSessionWatcher.instance.start());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCheckedInitialUpdate) {
         _hasCheckedInitialUpdate = true;
@@ -394,6 +501,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
       _enforceForceUpdate();
       // Phase J1: one Easy-English permission ask, ever.
       unawaited(_maybeAskNotificationPermission());
+      // v1.3.3 Phase 3: a notification tap that arrived before the navigator
+      // existed (cold start) opens now.
+      PushService.openPendingTap();
     });
   }
 
@@ -410,9 +520,9 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
         builder: (c) => AlertDialog(
           title: const Text('Stay in the loop?'),
           content: const Text(
-            'Dizzy can tell you when a download finishes, an update is ready '
-            'to install, or there is news from us. No spam — and you can '
-            'change this any time in Profile → Notifications.',
+            'Dizzy can tell you when a new movie or show lands, when a '
+            'download finishes, or when an update is ready. No spam — and '
+            'you can change this any time in Profile → Notifications.',
           ),
           actions: [
             TextButton(
@@ -429,6 +539,8 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
       if (!mounted) return;
       if (go == true) {
         await NotificationService.requestPermission();
+        // v1.3.3 Phase 3: only now may an FCM token be registered.
+        unawaited(PushService.onPermissionGranted());
       } else {
         await NotificationService.markPermissionAsked();
       }
@@ -487,6 +599,11 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _resumeDebounce?.cancel();
+    _resumeDebounce = null;
+    _markAliveTimer?.cancel();
+    _markAliveTimer = null;
+    unawaited(MusicMediaSessionWatcher.instance.stop());
     RemoteConfigService.revision.removeListener(_enforceForceUpdate);
     BanService.state.removeListener(_onBanChanged);
     DizzyIdentityService.deviceRevoked.removeListener(_onDeviceRevoked);
@@ -541,37 +658,60 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
           orElse: () => AppThemeService.currentPalette.value,
         );
         return MaterialApp(
-                  navigatorKey: navigatorKey,
-                  title: 'Dizzy',
-                  debugShowCheckedModeBanner: false,
-                  // v1.3.3-T2.3: coarse route breadcrumbs for the crash trail.
-                  navigatorObservers: [TrailNavigatorObserver()],
-                  theme: AppThemeService.createThemeData(palette),
+          navigatorKey: navigatorKey,
+          title: 'Dizzy',
+          debugShowCheckedModeBanner: false,
+          // v1.3.3-T2.3: coarse route breadcrumbs for the crash trail.
+          navigatorObservers: [TrailNavigatorObserver()],
+          theme: AppThemeService.createThemeData(palette),
           scrollBehavior: const DesktopCustomScrollBehavior().copyWith(
             overscroll: false,
           ),
           // Polish P12: 200% font safety rail — layouts never break,
           // TalkBack + focus order untouched.
           // UX1: Universal Spotlight Search via Ctrl+K / Cmd+K
-          builder: (context, child) => Focus(
-            autofocus: true,
-            onKeyEvent: (node, event) {
-              if (event is KeyDownEvent &&
-                  (HardwareKeyboard.instance.isControlPressed ||
-                      HardwareKeyboard.instance.isMetaPressed) &&
-                  event.logicalKey == LogicalKeyboardKey.keyK) {
-                final currentCtx = navigatorKey.currentContext;
-                if (currentCtx != null) {
-                  UniversalSpotlightModal.show(currentCtx);
-                  return KeyEventResult.handled;
-                }
-              }
-              return KeyEventResult.ignored;
+          builder: (context, child) => ValueListenableBuilder<AppThemePalette>(
+            valueListenable: AppThemeService.currentPalette,
+            builder: (context, palette, _) {
+              final isLight = palette.isLight;
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: isLight
+                      ? Brightness.dark
+                      : Brightness.light,
+                  // iOS reports the opposite of the icon brightness.
+                  statusBarBrightness: isLight
+                      ? Brightness.light
+                      : Brightness.dark,
+                  systemNavigationBarColor: Colors.transparent,
+                  systemNavigationBarDividerColor: Colors.transparent,
+                  systemNavigationBarIconBrightness: isLight
+                      ? Brightness.dark
+                      : Brightness.light,
+                ),
+                child: Focus(
+                  autofocus: true,
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent &&
+                        (HardwareKeyboard.instance.isControlPressed ||
+                            HardwareKeyboard.instance.isMetaPressed) &&
+                        event.logicalKey == LogicalKeyboardKey.keyK) {
+                      final currentCtx = navigatorKey.currentContext;
+                      if (currentCtx != null) {
+                        UniversalSpotlightModal.show(currentCtx);
+                        return KeyEventResult.handled;
+                      }
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: DizzyA11y.kMaxTextScale,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
+              );
             },
-            child: MediaQuery.withClampedTextScaling(
-              maxScaleFactor: DizzyA11y.kMaxTextScale,
-              child: child ?? const SizedBox.shrink(),
-            ),
           ),
           home: const HomePage(),
         );

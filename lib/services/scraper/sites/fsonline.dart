@@ -39,46 +39,53 @@ class FSOnlineScraper extends StreamScraper {
       final client = http.Client();
       try {
         final query = year != null ? '$title $year' : title;
-        final searchRes = await client.get(
-          Uri.parse('$_origin/?s=${Uri.encodeComponent(query)}'),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final searchRes = await client
+            .get(
+              Uri.parse('$_origin/?s=${Uri.encodeComponent(query)}'),
+              headers: _headers,
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (searchRes.statusCode != 200) return;
         final searchHtml = searchRes.body;
 
         final typeFolder = isTv ? 'seriale' : 'film';
-        final linkMatch = RegExp('''href=["'](https?://www3\\.fsonline\\.app/$typeFolder/([^"'/]+)/)["']''', caseSensitive: false)
-            .firstMatch(searchHtml);
+        final linkMatch = RegExp(
+          '''href=["'](https?://www3\\.fsonline\\.app/$typeFolder/([^"'/]+)/)["']''',
+          caseSensitive: false,
+        ).firstMatch(searchHtml);
         if (linkMatch == null || linkMatch.group(1) == null) return;
 
         final targetPageUrl = isTv
             ? '$_origin/episoade/${linkMatch.group(2)!.replaceAll(RegExp(r'-\d{4}$'), '')}-sezonul-${season ?? 1}-episodul-${episode ?? 1}/'
             : linkMatch.group(1)!;
 
-        final pageRes = await client.get(
-          Uri.parse(targetPageUrl),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final pageRes = await client
+            .get(Uri.parse(targetPageUrl), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (pageRes.statusCode != 200) return;
         final pageHtml = pageRes.body;
 
-        final movieId = (RegExp(r'''movie-id=['"]([^'"]+)['"]''').firstMatch(pageHtml) ??
-                RegExp(r'''movie-id=([^ >]+)''').firstMatch(pageHtml))
-            ?.group(1);
+        final movieId =
+            (RegExp(r'''movie-id=['"]([^'"]+)['"]''').firstMatch(pageHtml) ??
+                    RegExp(r'''movie-id=([^ >]+)''').firstMatch(pageHtml))
+                ?.group(1);
         if (movieId == null) return;
 
-        final ajaxRes = await client.post(
-          Uri.parse(_ajaxUrl),
-          headers: {
-            ..._headers,
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Referer': targetPageUrl,
-          },
-          body: 'action=lazy_player&movieID=$movieId',
-        ).timeout(const Duration(seconds: 8));
+        final ajaxRes = await client
+            .post(
+              Uri.parse(_ajaxUrl),
+              headers: {
+                ..._headers,
+                'Content-Type':
+                    'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Referer': targetPageUrl,
+              },
+              body: 'action=lazy_player&movieID=$movieId',
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (ajaxRes.statusCode != 200) return;
         final ajaxHtml = ajaxRes.body;
@@ -98,14 +105,21 @@ class FSOnlineScraper extends StreamScraper {
 
           if (serverLabel.contains('filesun')) {
             try {
-              final rRes = await client.get(
-                Uri.parse(embedUrl),
-                headers: {'Referer': _origin, 'User-Agent': _ua},
-              ).timeout(const Duration(seconds: 6));
+              final rRes = await client
+                  .get(
+                    Uri.parse(embedUrl),
+                    headers: {'Referer': _origin, 'User-Agent': _ua},
+                  )
+                  .timeout(const Duration(seconds: 6));
 
               if (rRes.statusCode == 200) {
-                final m3u8Match = RegExp(r'''file:\s*["'](https?://[^"']+\.m3u8[^"']*)["']''').firstMatch(rRes.body) ??
-                    RegExp(r'''["']?file["']?:\s*["'](https?://[^"']+)["']''').firstMatch(rRes.body);
+                final m3u8Match =
+                    RegExp(
+                      r'''file:\s*["'](https?://[^"']+\.m3u8[^"']*)["']''',
+                    ).firstMatch(rRes.body) ??
+                    RegExp(
+                      r'''["']?file["']?:\s*["'](https?://[^"']+)["']''',
+                    ).firstMatch(rRes.body);
 
                 if (m3u8Match != null && m3u8Match.group(1) != null) {
                   final streamUrl = m3u8Match.group(1)!.replaceAll(r'\/', '/');
@@ -124,9 +138,7 @@ class FSOnlineScraper extends StreamScraper {
                     headers: reqHeaders,
                     behaviorHints: {
                       'notWebReady': false,
-                      'proxyHeaders': {
-                        'request': reqHeaders,
-                      },
+                      'proxyHeaders': {'request': reqHeaders},
                     },
                   );
                 }

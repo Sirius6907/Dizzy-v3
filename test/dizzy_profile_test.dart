@@ -58,8 +58,7 @@ void main() {
         isKids: false,
         createdAt: DateTime.utc(2026, 10, 1),
       );
-      final restored = DizzyProfile.fromJson(p.toJson()
-        ..remove('updatedAt'));
+      final restored = DizzyProfile.fromJson(p.toJson()..remove('updatedAt'));
       expect(restored.updatedAt, restored.createdAt);
     });
 
@@ -73,7 +72,9 @@ void main() {
         updatedAt: DateTime.utc(2026, 10, 1),
       );
       final next = p.copyWith(
-          name: 'New', updatedAt: DateTime.utc(2026, 10, 12));
+        name: 'New',
+        updatedAt: DateTime.utc(2026, 10, 12),
+      );
       expect(next.name, 'New');
       expect(next.updatedAt.isAfter(p.updatedAt), isTrue);
     });

@@ -47,7 +47,9 @@ class VidFastScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidFastScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidFastScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -57,15 +59,18 @@ class VidFastScraper extends StreamScraper {
             ? '$_domain/tv/$tmdbId/${season ?? 1}/${episode ?? 1}/'
             : '$_domain/movie/$tmdbId/';
 
-        final pageRes = await client.get(
-          Uri.parse(embedUrl),
-          headers: {'User-Agent': _ua, 'Referer': '$_domain/'},
-        ).timeout(const Duration(seconds: 10));
+        final pageRes = await client
+            .get(
+              Uri.parse(embedUrl),
+              headers: {'User-Agent': _ua, 'Referer': '$_domain/'},
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (pageRes.statusCode != 200) return;
 
         final html = pageRes.body;
-        final tokenMatch = RegExp(r'\\"(?:en|token)\\":\\"(.*?)\\"').firstMatch(html) ??
+        final tokenMatch =
+            RegExp(r'\\"(?:en|token)\\":\\"(.*?)\\"').firstMatch(html) ??
             RegExp(r'"(?:en|token)":"(.*?)"').firstMatch(html);
 
         if (tokenMatch == null || tokenMatch.group(1) == null) return;
@@ -73,10 +78,14 @@ class VidFastScraper extends StreamScraper {
         final rawToken = tokenMatch.group(1)!;
 
         // Query enc-vidfast
-        final encRes = await client.get(
-          Uri.parse('$_apiBase/enc-vidfast?text=${Uri.encodeComponent(rawToken)}'),
-          headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-        ).timeout(const Duration(seconds: 10));
+        final encRes = await client
+            .get(
+              Uri.parse(
+                '$_apiBase/enc-vidfast?text=${Uri.encodeComponent(rawToken)}',
+              ),
+              headers: {'User-Agent': _ua, 'Accept': 'application/json'},
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (encRes.statusCode != 200) return;
         final encData = jsonDecode(encRes.body);
@@ -86,27 +95,27 @@ class VidFastScraper extends StreamScraper {
         final streamUrl = encData['result']['stream']?.toString();
         final csrfToken = encData['result']['token']?.toString();
 
-        if (serversUrl == null || streamUrl == null || csrfToken == null) return;
+        if (serversUrl == null || streamUrl == null || csrfToken == null) {
+          return;
+        }
 
-        final reqHeaders = {
-          ..._defaultHeaders,
-          'X-CSRF-Token': csrfToken,
-        };
+        final reqHeaders = {..._defaultHeaders, 'X-CSRF-Token': csrfToken};
 
         // Fetch encrypted servers
-        final serversEncRes = await client.post(
-          Uri.parse(serversUrl),
-          headers: reqHeaders,
-        ).timeout(const Duration(seconds: 10));
+        final serversEncRes = await client
+            .post(Uri.parse(serversUrl), headers: reqHeaders)
+            .timeout(const Duration(seconds: 10));
 
         if (serversEncRes.statusCode != 200) return;
 
         // Decrypt servers
-        final decServersRes = await client.post(
-          Uri.parse('$_apiBase/dec-vidfast'),
-          headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
-          body: jsonEncode({'text': serversEncRes.body}),
-        ).timeout(const Duration(seconds: 10));
+        final decServersRes = await client
+            .post(
+              Uri.parse('$_apiBase/dec-vidfast'),
+              headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
+              body: jsonEncode({'text': serversEncRes.body}),
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (decServersRes.statusCode != 200) return;
         final decServersData = jsonDecode(decServersRes.body);
@@ -123,22 +132,28 @@ class VidFastScraper extends StreamScraper {
 
           futures.add(() async {
             try {
-              final sEncRes = await client.post(
-                Uri.parse('$streamUrl/$srvData'),
-                headers: reqHeaders,
-              ).timeout(const Duration(seconds: 10));
+              final sEncRes = await client
+                  .post(Uri.parse('$streamUrl/$srvData'), headers: reqHeaders)
+                  .timeout(const Duration(seconds: 10));
 
               if (sEncRes.statusCode != 200) return null;
 
-              final decStreamRes = await client.post(
-                Uri.parse('$_apiBase/dec-vidfast'),
-                headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
-                body: jsonEncode({'text': sEncRes.body}),
-              ).timeout(const Duration(seconds: 10));
+              final decStreamRes = await client
+                  .post(
+                    Uri.parse('$_apiBase/dec-vidfast'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'User-Agent': _ua,
+                    },
+                    body: jsonEncode({'text': sEncRes.body}),
+                  )
+                  .timeout(const Duration(seconds: 10));
 
               if (decStreamRes.statusCode != 200) return null;
               final decData = jsonDecode(decStreamRes.body);
-              if (decData['status'] != 200 || decData['result'] == null) return null;
+              if (decData['status'] != 200 || decData['result'] == null) {
+                return null;
+              }
 
               final finalUrl = decData['result']['url']?.toString();
               if (finalUrl == null || finalUrl.isEmpty) return null;
@@ -161,7 +176,8 @@ class VidFastScraper extends StreamScraper {
           final srvName = item['name'] as String;
           final streamTargetUrl = item['url'] as String;
 
-          final is4K = srvName.toLowerCase().contains('2160') ||
+          final is4K =
+              srvName.toLowerCase().contains('2160') ||
               srvName.toLowerCase().contains('4k') ||
               streamTargetUrl.contains('2160p');
           final qualityLabel = is4K ? '4K' : '1080p';
@@ -181,9 +197,7 @@ class VidFastScraper extends StreamScraper {
             headers: headers,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': headers,
-              },
+              'proxyHeaders': {'request': headers},
             },
           );
         }

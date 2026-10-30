@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../design/prism_shadows.dart';
+import '../../design/prism_tokens.dart';
 import '../../models/movie/movie.dart';
 import '../../models/movie/movie_section.dart';
 import '../../services/addon/addon_manager.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/movie/movie_card.dart';
@@ -10,12 +13,8 @@ import '../../widgets/movie/movie_card.dart';
 class DiscoverPage extends StatefulWidget {
   final String query;
   final bool isGenre;
-  
-  const DiscoverPage({
-    super.key,
-    required this.query,
-    required this.isGenre,
-  });
+
+  const DiscoverPage({super.key, required this.query, required this.isGenre});
 
   @override
   State<DiscoverPage> createState() => _DiscoverPageState();
@@ -41,7 +40,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     try {
       final manager = AddonManager.instance;
       List<MovieSection> sections;
-      
+
       if (widget.isGenre) {
         sections = await manager.fetchByGenre(widget.query);
       } else {
@@ -67,75 +66,77 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final topPadding = MediaQuery.of(context).padding.top;
     final isDesktop = MediaQuery.sizeOf(context).width >= 800;
 
-    return OfflineAwareScaffold(
-      backgroundColor: const Color(0xFF080A0F),
-      body: Stack(
-        children: [
-          // ── Main Content Grid ──
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
-            )
-          else if (_error != null)
-            ErrorView(
-              error: _error,
-              onRetry: _fetchData,
-            )
-          else if (_sections.isEmpty)
-            Center(
-              child: Text(
-                'No results found for "${widget.query}"',
-                style: const TextStyle(color: Colors.white54, fontSize: 16),
-              ),
-            )
-          else
-            _buildSectionsList(topPadding + kToolbarHeight + 20),
+    return ValueListenableBuilder<AppThemePalette>(
+      valueListenable: AppThemeService.currentPalette,
+      builder: (context, palette, _) {
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
 
-          // ── Tactile App Bar (no GPU blur shaders) ──
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: kToolbarHeight + topPadding,
-              padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF14161E), Color(0xFF0C0E15)],
-                ),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    width: 1,
+        return OfflineAwareScaffold(
+          backgroundColor: palette.scaffoldBackgroundColor,
+          body: Stack(
+            children: [
+              // ── Main Content Grid ──
+              if (_isLoading)
+                Center(
+                  child: CircularProgressIndicator(color: palette.primaryColor),
+                )
+              else if (_error != null)
+                ErrorView(error: _error, onRetry: _fetchData)
+              else if (_sections.isEmpty)
+                Center(
+                  child: Text(
+                    'No results found for "${widget.query}"',
+                    style: TextStyle(
+                      color: isLight ? PrismLight.inkSoft : Colors.white54,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
+                )
+              else
+                _buildSectionsList(topPadding + kToolbarHeight + 20),
+
+              // ── Tactile App Bar (no GPU blur shaders) ──
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: kToolbarHeight + topPadding,
+                  padding: EdgeInsets.only(
+                    top: topPadding,
+                    left: 16,
+                    right: 16,
                   ),
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.07),
-                    blurRadius: 0,
-                    offset: const Offset(0, 1),
+                  decoration: BoxDecoration(
+                    gradient: PrismShadows.surfaceGradient(isLight),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.12),
+                        width: 1,
+                      ),
+                    ),
+                    boxShadow: PrismShadows.raised(
+                      isLight: isLight,
+                      scale: 0.6,
+                    ),
                   ),
-                ],
-              ),
-              child: Row(
+                  child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        icon: Icon(Icons.arrow_back, color: ink),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          widget.isGenre ? 'Genre: ${widget.query}' : 'Search: ${widget.query}',
+                          widget.isGenre
+                              ? 'Genre: ${widget.query}'
+                              : 'Search: ${widget.query}',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: isDesktop ? 22 : 20,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -150,6 +151,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               ),
             ],
           ),
+        );
+      },
     );
   }
 
@@ -176,16 +179,20 @@ class _DiscoverPageState extends State<DiscoverPage> {
       ),
       physics: const BouncingScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ((MediaQuery.sizeOf(context).width - sizing.sidePadding * 2 + sizing.spacing) / (sizing.cardWidth + sizing.spacing)).floor().clamp(2, 10),
+        crossAxisCount:
+            ((MediaQuery.sizeOf(context).width -
+                        sizing.sidePadding * 2 +
+                        sizing.spacing) /
+                    (sizing.cardWidth + sizing.spacing))
+                .floor()
+                .clamp(2, 10),
         childAspectRatio: 1 / 1.48,
         crossAxisSpacing: sizing.spacing,
         mainAxisSpacing: sizing.spacing,
       ),
       itemCount: allMovies.length,
       itemBuilder: (context, index) {
-        return MovieCard(
-          movie: allMovies[index],
-        );
+        return MovieCard(movie: allMovies[index]);
       },
     );
   }

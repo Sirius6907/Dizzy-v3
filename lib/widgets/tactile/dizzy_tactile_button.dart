@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 
 /// A physical, extruded neo-skeuomorphic tactile button with 0% runtime GPU blur shaders.
 /// Uses static dual-shadows and gradient inversion on press for an authentic tactile click.
@@ -59,25 +61,33 @@ class _DizzyTactileButtonState extends State<DizzyTactileButton> {
     final radius = widget.borderRadius ?? BorderRadius.circular(DizzyRadius.lg);
     final isInteractive = widget.onTap != null;
 
-    // Normal extruded state vs pressed-in carved state
+    final palette = AppThemeService.currentPalette.value;
+
+    // Prism clay: convex raised vs concave pressed. Custom gradient
+    // override still respected (studio previews), glow ring kept.
     final effectiveGradient = _isPressed
-        ? DizzyGradients.carvedSurface
-        : (widget.gradient ?? DizzyGradients.tactileSurface);
+        ? PrismShadows.pressedGradient(palette.isLight)
+        : (widget.gradient ?? PrismShadows.surfaceGradient(palette.isLight));
 
     final List<BoxShadow> effectiveShadows = [
-      ...(_isPressed ? DizzyShadow.pressed : DizzyShadow.card),
+      ...(_isPressed
+          ? PrismShadows.pressed(isLight: palette.isLight, scale: 0.8)
+          : PrismShadows.raised(isLight: palette.isLight, scale: 0.6)),
       if (widget.glowColor != null)
         BoxShadow(
-          color: widget.glowColor!.withValues(alpha: widget.isSelected ? 0.35 : 0.20),
+          color: widget.glowColor!.withValues(
+            alpha: widget.isSelected ? 0.35 : 0.20,
+          ),
           blurRadius: 16,
           offset: Offset.zero,
         ),
     ];
 
-    final effectiveBorder = widget.border ??
+    final effectiveBorder =
+        widget.border ??
         (widget.isSelected && widget.glowColor != null
             ? DizzyEdge.neon(widget.glowColor!)
-            : DizzyEdge.hairline);
+            : null);
 
     return GestureDetector(
       onTapDown: isInteractive ? _handleTapDown : null,
@@ -100,34 +110,21 @@ class _DizzyTactileButtonState extends State<DizzyTactileButton> {
           decoration: BoxDecoration(
             borderRadius: radius,
             gradient: effectiveGradient,
-            border: Border.fromBorderSide(effectiveBorder),
+            border: effectiveBorder == null
+                ? null
+                : Border.fromBorderSide(effectiveBorder),
             boxShadow: effectiveShadows,
           ),
-          child: Stack(
-            children: [
-              // Top-edge light catch highlight
-              if (!_isPressed)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: radius,
-                        gradient: DizzyGradients.topInnerGlow(0.10),
-                      ),
-                    ),
+          child: Center(
+            child: Padding(
+              padding:
+                  widget.padding ??
+                  const EdgeInsets.symmetric(
+                    horizontal: DizzySpace.md,
+                    vertical: DizzySpace.sm,
                   ),
-                ),
-              Center(
-                child: Padding(
-                  padding: widget.padding ??
-                      const EdgeInsets.symmetric(
-                        horizontal: DizzySpace.md,
-                        vertical: DizzySpace.sm,
-                      ),
-                  child: widget.child,
-                ),
-              ),
-            ],
+              child: widget.child,
+            ),
           ),
         ),
       ),

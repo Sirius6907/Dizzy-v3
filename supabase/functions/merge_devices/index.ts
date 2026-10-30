@@ -1,16 +1,14 @@
 // merge_devices — F3 "sab wapas": an old anonymous session folds into the
 // new device, and nothing is ever lost on the way.
 //
-// This EXTENDS the `merge_devices(p_old_anon_uid, p_canonical_uid)` SQL
-// function (migrations/20260920_social_sync_foundation.sql), which already
-// re-links devices and max-merges continue_watching. We call it, then add
-// the friend UNION and the honest counts the client needs for its summary
-// line. The old RPC is left untouched — we wrap, we do not fork.
+// This wraps the `merge_devices(p_old_anon_uid, p_canonical_uid)` SQL
+// function, which re-keys every user-owned table (devices, sessions,
+// profiles, friends, DMs) and is guest-only since 20261030_audit_hardening.
+// We verify the caller here, call the RPC, and report honest counts.
 //
 // Rules, in one place so nobody has to re-derive them:
-//   * UNION only. A row that already exists on the new device is never
-//     rewritten; a row that exists only on the old device is inserted.
-//     Losing a list to a merge is unrecoverable, so the merge is additive.
+//   * Additive. A row that already exists on the new device is never
+//     rewritten by this function; the RPC's newest-row-wins merge decides.
 //   * Idempotent. Running it twice inserts zero extra rows and reports
 //     `already_merged: true`, so a nervous double-tap is harmless.
 //   * Verified caller. The request must carry the Authorization header of
@@ -55,12 +53,8 @@ function intFrom(v: unknown): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
-/// Friends move in both directions, so a merge has to check each side of
-/// the friendship separately. A pair is canonicalised (low uid first) so
-/// the same friendship cannot be inserted twice from the two directions.
-function friendPair(a: string, b: string): [string, string] {
-  return a < b ? [a, b] : [b, a];
-}
+/// Friends move with the account; the SQL RPC re-keys them.
+/// A pair is canonicalised (low uid first) so a friendship cannot exist twice.
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -130,7 +124,19 @@ serve(async (req) => {
     return json({ success: false, error: "That code cannot be used." }, 403);
   }
 
-  // ── Step 1: the existing RPC — devices + max-progress re-parent ──────────
+  // ── Step 1: friend count before the re-parent (the RPC moves them) ────────
+  let friendsAdded = 0;
+  try {
+    const { count } = await admin
+      .from("friendships")
+      .select("requester_id", { count: "exact", head: true })
+      .eq("requester_id", oldUid);
+    friendsAdded = count ?? 0;
+  } catch {
+    friendsAdded = 0;
+  }
+
+  // ── Step 2: the existing RPC — every table, devices included ─────────────
   const { data: rpcOut, error: rpcErr } = await admin.rpc("merge_devices", {
     p_old_anon_uid: oldUid,
     p_canonical_uid: canonicalUid,
@@ -142,63 +148,16 @@ serve(async (req) => {
     return json({ success: false, error: "Merge did not finish." }, 409);
   }
 
-  // ── Step 2: friend UNION, both directions, additive only ─────────────────
-  let friendsAdded = 0;
-  try {
-    const { data: oldFriends } = await admin
-      .from("friendships")
-      .select("requester_id, addressee_id, status")
-      .or(`requester_id.eq.${oldUid},addressee_id.eq.${oldUid}`);
-
-    const seen = new Set<string>();
-    for (const row of oldFriends ?? []) {
-      const requester = row.requester_id as string | null;
-      const addressee = row.addressee_id as string | null;
-      if (!requester || !addressee) continue;
-      // Someone who friended the old anonymous session is not a friend of
-      // the new device by default — anonymous friendships are not
-      // transferable. Only rows the OLD session requested are carried, and
-      // only as 'pending', so the other person still chooses.
-      if (requester !== oldUid) continue;
-      if (addressee === canonicalUid) continue;
-
-      const [a, b] = friendPair(requester, addressee);
-      const key = `${a}|${b}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const { data: existing } = await admin
-        .from("friendships")
-        .select("requester_id")
-        .or(`and(requester_id.eq.${a},addressee_id.eq.${b}),and(requester_id.eq.${b},addressee_id.eq.${a})`)
-        .maybeSingle();
-
-      if (existing) continue; // already there — UNION, never overwrite
-
-      const { error: insErr } = await admin.from("friendships").insert({
-        requester_id: oldUid,
-        addressee_id: addressee,
-        status: "pending",
-      });
-      if (!insErr) friendsAdded++;
-    }
-  } catch {
-    // A friend merge failure must not sink the whole restore; the client
-    // reports honest counts either way.
-    friendsAdded = 0;
-  }
-
   // ── Step 3: honest counts ────────────────────────────────────────────────
-  // The old SQL RPC re-parents rows and deletes the old ones, so "added"
-  // is whatever the canonical account owns now that it did not own before.
-  // We snapshot before/after counts around the RPC to report the truth.
-  const { data: cwRows } = await admin
-    .from("continue_watching")
-    .select("content_id, progress_ms, updated_at")
+  // Watch progress lives in cloud_sessions on this project. There is no
+  // continue_watching table — querying it only ever returned an error.
+  const { data: sessionRows } = await admin
+    .from("cloud_sessions")
+    .select("media_id, position_seconds")
     .eq("user_id", canonicalUid);
 
-  const progressNow = cwRows ?? [];
-  const progressed = progressNow.filter((r) => intFrom(r.progress_ms) > 0).length;
+  const progressNow = sessionRows ?? [];
+  const progressed = progressNow.filter((r) => intFrom(r.position_seconds) > 0).length;
 
   // Nothing to report for watchlist/history: those are device-local today,
   // and the client merges its own copy before calling us. Reporting zero

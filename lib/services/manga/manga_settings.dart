@@ -75,17 +75,26 @@ abstract final class MangaSettings {
   static const _keyPageGap = 'manga_page_gap';
 
   // Atmosphere Notifiers
-  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<AmbientLightPattern> ambientLightPattern =
       ValueNotifier<AmbientLightPattern>(AmbientLightPattern.dualOrbs);
-  static final ValueNotifier<double> ambientLightIntensity = ValueNotifier<double>(0.22);
-  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(1.0);
+  static final ValueNotifier<double> ambientLightIntensity =
+      ValueNotifier<double>(0.22);
+  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(
+    1.0,
+  );
 
   // Cards & Layout Notifiers
-  static final ValueNotifier<bool> showContinueReading = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showContinueReading = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<MangaCardDensity> cardDensity =
       ValueNotifier<MangaCardDensity>(MangaCardDensity.standard);
-  static final ValueNotifier<bool> showContentTypeBadge = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showContentTypeBadge = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<bool> showMangaYear = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showScrollTrack = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> ambientCardGlow = ValueNotifier<bool>(true);
@@ -101,7 +110,9 @@ abstract final class MangaSettings {
       ValueNotifier<MangaControlBarStyle>(MangaControlBarStyle.floatingGlass);
   static final ValueNotifier<bool> showPageDeck = ValueNotifier<bool>(true);
   static final ValueNotifier<bool> showPageScrubber = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> enableNextChapterDeck = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableNextChapterDeck = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<double> pageGap = ValueNotifier<double>(6.0);
 
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
@@ -124,7 +135,8 @@ abstract final class MangaSettings {
       (d) => d.name == densityStr,
       orElse: () => MangaCardDensity.standard,
     );
-    showContentTypeBadge.value = prefs.getBool(_keyShowContentTypeBadge) ?? true;
+    showContentTypeBadge.value =
+        prefs.getBool(_keyShowContentTypeBadge) ?? true;
     showMangaYear.value = prefs.getBool(_keyShowMangaYear) ?? true;
     showScrollTrack.value = prefs.getBool(_keyShowScrollTrack) ?? true;
     ambientCardGlow.value = prefs.getBool(_keyAmbientCardGlow) ?? true;
@@ -155,7 +167,8 @@ abstract final class MangaSettings {
 
     showPageDeck.value = prefs.getBool(_keyShowPageDeck) ?? true;
     showPageScrubber.value = prefs.getBool(_keyShowPageScrubber) ?? true;
-    enableNextChapterDeck.value = prefs.getBool(_keyEnableNextChapterDeck) ?? true;
+    enableNextChapterDeck.value =
+        prefs.getBool(_keyEnableNextChapterDeck) ?? true;
     pageGap.value = prefs.getDouble(_keyPageGap) ?? 6.0;
   }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 import 'package:dizzy/services/moderation/ban_service.dart';
 import 'package:dizzy/widgets/common/notify.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
@@ -39,23 +41,35 @@ class _BanNoticeScreenState extends State<BanNoticeScreen> {
     if (!ok) await BanService.saveAppealDraft(_appeal.text);
     if (!mounted) return;
     if (ok) {
-      DizzyNotify.show(context, 'Appeal sent. We will look at it soon.',
-          tone: NotifyTone.success);
+      DizzyNotify.show(
+        context,
+        'Appeal sent. We will look at it soon.',
+        tone: NotifyTone.success,
+      );
       Navigator.of(context).pop();
     } else {
       DizzyNotify.show(
-          context,
-          tooShort
-              ? 'A little more detail helps (10+ characters).'
-              : 'Could not send yet — your text is saved, try again.',
-          tone: NotifyTone.warn);
+        context,
+        tooShort
+            ? 'A little more detail helps (10+ characters).'
+            : 'Could not send yet — your text is saved, try again.',
+        tone: NotifyTone.warn,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final well = isLight ? PrismLight.raisedBottom : DizzyVoid.voidA;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : DizzyVoid.bone.withValues(alpha: 0.12);
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -73,17 +87,21 @@ class _BanNoticeScreenState extends State<BanNoticeScreen> {
                       color: DizzyGlow.red.withValues(alpha: 0.12),
                       border: Border.all(color: DizzyGlow.red, width: 2),
                     ),
-                    child: const Icon(Icons.block_rounded,
-                        color: DizzyGlow.red, size: 40),
+                    child: const Icon(
+                      Icons.block_rounded,
+                      color: DizzyGlow.red,
+                      size: 40,
+                    ),
                   ),
                   const SizedBox(height: DizzySpace.lg),
-                  const Text(
+                  Text(
                     'Account paused',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: DizzyVoid.bone,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800),
+                      color: ink,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: DizzySpace.sm),
                   ValueListenableBuilder<BanState>(
@@ -93,26 +111,31 @@ class _BanNoticeScreenState extends State<BanNoticeScreen> {
                           ? 'This account is suspended.'
                           : ban.easyEnglish,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          color: DizzyVoid.ash, fontSize: 14, height: 1.5),
+                      style: TextStyle(
+                        color: inkSoft,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                   const SizedBox(height: DizzySpace.md),
-                  const Text(
+                  Text(
                     'Think this is a mistake? Tell us what happened — we will\n'
                     'review it. Nothing you type is lost if sending fails.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: DizzyVoid.ash, fontSize: 12.5, height: 1.5),
+                      color: inkSoft,
+                      fontSize: 12.5,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: DizzySpace.lg),
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: DizzyVoid.voidA,
+                      color: well,
                       borderRadius: BorderRadius.circular(DizzyRadius.lg),
-                      border: Border.all(
-                          color: DizzyVoid.bone.withValues(alpha: 0.12)),
+                      border: Border.all(color: hairline),
                     ),
                     padding: const EdgeInsets.all(DizzySpace.md),
                     child: TextField(
@@ -120,13 +143,11 @@ class _BanNoticeScreenState extends State<BanNoticeScreen> {
                       maxLines: 5,
                       maxLength: 1000,
                       onChanged: BanService.saveAppealDraft,
-                      style: const TextStyle(
-                          color: DizzyVoid.bone, fontSize: 14, height: 1.5),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: ink, fontSize: 14, height: 1.5),
+                      decoration: InputDecoration(
                         counterText: '',
                         hintText: 'What happened? (10+ characters)',
-                        hintStyle:
-                            TextStyle(color: DizzyVoid.ash, fontSize: 14),
+                        hintStyle: TextStyle(color: inkSoft, fontSize: 14),
                         border: InputBorder.none,
                       ),
                     ),
@@ -140,15 +161,15 @@ class _BanNoticeScreenState extends State<BanNoticeScreen> {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.send_rounded,
-                            color: Colors.white, size: 20),
+                        Icon(Icons.send_rounded, color: Colors.white, size: 20),
                         SizedBox(width: 8),
                         Text(
                           'Send appeal',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
                         ),
                       ],
                     ),
@@ -158,12 +179,13 @@ class _BanNoticeScreenState extends State<BanNoticeScreen> {
                     width: double.infinity,
                     height: 44,
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Text(
+                    child: Text(
                       'Back',
                       style: TextStyle(
-                          color: DizzyVoid.ash,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14),
+                        color: inkSoft,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],

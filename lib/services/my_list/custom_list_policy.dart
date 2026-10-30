@@ -33,22 +33,21 @@ class CustomList {
     String? name,
     List<String>? itemKeys,
     DateTime? updatedAt,
-  }) =>
-      CustomList(
-        id: id,
-        name: name ?? this.name,
-        itemKeys: itemKeys ?? this.itemKeys,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  }) => CustomList(
+    id: id,
+    name: name ?? this.name,
+    itemKeys: itemKeys ?? this.itemKeys,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'itemKeys': itemKeys,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'itemKeys': itemKeys,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   /// A row we cannot read is dropped rather than thrown on — one bad list
   /// must never hide the other lists of the same profile.
@@ -124,7 +123,13 @@ abstract final class CustomListPolicy {
     if (existing.any((l) => sameName(l.name, clean))) return null;
     final at = now ?? DateTime.now();
     return [
-      CustomList(id: id, name: clean, itemKeys: const [], createdAt: at, updatedAt: at),
+      CustomList(
+        id: id,
+        name: clean,
+        itemKeys: const [],
+        createdAt: at,
+        updatedAt: at,
+      ),
       ...existing,
     ];
   }
@@ -145,10 +150,7 @@ abstract final class CustomListPolicy {
     final at = now ?? DateTime.now();
     return [
       for (final l in lists)
-        if (l.id == id)
-          l.copyWith(name: clean, updatedAt: at)
-        else
-          l,
+        if (l.id == id) l.copyWith(name: clean, updatedAt: at) else l,
     ];
   }
 
@@ -201,7 +203,8 @@ abstract final class CustomListPolicy {
 
   /// The keys this profile added — a title can live in many lists at once.
   static Set<String> keysIn(List<CustomList> lists, String listId) =>
-      lists.where((l) => l.id == listId).firstOrNull?.itemKeys.toSet() ?? const {};
+      lists.where((l) => l.id == listId).firstOrNull?.itemKeys.toSet() ??
+      const {};
 }
 
 extension _FirstOrNull<T> on Iterable<T> {

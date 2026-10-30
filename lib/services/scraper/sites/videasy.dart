@@ -11,9 +11,7 @@ class VideasyScraper extends StreamScraper {
   @override
   String get name => 'videasy';
 
-  static const _apiKey = 'b3556f3b206e16f82df4d1f6fd4545e6';
   static const _apiBase = 'https://api.speedracelight.com';
-  static const _tmdbDirect = 'https://api.themoviedb.org/3';
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
@@ -33,9 +31,22 @@ class VideasyScraper extends StreamScraper {
   ];
 
   static final List<int> _f = [
-    1116352408, 1899447441, 3049323471, 3921009573, 961987163, 1508970993,
-    2453635748, 2870763221, 3624381080, 310598401, 607225278, 1426881987,
-    1925078388, 2162078206, 2614888103, 3248222580,
+    1116352408,
+    1899447441,
+    3049323471,
+    3921009573,
+    961987163,
+    1508970993,
+    2453635748,
+    2870763221,
+    3624381080,
+    310598401,
+    607225278,
+    1426881987,
+    1925078388,
+    2162078206,
+    2614888103,
+    3248222580,
   ];
 
   static final List<int> _magic = [109, 118, 109, 49]; // "mvm1"
@@ -96,7 +107,9 @@ class VideasyScraper extends StreamScraper {
       return {'S': _rc4Sbox(seed), 'acc': _accSeed(seed)};
     }
     final s = List<int?>.filled(61, null);
-    int a = _mix(_fnv1a(seed) ^ _mix((mediaId & 0xffffffff) ^ 2654435769)) & 0xffffffff;
+    int a =
+        _mix(_fnv1a(seed) ^ _mix((mediaId & 0xffffffff) ^ 2654435769)) &
+        0xffffffff;
     for (int e = 0; e < 8; e++) {
       if (_isEvenTri(e)) {
         final t = a % 61;
@@ -118,8 +131,12 @@ class VideasyScraper extends StreamScraper {
     final i = 0 - (exists ? 1 : 0);
     final l = (exists ? r[n]! : 0) & 0xffffffff;
     final a = (l ^ (_imul(2654435769, counter + 1) & 0xffffffff)) & 0xffffffff;
-    int d = (((acc ^ a) & 0xffffffff) | (((acc & a & i) & 0xffffffff))) & 0xffffffff;
-    d = (_rotl((d + acc) & 0xffffffff, 31 & n) ^ _rotl(acc, 31 & _imul(n, 7))) & 0xffffffff;
+    int d =
+        (((acc ^ a) & 0xffffffff) | (((acc & a & i) & 0xffffffff))) &
+        0xffffffff;
+    d =
+        (_rotl((d + acc) & 0xffffffff, 31 & n) ^ _rotl(acc, 31 & _imul(n, 7))) &
+        0xffffffff;
     acc = _mix((d + 2654435769) & 0xffffffff);
     if (n < r.length) r[n] = acc & 0xffffffff;
     state['acc'] = acc;
@@ -163,7 +180,9 @@ class VideasyScraper extends StreamScraper {
   Future<String?> _getSeed(int mediaId) async {
     try {
       final uri = Uri.parse('$_apiBase/seed?mediaId=$mediaId');
-      final res = await http.get(uri, headers: _defaultHeaders).timeout(const Duration(seconds: 8));
+      final res = await http
+          .get(uri, headers: _defaultHeaders)
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         return data['seed']?.toString();
@@ -183,8 +202,15 @@ class VideasyScraper extends StreamScraper {
   }) async {
     final sources = <StreamSource>[];
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
-    final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    AppLog.d('[VideasyScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    final tmdbId = await TmdbHelper.resolveTmdbId(
+      imdbId: imdbId,
+      title: title,
+      type: mediaType,
+      year: year,
+    );
+    AppLog.d(
+      '[VideasyScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)',
+    );
     if (tmdbId == null) return sources;
 
     try {
@@ -192,22 +218,24 @@ class VideasyScraper extends StreamScraper {
       final seed = await _getSeed(tmdbId);
       if (seed == null) return sources;
 
-      // Fetch TMDB metadata via TMDB Direct with user API key
+      // TMDB metadata via the shared keyless-first chain (no device key).
       String mediaTitle = title;
       int? mediaYear = year;
       String targetImdb = imdbId ?? '';
 
-      try {
-        final metaPath = isTv ? '/tv/$tmdbId?api_key=$_apiKey' : '/movie/$tmdbId?api_key=$_apiKey';
-        final metaRes = await http.get(Uri.parse('$_tmdbDirect$metaPath'), headers: _defaultHeaders).timeout(const Duration(seconds: 6));
-        if (metaRes.statusCode == 200) {
-          final meta = jsonDecode(metaRes.body);
-          mediaTitle = (meta['title'] ?? meta['name'] ?? title).toString();
-          final yStr = (meta['release_date'] ?? meta['first_air_date'] ?? '').toString();
-          if (yStr.length >= 4) mediaYear = int.tryParse(yStr.substring(0, 4)) ?? year;
-          if (meta['imdb_id'] != null) targetImdb = meta['imdb_id'].toString();
+      final meta = await TmdbHelper.fetchDetail(
+        endpoint: isTv ? 'tv' : 'movie',
+        tmdbId: tmdbId,
+      );
+      if (meta != null) {
+        mediaTitle = (meta['title'] ?? meta['name'] ?? title).toString();
+        final yStr = (meta['release_date'] ?? meta['first_air_date'] ?? '')
+            .toString();
+        if (yStr.length >= 4) {
+          mediaYear = int.tryParse(yStr.substring(0, 4)) ?? year;
         }
-      } catch (_) {}
+        if (meta['imdb_id'] != null) targetImdb = meta['imdb_id'].toString();
+      }
 
       final params = <String, String>{
         'title': mediaTitle,
@@ -223,10 +251,14 @@ class VideasyScraper extends StreamScraper {
 
       for (final p in _providers) {
         if (sources.length >= 6) break;
-        final uri = Uri.parse('$_apiBase${p['path']}').replace(queryParameters: params);
+        final uri = Uri.parse(
+          '$_apiBase${p['path']}',
+        ).replace(queryParameters: params);
 
         try {
-          final pRes = await http.get(uri, headers: _defaultHeaders).timeout(const Duration(seconds: 8));
+          final pRes = await http
+              .get(uri, headers: _defaultHeaders)
+              .timeout(const Duration(seconds: 8));
           if (pRes.statusCode != 200) continue;
           String body = pRes.body.trim();
           if (body.startsWith('"') && body.endsWith('"')) {
@@ -239,19 +271,23 @@ class VideasyScraper extends StreamScraper {
 
           for (final s in rawSources) {
             final streamUrl = s['url'] ?? s['file'];
-            if (streamUrl == null || !streamUrl.toString().startsWith('http')) continue;
+            if (streamUrl == null || !streamUrl.toString().startsWith('http')) {
+              continue;
+            }
             final q = s['quality']?.toString() ?? 'Auto';
-            sources.add(StreamSource(
-              name: 'Videasy',
-              addonName: 'videasy',
-              title: 'Videasy ${p['label']} · $q',
-              description: 'Videasy Multi-CDN HLS Stream',
-              url: streamUrl.toString(),
-              headers: {
-                'User-Agent': _ua,
-                'Referer': 'https://player.videasy.to/',
-              },
-            ));
+            sources.add(
+              StreamSource(
+                name: 'Videasy',
+                addonName: 'videasy',
+                title: 'Videasy ${p['label']} · $q',
+                description: 'Videasy Multi-CDN HLS Stream',
+                url: streamUrl.toString(),
+                headers: {
+                  'User-Agent': _ua,
+                  'Referer': 'https://player.videasy.to/',
+                },
+              ),
+            );
           }
         } catch (_) {}
       }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 
 /// Phase 31 — Universal Offline Fail-Soft Banner.
 ///
@@ -39,12 +39,10 @@ class _DizzyOfflineBannerState extends State<DizzyOfflineBanner>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0.0, -1.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideCtrl, curve: Curves.easeInOutCubic),
-    );
+    _slideAnim = Tween<Offset>(begin: const Offset(0.0, -1.5), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _slideCtrl, curve: Curves.easeInOutCubic),
+        );
     if (widget.isOffline) {
       _visible = true;
       _slideCtrl.forward();
@@ -86,12 +84,16 @@ class _DizzyOfflineBannerState extends State<DizzyOfflineBanner>
       child: Semantics(
         liveRegion: true,
         label: 'No internet. Waiting for connection.',
-        child: DizzyTactileCard(
+        child: PrismCard(
           margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
-              const Icon(Icons.wifi_off_rounded, color: DizzyGlow.red, size: 20),
+              const Icon(
+                Icons.wifi_off_rounded,
+                color: DizzyGlow.red,
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -112,10 +114,7 @@ class _DizzyOfflineBannerState extends State<DizzyOfflineBanner>
               else
                 const Text(
                   'Your place is safe.',
-                  style: TextStyle(
-                    color: DizzyVoid.ash,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: DizzyVoid.ash, fontSize: 12),
                 ),
             ],
           ),
@@ -159,13 +158,16 @@ class ConnectivityListener extends ValueNotifier<List<ConnectivityResult>> {
     _sub = Connectivity().onConnectivityChanged.listen((results) {
       value = results;
     });
-    Connectivity().checkConnectivity().then((dynamic result) {
-      if (result is List) {
-        value = result.cast<ConnectivityResult>();
-      } else {
-        value = <ConnectivityResult>[result as ConnectivityResult];
-      }
-    }).catchError((_) {});
+    Connectivity()
+        .checkConnectivity()
+        .then((dynamic result) {
+          if (result is List) {
+            value = result.cast<ConnectivityResult>();
+          } else {
+            value = <ConnectivityResult>[result as ConnectivityResult];
+          }
+        })
+        .catchError((_) {});
   }
 
   void stop() {

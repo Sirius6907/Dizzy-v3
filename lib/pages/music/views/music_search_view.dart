@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../design/prism_tokens.dart';
 import '../../../models/music/music_track.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/state_view.dart';
 import '../widgets/music_card_sizing.dart';
@@ -82,8 +84,12 @@ class MusicSearchView extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 48.0),
             child: Center(
               child: DizzyStateView(
-                icon: activeQuery.trim().isEmpty ? Icons.search_rounded : Icons.search_off_rounded,
-                title: activeQuery.trim().isEmpty ? 'Search for music' : 'No results for "$activeQuery"',
+                icon: activeQuery.trim().isEmpty
+                    ? Icons.search_rounded
+                    : Icons.search_off_rounded,
+                title: activeQuery.trim().isEmpty
+                    ? 'Search for music'
+                    : 'No results for "$activeQuery"',
                 line: activeQuery.trim().isEmpty
                     ? 'Find songs, artists, albums, or playlists.'
                     : 'Try another song, artist or album name.',
@@ -91,16 +97,10 @@ class MusicSearchView extends StatelessWidget {
             ),
           )
         else ...[
-          if ((selectedFilter == 'All' || selectedFilter.startsWith('Tracks')) &&
+          if ((selectedFilter == 'All' ||
+                  selectedFilter.startsWith('Tracks')) &&
               searchData.tracks.isNotEmpty) ...[
-            const Text(
-              'Songs',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            _sectionHeading('Songs'),
             const SizedBox(height: 14),
             ListView.separated(
               shrinkWrap: true,
@@ -120,16 +120,10 @@ class MusicSearchView extends StatelessWidget {
             ),
             const SizedBox(height: 32),
           ],
-          if ((selectedFilter == 'All' || selectedFilter.startsWith('Artists')) &&
+          if ((selectedFilter == 'All' ||
+                  selectedFilter.startsWith('Artists')) &&
               searchData.artists.isNotEmpty) ...[
-            const Text(
-              'Artists',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            _sectionHeading('Artists'),
             const SizedBox(height: 14),
             SizedBox(
               height: 130,
@@ -162,8 +156,10 @@ class MusicSearchView extends StatelessWidget {
                             width: 90,
                             child: Text(
                               artist.name,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: PrismInk.primary(
+                                  AppThemeService.currentPalette.value.isLight,
+                                ),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -181,24 +177,19 @@ class MusicSearchView extends StatelessWidget {
             ),
             const SizedBox(height: 32),
           ],
-          if ((selectedFilter == 'All' || selectedFilter.startsWith('Albums')) &&
+          if ((selectedFilter == 'All' ||
+                  selectedFilter.startsWith('Albums')) &&
               searchData.albums.isNotEmpty) ...[
-            const Text(
-              'Albums',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            _sectionHeading('Albums'),
             const SizedBox(height: 14),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: (MediaQuery.sizeOf(context).width / sizing.cardWidth)
-                    .floor()
-                    .clamp(2, 6),
+                crossAxisCount:
+                    (MediaQuery.sizeOf(context).width / sizing.cardWidth)
+                        .floor()
+                        .clamp(2, 6),
                 mainAxisSpacing: 20,
                 crossAxisSpacing: 16,
                 childAspectRatio: sizing.cardWidth / sizing.totalHeight,
@@ -214,24 +205,19 @@ class MusicSearchView extends StatelessWidget {
             ),
             const SizedBox(height: 32),
           ],
-          if ((selectedFilter == 'All' || selectedFilter.startsWith('Playlists')) &&
+          if ((selectedFilter == 'All' ||
+                  selectedFilter.startsWith('Playlists')) &&
               searchData.playlists.isNotEmpty) ...[
-            const Text(
-              'Playlists',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            _sectionHeading('Playlists'),
             const SizedBox(height: 14),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: (MediaQuery.sizeOf(context).width / sizing.cardWidth)
-                    .floor()
-                    .clamp(2, 6),
+                crossAxisCount:
+                    (MediaQuery.sizeOf(context).width / sizing.cardWidth)
+                        .floor()
+                        .clamp(2, 6),
                 mainAxisSpacing: 20,
                 crossAxisSpacing: 16,
                 childAspectRatio: sizing.cardWidth / sizing.totalHeight,
@@ -251,8 +237,20 @@ class MusicSearchView extends StatelessWidget {
     );
   }
 
+  Widget _sectionHeading(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: PrismInk.primary(AppThemeService.currentPalette.value.isLight),
+        fontSize: 20,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+
   Widget _filterTab(String label) {
-    final isSelected = selectedFilter == label ||
+    final isSelected =
+        selectedFilter == label ||
         (selectedFilter == 'All' && label == 'All') ||
         (label.startsWith(selectedFilter) && selectedFilter != 'All');
 
@@ -277,18 +275,24 @@ class MusicSearchView extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFF7C5CFF)
-                : Colors.white.withValues(alpha: 0.08),
+                : (AppThemeService.currentPalette.value.isLight
+                      ? PrismLight.raisedTop
+                      : Colors.white.withValues(alpha: 0.08)),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
                   ? const Color(0xFF7C5CFF)
-                  : Colors.white.withValues(alpha: 0.12),
+                  : (AppThemeService.currentPalette.value.isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.12)),
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
+              color: isSelected
+                  ? Colors.white
+                  : PrismInk.soft(AppThemeService.currentPalette.value.isLight),
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             ),

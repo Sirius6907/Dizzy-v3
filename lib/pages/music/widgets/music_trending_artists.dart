@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../design/prism_tokens.dart';
 import '../../../models/music/music_track.dart';
+import '../../../services/theme/app_theme_service.dart';
 import 'music_cover_image.dart';
 import 'music_hoverable.dart';
 import 'music_horizontal_scroll_section.dart';
@@ -48,8 +50,10 @@ class MusicTrendingArtists extends StatelessWidget {
                   width: 85,
                   child: Text(
                     artist.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: PrismInk.primary(
+                        AppThemeService.currentPalette.value.isLight,
+                      ),
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -66,4 +70,3 @@ class MusicTrendingArtists extends StatelessWidget {
     );
   }
 }
-

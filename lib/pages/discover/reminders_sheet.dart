@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/calendar/reminder_schedule.dart';
 import '../../services/calendar/reminder_service.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/notify.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 
 /// F5 — "Tell me when the next one is on."
 ///
@@ -69,6 +70,9 @@ class _RemindersSheetState extends State<RemindersSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
     final follows = _service.follows.value;
     final next = _service.next;
 
@@ -79,12 +83,14 @@ class _RemindersSheetState extends State<RemindersSheet> {
           maxHeight: MediaQuery.sizeOf(context).height * 0.8,
         ),
         decoration: BoxDecoration(
-          color: DizzyVoid.voidA,
+          color: palette.cardBackgroundColor,
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(DizzyRadius.xl),
           ),
-          // Not const: DizzyEdge.hairline is a theme-aware getter.
-          border: Border(top: DizzyEdge.hairline),
+          // Not const: the hairline token depends on the active theme.
+          border: isLight
+              ? const Border(top: BorderSide(color: PrismLight.borderSubtle))
+              : Border(top: DizzyEdge.hairline),
         ),
         child: ListView(
           shrinkWrap: true,
@@ -100,7 +106,7 @@ class _RemindersSheetState extends State<RemindersSheet> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: DizzyVoid.ash.withValues(alpha: 0.4),
+                  color: inkSoft.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -108,11 +114,11 @@ class _RemindersSheetState extends State<RemindersSheet> {
             const SizedBox(height: DizzySpace.md),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     ReminderCopy.title,
                     style: TextStyle(
-                      color: DizzyVoid.bone,
+                      color: ink,
                       fontSize: DizzyType.title,
                       fontWeight: FontWeight.w900,
                     ),
@@ -122,7 +128,9 @@ class _RemindersSheetState extends State<RemindersSheet> {
                   follows.isEmpty
                       ? Icons.notifications_off_outlined
                       : Icons.notifications_active_outlined,
-                  color: follows.isEmpty ? DizzyVoid.ash : palette.primaryColor,
+                  color: follows.isEmpty
+                      ? inkSoft
+                      : PrismAccent.text(palette.isLight),
                   size: 20,
                 ),
               ],
@@ -130,31 +138,22 @@ class _RemindersSheetState extends State<RemindersSheet> {
             const SizedBox(height: DizzySpace.xxs),
             Text(
               ReminderCopy.nextLine(next),
-              style: const TextStyle(
-                color: DizzyVoid.ash,
-                fontSize: DizzyType.body,
-              ),
+              style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
             ),
             const SizedBox(height: DizzySpace.md),
             if (follows.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: DizzySpace.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: DizzySpace.lg),
                 child: Text(
                   ReminderCopy.empty,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: DizzyVoid.ash,
-                    fontSize: DizzyType.body,
-                  ),
+                  style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
                 ),
               )
             else ...[
               Text(
                 ReminderCopy.following(follows.length),
-                style: const TextStyle(
-                  color: DizzyVoid.ash,
-                  fontSize: DizzyType.caption,
-                ),
+                style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
               ),
               const SizedBox(height: DizzySpace.xs),
               for (final f in follows)
@@ -171,7 +170,7 @@ class _RemindersSheetState extends State<RemindersSheet> {
                 ReminderCopy.saved,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: DizzyVoid.ash.withValues(alpha: 0.7),
+                  color: inkSoft.withValues(alpha: 0.7),
                   fontSize: DizzyType.caption,
                 ),
               ),
@@ -197,8 +196,15 @@ class _FollowRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : DizzyEdge.hairline.color;
 
-    return DizzyTactileCard(
+    return PrismCard(
       padding: const EdgeInsets.symmetric(
         horizontal: DizzySpace.md,
         vertical: DizzySpace.sm,
@@ -213,8 +219,8 @@ class _FollowRow extends StatelessWidget {
                   show.showTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: DizzyVoid.bone,
+                  style: TextStyle(
+                    color: ink,
                     fontSize: DizzyType.body,
                     fontWeight: FontWeight.w700,
                   ),
@@ -223,10 +229,7 @@ class _FollowRow extends StatelessWidget {
                 Text(
                   '${ReminderSchedule.episodeCode(show.season, show.episode)} · '
                   '${show.leadMinutes} min before',
-                  style: const TextStyle(
-                    color: DizzyVoid.ash,
-                    fontSize: DizzyType.caption,
-                  ),
+                  style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
                 ),
               ],
             ),
@@ -246,16 +249,16 @@ class _FollowRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: scheduled
                       ? palette.primaryColor.withValues(alpha: 0.18)
-                      : DizzyVoid.surface2,
+                      : well,
                   borderRadius: BorderRadius.circular(DizzyRadius.pill),
                   border: Border.all(
-                    color: scheduled ? palette.primaryColor : DizzyEdge.hairline.color,
+                    color: scheduled ? palette.primaryColor : hairline,
                   ),
                 ),
                 child: Text(
                   scheduled ? ReminderCopy.on : ReminderCopy.off,
                   style: TextStyle(
-                    color: scheduled ? DizzyVoid.bone : DizzyVoid.ash,
+                    color: scheduled ? ink : inkSoft,
                     fontSize: DizzyType.caption,
                     fontWeight: FontWeight.w700,
                   ),

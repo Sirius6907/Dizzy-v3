@@ -11,7 +11,9 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
     try {
       int? searchYear;
       if (widget.detail?.year != null && widget.detail!.year!.isNotEmpty) {
-        final yMatch = RegExp(r'\b(19\d\d|20\d\d)\b').firstMatch(widget.detail!.year!);
+        final yMatch = RegExp(
+          r'\b(19\d\d|20\d\d)\b',
+        ).firstMatch(widget.detail!.year!);
         if (yMatch != null) searchYear = int.tryParse(yMatch.group(1)!);
       }
       final rawName = widget.detail?.name ?? widget.title;
@@ -20,7 +22,9 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
         if (yMatch != null) searchYear = int.tryParse(yMatch.group(1)!);
       }
       final showName = _PlayerScreenState.cleanMediaTitle(rawName);
-      AppLog.d('[PlayerScreen] Scraping initial subtitles for "$showName" (year: $searchYear, imdb: ${widget.detail?.id})...');
+      AppLog.d(
+        '[PlayerScreen] Scraping initial subtitles for "$showName" (year: $searchYear, imdb: ${widget.detail?.id})...',
+      );
 
       final groups = await SubtitleService().fetchAllSubtitles(
         showName,
@@ -29,7 +33,9 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
         episode: _currentEpisode?.episode,
         year: searchYear,
       );
-      AppLog.d('[PlayerScreen] Scraped ${groups.length} subtitle language groups with ${groups.fold(0, (s, g) => s + g.variants.length)} total variants');
+      AppLog.d(
+        '[PlayerScreen] Scraped ${groups.length} subtitle language groups with ${groups.fold(0, (s, g) => s + g.variants.length)} total variants',
+      );
       if (mounted && groups.isNotEmpty) {
         setState(() => _subtitleGroups = groups);
 
@@ -39,7 +45,9 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
           final matchingGroup = groups.firstWhere(
             (g) => g.language.toLowerCase() == previousLang,
             orElse: () => groups.firstWhere(
-              (g) => g.language.toLowerCase().contains('english') || g.language.toLowerCase() == 'en',
+              (g) =>
+                  g.language.toLowerCase().contains('english') ||
+                  g.language.toLowerCase() == 'en',
               orElse: () => groups.first,
             ),
           );
@@ -73,48 +81,14 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
     if (_showControls) _startHideControlsTimer();
   }
 
-  /// Polish P4: hints dismissed → never shown again on this device.
-  Future<void> _dismissGestureHints() async {
-    if (!_showGestureHints) return;
-    setState(() => _showGestureHints = false);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('player_gesture_hints_seen', true);
-    } catch (_) {}
-  }
-
-  /// One row of the first-run gesture hints card (icon + Easy English line).
-  Widget _hintRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DizzySpace.xs),
-      child: Row(
-        children: [
-          Icon(icon,
-              color: AppThemeService.currentPalette.value.primaryColor,
-              size: 20),
-          const SizedBox(width: DizzySpace.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: DizzyType.body,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _handlePointerActivity() {
     if (_isLoading) return;
     if (!_showControls) setState(() => _showControls = true);
 
     final now = DateTime.now();
     if (_lastPointerTimerReset == null ||
-        now.difference(_lastPointerTimerReset!) >= const Duration(milliseconds: 250)) {
+        now.difference(_lastPointerTimerReset!) >=
+            const Duration(milliseconds: 250)) {
       _lastPointerTimerReset = now;
       _startHideControlsTimer();
     }
@@ -134,6 +108,56 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
     });
   }
 
+  /// One sheet for the controls that used to crowd the transport bar.
+  void _openMoreSheet() {
+    _hideTimer?.cancel();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: false,
+      builder: (_) => PlayerMoreSheet(
+        playbackRate: _playbackRate,
+        isQualityManual: _qualityChoice != QualityChoice.auto,
+        isSubSyncActive:
+            _selectedEmbeddedSubtitleIndex == null &&
+            (_showSubSyncBar || _subtitleDelayMs != 0),
+        onToggleAspectMenu: () => _toggleMenu('aspect'),
+        onToggleSpeedMenu: () => _toggleMenu('speed'),
+        onToggleQualityMenu: () => _toggleMenu('quality'),
+        onToggleSubSync: () {
+          if (_selectedEmbeddedSubtitleIndex != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Subtitle sync is not supported for embedded subtitles. Please select an external subtitle.',
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+          if (_currentSubtitlePath == null || _currentSubtitleVariant == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Please load an external subtitle to use subtitle sync.',
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+          setState(() {
+            _showSubSyncBar = !_showSubSyncBar;
+            _activeMenu = null;
+          });
+        },
+      ),
+    ).whenComplete(() {
+      if (mounted) _startHideControlsTimer();
+    });
+  }
+
   void _selectEmbeddedSubtitle(PlayerEmbeddedSubtitle embedded) {
     setState(() {
       _selectedEmbeddedSubtitleIndex = embedded.index;
@@ -149,7 +173,13 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
       _currentCues = [];
     });
 
-    _player.setSubtitleTrack(SubtitleTrack(embedded.index.toString(), embedded.title, embedded.language));
+    _player.setSubtitleTrack(
+      SubtitleTrack(
+        embedded.index.toString(),
+        embedded.title,
+        embedded.language,
+      ),
+    );
     _setSubtitleScale(_subtitleScale);
     PlayerSettings.applySubtitleStyling(_player);
 
@@ -214,7 +244,9 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
 
     _currentSubtitlePath = path;
     final resolvedUri = _resolveSubtitleUri(path);
-    _player.setSubtitleTrack(SubtitleTrack.uri(resolvedUri, title: variant.language));
+    _player.setSubtitleTrack(
+      SubtitleTrack.uri(resolvedUri, title: variant.language),
+    );
     _setSubtitleScale(_subtitleScale);
     PlayerSettings.applySubtitleStyling(_player);
 
@@ -225,7 +257,9 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${variant.language} subtitle loaded (${_currentCues.length} lines)'),
+          content: Text(
+            '${variant.language} subtitle loaded (${_currentCues.length} lines)',
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -245,7 +279,10 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
     } catch (_) {}
 
     final uri = Uri.tryParse(pathOrUrl);
-    if (uri != null && uri.hasScheme && !(Platform.isWindows && RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(pathOrUrl))) {
+    if (uri != null &&
+        uri.hasScheme &&
+        !(Platform.isWindows &&
+            RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(pathOrUrl))) {
       return pathOrUrl;
     }
     return Uri.file(pathOrUrl).toString();
@@ -267,9 +304,13 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
     }
   }
 
-  Future<void> _saveTextSyncedCues(List<SubCue> syncedCues, double offsetSec) async {
+  Future<void> _saveTextSyncedCues(
+    List<SubCue> syncedCues,
+    double offsetSec,
+  ) async {
     _currentCues = syncedCues;
-    _subtitleDelayMs = 0.0; // Reset live delay since timestamps are now permanently baked into cues
+    _subtitleDelayMs =
+        0.0; // Reset live delay since timestamps are now permanently baked into cues
     if (_currentSubtitlePath != null) {
       final content = _currentSubFormat == SubFormat.vtt
           ? SubtitleParser.toVtt(syncedCues)
@@ -279,7 +320,8 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
         RegExp(r'(_delayed.*|_synced.*)?\.(srt|vtt)$', caseSensitive: false),
         '',
       );
-      final newPath = '${cleanBase}_synced_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final newPath =
+          '${cleanBase}_synced_${DateTime.now().millisecondsSinceEpoch}.$ext';
       await File(newPath).writeAsString(content, flush: true);
       _currentSubtitlePath = newPath;
       final resolvedUri = _resolveSubtitleUri(newPath);
@@ -288,10 +330,11 @@ extension _PlayerScreenStateControlsAndSubtitles on _PlayerScreenState {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Subtitle timing synchronized and saved!')),
+          const SnackBar(
+            content: Text('Subtitle timing synchronized and saved!'),
+          ),
         );
       }
     }
   }
-
 }

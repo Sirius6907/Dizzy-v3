@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/social/dizzy_friend_service.dart';
 import 'package:dizzy/models/social/friendship.dart';
+import '../../services/theme/app_theme_service.dart';
 import 'direct_message_page.dart';
 import '../../widgets/common/notify.dart';
 
@@ -67,11 +69,12 @@ class _FriendsPageState extends State<FriendsPage>
     if (!mounted) return;
     setState(() => _busyIds.remove(uid));
     DizzyNotify.show(
-        context,
-        ok
-            ? 'Request sent to @$name!'
-            : "Couldn't send — check net, then try again.",
-        tone: ok ? NotifyTone.success : NotifyTone.warn);
+      context,
+      ok
+          ? 'Request sent to @$name!'
+          : "Couldn't send — check net, then try again.",
+      tone: ok ? NotifyTone.success : NotifyTone.warn,
+    );
   }
 
   Future<void> _accept(String uid) async {
@@ -79,9 +82,11 @@ class _FriendsPageState extends State<FriendsPage>
     final ok = await DizzyFriendService.acceptRequest(uid);
     if (!mounted) return;
     setState(() => _busyIds.remove(uid));
-    DizzyNotify.show(context,
-        ok ? 'You are now friends! Say hi 👋' : "Couldn't accept right now.",
-        tone: ok ? NotifyTone.success : NotifyTone.warn);
+    DizzyNotify.show(
+      context,
+      ok ? 'You are now friends! Say hi 👋' : "Couldn't accept right now.",
+      tone: ok ? NotifyTone.success : NotifyTone.warn,
+    );
   }
 
   Future<void> _reject(String uid) async {
@@ -113,19 +118,25 @@ class _FriendsPageState extends State<FriendsPage>
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
-        title: const Text('Friends',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+        title: const Text(
+          'Friends',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+        ),
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: DizzyGlow.red,
           indicatorWeight: 3,
-          labelColor: DizzyVoid.bone,
-          unselectedLabelColor: DizzyVoid.ash,
+          labelColor: ink,
+          unselectedLabelColor: inkSoft,
           tabs: [
             const Tab(icon: Icon(Icons.search_rounded), text: 'Search'),
             Tab(
@@ -136,10 +147,12 @@ class _FriendsPageState extends State<FriendsPage>
                   final n = uid == null
                       ? 0
                       : list
-                          .where((f) =>
-                              f.status == FriendStatus.pending &&
-                              f.addresseeId == uid)
-                          .length;
+                            .where(
+                              (f) =>
+                                  f.status == FriendStatus.pending &&
+                                  f.addresseeId == uid,
+                            )
+                            .length;
                   return Badge(
                     isLabelVisible: n > 0,
                     label: Text('$n'),
@@ -155,16 +168,20 @@ class _FriendsPageState extends State<FriendsPage>
       ),
       body: TabBarView(
         controller: _tabs,
-        children: [
-          _searchTab(),
-          _requestsTab(),
-          _friendsTab(),
-        ],
+        children: [_searchTab(), _requestsTab(), _friendsTab()],
       ),
     );
   }
 
   Widget _searchTab() {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     return Column(
       children: [
         Padding(
@@ -172,16 +189,16 @@ class _FriendsPageState extends State<FriendsPage>
           child: TextField(
             controller: _search,
             onChanged: _onSearchChanged,
-            style: const TextStyle(color: DizzyVoid.bone),
+            style: TextStyle(color: ink),
             decoration: InputDecoration(
               hintText: 'Type @username... (min 2 letters)',
-              hintStyle: const TextStyle(color: DizzyVoid.ash, fontSize: 13),
-              prefixIcon: const Icon(Icons.search_rounded, color: DizzyVoid.ash),
+              hintStyle: TextStyle(color: inkSoft, fontSize: 13),
+              prefixIcon: Icon(Icons.search_rounded, color: inkSoft),
               filled: true,
-              fillColor: DizzyVoid.surface1,
+              fillColor: well,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: DizzyEdge.hairline,
+                borderSide: BorderSide(color: hairline),
               ),
             ),
           ),
@@ -193,15 +210,17 @@ class _FriendsPageState extends State<FriendsPage>
           ),
         Expanded(
           child: _results.isEmpty && !_searching
-              ? const Center(
-                  child: Text('Search any @username to add friends.',
-                      style: TextStyle(color: DizzyVoid.ash, fontSize: 13)))
+              ? Center(
+                  child: Text(
+                    'Search any @username to add friends.',
+                    style: TextStyle(color: inkSoft, fontSize: 13),
+                  ),
+                )
               : ListView.builder(
                   itemCount: _results.length,
                   itemBuilder: (c, i) {
                     final m = _results[i];
-                    final status =
-                        DizzyFriendService.getStatus(m.userId);
+                    final status = DizzyFriendService.getStatus(m.userId);
                     final busy = _busyIds.contains(m.userId);
                     return _userRow(
                       name: m.username,
@@ -211,15 +230,18 @@ class _FriendsPageState extends State<FriendsPage>
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: DizzyGlow.red))
+                                strokeWidth: 2,
+                                color: DizzyGlow.red,
+                              ),
+                            )
                           : status == FriendStatus.accepted
-                              ? _miniBtn('Chat',
-                                  () => _chat(m.userId, m.username))
-                              : status == FriendStatus.pending
-                                  ? const Text('Sent ✓',
-                                      style: TextStyle(
-                                          color: DizzyVoid.ash, fontSize: 12))
-                                  : _miniBtn('Add', () => _send(m.userId, m.username)),
+                          ? _miniBtn('Chat', () => _chat(m.userId, m.username))
+                          : status == FriendStatus.pending
+                          ? Text(
+                              'Sent ✓',
+                              style: TextStyle(color: inkSoft, fontSize: 12),
+                            )
+                          : _miniBtn('Add', () => _send(m.userId, m.username)),
                     );
                   },
                 ),
@@ -229,6 +251,8 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   Widget _requestsTab() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return ValueListenableBuilder<List<Friendship>>(
       valueListenable: DizzyFriendService.friendships,
       builder: (c, list, _) {
@@ -236,13 +260,19 @@ class _FriendsPageState extends State<FriendsPage>
         final incoming = uid == null
             ? <Friendship>[]
             : list
-                .where((f) =>
-                    f.status == FriendStatus.pending && f.addresseeId == uid)
-                .toList();
+                  .where(
+                    (f) =>
+                        f.status == FriendStatus.pending &&
+                        f.addresseeId == uid,
+                  )
+                  .toList();
         if (incoming.isEmpty) {
-          return const Center(
-              child: Text('No requests right now.',
-                  style: TextStyle(color: DizzyVoid.ash, fontSize: 13)));
+          return Center(
+            child: Text(
+              'No requests right now.',
+              style: TextStyle(color: inkSoft, fontSize: 13),
+            ),
+          );
         }
         return ListView.builder(
           itemCount: incoming.length,
@@ -257,14 +287,20 @@ class _FriendsPageState extends State<FriendsPage>
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: DizzyGlow.red))
+                        strokeWidth: 2,
+                        color: DizzyGlow.red,
+                      ),
+                    )
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _miniBtn('Accept', () => _accept(f.requesterId)),
                         const SizedBox(width: 8),
-                        _miniBtn('Skip', () => _reject(f.requesterId),
-                            ghost: true),
+                        _miniBtn(
+                          'Skip',
+                          () => _reject(f.requesterId),
+                          ghost: true,
+                        ),
                       ],
                     ),
             );
@@ -275,14 +311,19 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   Widget _friendsTab() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return ValueListenableBuilder<List<Friendship>>(
       valueListenable: DizzyFriendService.friendships,
       builder: (c, _, __) {
         final ids = DizzyFriendService.getFriends();
         if (ids.isEmpty) {
-          return const Center(
-              child: Text('No friends yet — search above to add some!',
-                  style: TextStyle(color: DizzyVoid.ash, fontSize: 13)));
+          return Center(
+            child: Text(
+              'No friends yet — search above to add some!',
+              style: TextStyle(color: inkSoft, fontSize: 13),
+            ),
+          );
         }
         return ListView.builder(
           itemCount: ids.length,
@@ -300,18 +341,23 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   Widget _userRow({required String name, String? sub, Widget? trailing}) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: DizzySpace.md, vertical: DizzySpace.xs),
+        horizontal: DizzySpace.md,
+        vertical: DizzySpace.xs,
+      ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: DizzyVoid.surface2,
+            backgroundColor: panel,
             child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                  color: DizzyVoid.bone, fontWeight: FontWeight.bold),
+              style: TextStyle(color: ink, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: DizzySpace.sm),
@@ -319,19 +365,23 @@ class _FriendsPageState extends State<FriendsPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('@$name',
+                Text(
+                  '@$name',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: ink,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                if (sub != null)
+                  Text(
+                    sub,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: DizzyVoid.bone,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
-                if (sub != null)
-                  Text(sub,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(color: DizzyVoid.ash, fontSize: 12)),
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
               ],
             ),
           ),
@@ -342,13 +392,20 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   Widget _miniBtn(String label, VoidCallback onTap, {bool ghost = false}) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final labelColor = ghost && isLight ? PrismLight.ink : Colors.white;
     return DizzyTactileButton(
       height: 34,
       onTap: onTap,
       gradient: ghost ? null : DizzyGradients.emberButton,
-      child: Text(label,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: labelColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }

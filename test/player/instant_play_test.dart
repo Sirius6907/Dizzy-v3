@@ -25,10 +25,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   StreamSource src(String tag, {String? url}) => StreamSource(
-        addonName: tag,
-        title: tag,
-        url: url ?? 'https://cdn.example.com/$tag.mp4',
-      );
+    addonName: tag,
+    title: tag,
+    url: url ?? 'https://cdn.example.com/$tag.mp4',
+  );
 
   group('F1 · race — first valid source wins, no picker gate', () {
     test('first playable source opens; every later one is ignored', () {
@@ -70,8 +70,11 @@ void main() {
     });
 
     test('a magnet/torrent source counts as playable', () {
-      final torrent =
-          StreamSource(addonName: 't', title: 't', infoHash: 'abc123');
+      final torrent = StreamSource(
+        addonName: 't',
+        title: 't',
+        infoHash: 'abc123',
+      );
       expect(InstantPlayGate.isValidCandidate(torrent), isTrue);
       expect(torrent.magnetUrl, contains('magnet:'));
     });
@@ -88,10 +91,7 @@ void main() {
       final spare = src('spare');
       gate.offer(primary);
 
-      final next = gate.advance(
-        chain: [backup, spare],
-        failed: primary,
-      );
+      final next = gate.advance(chain: [backup, spare], failed: primary);
       expect(next, same(backup));
       expect(gate.switches, 1);
       expect(gate.isDead(primary), isTrue);
@@ -194,7 +194,10 @@ void main() {
 
     test('without Data Saver the ceiling never applies', () {
       for (final q in QualityChoice.values) {
-        expect(SmartQualityPolicy.applyDataSaverCeiling(q, dataSaver: false), q);
+        expect(
+          SmartQualityPolicy.applyDataSaverCeiling(q, dataSaver: false),
+          q,
+        );
       }
     });
 
@@ -239,15 +242,15 @@ void main() {
 
   group('F1 · weak device prefers H.264, AV1 only as fallback', () {
     StreamSource av1(String badge) => StreamSource(
-          addonName: 'a',
-          title: 'Show $badge AV1',
-          url: 'https://cdn/x.mp4',
-        );
+      addonName: 'a',
+      title: 'Show $badge AV1',
+      url: 'https://cdn/x.mp4',
+    );
     StreamSource h264(String badge) => StreamSource(
-          addonName: 'a',
-          title: 'Show $badge x264',
-          url: 'https://cdn/x.mp4',
-        );
+      addonName: 'a',
+      title: 'Show $badge x264',
+      url: 'https://cdn/x.mp4',
+    );
 
     test('budget device / low-RAM / low-end mode all read as strained', () {
       DeviceCapability cap({
@@ -255,13 +258,12 @@ void main() {
         DeviceTier tier = DeviceTier.flagship,
         bool lowRam = false,
         ResourceLevel level = ResourceLevel.normal,
-      }) =>
-          SmartQualityPolicy.capability(
-            lowEndDeviceMode: lowEnd,
-            deviceTier: tier,
-            lowRamDevice: lowRam,
-            resourceLevel: level,
-          );
+      }) => SmartQualityPolicy.capability(
+        lowEndDeviceMode: lowEnd,
+        deviceTier: tier,
+        lowRamDevice: lowRam,
+        resourceLevel: level,
+      );
 
       expect(cap(), DeviceCapability.strong);
       expect(cap(tier: DeviceTier.budget), DeviceCapability.strained);
@@ -343,14 +345,20 @@ void main() {
     test('region-suffixed tags still match (hin_IN / en-US)', () {
       expect(
         AudioTrackPreference.pick(
-          tracks: [t(1, lang: 'en-US'), t(2, lang: 'hin_IN')],
+          tracks: [
+            t(1, lang: 'en-US'),
+            t(2, lang: 'hin_IN'),
+          ],
           hindi: true,
         ),
         2,
       );
       expect(
         AudioTrackPreference.pick(
-          tracks: [t(1, lang: 'hin_IN'), t(2, lang: 'en-US')],
+          tracks: [
+            t(1, lang: 'hin_IN'),
+            t(2, lang: 'en-US'),
+          ],
           hindi: false,
         ),
         2,
@@ -384,7 +392,10 @@ void main() {
     test('an unlabelled track is the original audio in English mode', () {
       expect(
         AudioTrackPreference.pick(
-          tracks: [t(1), t(2, lang: 'hin', title: 'Hindi')],
+          tracks: [
+            t(1),
+            t(2, lang: 'hin', title: 'Hindi'),
+          ],
           hindi: false,
         ),
         1,
@@ -392,7 +403,10 @@ void main() {
       // …but Hindi mode stays hands-off rather than guessing.
       expect(
         AudioTrackPreference.pick(
-          tracks: [t(1), t(2, lang: 'eng')],
+          tracks: [
+            t(1),
+            t(2, lang: 'eng'),
+          ],
           hindi: true,
         ),
         isNull,
@@ -402,11 +416,11 @@ void main() {
 
   group('F1 · auto-skip is ON by default, previews never', () {
     bool auto(String type) => AutoSkipPolicy.shouldAutoSkip(
-          type,
-          autoSkipIntro: true,
-          autoSkipRecap: true,
-          autoSkipCredits: true,
-        );
+      type,
+      autoSkipIntro: true,
+      autoSkipRecap: true,
+      autoSkipCredits: true,
+    );
 
     test('intro / recap / credits all auto-skip when enabled', () {
       expect(auto('intro'), isTrue);

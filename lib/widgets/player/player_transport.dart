@@ -24,7 +24,6 @@ class PlayerTransport extends StatelessWidget {
   final bool isSubSyncActive;
   final bool isAudioActive;
   final bool isQualityManual;
-  final bool isEpisodesActive;
   final bool isFullscreen;
   final bool hasPrevEpisode;
   final bool hasNextEpisode;
@@ -36,13 +35,9 @@ class PlayerTransport extends StatelessWidget {
   final VoidCallback onSeekForward10;
   final ValueChanged<double> onVolumeChanged;
   final VoidCallback onToggleMute;
-  final VoidCallback? onToggleEpisodes;
-  final VoidCallback onToggleAspectMenu;
-  final VoidCallback onToggleSpeedMenu;
   final VoidCallback onToggleAudioMenu;
-  final VoidCallback onToggleQualityMenu;
   final VoidCallback onToggleSubtitleMenu;
-  final VoidCallback onToggleSubSync;
+  final VoidCallback onOpenMore;
   final VoidCallback onToggleFullscreen;
   final VoidCallback? onPrevEpisode;
   final VoidCallback? onNextEpisode;
@@ -64,7 +59,6 @@ class PlayerTransport extends StatelessWidget {
     required this.isSubSyncActive,
     required this.isAudioActive,
     required this.isQualityManual,
-    this.isEpisodesActive = false,
     required this.isFullscreen,
     this.hasPrevEpisode = false,
     this.hasNextEpisode = false,
@@ -74,13 +68,9 @@ class PlayerTransport extends StatelessWidget {
     required this.onSeekForward10,
     required this.onVolumeChanged,
     required this.onToggleMute,
-    this.onToggleEpisodes,
-    required this.onToggleAspectMenu,
-    required this.onToggleSpeedMenu,
     required this.onToggleAudioMenu,
-    required this.onToggleQualityMenu,
     required this.onToggleSubtitleMenu,
-    required this.onToggleSubSync,
+    required this.onOpenMore,
     required this.onToggleFullscreen,
     this.onPrevEpisode,
     this.onNextEpisode,
@@ -91,7 +81,8 @@ class PlayerTransport extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 680;
-    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final isDesktop =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
     final btnSize = isCompact ? 36.0 : 42.0;
     final btnIconSize = isCompact ? 20.0 : 22.0;
     final playBtnSize = isCompact ? 46.0 : 54.0;
@@ -187,7 +178,9 @@ class PlayerTransport extends StatelessWidget {
                       icon: Icon(
                         isMuted || volume == 0
                             ? Icons.volume_off_rounded
-                            : (volume > 1.0 ? Icons.volume_up_rounded : Icons.volume_down_rounded),
+                            : (volume > 1.0
+                                  ? Icons.volume_up_rounded
+                                  : Icons.volume_down_rounded),
                       ),
                       tooltip: isMuted ? 'Unmute' : 'Mute',
                       onPressed: onToggleMute,
@@ -222,92 +215,45 @@ class PlayerTransport extends StatelessWidget {
                   ],
                 ),
 
-              // Right Group: Aspect, Speed, Audio, Subtitles, SubSync, Fullscreen
+              // Right Group: Subtitles, Audio, More, Fullscreen
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Episodes Menu Trigger (for TV Shows)
-                  if (onToggleEpisodes != null) ...[
-                    PlayerIconButton(
-                      size: btnSize,
-                      iconSize: btnIconSize,
-                      icon: const Icon(Icons.video_library_rounded),
-                      tooltip: 'Episodes',
-                      active: isEpisodesActive,
-                      activeColor: PlayerTheme.accent,
-                      onPressed: onToggleEpisodes,
-                    ),
-                    SizedBox(width: gap),
-                  ],
-
-                  // Aspect Ratio Menu Trigger
-                  PlayerIconButton(
-                    size: btnSize,
-                    iconSize: btnIconSize,
-                    icon: const Icon(Icons.aspect_ratio_rounded),
-                    tooltip: 'Aspect Ratio',
-                    onPressed: onToggleAspectMenu,
-                  ),
-
-                  SizedBox(width: gap),
-
-                  // Playback Speed Menu Trigger
-                  PlayerIconButton(
-                    size: btnSize,
-                    iconSize: btnIconSize,
-                    icon: const Icon(Icons.speed_rounded),
-                    tooltip: 'Playback Speed',
-                    showActiveBadge: playbackRate != 1.0,
-                    onPressed: onToggleSpeedMenu,
-                  ),
-
-                  SizedBox(width: gap),
-
-                  // Audio Menu Trigger
-                  PlayerIconButton(
-                    size: btnSize,
-                    iconSize: btnIconSize,
-                    icon: const Icon(Icons.audiotrack_rounded),
-                    tooltip: 'Audio Tracks',
-                    onPressed: onToggleAudioMenu,
-                  ),
-
-                  SizedBox(width: gap),
-
-                  // Quality Menu Trigger (P7)
-                  PlayerIconButton(
-                    size: btnSize,
-                    iconSize: btnIconSize,
-                    icon: const Icon(Icons.high_quality_rounded),
-                    tooltip: 'Quality',
-                    showActiveBadge: isQualityManual,
-                    onPressed: onToggleQualityMenu,
-                  ),
-
-                  SizedBox(width: gap),
-
-                  // Subtitles Menu Trigger
                   PlayerIconButton(
                     size: btnSize,
                     iconSize: btnIconSize,
                     icon: const Icon(Icons.subtitles_rounded),
                     tooltip: 'Subtitles',
                     showActiveBadge: isSubtitlesActive,
-                    badgeColor: const Color(0xFF10B981), // Emerald
+                    badgeColor: PlayerTheme.success,
                     onPressed: onToggleSubtitleMenu,
                   ),
 
                   SizedBox(width: gap),
 
-                  // Subtitle Sync Trigger
+                  PlayerIconButton(
+                    size: btnSize,
+                    iconSize: btnIconSize,
+                    icon: const Icon(Icons.audiotrack_rounded),
+                    tooltip: 'Audio Tracks',
+                    showActiveBadge: isAudioActive,
+                    badgeColor: PlayerTheme.accent,
+                    onPressed: onToggleAudioMenu,
+                  ),
+
+                  SizedBox(width: gap),
+
                   PlayerIconButton(
                     size: btnSize,
                     iconSize: btnIconSize,
                     icon: const Icon(Icons.tune_rounded),
-                    tooltip: 'Subtitle Sync',
-                    active: isSubSyncActive,
-                    activeColor: PlayerTheme.accent,
-                    onPressed: onToggleSubSync,
+                    tooltip: 'More playback settings',
+                    showActiveBadge:
+                        isQualityManual ||
+                        playbackRate != 1.0 ||
+                        isSubSyncActive,
+                    badgeColor: PlayerTheme.accent,
+                    onPressed: onOpenMore,
                   ),
 
                   // Fullscreen Button (Desktop only)
@@ -317,7 +263,9 @@ class PlayerTransport extends StatelessWidget {
                       size: btnSize,
                       iconSize: btnIconSize,
                       icon: Icon(
-                        isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                        isFullscreen
+                            ? Icons.fullscreen_exit_rounded
+                            : Icons.fullscreen_rounded,
                       ),
                       tooltip: isFullscreen ? 'Exit Fullscreen' : 'Fullscreen',
                       onPressed: onToggleFullscreen,
@@ -361,7 +309,9 @@ class _PlayerPlayPauseButtonState extends State<_PlayerPlayPauseButton> {
         return ValueListenableBuilder<int>(
           valueListenable: GlassSettings.styleRevision,
           builder: (context, _, __) {
-            final hoverScaleVal = glassEnabled ? GlassSettings.hoverScale.value : 1.0;
+            final hoverScaleVal = glassEnabled
+                ? GlassSettings.hoverScale.value
+                : 1.0;
             final effectiveScale = _hovered ? hoverScaleVal : 1.0;
 
             final iconWidget = Icon(
@@ -374,7 +324,9 @@ class _PlayerPlayPauseButtonState extends State<_PlayerPlayPauseButton> {
             if (glassEnabled) {
               final style = GlassSettings.createButtonGlassStyle(
                 cornerRadius: widget.size / 2,
-                customColor: _hovered ? const Color(0x45FFFFFF) : const Color(0x28FFFFFF),
+                customColor: _hovered
+                    ? const Color(0x45FFFFFF)
+                    : const Color(0x28FFFFFF),
               );
 
               body = RepaintBoundary(

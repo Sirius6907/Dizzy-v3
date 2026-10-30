@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../services/addon/addon_manager.dart';
 
 class P2pWarningDialog extends StatelessWidget {
   const P2pWarningDialog({super.key});
 
-  static const Color _surfaceColor = DizzyVoid.surface1;
   static const Color _backgroundColor = DizzyVoid.voidB;
   static const Color _warningColor = Color(0xFFF59E0B);
 
@@ -26,22 +26,18 @@ class P2pWarningDialog extends StatelessWidget {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: _surfaceColor,
+              gradient: PrismShadows.surfaceGradient(false),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: _warningColor.withValues(alpha: 0.35),
                 width: 1.5,
               ),
               boxShadow: [
+                ...PrismShadows.floating(isLight: false),
                 BoxShadow(
                   color: _warningColor.withValues(alpha: 0.15),
                   blurRadius: 40,
                   spreadRadius: 2,
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.70),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -98,7 +94,9 @@ class P2pWarningDialog extends StatelessWidget {
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _warningColor.withValues(alpha: 0.20),
+                                      color: _warningColor.withValues(
+                                        alpha: 0.20,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text(
@@ -127,7 +125,10 @@ class P2pWarningDialog extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, color: Colors.white60),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white60,
+                          ),
                           tooltip: 'Exit',
                           onPressed: () => Navigator.of(context).pop(),
                         ),
@@ -138,7 +139,10 @@ class P2pWarningDialog extends StatelessWidget {
                   // 2. Scrollable Body
                   Flexible(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 18,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -169,10 +173,13 @@ class P2pWarningDialog extends StatelessWidget {
                                   icon: Icons.cloud_done_rounded,
                                   iconColor: const Color(0xFF10B981),
                                   title: 'Dizzy HTTP (Direct Stream)',
-                                  subtitle: 'Safe direct HTTPS web streams. No torrenting or peer uploading.',
+                                  subtitle:
+                                      'Safe direct HTTPS web streams. No torrenting or peer uploading.',
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
                                   child: Divider(
                                     height: 1,
                                     color: Colors.white.withValues(alpha: 0.06),
@@ -182,7 +189,8 @@ class P2pWarningDialog extends StatelessWidget {
                                   icon: Icons.hub_rounded,
                                   iconColor: _warningColor,
                                   title: 'Dizzy (Torrent Engine)',
-                                  subtitle: 'P2P swarms (Knaben, TorrentGalaxy). Involves peer data sharing.',
+                                  subtitle:
+                                      'P2P swarms (Knaben, TorrentGalaxy). Involves peer data sharing.',
                                 ),
                               ],
                             ),
@@ -214,7 +222,9 @@ class P2pWarningDialog extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white.withValues(alpha: 0.95),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.95,
+                                      ),
                                       height: 1.35,
                                     ),
                                   ),
@@ -316,7 +326,10 @@ class P2pWarningDialog extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             foregroundColor: Colors.white60,
           ),
-          child: const Text('Exit', style: TextStyle(fontWeight: FontWeight.w600)),
+          child: const Text(
+            'Exit',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
         const Spacer(),
 
@@ -330,7 +343,9 @@ class P2pWarningDialog extends StatelessWidget {
             side: BorderSide(color: Colors.white.withValues(alpha: 0.20)),
             foregroundColor: Colors.white70,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           child: const Text(
             "Don't Show Again",
@@ -347,7 +362,9 @@ class P2pWarningDialog extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('P2P torrent source turned off. Direct streaming will be used.'),
+                  content: Text(
+                    'P2P torrent source turned off. Direct streaming will be used.',
+                  ),
                   backgroundColor: Color(0xFF10B981),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -364,7 +381,9 @@ class P2pWarningDialog extends StatelessWidget {
             backgroundColor: _warningColor,
             foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             elevation: 0,
           ),
         ),
@@ -385,7 +404,9 @@ class P2pWarningDialog extends StatelessWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('P2P torrent source turned off. Direct streaming will be used.'),
+                  content: Text(
+                    'P2P torrent source turned off. Direct streaming will be used.',
+                  ),
                   backgroundColor: Color(0xFF10B981),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -402,7 +423,9 @@ class P2pWarningDialog extends StatelessWidget {
             backgroundColor: _warningColor,
             foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 13),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             elevation: 0,
           ),
         ),
@@ -420,7 +443,9 @@ class P2pWarningDialog extends StatelessWidget {
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.20)),
                   foregroundColor: Colors.white70,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text(
                   "Don't Show Again",
@@ -432,10 +457,16 @@ class P2pWarningDialog extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 foregroundColor: Colors.white60,
               ),
-              child: const Text('Exit', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: const Text(
+                'Exit',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),

@@ -27,7 +27,11 @@ void main() {
     test('caps the queue and drops the oldest entries', () async {
       expect(AppErrorLog.maxQueue, 100);
       for (var i = 0; i < 150; i++) {
-        await AppErrorLog.log(code: 'perf_caution', screen: 'governor', detail: 'n$i');
+        await AppErrorLog.log(
+          code: 'perf_caution',
+          screen: 'governor',
+          detail: 'n$i',
+        );
       }
       final queue = await AppErrorLog.pending();
       expect(queue.length, 100);
@@ -37,9 +41,9 @@ void main() {
     });
 
     test('survives a corrupt queue blob instead of throwing', () async {
-      SharedPreferences.setMockInitialValues(
-        <String, Object>{'app_error_queue_v1': 'not json at all'},
-      );
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'app_error_queue_v1': 'not json at all',
+      });
       await AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'edge');
       final queue = await AppErrorLog.pending();
       expect(queue.length, 1);
@@ -57,16 +61,23 @@ void main() {
       expect(first, isNotNull, reason: 'first report must claim the slot');
 
       await AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb', detail: 'edge');
-      expect(prefs.getInt(key), first, reason: 'second report must not move it');
+      expect(
+        prefs.getInt(key),
+        first,
+        reason: 'second report must not move it',
+      );
     });
 
     test('a different screen is a different throttle slot', () async {
       final prefs = await SharedPreferences.getInstance();
       await AppErrorLog.log(code: 'tmdb_fetch', screen: 'tmdb');
-      final tmdb = prefs.getInt(AppErrorLog.throttleKeyFor('tmdb_fetch', 'tmdb'));
+      final tmdb = prefs.getInt(
+        AppErrorLog.throttleKeyFor('tmdb_fetch', 'tmdb'),
+      );
       await AppErrorLog.log(code: 'tmdb_fetch', screen: 'player');
-      final player =
-          prefs.getInt(AppErrorLog.throttleKeyFor('tmdb_fetch', 'player'));
+      final player = prefs.getInt(
+        AppErrorLog.throttleKeyFor('tmdb_fetch', 'player'),
+      );
       expect(tmdb, isNotNull);
       expect(player, isNotNull);
     });
@@ -110,23 +121,21 @@ void main() {
         code: 'tmdb_fetch',
         detail: 'timeout_20s',
       );
-      expect(
-        p.keys.toSet(),
-        <String>{
-          'device_code',
-          'platform',
-          'app_version',
-          'screen',
-          'code',
-          'detail',
-        },
-      );
+      expect(p.keys.toSet(), <String>{
+        'device_code',
+        'platform',
+        'app_version',
+        'screen',
+        'code',
+        'detail',
+      });
       // No count: the server folds repeats into its own column.
       expect(p.containsKey('count'), isFalse);
     });
 
     test('raw exception text never reaches the wire', () {
-      const raw = 'Bad state: No element #0 main (main.dart:1) '
+      const raw =
+          'Bad state: No element #0 main (main.dart:1) '
           'https://tracker.example/magnet:?xt=urn:btih:secret';
       final p = AppErrorLog.buildPayload(
         deviceCode: '1234567',
@@ -256,8 +265,11 @@ void main() {
       final merged = ServerFlags.merge(rows);
       expect(merged['kids_mode'], isTrue);
       expect(merged.containsKey('not_a_real_flag'), isFalse);
-      expect(merged['error_reporting'], isTrue,
-          reason: 'a bad row is ignored, the default stands');
+      expect(
+        merged['error_reporting'],
+        isTrue,
+        reason: 'a bad row is ignored, the default stands',
+      );
       expect(merged.length, kServerFlagsFallback.length);
     });
   });

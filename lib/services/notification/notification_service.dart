@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'notification_inbox.dart';
 import 'notification_prefs.dart';
+import 'notification_sync.dart';
 
 /// Phase J1/J2 — local notification renderer.
 ///
@@ -26,16 +28,18 @@ class NotificationService {
 
   static const Map<String, String> _channelNames = {
     'updates': 'App updates',
-    'download': 'Downloads',
+    'releases': 'New releases',
+    'downloads': 'Downloads',
     'social': 'Friends & messages',
-    'announcement': 'News from Dizzy',
+    'announcements': 'News from Dizzy',
   };
 
   static const Map<String, String> _channelDesc = {
     'updates': 'A new Dizzy version is ready to install.',
-    'download': 'Your download finished, or stopped early.',
+    'releases': 'New movies and shows picked for you.',
+    'downloads': 'Your download finished, or stopped early.',
     'social': 'Friend requests, messages and room invites.',
-    'announcement': 'News and maintenance notes from the Dizzy team.',
+    'announcements': 'News and maintenance notes from the Dizzy team.',
   };
 
   static final FlutterLocalNotificationsPlugin _plugin =
@@ -112,6 +116,7 @@ class NotificationService {
     } catch (e) {
       _note('gate persist failed (soft): $e');
     }
+    unawaited(NotificationSync.push(gate: _gate));
   }
 
   // ── preferences ──────────────────────────────────────────────────────────

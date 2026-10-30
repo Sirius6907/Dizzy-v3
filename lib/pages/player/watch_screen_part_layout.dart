@@ -18,7 +18,8 @@ extension _WatchScreenStateLayout on _WatchScreenState {
             // P12: decode-capped (was full-res).
             memCacheWidth: ImageCaps.kCardW,
             maxWidthDiskCache: ImageCaps.kCardW,
-            errorWidget: (_, __, ___) => const ColoredBox(color: WatchColors.bg),
+            errorWidget: (_, __, ___) =>
+                const ColoredBox(color: WatchColors.bg),
           ),
           // Left-to-right dimming: dark on left (text side), lighter on right
           DecoratedBox(
@@ -174,7 +175,12 @@ extension _WatchScreenStateLayout on _WatchScreenState {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          _buildTypeChip('all', 'All (${_sources.length})', Icons.apps_rounded, null),
+                          _buildTypeChip(
+                            'all',
+                            'All (${_sources.length})',
+                            Icons.apps_rounded,
+                            null,
+                          ),
                           _buildTypeChip(
                             'debrid',
                             '⚡ Debrid (${_sources.where((s) => s.isDebrid).length})',
@@ -229,7 +235,9 @@ extension _WatchScreenStateLayout on _WatchScreenState {
             else if (!_isLoadingSources && filtered.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: WatchSpace.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: WatchSpace.lg,
+                  ),
                   child: _buildEmptyState(),
                 ),
               )
@@ -291,7 +299,9 @@ extension _WatchScreenStateLayout on _WatchScreenState {
             decoration: BoxDecoration(
               color: WatchColors.accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: WatchColors.accent.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: WatchColors.accent.withValues(alpha: 0.3),
+              ),
             ),
             child: Text(
               'S${ep.season ?? '?'}E${ep.episode ?? '?'}',
@@ -428,7 +438,10 @@ extension _WatchScreenStateLayout on _WatchScreenState {
       items.add(
         Text(
           meta.runtime!,
-          style: const TextStyle(color: WatchColors.textSecondary, fontSize: 14),
+          style: const TextStyle(
+            color: WatchColors.textSecondary,
+            fontSize: 14,
+          ),
         ),
       );
     }
@@ -650,17 +663,21 @@ extension _WatchScreenStateLayout on _WatchScreenState {
 
         if (nameLower.contains('imdb') || catLower.contains('imdb')) {
           icon = Icons.movie_creation_outlined;
-        } else if (nameLower.contains('trailer') || catLower.contains('trailer')) {
+        } else if (nameLower.contains('trailer') ||
+            catLower.contains('trailer')) {
           icon = Icons.play_circle_outline;
         } else if (nameLower.contains('wiki') || catLower.contains('wiki')) {
           icon = Icons.article_outlined;
-        } else if (nameLower.contains('search') || catLower.contains('search')) {
+        } else if (nameLower.contains('search') ||
+            catLower.contains('search')) {
           icon = Icons.search_rounded;
         }
 
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(right: link == links.last ? 0 : WatchSpace.sm),
+            padding: EdgeInsets.only(
+              right: link == links.last ? 0 : WatchSpace.sm,
+            ),
             child: _buildActionButton(
               icon,
               link.name,

@@ -45,8 +45,7 @@ void main() {
     test('toHex round-trips', () {
       const c = Color(0xFF00E5FF);
       final hex = CustomAccentService.toHex(c);
-      expect(CustomAccentService.tryParseHex(hex)?.toARGB32(),
-          c.toARGB32());
+      expect(CustomAccentService.tryParseHex(hex)?.toARGB32(), c.toARGB32());
     });
   });
 
@@ -59,17 +58,11 @@ void main() {
     });
 
     test('auth failure -> login line', () {
-      expect(
-        CalmFaceCopy.forError('401 Unauthorized'),
-        contains('Login'),
-      );
+      expect(CalmFaceCopy.forError('401 Unauthorized'), contains('Login'));
     });
 
     test('missing -> not-found line', () {
-      expect(
-        CalmFaceCopy.forError('404 not found'),
-        contains('Not found'),
-      );
+      expect(CalmFaceCopy.forError('404 not found'), contains('Not found'));
     });
 
     test('unknown -> generic, raw never leaks', () {
@@ -83,13 +76,11 @@ void main() {
     test('enter/space/gamepad-A are select keys', () {
       expect(DpadNavScope.isSelectKey(LogicalKeyboardKey.enter), true);
       expect(DpadNavScope.isSelectKey(LogicalKeyboardKey.space), true);
-      expect(
-          DpadNavScope.isSelectKey(LogicalKeyboardKey.gameButtonA), true);
+      expect(DpadNavScope.isSelectKey(LogicalKeyboardKey.gameButtonA), true);
     });
 
     test('arrows are arrow keys, letters are not', () {
-      expect(
-          DpadNavScope.isArrowKey(LogicalKeyboardKey.arrowUp), true);
+      expect(DpadNavScope.isArrowKey(LogicalKeyboardKey.arrowUp), true);
       expect(DpadNavScope.isArrowKey(LogicalKeyboardKey.keyM), false);
     });
   });

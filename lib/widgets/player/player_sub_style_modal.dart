@@ -10,11 +10,7 @@ class PlayerSubStyleModal extends StatefulWidget {
   final Player? player;
   final VoidCallback onClose;
 
-  const PlayerSubStyleModal({
-    super.key,
-    this.player,
-    required this.onClose,
-  });
+  const PlayerSubStyleModal({super.key, this.player, required this.onClose});
 
   @override
   State<PlayerSubStyleModal> createState() => _PlayerSubStyleModalState();
@@ -204,13 +200,22 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             children: [
               // Reset Button
               IconButton(
-                icon: const Icon(Icons.restart_alt_rounded, size: 19, color: PlayerTheme.inkMuted),
+                icon: const Icon(
+                  Icons.restart_alt_rounded,
+                  size: 19,
+                  color: PlayerTheme.inkMuted,
+                ),
                 tooltip: 'Reset Subtitle Defaults',
-                onPressed: () => PlayerSettings.resetSubtitleDefaults(player: widget.player),
+                onPressed: () =>
+                    PlayerSettings.resetSubtitleDefaults(player: widget.player),
               ),
               // Close Button
               IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
                 tooltip: 'Close',
                 onPressed: widget.onClose,
               ),
@@ -229,16 +234,32 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
     if (isLandscapeMobile) return const SizedBox.shrink();
 
     final textColor = _parseColorFromHex(PlayerSettings.subColor.value);
-    final boxColor = _parseColorFromHex(PlayerSettings.subBackColor.value, fallback: Colors.transparent);
-    final borderColor = _parseColorFromHex(PlayerSettings.subBorderColor.value, fallback: Colors.black);
-    final shadowColor = _parseColorFromHex(PlayerSettings.subShadowColor.value, fallback: Colors.black54);
+    final boxColor = _parseColorFromHex(
+      PlayerSettings.subBackColor.value,
+      fallback: Colors.transparent,
+    );
+    final borderColor = _parseColorFromHex(
+      PlayerSettings.subBorderColor.value,
+      fallback: Colors.black,
+    );
+    final shadowColor = _parseColorFromHex(
+      PlayerSettings.subShadowColor.value,
+      fallback: Colors.black54,
+    );
 
     final fontName = PlayerSettings.subFont.value == 'subfont'
         ? 'Poppins'
         : PlayerSettings.subFont.value;
 
-    final fontSize = (PlayerSettings.subFontSize.value * 0.55 * PlayerSettings.subScale.value).clamp(11.0, 32.0);
-    final borderSize = (PlayerSettings.subBorderSize.value * 0.75).clamp(0.0, 5.0);
+    final fontSize =
+        (PlayerSettings.subFontSize.value *
+                0.55 *
+                PlayerSettings.subScale.value)
+            .clamp(11.0, 32.0);
+    final borderSize = (PlayerSettings.subBorderSize.value * 0.75).clamp(
+      0.0,
+      5.0,
+    );
     final shadowOffset = PlayerSettings.subShadowOffset.value * 1.2;
 
     return Container(
@@ -264,9 +285,7 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           Positioned.fill(
             child: Opacity(
               opacity: 0.15,
-              child: CustomPaint(
-                painter: _VideoGridPainter(),
-              ),
+              child: CustomPaint(painter: _VideoGridPainter()),
             ),
           ),
 
@@ -283,15 +302,31 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
               style: TextStyle(
                 fontFamily: fontName,
                 fontSize: fontSize,
-                fontWeight: PlayerSettings.subBold.value ? FontWeight.bold : FontWeight.w600,
-                fontStyle: PlayerSettings.subItalic.value ? FontStyle.italic : FontStyle.normal,
+                fontWeight: PlayerSettings.subBold.value
+                    ? FontWeight.bold
+                    : FontWeight.w600,
+                fontStyle: PlayerSettings.subItalic.value
+                    ? FontStyle.italic
+                    : FontStyle.normal,
                 color: textColor,
                 shadows: [
                   if (borderSize > 0) ...[
-                    Shadow(color: borderColor, offset: Offset(-borderSize, -borderSize)),
-                    Shadow(color: borderColor, offset: Offset(borderSize, -borderSize)),
-                    Shadow(color: borderColor, offset: Offset(borderSize, borderSize)),
-                    Shadow(color: borderColor, offset: Offset(-borderSize, borderSize)),
+                    Shadow(
+                      color: borderColor,
+                      offset: Offset(-borderSize, -borderSize),
+                    ),
+                    Shadow(
+                      color: borderColor,
+                      offset: Offset(borderSize, -borderSize),
+                    ),
+                    Shadow(
+                      color: borderColor,
+                      offset: Offset(borderSize, borderSize),
+                    ),
+                    Shadow(
+                      color: borderColor,
+                      offset: Offset(-borderSize, borderSize),
+                    ),
                   ],
                   if (shadowOffset > 0)
                     Shadow(
@@ -329,16 +364,24 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: InkWell(
-                onTap: () => PlayerSettings.setSubStylePreset(preset, player: widget.player),
+                onTap: () => PlayerSettings.setSubStylePreset(
+                  preset,
+                  player: widget.player,
+                ),
                 borderRadius: BorderRadius.circular(10),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? PlayerTheme.accent : PlayerTheme.raised,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? PlayerTheme.accentGlow : PlayerTheme.edgeSoft,
+                      color: isSelected
+                          ? PlayerTheme.accentGlow
+                          : PlayerTheme.edgeSoft,
                     ),
                   ),
                   child: Row(
@@ -352,15 +395,22 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                           decoration: BoxDecoration(
                             color: _parseColorFromHex(preset.textColor),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white30, width: 0.8),
+                            border: Border.all(
+                              color: Colors.white30,
+                              width: 0.8,
+                            ),
                           ),
                         ),
                       Text(
                         preset.label,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : PlayerTheme.inkMuted,
+                          color: isSelected
+                              ? Colors.white
+                              : PlayerTheme.inkMuted,
                           fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                         ),
                       ),
                     ],
@@ -393,12 +443,27 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
         labelColor: Colors.white,
         unselectedLabelColor: PlayerTheme.inkSubtle,
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
         tabs: const [
-          Tab(text: 'Typography', icon: Icon(Icons.text_fields_rounded, size: 16)),
-          Tab(text: 'Colors & Box', icon: Icon(Icons.palette_rounded, size: 16)),
-          Tab(text: 'Outline & Shadow', icon: Icon(Icons.border_style_rounded, size: 16)),
-          Tab(text: 'Position', icon: Icon(Icons.vertical_align_bottom_rounded, size: 16)),
+          Tab(
+            text: 'Typography',
+            icon: Icon(Icons.text_fields_rounded, size: 16),
+          ),
+          Tab(
+            text: 'Colors & Box',
+            icon: Icon(Icons.palette_rounded, size: 16),
+          ),
+          Tab(
+            text: 'Outline & Shadow',
+            icon: Icon(Icons.border_style_rounded, size: 16),
+          ),
+          Tab(
+            text: 'Position',
+            icon: Icon(Icons.vertical_align_bottom_rounded, size: 16),
+          ),
           Tab(text: 'Advanced / ASS', icon: Icon(Icons.tune_rounded, size: 16)),
         ],
       ),
@@ -426,12 +491,18 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: PlayerSettings.popularFonts.contains(PlayerSettings.subFont.value)
+              value:
+                  PlayerSettings.popularFonts.contains(
+                    PlayerSettings.subFont.value,
+                  )
                   ? PlayerSettings.subFont.value
                   : 'subfont',
               isExpanded: true,
               dropdownColor: DizzyVoid.voidB,
-              icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white70),
+              icon: const Icon(
+                Icons.arrow_drop_down_rounded,
+                color: Colors.white70,
+              ),
               items: PlayerSettings.popularFonts.map((f) {
                 final label = f == 'subfont' ? 'Default (Dizzy Subfont)' : f;
                 return DropdownMenuItem<String>(
@@ -448,7 +519,9 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                 );
               }).toList(),
               onChanged: (val) {
-                if (val != null) PlayerSettings.setSubFont(val, player: widget.player);
+                if (val != null) {
+                  PlayerSettings.setSubFont(val, player: widget.player);
+                }
               },
             ),
           ),
@@ -457,12 +530,21 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
         const SizedBox(height: 18),
 
         // Base Font Size Slider
-        _buildSectionTitle('BASE FONT SIZE (${PlayerSettings.subFontSize.value}pt)'),
+        _buildSectionTitle(
+          'BASE FONT SIZE (${PlayerSettings.subFontSize.value}pt)',
+        ),
         Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.remove_circle_outline_rounded, size: 20, color: Colors.white70),
-              onPressed: () => PlayerSettings.setSubFontSize(PlayerSettings.subFontSize.value - 2, player: widget.player),
+              icon: const Icon(
+                Icons.remove_circle_outline_rounded,
+                size: 20,
+                color: Colors.white70,
+              ),
+              onPressed: () => PlayerSettings.setSubFontSize(
+                PlayerSettings.subFontSize.value - 2,
+                player: widget.player,
+              ),
             ),
             Expanded(
               child: SliderTheme(
@@ -472,13 +554,23 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                   min: 16.0,
                   max: 72.0,
                   divisions: 28,
-                  onChanged: (v) => PlayerSettings.setSubFontSize(v.round(), player: widget.player),
+                  onChanged: (v) => PlayerSettings.setSubFontSize(
+                    v.round(),
+                    player: widget.player,
+                  ),
                 ),
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline_rounded, size: 20, color: Colors.white70),
-              onPressed: () => PlayerSettings.setSubFontSize(PlayerSettings.subFontSize.value + 2, player: widget.player),
+              icon: const Icon(
+                Icons.add_circle_outline_rounded,
+                size: 20,
+                color: Colors.white70,
+              ),
+              onPressed: () => PlayerSettings.setSubFontSize(
+                PlayerSettings.subFontSize.value + 2,
+                player: widget.player,
+              ),
             ),
           ],
         ),
@@ -486,7 +578,9 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
         const SizedBox(height: 14),
 
         // Scale Multiplier Slider
-        _buildSectionTitle('SCALE MULTIPLIER (${(PlayerSettings.subScale.value * 100).round()}%)'),
+        _buildSectionTitle(
+          'SCALE MULTIPLIER (${(PlayerSettings.subScale.value * 100).round()}%)',
+        ),
         SliderTheme(
           data: _sliderTheme(),
           child: Slider(
@@ -494,7 +588,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             min: 0.5,
             max: 2.5,
             divisions: 20,
-            onChanged: (v) => PlayerSettings.setSubScale(v, player: widget.player),
+            onChanged: (v) =>
+                PlayerSettings.setSubScale(v, player: widget.player),
           ),
         ),
 
@@ -508,7 +603,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                 title: 'Bold Text',
                 icon: Icons.format_bold_rounded,
                 value: PlayerSettings.subBold.value,
-                onChanged: (val) => PlayerSettings.setSubBold(val, player: widget.player),
+                onChanged: (val) =>
+                    PlayerSettings.setSubBold(val, player: widget.player),
               ),
             ),
             const SizedBox(width: 12),
@@ -517,7 +613,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                 title: 'Italic Text',
                 icon: Icons.format_italic_rounded,
                 value: PlayerSettings.subItalic.value,
-                onChanged: (val) => PlayerSettings.setSubItalic(val, player: widget.player),
+                onChanged: (val) =>
+                    PlayerSettings.setSubItalic(val, player: widget.player),
               ),
             ),
           ],
@@ -545,17 +642,27 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           spacing: 8,
           runSpacing: 8,
           children: _textColorPalette.map((item) {
-            final isSelected = activeColor.toLowerCase() == (item['hex'] as String).toLowerCase();
+            final isSelected =
+                activeColor.toLowerCase() ==
+                (item['hex'] as String).toLowerCase();
             return InkWell(
-              onTap: () => PlayerSettings.setSubColor(item['hex'], player: widget.player),
+              onTap: () => PlayerSettings.setSubColor(
+                item['hex'],
+                player: widget.player,
+              ),
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? PlayerTheme.accent : PlayerTheme.raised,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? PlayerTheme.accentGlow : PlayerTheme.edgeSoft,
+                    color: isSelected
+                        ? PlayerTheme.accentGlow
+                        : PlayerTheme.edgeSoft,
                   ),
                 ),
                 child: Row(
@@ -593,19 +700,30 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
         const SizedBox(height: 10),
         Column(
           children: _boxColorOptions.map((opt) {
-            final isSelected = activeBox.toLowerCase() == (opt['hex'] as String).toLowerCase();
+            final isSelected =
+                activeBox.toLowerCase() == (opt['hex'] as String).toLowerCase();
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: InkWell(
-                onTap: () => PlayerSettings.setSubBackColor(opt['hex'], player: widget.player),
+                onTap: () => PlayerSettings.setSubBackColor(
+                  opt['hex'],
+                  player: widget.player,
+                ),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? PlayerTheme.accentSoft : PlayerTheme.raised,
+                    color: isSelected
+                        ? PlayerTheme.accentSoft
+                        : PlayerTheme.raised,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? PlayerTheme.accent : PlayerTheme.edgeSoft,
+                      color: isSelected
+                          ? PlayerTheme.accent
+                          : PlayerTheme.edgeSoft,
                     ),
                   ),
                   child: Row(
@@ -635,7 +753,10 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                       ),
                       Text(
                         opt['desc'] as String,
-                        style: const TextStyle(color: PlayerTheme.inkSubtle, fontSize: 11.5),
+                        style: const TextStyle(
+                          color: PlayerTheme.inkSubtle,
+                          fontSize: 11.5,
+                        ),
                       ),
                     ],
                   ),
@@ -666,17 +787,27 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           spacing: 8,
           runSpacing: 8,
           children: _borderColorPalette.map((item) {
-            final isSelected = activeBorderColor.toLowerCase() == (item['hex'] as String).toLowerCase();
+            final isSelected =
+                activeBorderColor.toLowerCase() ==
+                (item['hex'] as String).toLowerCase();
             return InkWell(
-              onTap: () => PlayerSettings.setSubBorderColor(item['hex'], player: widget.player),
+              onTap: () => PlayerSettings.setSubBorderColor(
+                item['hex'],
+                player: widget.player,
+              ),
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? PlayerTheme.accent : PlayerTheme.raised,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? PlayerTheme.accentGlow : PlayerTheme.edgeSoft,
+                    color: isSelected
+                        ? PlayerTheme.accentGlow
+                        : PlayerTheme.edgeSoft,
                   ),
                 ),
                 child: Row(
@@ -710,7 +841,9 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
         const SizedBox(height: 18),
 
         // Outline Thickness Slider
-        _buildSectionTitle('OUTLINE THICKNESS (${PlayerSettings.subBorderSize.value.toStringAsFixed(1)}px)'),
+        _buildSectionTitle(
+          'OUTLINE THICKNESS (${PlayerSettings.subBorderSize.value.toStringAsFixed(1)}px)',
+        ),
         SliderTheme(
           data: _sliderTheme(),
           child: Slider(
@@ -718,14 +851,17 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             min: 0.0,
             max: 6.0,
             divisions: 12,
-            onChanged: (v) => PlayerSettings.setSubBorderSize(v, player: widget.player),
+            onChanged: (v) =>
+                PlayerSettings.setSubBorderSize(v, player: widget.player),
           ),
         ),
 
         const SizedBox(height: 18),
 
         // Drop Shadow Offset Slider
-        _buildSectionTitle('DROP SHADOW OFFSET (${PlayerSettings.subShadowOffset.value.toStringAsFixed(1)}px)'),
+        _buildSectionTitle(
+          'DROP SHADOW OFFSET (${PlayerSettings.subShadowOffset.value.toStringAsFixed(1)}px)',
+        ),
         SliderTheme(
           data: _sliderTheme(),
           child: Slider(
@@ -733,7 +869,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             min: 0.0,
             max: 6.0,
             divisions: 12,
-            onChanged: (v) => PlayerSettings.setSubShadowOffset(v, player: widget.player),
+            onChanged: (v) =>
+                PlayerSettings.setSubShadowOffset(v, player: widget.player),
           ),
         ),
       ],
@@ -756,16 +893,26 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           children: [
             _buildAlignButton('Left', 'left', Icons.format_align_left_rounded),
             const SizedBox(width: 8),
-            _buildAlignButton('Center', 'center', Icons.format_align_center_rounded),
+            _buildAlignButton(
+              'Center',
+              'center',
+              Icons.format_align_center_rounded,
+            ),
             const SizedBox(width: 8),
-            _buildAlignButton('Right', 'right', Icons.format_align_right_rounded),
+            _buildAlignButton(
+              'Right',
+              'right',
+              Icons.format_align_right_rounded,
+            ),
           ],
         ),
 
         const SizedBox(height: 20),
 
         // Bottom Margin
-        _buildSectionTitle('BOTTOM MARGIN / OFFSET (${PlayerSettings.subMarginY.value.round()}px)'),
+        _buildSectionTitle(
+          'BOTTOM MARGIN / OFFSET (${PlayerSettings.subMarginY.value.round()}px)',
+        ),
         SliderTheme(
           data: _sliderTheme(),
           child: Slider(
@@ -773,14 +920,17 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             min: 10.0,
             max: 150.0,
             divisions: 28,
-            onChanged: (v) => PlayerSettings.setSubMarginY(v, player: widget.player),
+            onChanged: (v) =>
+                PlayerSettings.setSubMarginY(v, player: widget.player),
           ),
         ),
 
         const SizedBox(height: 20),
 
         // Vertical Screen Position
-        _buildSectionTitle('VERTICAL POSITION (${PlayerSettings.subPos.value.round()}%)'),
+        _buildSectionTitle(
+          'VERTICAL POSITION (${PlayerSettings.subPos.value.round()}%)',
+        ),
         SliderTheme(
           data: _sliderTheme(),
           child: Slider(
@@ -788,7 +938,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
             min: 0.0,
             max: 100.0,
             divisions: 20,
-            onChanged: (v) => PlayerSettings.setSubPos(v, player: widget.player),
+            onChanged: (v) =>
+                PlayerSettings.setSubPos(v, player: widget.player),
           ),
         ),
       ],
@@ -799,7 +950,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
     final isSelected = PlayerSettings.subAlignX.value == alignVal;
     return Expanded(
       child: InkWell(
-        onTap: () => PlayerSettings.setSubAlignX(alignVal, player: widget.player),
+        onTap: () =>
+            PlayerSettings.setSubAlignX(alignVal, player: widget.player),
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -813,7 +965,11 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: isSelected ? Colors.white : PlayerTheme.inkSubtle, size: 18),
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : PlayerTheme.inkSubtle,
+                size: 18,
+              ),
               const SizedBox(height: 4),
               Text(
                 title,
@@ -841,22 +997,26 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
       {
         'val': 'no',
         'title': 'Preserve Anime & SSA/ASS Styling (Recommended)',
-        'subtitle': 'Leaves SSA/ASS anime subtitles untouched to preserve custom karaoke, styling & positions. Plain SRT/VTT are styled with your custom theme.',
+        'subtitle':
+            'Leaves SSA/ASS anime subtitles untouched to preserve custom karaoke, styling & positions. Plain SRT/VTT are styled with your custom theme.',
       },
       {
         'val': 'scale',
         'title': 'Scale Only',
-        'subtitle': 'Applies size scaling to SSA/ASS scripts while preserving their fonts, colors, and author typography.',
+        'subtitle':
+            'Applies size scaling to SSA/ASS scripts while preserving their fonts, colors, and author typography.',
       },
       {
         'val': 'yes',
         'title': 'Override Colors & Outlines',
-        'subtitle': 'Applies your custom colors and outlines on top of SSA/ASS subtitle scripts.',
+        'subtitle':
+            'Applies your custom colors and outlines on top of SSA/ASS subtitle scripts.',
       },
       {
         'val': 'force',
         'title': 'Force Full Override (Aggressive)',
-        'subtitle': 'Forces all custom fonts, colors, and styles onto all subtitle formats (may break anime effects).',
+        'subtitle':
+            'Forces all custom fonts, colors, and styles onto all subtitle formats (may break anime effects).',
       },
     ];
 
@@ -868,12 +1028,13 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
       children: [
         _buildSectionTitle('SUBTITLE RENDERING ENGINE'),
         const SizedBox(height: 10),
-        
+
         // Flutter Engine Option
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: InkWell(
-            onTap: () => PlayerSettings.setUseLibass(false, player: widget.player),
+            onTap: () =>
+                PlayerSettings.setUseLibass(false, player: widget.player),
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -892,7 +1053,9 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                     groupValue: useLibass,
                     activeColor: PlayerTheme.accent,
                     onChanged: (val) {
-                      if (val != null) PlayerSettings.setUseLibass(val, player: widget.player);
+                      if (val != null) {
+                        PlayerSettings.setUseLibass(val, player: widget.player);
+                      }
                     },
                   ),
                   const SizedBox(width: 8),
@@ -930,7 +1093,8 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: InkWell(
-            onTap: () => PlayerSettings.setUseLibass(true, player: widget.player),
+            onTap: () =>
+                PlayerSettings.setUseLibass(true, player: widget.player),
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -949,7 +1113,9 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                     groupValue: useLibass,
                     activeColor: PlayerTheme.accent,
                     onChanged: (val) {
-                      if (val != null) PlayerSettings.setUseLibass(val, player: widget.player);
+                      if (val != null) {
+                        PlayerSettings.setUseLibass(val, player: widget.player);
+                      }
                     },
                   ),
                   const SizedBox(width: 8),
@@ -990,15 +1156,22 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: InkWell(
-              onTap: () => PlayerSettings.setSubAssOverride(m['val']!, player: widget.player),
+              onTap: () => PlayerSettings.setSubAssOverride(
+                m['val']!,
+                player: widget.player,
+              ),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected ? PlayerTheme.accentSoft : PlayerTheme.raised,
+                  color: isSelected
+                      ? PlayerTheme.accentSoft
+                      : PlayerTheme.raised,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? PlayerTheme.accent : PlayerTheme.edgeSoft,
+                    color: isSelected
+                        ? PlayerTheme.accent
+                        : PlayerTheme.edgeSoft,
                   ),
                 ),
                 child: Row(
@@ -1009,7 +1182,12 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
                       groupValue: activeOverride,
                       activeColor: PlayerTheme.accent,
                       onChanged: (val) {
-                        if (val != null) PlayerSettings.setSubAssOverride(val, player: widget.player);
+                        if (val != null) {
+                          PlayerSettings.setSubAssOverride(
+                            val,
+                            player: widget.player,
+                          );
+                        }
                       },
                     ),
                     const SizedBox(width: 8),
@@ -1085,7 +1263,11 @@ class _PlayerSubStyleModalState extends State<PlayerSubStyleModal>
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),

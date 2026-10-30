@@ -38,7 +38,7 @@ void main() {
         reason: 'Cloud init must be non-blocking (unawaited/.then).',
       );
       // Device code is generated before anything cloud-related.
-      final deviceIdx = mainSrc.indexOf('DeviceIdService.initialize()');
+      final deviceIdx = mainSrc.indexOf('DeviceIdService.initialize');
       final cloudIdx = mainSrc.indexOf('CloudClient.init()');
       expect(deviceIdx, isNot(-1));
       expect(cloudIdx, isNot(-1));
@@ -79,15 +79,24 @@ void main() {
       // Phase H: hash source moved to DeviceIdentityV2.stableHwid();
       // legacyHash is the old random-code derivation. Both must stay guarded.
       final hashIdx = bootBody.indexOf('DeviceIdentityV2.stableHwid()');
-      expect(guardIdx, isNot(-1),
-          reason: 'bootDevice must early-return when cloud is not ready.');
+      expect(
+        guardIdx,
+        isNot(-1),
+        reason: 'bootDevice must early-return when cloud is not ready.',
+      );
       expect(hashIdx, isNot(-1));
-      expect(guardIdx, lessThan(hashIdx),
-          reason: 'HWID hash must only be computed after the cloud-ready guard.');
+      expect(
+        guardIdx,
+        lessThan(hashIdx),
+        reason: 'HWID hash must only be computed after the cloud-ready guard.',
+      );
       final legacyIdx = bootBody.indexOf('legacyHash');
       expect(legacyIdx, isNot(-1));
-      expect(guardIdx, lessThan(legacyIdx),
-          reason: 'Legacy hwid hash must also stay behind the guard.');
+      expect(
+        guardIdx,
+        lessThan(legacyIdx),
+        reason: 'Legacy hwid hash must also stay behind the guard.',
+      );
 
       // init() also gates the background registration on cloud readiness.
       final initStart = src.indexOf('static Future<void> init()');
@@ -122,19 +131,26 @@ void main() {
         final code = _stripComments(_read(rel)).toLowerCase();
         // Comments mentioning "OAuth removed" are stripped above; any
         // remaining oauth reference in code is a violation.
-        expect(code, isNot(contains('oauth')),
-            reason: '$rel must not reference oauth in code.');
+        expect(
+          code,
+          isNot(contains('oauth')),
+          reason: '$rel must not reference oauth in code.',
+        );
         for (final b in banned) {
-          expect(code, isNot(contains(b.toLowerCase())),
-              reason: '$rel must not contain $b.');
+          expect(
+            code,
+            isNot(contains(b.toLowerCase())),
+            reason: '$rel must not contain $b.',
+          );
         }
         // No persisted OAuth tokens in the auth flow.
         expect(code, isNot(contains('oauth_token')));
         expect(code, isNot(contains('oauth_code')));
       }
       // Anonymous-first proof: auth uses anonymous sign-in only.
-      final authSrc =
-          _stripComments(_read('lib/services/cloud/cloud_auth_service.dart'));
+      final authSrc = _stripComments(
+        _read('lib/services/cloud/cloud_auth_service.dart'),
+      );
       expect(authSrc, contains('signInAnonymously'));
     });
   });

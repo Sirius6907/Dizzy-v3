@@ -20,14 +20,23 @@ void main() {
 
       // Phase 2: Add items from different sources
       final movieItem = MyListItem.fromMovieDetail(
-        id: 'tt1375666', name: 'Inception', year: '2010', type: 'movie',
+        id: 'tt1375666',
+        name: 'Inception',
+        year: '2010',
+        type: 'movie',
       );
       final seriesItem = MyListItem(
-        traktId: 200, title: 'Breaking Bad', year: 2008, type: 'series',
+        traktId: 200,
+        title: 'Breaking Bad',
+        year: 2008,
+        type: 'series',
         addedAt: DateTime(2026, 6, 1),
       );
       final animeItem = MyListItem.fromMovieDetail(
-        id: '123', name: 'Attack on Titan', year: '2013', type: 'anime',
+        id: '123',
+        name: 'Attack on Titan',
+        year: '2013',
+        type: 'anime',
       );
 
       MyListService.add(movieItem);
@@ -59,10 +68,15 @@ void main() {
       expect(titles.length, 2); // Inception was removed
 
       // Phase 7: Verify dedup
-      MyListService.add(MyListItem(
-        traktId: 200, title: 'Breaking Bad Duplicate', year: 2008,
-        type: 'series', addedAt: DateTime(2026),
-      ));
+      MyListService.add(
+        MyListItem(
+          traktId: 200,
+          title: 'Breaking Bad Duplicate',
+          year: 2008,
+          type: 'series',
+          addedAt: DateTime(2026),
+        ),
+      );
       expect(MyListService.items.value.length, 2); // not 3
 
       // Phase 8: Verify list is intact (items survived all operations)
@@ -74,10 +88,14 @@ void main() {
 
     test('maxItems cap works end-to-end', () {
       for (int i = 0; i < 600; i++) {
-        MyListService.add(MyListItem.fromMovieDetail(
-          id: 'tt${i.toString().padLeft(7, '0')}',
-          name: 'Movie $i', type: 'movie', year: '2024',
-        ));
+        MyListService.add(
+          MyListItem.fromMovieDetail(
+            id: 'tt${i.toString().padLeft(7, '0')}',
+            name: 'Movie $i',
+            type: 'movie',
+            year: '2024',
+          ),
+        );
       }
       expect(MyListService.items.value.length, 500);
 

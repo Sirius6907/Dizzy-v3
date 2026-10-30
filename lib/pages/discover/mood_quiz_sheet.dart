@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/ai/mood_quiz_policy.dart';
 import '../../services/ai/mood_quiz_service.dart';
 import '../../services/discover/discover_copy.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/notify.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 
 /// F5 — the mood quiz, asked in place.
 ///
@@ -60,7 +62,10 @@ class _MoodQuizSheetState extends State<MoodQuizSheet> {
   void _done() {
     final p = _service.profile;
     if (p == null) {
-      DizzyNotify.show(context, MoodQuizPolicy.actionLabel(_service.answers.value));
+      DizzyNotify.show(
+        context,
+        MoodQuizPolicy.actionLabel(_service.answers.value),
+      );
       return;
     }
     Navigator.of(context).pop(p);
@@ -70,6 +75,10 @@ class _MoodQuizSheetState extends State<MoodQuizSheet> {
   Widget build(BuildContext context) {
     final answers = _service.answers.value;
     final ready = MoodQuizPolicy.isComplete(answers);
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
 
     return SafeArea(
       top: false,
@@ -77,11 +86,15 @@ class _MoodQuizSheetState extends State<MoodQuizSheet> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),
-        // Not const: DizzyEdge.hairline is a theme-aware getter.
+        // Not const: the hairline token depends on the active theme.
         decoration: BoxDecoration(
-          color: DizzyVoid.voidA,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(DizzyRadius.xl)),
-          border: Border(top: DizzyEdge.hairline),
+          color: palette.cardBackgroundColor,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(DizzyRadius.xl),
+          ),
+          border: isLight
+              ? const Border(top: BorderSide(color: PrismLight.borderSubtle))
+              : Border(top: DizzyEdge.hairline),
         ),
         child: ListView(
           shrinkWrap: true,
@@ -97,16 +110,16 @@ class _MoodQuizSheetState extends State<MoodQuizSheet> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: DizzyVoid.ash.withValues(alpha: 0.4),
+                  color: inkSoft.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: DizzySpace.md),
-            const Text(
+            Text(
               DiscoverCopy.quizRailTitle,
               style: TextStyle(
-                color: DizzyVoid.bone,
+                color: ink,
                 fontSize: DizzyType.title,
                 fontWeight: FontWeight.w900,
               ),
@@ -114,7 +127,7 @@ class _MoodQuizSheetState extends State<MoodQuizSheet> {
             const SizedBox(height: DizzySpace.xxs),
             Text(
               MoodQuizPolicy.progressLine(answers),
-              style: const TextStyle(color: DizzyVoid.ash, fontSize: DizzyType.body),
+              style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
             ),
             const SizedBox(height: DizzySpace.md),
             for (final q in MoodQuizPolicy.questions) ...[
@@ -138,9 +151,9 @@ class _MoodQuizSheetState extends State<MoodQuizSheet> {
                 onPressed: () async {
                   await _service.reset();
                 },
-                child: const Text(
+                child: Text(
                   'Start over',
-                  style: TextStyle(color: DizzyVoid.ash, fontSize: DizzyType.caption),
+                  style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
                 ),
               ),
             ),
@@ -167,16 +180,18 @@ class _QuestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = answers[question.id];
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
 
-    return DizzyTactileCard(
+    return PrismCard(
       padding: const EdgeInsets.all(DizzySpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             question.prompt,
-            style: const TextStyle(
-              color: DizzyVoid.bone,
+            style: TextStyle(
+              color: ink,
               fontSize: DizzyType.subtitle,
               fontWeight: FontWeight.w800,
             ),
@@ -214,6 +229,13 @@ class _OptionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : DizzyEdge.hairline.color;
 
     return Semantics(
       button: true,
@@ -225,18 +247,14 @@ class _OptionChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: selected
-                ? primary.withValues(alpha: 0.22)
-                : DizzyVoid.surface2,
+            color: selected ? primary.withValues(alpha: 0.22) : well,
             borderRadius: BorderRadius.circular(DizzyRadius.pill),
-            border: Border.all(
-              color: selected ? primary : DizzyEdge.hairline.color,
-            ),
+            border: Border.all(color: selected ? primary : hairline),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? DizzyVoid.bone : DizzyVoid.ash,
+              color: selected ? ink : inkSoft,
               fontSize: DizzyType.body,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
             ),
@@ -261,23 +279,21 @@ class _ReadyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: ready ? onTap : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: ready ? primary : DizzyVoid.surface2,
-          foregroundColor: ready ? Colors.white : DizzyVoid.ash,
+          backgroundColor: ready ? primary : well,
+          foregroundColor: ready ? PrismAccent.onAccent : inkSoft,
           padding: const EdgeInsets.symmetric(vertical: DizzySpace.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: DizzyRadius.mdAll,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: DizzyRadius.mdAll),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
     );
   }

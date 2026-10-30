@@ -37,7 +37,7 @@ class ResourceSample {
 /// **PC budgets (user-set):** ≤ 3 GB RAM, ≤ 2.5 GB VRAM (total GPU),
 /// ≤ 20% CPU. **Android:** tighter (phones share everything).
 ///
-/// The governor samples every 10 s and escalates through
+/// The governor samples every 60 s and escalates through
 /// [ResourceLevel]s with hysteresis (2 bad samples to escalate,
 /// 6 calm samples to de-escalate) so playback never flickers quality.
 class ResourceGovernor {
@@ -45,9 +45,15 @@ class ResourceGovernor {
 
   static final ResourceGovernor instance = ResourceGovernor._();
 
+  /// Each tick spawns PowerShell / nvidia-smi (200-500 ms CPU), so the
+  /// cadence stays coarse — 60 s is plenty for budget escalation.
+  static const Duration _sampleInterval = Duration(seconds: 60);
+  static const Duration _gpuInterval = Duration(seconds: 60);
+
   /// Current mitigation level (listened to by PlayerScreen).
-  final ValueNotifier<ResourceLevel> level =
-      ValueNotifier<ResourceLevel>(ResourceLevel.normal);
+  final ValueNotifier<ResourceLevel> level = ValueNotifier<ResourceLevel>(
+    ResourceLevel.normal,
+  );
 
   /// True while the video player is actively playing (gates CPU/VRAM
   /// mitigation — no point dropping quality when nothing plays).
@@ -74,18 +80,23 @@ class ResourceGovernor {
 
   /// Starts the periodic sampler (idempotent).
   void start() {
-    _sampleTimer ??= Timer.periodic(
-      const Duration(seconds: 10),
-      (_) => _sampleOnce(),
-    );
-    // GPU memory is the slowest-moving metric — sample every 20 s.
+    _sampleTimer ??= Timer.periodic(_sampleInterval, (_) => _sampleOnce());
+    // GPU memory is the slowest-moving metric — same coarse cadence.
     if (!Platform.isAndroid) {
-      _gpuTimer ??= Timer.periodic(
-        const Duration(seconds: 20),
-        (_) => _sampleGpu(),
-      );
+      _gpuTimer ??= Timer.periodic(_gpuInterval, (_) => _sampleGpu());
     }
   }
+
+  /// Stops sampling while the app is backgrounded (idempotent).
+  void pause() {
+    _sampleTimer?.cancel();
+    _sampleTimer = null;
+    _gpuTimer?.cancel();
+    _gpuTimer = null;
+  }
+
+  /// Resumes sampling after [pause] (idempotent, same as [start]).
+  void resume() => start();
 
   /// Latest measured sample (for logging / debug displays).
   ResourceSample? lastSample;
@@ -104,7 +115,8 @@ class ResourceGovernor {
     try {
       final gpuMb = await _queryGpuTotalMb();
       if (gpuMb == null) return;
-      final base = lastSample ??
+      final base =
+          lastSample ??
           ResourceSample(rssMb: 0, cpuPercent: 0, gpuTotalMb: gpuMb);
       final merged = ResourceSample(
         rssMb: base.rssMb,
@@ -122,7 +134,9 @@ class ResourceGovernor {
     if (Platform.isWindows) {
       // One PowerShell call: WorkingSet64 + TotalProcessorTime.
       final cmdline =
-          r'$p = Get-Process -Id ' + pid.toString() + r'; ' +
+          r'$p = Get-Process -Id ' +
+          pid.toString() +
+          r'; ' +
           r'"{0} {1}" -f $p.WorkingSet64, ' +
           r'[double]$p.TotalProcessorTime.TotalSeconds';
       final result = await Process.run('powershell', [
@@ -150,7 +164,10 @@ class ResourceGovernor {
     return _buildSample(rssMb: rssMb, cpuSeconds: cpuSecs);
   }
 
-  ResourceSample _buildSample({required int rssMb, required double cpuSeconds}) {
+  ResourceSample _buildSample({
+    required int rssMb,
+    required double cpuSeconds,
+  }) {
     final now = DateTime.now();
     final wall = now.difference(_lastCpuAt).inMicroseconds / 1e6;
     double cpuPercent = 0;
@@ -210,7 +227,9 @@ class ResourceGovernor {
         '--format=csv,noheader,nounits',
       ]);
       if (r.exitCode != 0) return null;
-      return int.tryParse((r.stdout as String).trim().split(RegExp(r'\s+')).first);
+      return int.tryParse(
+        (r.stdout as String).trim().split(RegExp(r'\s+')).first,
+      );
     } catch (_) {
       return null;
     }
@@ -244,27 +263,34 @@ class ResourceGovernor {
       PerformanceMode.applyLevel(PerfLevel.critical);
       // P18: opt-in, throttled (24h/code) perf telemetry for the admin
       // dashboard — enums only, never URLs/titles/raw text.
-      unawaited(AppErrorLog.log(
-        code: 'perf_critical',
-        screen: 'governor',
-        detail: 'ram_${s.rssMb}_cpu_${s.cpuPercent.round()}',
-      ));
-      debugPrint('[ResourceGovernor] CRITICAL ram=${s.rssMb}MB '
-          'cpu=${s.cpuPercent.toStringAsFixed(1)}% gpu=${s.gpuTotalMb}MB');
-    } else if (current == ResourceLevel.normal &&
-        _overStreak >= 2) {
+      unawaited(
+        AppErrorLog.log(
+          code: 'perf_critical',
+          screen: 'governor',
+          detail: 'ram_${s.rssMb}_cpu_${s.cpuPercent.round()}',
+        ),
+      );
+      debugPrint(
+        '[ResourceGovernor] CRITICAL ram=${s.rssMb}MB '
+        'cpu=${s.cpuPercent.toStringAsFixed(1)}% gpu=${s.gpuTotalMb}MB',
+      );
+    } else if (current == ResourceLevel.normal && _overStreak >= 2) {
       level.value = ResourceLevel.caution;
       // P9: caution = ambient frozen, glass → flat fallback.
       // P33: applyLevel owns the 90 FPS step via _applyFrameRateGovernance.
       PerformanceMode.applyLevel(PerfLevel.caution);
       // P18: caution telemetry (same opt-in contract as critical).
-      unawaited(AppErrorLog.log(
-        code: 'perf_caution',
-        screen: 'governor',
-        detail: 'ram_${s.rssMb}_cpu_${s.cpuPercent.round()}',
-      ));
-      debugPrint('[ResourceGovernor] CAUTION ram=${s.rssMb}MB '
-          'cpu=${s.cpuPercent.toStringAsFixed(1)}% gpu=${s.gpuTotalMb}MB');
+      unawaited(
+        AppErrorLog.log(
+          code: 'perf_caution',
+          screen: 'governor',
+          detail: 'ram_${s.rssMb}_cpu_${s.cpuPercent.round()}',
+        ),
+      );
+      debugPrint(
+        '[ResourceGovernor] CAUTION ram=${s.rssMb}MB '
+        'cpu=${s.cpuPercent.toStringAsFixed(1)}% gpu=${s.gpuTotalMb}MB',
+      );
     } else if (current != ResourceLevel.normal &&
         _calmStreak >= 6 &&
         s.rssMb < 0.6 * ramBudgetMb &&

@@ -5,7 +5,11 @@ class _EpisodeCard extends StatefulWidget {
   final String? fallbackImageUrl;
   final VoidCallback? onTap;
 
-  const _EpisodeCard({required this.episode, this.fallbackImageUrl, this.onTap});
+  const _EpisodeCard({
+    required this.episode,
+    this.fallbackImageUrl,
+    this.onTap,
+  });
 
   @override
   State<_EpisodeCard> createState() => _EpisodeCardState();
@@ -16,6 +20,8 @@ class _EpisodeCardState extends State<_EpisodeCard> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
     final ep = widget.episode;
     final imgUrl = ep.thumbnail ?? widget.fallbackImageUrl;
 
@@ -31,11 +37,27 @@ class _EpisodeCardState extends State<_EpisodeCard> {
           curve: Curves.easeOutCubic,
           child: Container(
             decoration: BoxDecoration(
-              color: DizzyColors.surface,
+              color: isLight ? PrismLight.raisedTop : DizzyColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _hovered ? Colors.white.withOpacity(0.22) : Colors.white.withOpacity(0.04)),
+              border: Border.all(
+                color: isLight
+                    ? (_hovered
+                          ? PrismLight.borderSubtle
+                          : PrismLight.borderSubtle.withValues(alpha: 0.5))
+                    : (_hovered
+                          ? Colors.white.withOpacity(0.22)
+                          : Colors.white.withOpacity(0.04)),
+              ),
               boxShadow: _hovered
-                  ? [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 18, offset: const Offset(0, 8))]
+                  ? [
+                      BoxShadow(
+                        color: isLight
+                            ? Colors.black.withValues(alpha: 0.10)
+                            : Colors.black.withOpacity(0.4),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
                   : [],
             ),
             child: ClipRRect(
@@ -55,7 +77,8 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                             // Polish P14: uncapped decode = OOM risk on 3GB.
                             memCacheWidth: ImageCaps.kCardW,
                             maxWidthDiskCache: ImageCaps.kCardW,
-                            errorWidget: (context, url, error) => const ColoredBox(color: DizzyColors.scrim),
+                            errorWidget: (context, url, error) =>
+                                const ColoredBox(color: DizzyColors.scrim),
                           )
                         else
                           const ColoredBox(color: DizzyColors.scrim),
@@ -64,7 +87,10 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [Colors.transparent, Colors.black.withOpacity(0.75)],
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.75),
+                              ],
                               stops: const [0.5, 1.0],
                             ),
                           ),
@@ -78,9 +104,18 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10)],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    blurRadius: 10,
+                                  ),
+                                ],
                               ),
-                              child: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 24),
+                              child: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.black,
+                                size: 24,
+                              ),
                             ),
                           ),
                         ),
@@ -95,10 +130,26 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                       children: [
                         Row(
                           children: [
-                            Text('EP ${ep.episode ?? "?"}', style: const TextStyle(color: DizzyColors.accent, fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(
+                              'EP ${ep.episode ?? "?"}',
+                              style: TextStyle(
+                                color: PrismAccent.text(isLight),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                             const Spacer(),
-                            if (ep.released != null && ep.released!.length >= 10)
-                              Text(ep.released!.substring(0, 10), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                            if (ep.released != null &&
+                                ep.released!.length >= 10)
+                              Text(
+                                ep.released!.substring(0, 10),
+                                style: TextStyle(
+                                  color: isLight
+                                      ? PrismLight.inkFaint
+                                      : Colors.white38,
+                                  fontSize: 11,
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -106,7 +157,11 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                           ep.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13.5),
+                          style: TextStyle(
+                            color: isLight ? PrismLight.ink : Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                          ),
                         ),
                         if (ep.overview != null) ...[
                           const SizedBox(height: 3),
@@ -114,7 +169,13 @@ class _EpisodeCardState extends State<_EpisodeCard> {
                             ep.overview!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white54, fontSize: 11.5, height: 1.3),
+                            style: TextStyle(
+                              color: isLight
+                                  ? PrismLight.inkSoft
+                                  : Colors.white54,
+                              fontSize: 11.5,
+                              height: 1.3,
+                            ),
                           ),
                         ],
                       ],
@@ -135,7 +196,11 @@ class _HoverButton extends StatefulWidget {
   final VoidCallback onTap;
   final double scaleAmount;
 
-  const _HoverButton({required this.child, required this.onTap, this.scaleAmount = 1.04});
+  const _HoverButton({
+    required this.child,
+    required this.onTap,
+    this.scaleAmount = 1.04,
+  });
 
   @override
   State<_HoverButton> createState() => _HoverButtonState();
@@ -150,7 +215,10 @@ class _HoverButtonState extends State<_HoverButton> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() { _isHovered = false; _isPressed = false; }),
+      onExit: (_) => setState(() {
+        _isHovered = false;
+        _isPressed = false;
+      }),
       // Keyboard / DPAD friendly: Enter ya Space se bhi dab jaye (P3/P13).
       child: Focus(
         onKeyEvent: (node, event) {
@@ -170,7 +238,9 @@ class _HoverButtonState extends State<_HoverButton> {
             onTapCancel: () => setState(() => _isPressed = false),
             onTap: widget.onTap,
             child: AnimatedScale(
-              scale: _isPressed ? 0.96 : (_isHovered ? widget.scaleAmount : 1.0),
+              scale: _isPressed
+                  ? 0.96
+                  : (_isHovered ? widget.scaleAmount : 1.0),
               duration: DizzyMotion.instant,
               curve: DizzyMotion.easeOut,
               child: widget.child,

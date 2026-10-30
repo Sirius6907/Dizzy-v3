@@ -10,16 +10,13 @@ abstract final class CustomAccentService {
   static const _keyBlur = 'ux6_backdrop_blur';
 
   /// Currently active custom accent (null = use palette default).
-  static final ValueNotifier<Color?> customAccent =
-      ValueNotifier<Color?>(null);
+  static final ValueNotifier<Color?> customAccent = ValueNotifier<Color?>(null);
 
   /// AMOLED true black (pure 0x000000 backgrounds) for OLED battery saving.
-  static final ValueNotifier<bool> amoledTrueBlack =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> amoledTrueBlack = ValueNotifier<bool>(false);
 
   /// Backdrop blur intensity 0..24 (default 12).
-  static final ValueNotifier<double> backdropBlur =
-      ValueNotifier<double>(12.0);
+  static final ValueNotifier<double> backdropBlur = ValueNotifier<double>(12.0);
 
   static Future<void> initialize() async {
     try {
@@ -30,8 +27,7 @@ abstract final class CustomAccentService {
         if (c != null) customAccent.value = c;
       }
       amoledTrueBlack.value = prefs.getBool(_keyAmoled) ?? false;
-      backdropBlur.value =
-          (prefs.getDouble(_keyBlur) ?? 12.0).clamp(0.0, 24.0);
+      backdropBlur.value = (prefs.getDouble(_keyBlur) ?? 12.0).clamp(0.0, 24.0);
     } catch (_) {}
   }
 

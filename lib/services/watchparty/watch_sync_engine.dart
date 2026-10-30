@@ -96,23 +96,23 @@ class WatchSyncMessage {
   });
 
   Map<String, dynamic> toJson() => {
-        'v': version,
-        'type': 'host_state',
-        'media_ref': mediaRef,
-        'media_title': mediaTitle,
-        'season': season,
-        'episode': episode,
-        'position_ms': positionMs,
-        'playing': playing,
-        'speed': speed,
-        'audio_track': audioTrack,
-        'sub_track': subTrack,
-        'host_sent_at': hostSentAtMs,
-        'prefetch_ready': prefetchReady,
-        if (mediaKind != null) 'media_kind': mediaKind,
-        if (chapterIndex != null) 'chapter_index': chapterIndex,
-        if (pageIndex != null) 'page_index': pageIndex,
-      };
+    'v': version,
+    'type': 'host_state',
+    'media_ref': mediaRef,
+    'media_title': mediaTitle,
+    'season': season,
+    'episode': episode,
+    'position_ms': positionMs,
+    'playing': playing,
+    'speed': speed,
+    'audio_track': audioTrack,
+    'sub_track': subTrack,
+    'host_sent_at': hostSentAtMs,
+    'prefetch_ready': prefetchReady,
+    if (mediaKind != null) 'media_kind': mediaKind,
+    if (chapterIndex != null) 'chapter_index': chapterIndex,
+    if (pageIndex != null) 'page_index': pageIndex,
+  };
 
   factory WatchSyncMessage.fromJson(Map<String, dynamic> json) =>
       WatchSyncMessage(
@@ -121,14 +121,12 @@ class WatchSyncMessage {
         mediaTitle: json['media_title']?.toString(),
         season: int.tryParse(json['season']?.toString() ?? ''),
         episode: int.tryParse(json['episode']?.toString() ?? ''),
-        positionMs:
-            int.tryParse(json['position_ms']?.toString() ?? '') ?? 0,
+        positionMs: int.tryParse(json['position_ms']?.toString() ?? '') ?? 0,
         playing: json['playing'] == true,
         speed: double.tryParse(json['speed']?.toString() ?? '') ?? 1.0,
         audioTrack: json['audio_track']?.toString(),
         subTrack: json['sub_track']?.toString(),
-        hostSentAtMs:
-            int.tryParse(json['host_sent_at']?.toString() ?? '') ?? 0,
+        hostSentAtMs: int.tryParse(json['host_sent_at']?.toString() ?? '') ?? 0,
         // Old clients never send the key → false (no behavior change).
         prefetchReady: json['prefetch_ready'] == true,
         mediaKind: json['media_kind']?.toString(),

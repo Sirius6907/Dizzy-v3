@@ -22,11 +22,7 @@ class AudioTrackOption {
   /// Human label — plenty of containers only tag the title, not `language`.
   final String? title;
 
-  const AudioTrackOption({
-    required this.index,
-    this.language,
-    this.title,
-  });
+  const AudioTrackOption({required this.index, this.language, this.title});
 }
 
 abstract final class AudioTrackPreference {

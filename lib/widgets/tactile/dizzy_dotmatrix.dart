@@ -38,9 +38,7 @@ class DizzyDotMatrix extends StatelessWidget {
       decoration: BoxDecoration(
         color: DizzyVoid.obsidian,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: RepaintBoundary(
         child: CustomPaint(
@@ -144,8 +142,10 @@ class _DotMatrixPainter extends CustomPainter {
           final cx = baseX + col * pitch + dotSize / 2;
           final cy = row * pitch + dotSize / 2;
           final rect = RRect.fromLTRBR(
-            cx - dotSize / 2, cy - dotSize / 2,
-            cx + dotSize / 2, cy + dotSize / 2,
+            cx - dotSize / 2,
+            cy - dotSize / 2,
+            cx + dotSize / 2,
+            cy + dotSize / 2,
             Radius.circular(dotSize / 2),
           );
           canvas.drawRRect(rect, on ? litPaint : offPaint);

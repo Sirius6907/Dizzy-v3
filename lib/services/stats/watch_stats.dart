@@ -68,6 +68,17 @@ class WatchStats {
     );
   }
 
+  /// The same numbers restricted to the last seven days — the recap card
+  /// reads this, while the hero keeps the all-time totals.
+  static WatchStats weekly(List<ContinueWatchingItem> items, {DateTime? now}) {
+    final today = now ?? DateTime.now();
+    final cutoff = today.subtract(const Duration(days: 7));
+    return aggregate(
+      items.where((i) => i.lastWatchedAt.isAfter(cutoff)).toList(),
+      now: today,
+    );
+  }
+
   String get hoursLabel {
     if (minutesWatched < 60) return '$minutesWatched min';
     final h = minutesWatched ~/ 60;

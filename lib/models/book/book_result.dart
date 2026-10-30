@@ -41,13 +41,18 @@ class BookResult {
 
   factory BookResult.fromJson(Map<String, dynamic> json) {
     return BookResult(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
       title: (json['title'] ?? '').toString().trim(),
       author: (json['author'] ?? '').toString().trim(),
       md5: (json['md5'] ?? '').toString().trim(),
       link: (json['link'] ?? '').toString().trim(),
       bookImage: (json['book_image'] ?? '').toString().trim(),
-      bookFiletype: (json['book_filetype'] ?? 'epub').toString().trim().toLowerCase(),
+      bookFiletype: (json['book_filetype'] ?? 'epub')
+          .toString()
+          .trim()
+          .toLowerCase(),
       bookLang: (json['book_lang'] ?? '').toString().trim(),
       bookSize: (json['book_size'] ?? '').toString().trim(),
       bookLength: (json['book_length'] ?? '').toString().trim(),
@@ -89,7 +94,8 @@ class BookResult {
   bool get isPdf => bookFiletype == 'pdf';
   bool get isFb2 => bookFiletype == 'fb2' || bookFiletype == 'fb2.zip';
   bool get isMobi => bookFiletype == 'mobi';
-  bool get isAzw3 => bookFiletype == 'azw3' || bookFiletype == 'azw' || bookFiletype == 'kf8';
+  bool get isAzw3 =>
+      bookFiletype == 'azw3' || bookFiletype == 'azw' || bookFiletype == 'kf8';
   bool get isTxt => bookFiletype == 'txt';
   bool get isComic => bookFiletype == 'cbz' || bookFiletype == 'cbr';
   bool get isLit => bookFiletype == 'lit';

@@ -1,20 +1,18 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/movie/movie.dart';
 import '../../models/movie/movie_section.dart';
 import '../../services/metadata/metadata_service.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/movie/movie_card.dart';
 
 class CatalogPage extends StatefulWidget {
   final MovieSection section;
 
-  const CatalogPage({
-    super.key,
-    required this.section,
-  });
+  const CatalogPage({super.key, required this.section});
 
   @override
   State<CatalogPage> createState() => _CatalogPageState();
@@ -71,14 +69,17 @@ class _CatalogPageState extends State<CatalogPage> {
     setState(() {
       _canScrollGenresLeft = _genreScrollController.position.pixels > 0;
       _canScrollGenresRight =
-          _genreScrollController.position.pixels < _genreScrollController.position.maxScrollExtent;
+          _genreScrollController.position.pixels <
+          _genreScrollController.position.maxScrollExtent;
     });
   }
 
   void _scrollGenres(double directionMultiplier) {
     if (!_genreScrollController.hasClients) return;
     final viewportWidth = _genreScrollController.position.viewportDimension;
-    final target = _genreScrollController.offset + (viewportWidth * 0.7 * directionMultiplier);
+    final target =
+        _genreScrollController.offset +
+        (viewportWidth * 0.7 * directionMultiplier);
     _genreScrollController.animateTo(
       target.clamp(0.0, _genreScrollController.position.maxScrollExtent),
       duration: const Duration(milliseconds: 400),
@@ -112,7 +113,8 @@ class _CatalogPageState extends State<CatalogPage> {
             catalogId: widget.section.catalog.id,
             query: _searchQuery,
           );
-          _hasMore = false; // Usually search returns all relevant results or doesn't support skip
+          _hasMore =
+              false; // Usually search returns all relevant results or doesn't support skip
         }
       } else {
         newItems = await MetadataService.fetchCatalog(
@@ -195,33 +197,39 @@ class _CatalogPageState extends State<CatalogPage> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
+
     final topPadding = MediaQuery.of(context).padding.top;
     final sizing = MovieCardSizing.fromWidth(MediaQuery.sizeOf(context).width);
     final isDesktop = MediaQuery.sizeOf(context).width >= 800;
-    
+
     // Calculate safe top padding for grid based on if genres are available
     final hasGenres = widget.section.catalog.genres.isNotEmpty && !_isSearching;
-    final gridTopPadding = topPadding + kToolbarHeight + (hasGenres ? 60 : 20) + 20;
+    final gridTopPadding =
+        topPadding + kToolbarHeight + (hasGenres ? 60 : 20) + 20;
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // ── Main Content Grid ──
           if (_items.isEmpty && _isLoading)
-            const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
+            Center(
+              child: CircularProgressIndicator(color: palette.primaryColor),
             )
           else if (_items.isEmpty && _error != null)
-            ErrorView(
-              error: _error,
-              onRetry: () => _loadItems(refresh: true),
-            )
+            ErrorView(error: _error, onRetry: () => _loadItems(refresh: true))
           else if (_items.isEmpty)
-            const Center(
+            Center(
               child: Text(
                 'No items found',
-                style: TextStyle(color: Colors.white54, fontSize: 16),
+                style: TextStyle(color: inkSoft, fontSize: 16),
               ),
             )
           else
@@ -235,7 +243,13 @@ class _CatalogPageState extends State<CatalogPage> {
               ),
               physics: const BouncingScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: ((MediaQuery.sizeOf(context).width - sizing.sidePadding * 2 + sizing.spacing) / (sizing.cardWidth + sizing.spacing)).floor().clamp(2, 10),
+                crossAxisCount:
+                    ((MediaQuery.sizeOf(context).width -
+                                sizing.sidePadding * 2 +
+                                sizing.spacing) /
+                            (sizing.cardWidth + sizing.spacing))
+                        .floor()
+                        .clamp(2, 10),
                 childAspectRatio: 1 / 1.48,
                 crossAxisSpacing: sizing.spacing,
                 mainAxisSpacing: sizing.spacing,
@@ -243,8 +257,10 @@ class _CatalogPageState extends State<CatalogPage> {
               itemCount: _items.length + (_hasMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == _items.length) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF7C5CFF)),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: palette.primaryColor,
+                    ),
                   );
                 }
                 return MovieCard(movie: _items[index]);
@@ -266,15 +282,11 @@ class _CatalogPageState extends State<CatalogPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        DizzyVoid.voidA.withValues(alpha: 0.90),
-                        DizzyVoid.voidA.withValues(alpha: 0.60),
+                        palette.scaffoldBackgroundColor.withValues(alpha: 0.90),
+                        palette.scaffoldBackgroundColor.withValues(alpha: 0.60),
                       ],
                     ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                    ),
+                    border: Border(bottom: BorderSide(color: hairline)),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -286,18 +298,22 @@ class _CatalogPageState extends State<CatalogPage> {
                           children: [
                             const SizedBox(width: 8),
                             IconButton(
-                              icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-                              color: Colors.white,
+                              icon: const Icon(
+                                Icons.arrow_back_ios_rounded,
+                                size: 20,
+                              ),
+                              color: ink,
+                              tooltip: 'Back',
                               onPressed: () => Navigator.pop(context),
                             ),
                             if (!_isSearching)
                               Expanded(
                                 child: Text(
                                   widget.section.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                                    color: ink,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -310,43 +326,50 @@ class _CatalogPageState extends State<CatalogPage> {
                                   child: TextField(
                                     controller: _searchController,
                                     autofocus: true,
-                                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                                    style: TextStyle(color: ink, fontSize: 16),
                                     textInputAction: TextInputAction.search,
                                     onSubmitted: _onSearchSubmitted,
                                     decoration: InputDecoration(
                                       hintText: 'Search...',
-                                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                                      hintStyle: TextStyle(color: inkSoft),
                                       border: InputBorder.none,
                                       suffixIcon: IconButton(
-                                        icon: const Icon(Icons.close_rounded, size: 20),
-                                        color: Colors.white70,
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          size: 20,
+                                        ),
+                                        color: inkSoft,
+                                        tooltip: 'Clear search',
                                         onPressed: _clearSearch,
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                            if (!_isSearching && widget.section.catalog.supportsSearch)
+                            if (!_isSearching &&
+                                widget.section.catalog.supportsSearch)
                               IconButton(
                                 icon: const Icon(Icons.search_rounded),
-                                color: Colors.white70,
+                                color: inkSoft,
+                                tooltip: 'Search',
                                 onPressed: () {
                                   setState(() {
                                     _isSearching = true;
                                   });
                                 },
                               ),
-                            if (!_isSearching)
-                              const SizedBox(width: 8),
+                            if (!_isSearching) const SizedBox(width: 8),
                           ],
                         ),
                       ),
-                      
+
                       // Genres Row
                       if (hasGenres)
                         MouseRegion(
-                          onEnter: (_) => setState(() => _isHoveringGenres = true),
-                          onExit: (_) => setState(() => _isHoveringGenres = false),
+                          onEnter: (_) =>
+                              setState(() => _isHoveringGenres = true),
+                          onExit: (_) =>
+                              setState(() => _isHoveringGenres = false),
                           child: Stack(
                             children: [
                               SizedBox(
@@ -354,10 +377,15 @@ class _CatalogPageState extends State<CatalogPage> {
                                 child: ListView.separated(
                                   controller: _genreScrollController,
                                   scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   physics: const BouncingScrollPhysics(),
-                                  itemCount: widget.section.catalog.genres.length + 1,
-                                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                                  itemCount:
+                                      widget.section.catalog.genres.length + 1,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(width: 8),
                                   itemBuilder: (context, index) {
                                     if (index == 0) {
                                       return _GenreChip(
@@ -366,7 +394,10 @@ class _CatalogPageState extends State<CatalogPage> {
                                         onTap: () => _onGenreSelected(null),
                                       );
                                     }
-                                    final genre = widget.section.catalog.genres[index - 1];
+                                    final genre = widget
+                                        .section
+                                        .catalog
+                                        .genres[index - 1];
                                     return _GenreChip(
                                       label: genre,
                                       isSelected: _selectedGenre == genre,
@@ -383,6 +414,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                     bottom: 0,
                                     child: _buildScrollArrow(
                                       Icons.arrow_back_ios_new_rounded,
+                                      'Scroll genres left',
                                       () => _scrollGenres(-1),
                                       _isHoveringGenres,
                                     ),
@@ -394,6 +426,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                     bottom: 0,
                                     child: _buildScrollArrow(
                                       Icons.arrow_forward_ios_rounded,
+                                      'Scroll genres right',
                                       () => _scrollGenres(1),
                                       _isHoveringGenres,
                                     ),
@@ -413,24 +446,38 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  Widget _buildScrollArrow(IconData icon, VoidCallback onTap, bool isVisible) {
+  Widget _buildScrollArrow(
+    IconData icon,
+    String tooltip,
+    VoidCallback onTap,
+    bool isVisible,
+  ) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
     return Center(
       child: AnimatedOpacity(
         opacity: isVisible ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 200),
         child: IgnorePointer(
           ignoring: !isVisible,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white24),
+          child: Tooltip(
+            message: tooltip,
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? PrismLight.raisedTop
+                      : Colors.black.withValues(alpha: 0.7),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isLight ? PrismLight.borderSubtle : Colors.white24,
+                  ),
+                ),
+                child: Icon(icon, color: ink, size: 16),
               ),
-              child: Icon(icon, color: Colors.white, size: 16),
             ),
           ),
         ),
@@ -452,28 +499,44 @@ class _GenreChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.7);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.12);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF7C5CFF) : Colors.white.withValues(alpha: 0.08),
+          color: isSelected
+              ? palette.primaryColor
+              : (isLight
+                    ? PrismLight.raisedTop
+                    : Colors.white.withValues(alpha: 0.08)),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected 
-              ? const Color(0xFF7C5CFF) 
-              : Colors.white.withValues(alpha: 0.12),
+            color: isSelected ? palette.primaryColor : hairline,
           ),
-          boxShadow: isSelected 
-            ? [BoxShadow(color: const Color(0xFF7C5CFF).withValues(alpha: 0.3), blurRadius: 8)] 
-            : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: palette.primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+            color: isSelected ? Colors.white : inkSoft,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             fontSize: 13,
           ),

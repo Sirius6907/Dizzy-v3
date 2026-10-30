@@ -73,38 +73,50 @@ abstract final class CustomBackgroundService {
     CustomBackgroundPreset(
       id: 'cyber_city',
       title: 'Cyber Neon City',
-      previewUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400&q=80',
-      fullUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1920&q=90',
+      previewUrl:
+          'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400&q=80',
+      fullUrl:
+          'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1920&q=90',
     ),
     CustomBackgroundPreset(
       id: 'cosmos_nebula',
       title: 'Cosmic Nebula',
-      previewUrl: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=400&q=80',
-      fullUrl: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1920&q=90',
+      previewUrl:
+          'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=400&q=80',
+      fullUrl:
+          'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1920&q=90',
     ),
     CustomBackgroundPreset(
       id: 'dark_silk',
       title: 'Dark Liquid Silk',
-      previewUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80',
-      fullUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=90',
+      previewUrl:
+          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80',
+      fullUrl:
+          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=90',
     ),
     CustomBackgroundPreset(
       id: 'synthwave',
       title: 'Synthwave Horizon',
-      previewUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80',
-      fullUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1920&q=90',
+      previewUrl:
+          'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80',
+      fullUrl:
+          'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1920&q=90',
     ),
     CustomBackgroundPreset(
       id: 'moody_forest',
       title: 'Moody Forest Mist',
-      previewUrl: 'https://images.unsplash.com/photo-1506452305024-9d3f02d1c9b5?w=400&q=80&auto=format&fit=crop',
-      fullUrl: 'https://images.unsplash.com/photo-1506452305024-9d3f02d1c9b5?w=1920&q=90&auto=format&fit=crop',
+      previewUrl:
+          'https://images.unsplash.com/photo-1506452305024-9d3f02d1c9b5?w=400&q=80&auto=format&fit=crop',
+      fullUrl:
+          'https://images.unsplash.com/photo-1506452305024-9d3f02d1c9b5?w=1920&q=90&auto=format&fit=crop',
     ),
     CustomBackgroundPreset(
       id: 'abstract_geometry',
       title: 'Abstract Dark Neon',
-      previewUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=80',
-      fullUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=90',
+      previewUrl:
+          'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=80',
+      fullUrl:
+          'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=90',
     ),
   ];
 
@@ -147,13 +159,18 @@ abstract final class CustomBackgroundService {
         allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'],
       );
 
-      if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+      if (result != null &&
+          result.files.isNotEmpty &&
+          result.files.single.path != null) {
         final originalFile = File(result.files.single.path!);
         if (await originalFile.exists()) {
           final appDocDir = await getApplicationDocumentsDirectory();
           final ext = p.extension(originalFile.path);
-          final targetPath = p.join(appDocDir.path, 'dizzy_custom_background$ext');
-          
+          final targetPath = p.join(
+            appDocDir.path,
+            'dizzy_custom_background$ext',
+          );
+
           await originalFile.copy(targetPath);
 
           final prefs = await SharedPreferences.getInstance();

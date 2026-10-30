@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
 import 'package:dizzy/services/messaging/dm_outbox.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../settings/watch_party_page.dart';
 import '../../widgets/common/notify.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 /// In-App Direct Message & Media Card Experience.
 /// Pure OLED true-black, zero-lag 120 FPS message lists with one-tap Co-Experience join.
@@ -136,6 +137,8 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   }
 
   Widget _pendingBar() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final gold = isLight ? PrismAccent.starTextLight : DizzyGlow.gold;
     return ValueListenableBuilder<List<OutboxEntry>>(
       valueListenable: DmOutbox.entries,
       builder: (context, list, _) {
@@ -155,35 +158,27 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
               vertical: DizzySpace.xs,
             ),
             decoration: BoxDecoration(
-              color: DizzyGlow.gold.withValues(alpha: 0.12),
+              color: gold.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(DizzyRadius.sm),
-              border: Border.all(color: DizzyGlow.gold.withValues(alpha: 0.4)),
+              border: Border.all(color: gold.withValues(alpha: 0.4)),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.schedule_rounded,
-                  size: 14,
-                  color: DizzyGlow.gold,
-                ),
+                Icon(Icons.schedule_rounded, size: 14, color: gold),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     mine.length == 1
                         ? '1 message not sent yet — tap to retry now'
                         : '${mine.length} messages not sent yet — tap to retry',
-                    style: const TextStyle(
-                      color: DizzyGlow.gold,
+                    style: TextStyle(
+                      color: gold,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.refresh_rounded,
-                  size: 14,
-                  color: DizzyGlow.gold,
-                ),
+                Icon(Icons.refresh_rounded, size: 14, color: gold),
               ],
             ),
           ),
@@ -250,10 +245,17 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   }
 
   Widget _buildMediaCardBubble(DizzyDirectMessage msg, bool isMe) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     return Container(
       constraints: const BoxConstraints(maxWidth: 320),
       margin: const EdgeInsets.symmetric(vertical: DizzySpace.xs),
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.all(DizzySpace.sm),
         glowColor: DizzyGlow.beam,
         child: Column(
@@ -266,8 +268,8 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                   height: 72,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    gradient: DizzyGradients.tactileSurface,
-                    border: Border.fromBorderSide(DizzyEdge.hairline),
+                    color: well,
+                    border: Border.all(color: hairline),
                   ),
                   child: const Center(
                     child: Text('🎬', style: TextStyle(fontSize: 28)),
@@ -278,10 +280,10 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Fight Club (1999)',
                         style: TextStyle(
-                          color: DizzyVoid.bone,
+                          color: ink,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -291,10 +293,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                       const SizedBox(height: 4),
                       Text(
                         msg.body,
-                        style: const TextStyle(
-                          color: DizzyVoid.ash,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: inkSoft, fontSize: 12),
                       ),
                     ],
                   ),
@@ -342,6 +341,12 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   }
 
   Widget _buildTextMessageBubble(DizzyDirectMessage msg, bool isMe) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -358,19 +363,14 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
             bottomLeft: Radius.circular(isMe ? 18 : 4),
             bottomRight: Radius.circular(isMe ? 4 : 18),
           ),
-          gradient: isMe
-              ? DizzyGradients.emberButton
-              : const LinearGradient(
-                  colors: [DizzyVoid.surface3, Color(0xFF161927)],
-                ),
-          border: Border.fromBorderSide(
-            isMe ? BorderSide.none : DizzyEdge.hairline,
-          ),
+          gradient: isMe ? DizzyGradients.emberButton : null,
+          color: isMe ? null : panel,
+          border: isMe ? null : Border.all(color: hairline),
           boxShadow: [
             BoxShadow(
               color: isMe
                   ? DizzyGlow.red.withValues(alpha: 0.25)
-                  : Colors.black.withValues(alpha: 0.40),
+                  : Colors.black.withValues(alpha: isLight ? 0.08 : 0.40),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -378,7 +378,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
         ),
         child: Text(
           msg.body,
-          style: const TextStyle(color: DizzyVoid.bone, fontSize: 14),
+          style: TextStyle(color: isMe ? Colors.white : ink, fontSize: 14),
         ),
       ),
     );
@@ -386,145 +386,145 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
 
   @override
   Widget build(BuildContext context) {
-    return GuideTrigger(
-      guideKey: 'dms',
-      steps: AppGuides.dms,
-      child: Scaffold(
-        backgroundColor: DizzyVoid.obsidian, // OLED Pure Black
-        appBar: AppBar(
-          backgroundColor: DizzyVoid.voidA,
-          elevation: 0,
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: DizzyVoid.surface2,
-                    child: Text(
-                      widget.recipientUsername.isNotEmpty
-                          ? widget.recipientUsername[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: DizzyVoid.bone,
-                        fontWeight: FontWeight.bold,
-                      ),
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final online = isLight ? PrismAccent.successTextLight : DizzyGlow.volt;
+    return Scaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: palette.appBarBackgroundColor,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: panel,
+                  child: Text(
+                    widget.recipientUsername.isNotEmpty
+                        ? widget.recipientUsername[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(color: ink, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: DizzyGlow.volt,
                     ),
                   ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: DizzyGlow.volt,
-                      ),
+                ),
+              ],
+            ),
+            const SizedBox(width: DizzySpace.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '@${widget.recipientUsername}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  Text(
+                    'Online • Ready to sync',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: online, fontSize: 11),
                   ),
                 ],
               ),
-              const SizedBox(width: DizzySpace.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '@${widget.recipientUsername}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: DizzyVoid.bone,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Text(
-                      'Online • Ready to sync',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: DizzyGlow.volt, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(DizzySpace.md),
-                itemCount: _messages.length,
-                itemBuilder: (ctx, index) {
-                  final msg = _messages[index];
-                  final isMe = msg.senderId == 'me';
-                  if (msg.kind == 'media_card') {
-                    return Align(
-                      alignment: isMe
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: _buildMediaCardBubble(msg, isMe),
-                    );
-                  }
-                  return _buildTextMessageBubble(msg, isMe);
-                },
-              ),
             ),
-            _pendingBar(),
-            // Bottom Tactile Input Bar
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DizzySpace.sm,
-                vertical: DizzySpace.xs,
-              ),
-              decoration: BoxDecoration(
-                color: DizzyVoid.voidA,
-                border: Border(top: DizzyEdge.hairline),
-              ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: DizzySpace.sm,
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(DizzySpace.md),
+              itemCount: _messages.length,
+              itemBuilder: (ctx, index) {
+                final msg = _messages[index];
+                final isMe = msg.senderId == 'me';
+                if (msg.kind == 'media_card') {
+                  return Align(
+                    alignment: isMe
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: _buildMediaCardBubble(msg, isMe),
+                  );
+                }
+                return _buildTextMessageBubble(msg, isMe);
+              },
+            ),
+          ),
+          _pendingBar(),
+          // Bottom Tactile Input Bar
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DizzySpace.sm,
+              vertical: DizzySpace.xs,
+            ),
+            decoration: BoxDecoration(
+              color: palette.scaffoldBackgroundColor,
+              border: Border(top: BorderSide(color: hairline)),
+            ),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DizzySpace.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: well,
+                        border: Border.all(color: hairline),
+                      ),
+                      child: TextField(
+                        controller: _textController,
+                        style: TextStyle(color: ink, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Message or share title...',
+                          hintStyle: TextStyle(color: inkSoft, fontSize: 13),
+                          border: InputBorder.none,
                         ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          gradient: DizzyGradients.carvedSurface,
-                          border: Border.fromBorderSide(DizzyEdge.hairline),
-                        ),
-                        child: TextField(
-                          controller: _textController,
-                          style: const TextStyle(
-                            color: DizzyVoid.bone,
-                            fontSize: 14,
-                          ),
-                          decoration: const InputDecoration(
-                            hintText: 'Message or share title...',
-                            hintStyle: TextStyle(
-                              color: DizzyVoid.ash,
-                              fontSize: 13,
-                            ),
-                            border: InputBorder.none,
-                          ),
-                          onSubmitted: (_) => _sendMessage(),
-                        ),
+                        onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                    const SizedBox(width: DizzySpace.xs),
-                    DizzyTactileButton(
-                      width: 44,
-                      height: 44,
+                  ),
+                  const SizedBox(width: DizzySpace.xs),
+                  Tooltip(
+                    message: 'Send message',
+                    child: DizzyTactileButton(
+                      width: 48,
+                      height: 48,
                       padding: EdgeInsets.zero,
                       gradient: DizzyGradients.emberButton,
                       glowColor: DizzyGlow.red,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(24),
                       onTap: _sendMessage,
                       child: const Icon(
                         Icons.arrow_upward_rounded,
@@ -532,12 +532,12 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                         size: 22,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

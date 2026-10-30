@@ -1,19 +1,8 @@
 import '../../models/stream/stream_model.dart';
 
-enum DownloadStatus {
-  queued,
-  downloading,
-  paused,
-  completed,
-  failed,
-  canceled,
-}
+enum DownloadStatus { queued, downloading, paused, completed, failed, canceled }
 
-enum DownloadSourceType {
-  p2p,
-  debrid,
-  http,
-}
+enum DownloadSourceType { p2p, debrid, http }
 
 class DownloadTask {
   final String id;
@@ -191,6 +180,37 @@ class DownloadTask {
     );
   }
 
+  // ── Auth-header scrubbing ──────────────────────────────────────────────────
+  // Addon streams routinely need a Cookie/Authorization header to re-request
+  // the URL, and a resume re-requests it — so those values must survive while
+  // the task can still run. Once it is terminal it will never touch the
+  // network again, so the secret is dropped (keys kept for diagnostics).
+  static const Set<String> _sensitiveHeaderKeys = {
+    'authorization',
+    'cookie',
+    'x-api-key',
+    'proxy-authorization',
+  };
+
+  /// Statuses from which a download may still be (re)requested.
+  static const Set<DownloadStatus> _networkCapableStatuses = {
+    DownloadStatus.queued,
+    DownloadStatus.downloading,
+    DownloadStatus.paused,
+  };
+
+  Map<String, String>? _headersForDisk() {
+    final source = headers;
+    if (source == null || source.isEmpty) return source;
+    if (_networkCapableStatuses.contains(status)) return source;
+    return {
+      for (final e in source.entries)
+        e.key: _sensitiveHeaderKeys.contains(e.key.toLowerCase())
+            ? ''
+            : e.value,
+    };
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -210,7 +230,7 @@ class DownloadTask {
       'magnet': magnet,
       'infoHash': infoHash,
       'fileIdx': fileIdx,
-      'headers': headers,
+      'headers': _headersForDisk(),
       'targetFilePath': targetFilePath,
       'status': status.name,
       'receivedBytes': receivedBytes,

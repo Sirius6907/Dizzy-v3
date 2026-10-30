@@ -49,15 +49,25 @@ void main() {
     test('10s+ steady fast → 2160; steady slow → 480', () {
       final t0 = DateTime(2026, 1, 1);
       // 4s of buffer per 1s wall × 6 Mbps ≈ 24 Mbps → 2160p.
-      final fast = feedSteady(BandwidthMeter(), t0,
-          ticks: 12, bufPerTick: 4.0, bitrateBps: 6000000);
+      final fast = feedSteady(
+        BandwidthMeter(),
+        t0,
+        ticks: 12,
+        bufPerTick: 4.0,
+        bitrateBps: 6000000,
+      );
       expect(fast.isStable, isTrue);
       expect(fast.estimatedMbps, greaterThan(20));
       expect(fast.stableTarget(dataSaver: false), QualityChoice.q2160);
 
       // 0.3s per 1s × 6 Mbps ≈ 1.8 Mbps → 480p.
-      final slow = feedSteady(BandwidthMeter(), t0,
-          ticks: 12, bufPerTick: 0.3, bitrateBps: 6000000);
+      final slow = feedSteady(
+        BandwidthMeter(),
+        t0,
+        ticks: 12,
+        bufPerTick: 0.3,
+        bitrateBps: 6000000,
+      );
       expect(slow.stableTarget(dataSaver: false), QualityChoice.q480);
     });
 
@@ -77,14 +87,24 @@ void main() {
     });
 
     test('data saver caps at 720p even on fiber', () {
-      final m = feedSteady(BandwidthMeter(), DateTime(2026, 1, 1),
-          ticks: 12, bufPerTick: 4.0, bitrateBps: 6000000);
+      final m = feedSteady(
+        BandwidthMeter(),
+        DateTime(2026, 1, 1),
+        ticks: 12,
+        bufPerTick: 4.0,
+        bitrateBps: 6000000,
+      );
       expect(m.stableTarget(dataSaver: true), QualityChoice.q720);
     });
 
     test('reset() forgets stale speeds', () {
-      final m = feedSteady(BandwidthMeter(), DateTime(2026, 1, 1),
-          ticks: 12, bufPerTick: 4.0, bitrateBps: 6000000);
+      final m = feedSteady(
+        BandwidthMeter(),
+        DateTime(2026, 1, 1),
+        ticks: 12,
+        bufPerTick: 4.0,
+        bitrateBps: 6000000,
+      );
       m.reset();
       expect(m.isStable, isFalse);
       expect(m.estimatedMbps, isNull);
@@ -93,22 +113,28 @@ void main() {
 
   group('P8: weak-device AV1 dodge', () {
     StreamSource s(String badge, String title) => StreamSource(
-          name: 'S',
-          title: '$title $badge',
-          url: 'https://cdn/x.mp4',
-          addonName: 'test',
-        );
+      name: 'S',
+      title: '$title $badge',
+      url: 'https://cdn/x.mp4',
+      addonName: 'test',
+    );
     test('avoidAv1 skips AV1 file, falls back when only AV1', () {
       final h264 = s('720p', 'Show 720p x264');
       final av1 = s('720p', 'Show 720p AV1');
       expect(
-        QualityService.matchProgressive([av1, h264], QualityChoice.q720,
-            avoidAv1: true),
+        QualityService.matchProgressive(
+          [av1, h264],
+          QualityChoice.q720,
+          avoidAv1: true,
+        ),
         same(h264),
       );
       expect(
-        QualityService.matchProgressive([av1], QualityChoice.q720,
-            avoidAv1: true),
+        QualityService.matchProgressive(
+          [av1],
+          QualityChoice.q720,
+          avoidAv1: true,
+        ),
         same(av1),
       );
       // Default path unchanged (no dodge).

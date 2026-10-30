@@ -46,7 +46,9 @@ class ServerFlags {
   static const String tableName = 'feature_flags';
 
   static final ValueNotifier<Map<String, bool>> current =
-      ValueNotifier<Map<String, bool>>(Map<String, bool>.of(kServerFlagsFallback));
+      ValueNotifier<Map<String, bool>>(
+        Map<String, bool>.of(kServerFlagsFallback),
+      );
 
   static bool _loaded = false;
 

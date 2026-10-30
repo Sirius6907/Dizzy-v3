@@ -37,12 +37,18 @@ class MusicSidebar extends StatelessWidget {
                   scaleFactor: 1.08,
                   child: IconButton(
                     tooltip: 'Back to Home (Esc)',
-                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.08),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
                       ),
                       padding: const EdgeInsets.all(10),
                     ),
@@ -108,14 +114,21 @@ class MusicSidebar extends StatelessWidget {
               onTap: onShortcutsTap,
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.keyboard_rounded, color: Colors.white54, size: 18),
+                    Icon(
+                      Icons.keyboard_rounded,
+                      color: Colors.white54,
+                      size: 18,
+                    ),
                     SizedBox(width: 10),
                     Text(
                       'Shortcuts ( ? )',
@@ -155,21 +168,37 @@ class MusicSidebar extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: isFlac ? const Color(0xFF00D2EF).withValues(alpha: 0.2) : Colors.transparent,
+                        color: isFlac
+                            ? const Color(0xFF00D2EF).withValues(alpha: 0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
-                        border: isFlac ? Border.all(color: const Color(0xFF00D2EF).withValues(alpha: 0.4)) : null,
+                        border: isFlac
+                            ? Border.all(
+                                color: const Color(
+                                  0xFF00D2EF,
+                                ).withValues(alpha: 0.4),
+                              )
+                            : null,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.diamond_rounded, size: 14, color: isFlac ? const Color(0xFF00D2EF) : Colors.white54),
+                          Icon(
+                            Icons.diamond_rounded,
+                            size: 14,
+                            color: isFlac
+                                ? const Color(0xFF00D2EF)
+                                : Colors.white54,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'FLAC',
                             style: TextStyle(
                               color: isFlac ? Colors.white : Colors.white60,
                               fontSize: 11,
-                              fontWeight: isFlac ? FontWeight.bold : FontWeight.w500,
+                              fontWeight: isFlac
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
                             ),
                           ),
                         ],
@@ -180,26 +209,43 @@ class MusicSidebar extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(
                   child: InkWell(
-                    onTap: () => player.setAudioSource(MusicAudioSource.youtube),
+                    onTap: () =>
+                        player.setAudioSource(MusicAudioSource.youtube),
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: !isFlac ? const Color(0xFFFF3366).withValues(alpha: 0.2) : Colors.transparent,
+                        color: !isFlac
+                            ? const Color(0xFFFF3366).withValues(alpha: 0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
-                        border: !isFlac ? Border.all(color: const Color(0xFFFF3366).withValues(alpha: 0.4)) : null,
+                        border: !isFlac
+                            ? Border.all(
+                                color: const Color(
+                                  0xFFFF3366,
+                                ).withValues(alpha: 0.4),
+                              )
+                            : null,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.play_circle_fill_rounded, size: 14, color: !isFlac ? const Color(0xFFFF3366) : Colors.white54),
+                          Icon(
+                            Icons.play_circle_fill_rounded,
+                            size: 14,
+                            color: !isFlac
+                                ? const Color(0xFFFF3366)
+                                : Colors.white54,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'YouTube',
                             style: TextStyle(
                               color: !isFlac ? Colors.white : Colors.white60,
                               fontSize: 11,
-                              fontWeight: !isFlac ? FontWeight.bold : FontWeight.w500,
+                              fontWeight: !isFlac
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
                             ),
                           ),
                         ],
@@ -232,11 +278,7 @@ class MusicSidebar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: const Color(0xFF00D2EF),
-                  size: 20,
-                ),
+                Icon(icon, color: const Color(0xFF00D2EF), size: 20),
                 const SizedBox(width: 14),
                 Text(
                   label,
@@ -271,7 +313,9 @@ class MusicSidebar extends StatelessWidget {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(14),
               border: isSelected
-                  ? Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.4))
+                  ? Border.all(
+                      color: const Color(0xFF7C5CFF).withValues(alpha: 0.4),
+                    )
                   : null,
             ),
             child: Row(
@@ -298,4 +342,3 @@ class MusicSidebar extends StatelessWidget {
     );
   }
 }
-

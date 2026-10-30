@@ -2,9 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../models/addon/addon.dart';
 import '../../services/addon/addon_manager.dart';
+import '../../services/theme/app_theme_service.dart';
 
 class AddonsSettingsPage extends StatefulWidget {
   const AddonsSettingsPage({super.key});
@@ -63,14 +64,28 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
     return showDialog<String>(
       context: context,
       builder: (context) {
+        final isLight = AppThemeService.currentPalette.value.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight
+            ? PrismLight.inkSoft
+            : Colors.white.withValues(alpha: 0.55);
+        final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+        final fieldColor = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+        final borderColor = isLight
+            ? PrismLight.borderSubtle
+            : Colors.white.withValues(alpha: 0.10);
         return AlertDialog(
-          backgroundColor: DizzyVoid.surface1,
+          backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
+          title: Text(
             'Add Stremio Addon',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 19,
+              color: ink,
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -78,36 +93,25 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
             children: [
               Text(
                 'Paste the Stremio addon manifest.json URL to install catalogs, metadata, streams, or subtitles.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.50),
-                  height: 1.35,
-                ),
+                style: TextStyle(fontSize: 13, color: inkSoft, height: 1.35),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
                 autofocus: true,
-                style: const TextStyle(fontSize: 13.5, color: Colors.white),
+                style: TextStyle(fontSize: 13.5, color: ink),
                 decoration: InputDecoration(
                   hintText: 'https://opensubtitles-v3.strem.io/manifest.json',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    fontSize: 12.5,
-                  ),
+                  hintStyle: TextStyle(color: inkFaint, fontSize: 12.5),
                   filled: true,
-                  fillColor: DizzyVoid.voidB,
+                  fillColor: fieldColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.10),
-                    ),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.10),
-                    ),
+                    borderSide: BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -125,10 +129,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
-              ),
+              child: Text('Cancel', style: TextStyle(color: inkSoft)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, controller.text),
@@ -145,10 +146,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
               ),
               child: const Text(
                 'Install',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               ),
             ),
           ],
@@ -167,23 +165,28 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
     showDialog(
       context: context,
       builder: (context) {
+        final isLight = AppThemeService.currentPalette.value.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight
+            ? PrismLight.inkSoft
+            : Colors.white.withValues(alpha: 0.55);
         return AlertDialog(
-          backgroundColor: DizzyVoid.surface1,
+          backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Text('Remove ${addon.manifest.name}?'),
+          title: Text(
+            'Remove ${addon.manifest.name}?',
+            style: TextStyle(color: ink),
+          ),
           content: Text(
             'Its catalogs and metadata will be removed from your home page.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 13.5),
+            style: TextStyle(color: inkSoft, fontSize: 13.5),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
-              ),
+              child: Text('Cancel', style: TextStyle(color: inkSoft)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -199,7 +202,10 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
               ),
               child: const Text(
                 'Remove',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -211,14 +217,26 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final addons = _manager.addons;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final borderColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -237,11 +255,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                 padding: const EdgeInsets.only(bottom: 20),
                 child: Text(
                   'Addons provide metadata, catalogs, and streaming sources. Hold and drag to reorder priority. Providers higher up load and appear first in watch sources.',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    height: 1.4,
-                  ),
+                  style: TextStyle(fontSize: 13.5, color: inkSoft, height: 1.4),
                 ),
               ),
 
@@ -257,23 +271,26 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: inkFaint,
                       letterSpacing: 1.1,
                     ),
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF7C5CFF).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       '${addons.length} Total',
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: PrismType.micro,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF7C5CFF),
+                        color: isLight ? inkSoft : const Color(0xFF7C5CFF),
                       ),
                     ),
                   ),
@@ -286,23 +303,31 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                 Container(
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: DizzyVoid.surface1,
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Column(
                     children: [
-                      Icon(Icons.extension_off_rounded, size: 40, color: Colors.white.withValues(alpha: 0.25)),
+                      Icon(
+                        Icons.extension_off_rounded,
+                        size: 40,
+                        color: inkFaint,
+                      ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'No Addons Installed',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white70),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: ink,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Click "Add Addon" above to install a Stremio manifest URL.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12.5, color: Colors.white.withValues(alpha: 0.4)),
+                        style: TextStyle(fontSize: 12.5, color: inkSoft),
                       ),
                     ],
                   ),
@@ -339,24 +364,28 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                               }
                             : null,
                         onToggle: (enabled) async {
-                          await _manager.toggleAddon(addon.manifest.id, enabled);
-                          setState(() {});
-                        },
-                        onUpdateFeature: ({
-                          enableCatalogs,
-                          enableSearch,
-                          enableSubtitles,
-                          enableStreams,
-                        }) async {
-                          await _manager.updateAddonFeature(
-                            addonId: addon.manifest.id,
-                            enableCatalogs: enableCatalogs,
-                            enableSearch: enableSearch,
-                            enableSubtitles: enableSubtitles,
-                            enableStreams: enableStreams,
+                          await _manager.toggleAddon(
+                            addon.manifest.id,
+                            enabled,
                           );
                           setState(() {});
                         },
+                        onUpdateFeature:
+                            ({
+                              enableCatalogs,
+                              enableSearch,
+                              enableSubtitles,
+                              enableStreams,
+                            }) async {
+                              await _manager.updateAddonFeature(
+                                addonId: addon.manifest.id,
+                                enableCatalogs: enableCatalogs,
+                                enableSearch: enableSearch,
+                                enableSubtitles: enableSubtitles,
+                                enableStreams: enableStreams,
+                              );
+                              setState(() {});
+                            },
                         onRemove: () => _confirmRemove(addon),
                       ),
                     );
@@ -386,7 +415,8 @@ class _AddonCard extends StatelessWidget {
     bool? enableSearch,
     bool? enableSubtitles,
     bool? enableStreams,
-  }) onUpdateFeature;
+  })
+  onUpdateFeature;
   final VoidCallback onRemove;
 
   const _AddonCard({
@@ -403,15 +433,35 @@ class _AddonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = addon.manifest;
-    final isP2p = addon.manifest.id == 'builtin.dizzy' || addon.baseUrl == 'builtin:dizzy';
-    final isHttp = addon.manifest.id == 'builtin.dizzyhttp' || addon.baseUrl == 'builtin:dizzyhttp';
+    final isP2p =
+        addon.manifest.id == 'builtin.dizzy' ||
+        addon.baseUrl == 'builtin:dizzy';
+    final isHttp =
+        addon.manifest.id == 'builtin.dizzyhttp' ||
+        addon.baseUrl == 'builtin:dizzyhttp';
     final isBuiltIn = isP2p || isHttp || addon.baseUrl.startsWith('builtin:');
 
     final hasCatalogs = m.supportsCatalog || m.catalogs.isNotEmpty;
-    final hasSearch = m.catalogs.any((c) => c.supportsSearch) || m.supportsCatalog;
+    final hasSearch =
+        m.catalogs.any((c) => c.supportsSearch) || m.supportsCatalog;
     final hasStreams = m.supportsStream;
     final hasSubtitles = m.supportsSubtitles;
-    final hasAnyFeature = hasCatalogs || hasSearch || hasStreams || hasSubtitles;
+    final hasAnyFeature =
+        hasCatalogs || hasSearch || hasStreams || hasSubtitles;
+
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final cardColor = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final sunkenColor = isLight
+        ? PrismLight.raisedBottom
+        : Colors.black.withValues(alpha: 0.25);
+    final borderColor = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
 
     final providerColor = isP2p
         ? const Color(0xFF7C5CFF)
@@ -421,12 +471,12 @@ class _AddonCard extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: addon.enabled
               ? providerColor.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.06),
+              : borderColor,
         ),
       ),
       child: Column(
@@ -444,12 +494,14 @@ class _AddonCard extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: isLight
+                          ? Colors.black.withValues(alpha: 0.04)
+                          : Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.drag_indicator_rounded,
-                      color: Colors.white38,
+                      color: inkFaint,
                       size: 20,
                     ),
                   ),
@@ -470,9 +522,9 @@ class _AddonCard extends StatelessWidget {
                 child: Text(
                   '#${index + 1}',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: PrismType.micro,
                     fontWeight: FontWeight.w800,
-                    color: providerColor,
+                    color: isLight ? inkSoft : providerColor,
                   ),
                 ),
               ),
@@ -497,28 +549,28 @@ class _AddonCard extends StatelessWidget {
                         ),
                       )
                     : (m.logo != null && m.logo!.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: CachedNetworkImage(
-                              imageUrl: m.logo!,
-                              width: 28,
-                              height: 28,
-                              fit: BoxFit.contain,
-                              // P12: decode-capped (was full-res).
-                              memCacheWidth: ImageCaps.kThumb,
-                              maxWidthDiskCache: ImageCaps.kThumb,
-                              errorWidget: (_, __, ___) => Icon(
-                                Icons.extension_rounded,
-                                color: providerColor,
-                                size: 20,
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: CachedNetworkImage(
+                                imageUrl: m.logo!,
+                                width: 28,
+                                height: 28,
+                                fit: BoxFit.contain,
+                                // P12: decode-capped (was full-res).
+                                memCacheWidth: ImageCaps.kThumb,
+                                maxWidthDiskCache: ImageCaps.kThumb,
+                                errorWidget: (_, __, ___) => Icon(
+                                  Icons.extension_rounded,
+                                  color: providerColor,
+                                  size: 20,
+                                ),
                               ),
-                            ),
-                          )
-                        : Icon(
-                            Icons.extension_rounded,
-                            color: providerColor,
-                            size: 20,
-                          )),
+                            )
+                          : Icon(
+                              Icons.extension_rounded,
+                              color: providerColor,
+                              size: 20,
+                            )),
               ),
               const SizedBox(width: 12),
 
@@ -532,10 +584,10 @@ class _AddonCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             m.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15.5,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: ink,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -544,7 +596,10 @@ class _AddonCard extends StatelessWidget {
                         if (isBuiltIn) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: providerColor.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(5),
@@ -552,9 +607,9 @@ class _AddonCard extends StatelessWidget {
                             child: Text(
                               isP2p ? 'BUILT-IN TORRENT' : 'BUILT-IN HTTP',
                               style: TextStyle(
-                                fontSize: 9.5,
+                                fontSize: PrismType.micro,
                                 fontWeight: FontWeight.w800,
-                                color: providerColor,
+                                color: isLight ? inkSoft : providerColor,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -567,13 +622,13 @@ class _AddonCard extends StatelessWidget {
                       isP2p
                           ? 'Built-in TorrServer P2P streaming engine'
                           : (isHttp
-                              ? 'Built-in multi-source fast HTTP scrapers'
-                              : (m.supportsSubtitles && m.catalogs.isEmpty
-                                  ? 'v${m.version}  ·  Subtitles Provider'
-                                  : 'v${m.version}  ·  ${m.catalogs.length} catalog${m.catalogs.length == 1 ? '' : 's'}${m.supportsSubtitles ? '  ·  Subtitles' : ''}')),
+                                ? 'Built-in multi-source fast HTTP scrapers'
+                                : (m.supportsSubtitles && m.catalogs.isEmpty
+                                      ? 'v${m.version}  ·  Subtitles Provider'
+                                      : 'v${m.version}  ·  ${m.catalogs.length} catalog${m.catalogs.length == 1 ? '' : 's'}${m.supportsSubtitles ? '  ·  Subtitles' : ''}')),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: inkSoft,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -587,19 +642,28 @@ class _AddonCard extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 22),
-                    color: onMoveUp != null ? Colors.white70 : Colors.white24,
+                    color: onMoveUp != null ? inkSoft : inkFaint,
                     onPressed: onMoveUp,
                     tooltip: 'Move up in priority',
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
-                    color: onMoveDown != null ? Colors.white70 : Colors.white24,
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 22,
+                    ),
+                    color: onMoveDown != null ? inkSoft : inkFaint,
                     onPressed: onMoveDown,
                     tooltip: 'Move down in priority',
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
                   ),
                 ],
               ),
@@ -621,11 +685,7 @@ class _AddonCard extends StatelessWidget {
               m.description!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: Colors.white.withValues(alpha: 0.45),
-                height: 1.35,
-              ),
+              style: TextStyle(fontSize: 12.5, color: inkSoft, height: 1.35),
             ),
           ],
 
@@ -635,10 +695,12 @@ class _AddonCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: sunkenColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: isLight
+                      ? PrismLight.borderSubtle
+                      : Colors.white.withValues(alpha: 0.05),
                 ),
               ),
               child: Column(
@@ -646,19 +708,15 @@ class _AddonCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.tune_rounded,
-                        size: 13,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
+                      Icon(Icons.tune_rounded, size: 13, color: inkSoft),
                       const SizedBox(width: 5),
                       Text(
                         'FUNCTIONS',
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: PrismType.micro,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: inkSoft,
                         ),
                       ),
                     ],
@@ -672,7 +730,9 @@ class _AddonCard extends StatelessWidget {
                         _FeatureToggleChip(
                           icon: Icons.grid_view_rounded,
                           label: 'Catalogs',
-                          count: m.catalogs.isNotEmpty ? m.catalogs.length : null,
+                          count: m.catalogs.isNotEmpty
+                              ? m.catalogs.length
+                              : null,
                           isEnabled: addon.enableCatalogs,
                           onTap: () => onUpdateFeature(
                             enableCatalogs: !addon.enableCatalogs,
@@ -722,37 +782,46 @@ class _AddonCard extends StatelessWidget {
                 child: Wrap(
                   spacing: 6,
                   runSpacing: 4,
-                  children: m.types.map(
-                    (type) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: Text(
-                        type,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontWeight: FontWeight.w600,
+                  children: m.types
+                      .map(
+                        (type) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isLight
+                                ? Colors.black.withValues(alpha: 0.06)
+                                : Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Text(
+                            type,
+                            style: TextStyle(
+                              fontSize: PrismType.micro,
+                              color: inkSoft,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ).toList(),
+                      )
+                      .toList(),
                 ),
               ),
               if (!isBuiltIn) ...[
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: Colors.red.withValues(alpha: 0.6),
+                  color: isLight
+                      ? PrismAccent.danger
+                      : Colors.red.withValues(alpha: 0.6),
                   onPressed: onRemove,
                   tooltip: 'Remove addon',
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
               ],
             ],
@@ -789,6 +858,12 @@ class _FeatureToggleChipState extends State<_FeatureToggleChip> {
   Widget build(BuildContext context) {
     const activeColor = Color(0xFF7C5CFF);
     final isEnabled = widget.isEnabled;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -802,16 +877,22 @@ class _FeatureToggleChipState extends State<_FeatureToggleChip> {
           decoration: BoxDecoration(
             color: isEnabled
                 ? (_hovered
-                    ? activeColor.withValues(alpha: 0.25)
-                    : activeColor.withValues(alpha: 0.15))
+                      ? activeColor.withValues(alpha: 0.25)
+                      : activeColor.withValues(alpha: 0.15))
                 : (_hovered
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white.withValues(alpha: 0.03)),
+                      ? (isLight
+                            ? Colors.black.withValues(alpha: 0.08)
+                            : Colors.white.withValues(alpha: 0.08))
+                      : (isLight
+                            ? Colors.black.withValues(alpha: 0.03)
+                            : Colors.white.withValues(alpha: 0.03))),
             borderRadius: BorderRadius.circular(9),
             border: Border.all(
               color: isEnabled
                   ? activeColor.withValues(alpha: 0.50)
-                  : Colors.white.withValues(alpha: 0.08),
+                  : (isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.08)),
               width: 1,
             ),
             boxShadow: isEnabled && _hovered
@@ -830,9 +911,7 @@ class _FeatureToggleChipState extends State<_FeatureToggleChip> {
               Icon(
                 widget.icon,
                 size: 14,
-                color: isEnabled
-                    ? activeColor
-                    : Colors.white.withValues(alpha: 0.35),
+                color: isEnabled ? activeColor : inkFaint,
               ),
               const SizedBox(width: 6),
               Text(
@@ -842,20 +921,18 @@ class _FeatureToggleChipState extends State<_FeatureToggleChip> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isEnabled ? FontWeight.w600 : FontWeight.w500,
-                  color: isEnabled
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.45),
+                  color: isEnabled ? ink : inkSoft,
                 ),
               ),
               const SizedBox(width: 6),
               Icon(
-                isEnabled
-                    ? Icons.check_circle_rounded
-                    : Icons.cancel_outlined,
+                isEnabled ? Icons.check_circle_rounded : Icons.cancel_outlined,
                 size: 13,
                 color: isEnabled
-                    ? const Color(0xFF34D399)
-                    : Colors.white.withValues(alpha: 0.25),
+                    ? (isLight
+                          ? PrismAccent.successTextLight
+                          : const Color(0xFF34D399))
+                    : inkFaint,
               ),
             ],
           ),

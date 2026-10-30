@@ -64,6 +64,7 @@ class MappleScraper extends StreamScraper {
   static String? _solvePoWRunner(List<dynamic> args) {
     return _solvePoW(args[0] as String, args[1] as int);
   }
+
   @override
   Stream<StreamSource> scrapeStream({
     required String type,
@@ -85,7 +86,9 @@ class MappleScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[MappleScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[MappleScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -95,19 +98,23 @@ class MappleScraper extends StreamScraper {
             ? '$_baseUrl/watch/tv/$tmdbId/${season ?? 1}/${episode ?? 1}'
             : '$_baseUrl/watch/movie/$tmdbId';
 
-        final pageRes = await client.get(
-          Uri.parse(pageUrl),
-          headers: {
-            'User-Agent': _ua,
-            'Referer': '$_baseUrl/',
-            'Origin': _baseUrl,
-          },
-        ).timeout(const Duration(seconds: 8));
+        final pageRes = await client
+            .get(
+              Uri.parse(pageUrl),
+              headers: {
+                'User-Agent': _ua,
+                'Referer': '$_baseUrl/',
+                'Origin': _baseUrl,
+              },
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (pageRes.statusCode != 200) return;
         final html = pageRes.body;
 
-        final reqMatch = RegExp(r'''window\.__REQUEST_TOKEN__\s*=\s*"([^"]+)"''').firstMatch(html);
+        final reqMatch = RegExp(
+          r'''window\.__REQUEST_TOKEN__\s*=\s*"([^"]+)"''',
+        ).firstMatch(html);
         if (reqMatch == null || reqMatch.group(1) == null) return;
         final requestToken = reqMatch.group(1)!;
 
@@ -129,15 +136,17 @@ class MappleScraper extends StreamScraper {
           if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
         };
 
-        final initRes = await client.post(
-          Uri.parse('$_baseUrl/api/playback-init'),
-          headers: initHeaders,
-          body: jsonEncode({
-            'mediaId': tmdbId,
-            'mediaType': mediaType,
-            'requestToken': requestToken,
-          }),
-        ).timeout(const Duration(seconds: 8));
+        final initRes = await client
+            .post(
+              Uri.parse('$_baseUrl/api/playback-init'),
+              headers: initHeaders,
+              body: jsonEncode({
+                'mediaId': tmdbId,
+                'mediaType': mediaType,
+                'requestToken': requestToken,
+              }),
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (initRes.statusCode != 200) return;
         final initData = jsonDecode(initRes.body);
@@ -153,19 +162,18 @@ class MappleScraper extends StreamScraper {
 
           final nonce = await compute(_solvePoWRunner, [challenge, difficulty]);
           if (nonce != null) {
-            final solveRes = await client.post(
-              Uri.parse('$_baseUrl/api/playback-init'),
-              headers: initHeaders,
-              body: jsonEncode({
-                'mediaId': tmdbId,
-                'mediaType': mediaType,
-                'requestToken': requestToken,
-                'pow': {
-                  'challengeId': challengeId,
-                  'nonce': nonce,
-                },
-              }),
-            ).timeout(const Duration(seconds: 8));
+            final solveRes = await client
+                .post(
+                  Uri.parse('$_baseUrl/api/playback-init'),
+                  headers: initHeaders,
+                  body: jsonEncode({
+                    'mediaId': tmdbId,
+                    'mediaType': mediaType,
+                    'requestToken': requestToken,
+                    'pow': {'challengeId': challengeId, 'nonce': nonce},
+                  }),
+                )
+                .timeout(const Duration(seconds: 8));
 
             if (solveRes.statusCode == 200) {
               final solveData = jsonDecode(solveRes.body);
@@ -186,50 +194,60 @@ class MappleScraper extends StreamScraper {
             final sId = srv['id']!;
             final sName = srv['name']!;
 
-            final encryptRes = await client.post(
-              Uri.parse('$_baseUrl/api/encrypt'),
-              headers: initHeaders,
-              body: jsonEncode({
-                'data': {
-                  'mediaId': tmdbId,
-                  'mediaType': mediaType,
-                  'tv_slug': tvSlug,
-                  'source': sId,
-                  'apikey': 'mptv_sk_a8f29c4e7b3d1f',
-                },
-              }),
-            ).timeout(const Duration(seconds: 6));
+            final encryptRes = await client
+                .post(
+                  Uri.parse('$_baseUrl/api/encrypt'),
+                  headers: initHeaders,
+                  body: jsonEncode({
+                    'data': {
+                      'mediaId': tmdbId,
+                      'mediaType': mediaType,
+                      'tv_slug': tvSlug,
+                      'source': sId,
+                      'apikey': 'mptv_sk_a8f29c4e7b3d1f',
+                    },
+                  }),
+                )
+                .timeout(const Duration(seconds: 6));
 
             if (encryptRes.statusCode != 200) return null;
             final encryptData = jsonDecode(encryptRes.body);
             final encrypted = encryptData['encrypted']?.toString();
             if (encrypted == null) return null;
 
-            final streamEncryptedUrl = Uri.parse('$_baseUrl/api/stream-encrypted').replace(
-              queryParameters: {
-                'data': encrypted,
-                'requestToken': requestToken,
-                'token': streamToken!,
-              },
-            );
+            final streamEncryptedUrl =
+                Uri.parse('$_baseUrl/api/stream-encrypted').replace(
+                  queryParameters: {
+                    'data': encrypted,
+                    'requestToken': requestToken,
+                    'token': streamToken!,
+                  },
+                );
 
-            final streamRes = await client.get(
-              streamEncryptedUrl,
-              headers: {
-                'User-Agent': _ua,
-                'Referer': pageUrl,
-                'Origin': _baseUrl,
-                if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
-              },
-            ).timeout(const Duration(seconds: 8));
+            final streamRes = await client
+                .get(
+                  streamEncryptedUrl,
+                  headers: {
+                    'User-Agent': _ua,
+                    'Referer': pageUrl,
+                    'Origin': _baseUrl,
+                    if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
+                  },
+                )
+                .timeout(const Duration(seconds: 8));
 
             if (streamRes.statusCode != 200) return null;
             final streamData = jsonDecode(streamRes.body);
-            if (streamData is Map && streamData['success'] == true && streamData['data'] is Map) {
+            if (streamData is Map &&
+                streamData['success'] == true &&
+                streamData['data'] is Map) {
               var fileUrl = streamData['data']['stream_url']?.toString();
               if (fileUrl != null && fileUrl.isNotEmpty) {
-                if (fileUrl.contains('omena-puu') || fileUrl.contains('nocach')) {
-                  fileUrl += fileUrl.contains('?') ? '&format=.m3u8' : '?format=.m3u8';
+                if (fileUrl.contains('omena-puu') ||
+                    fileUrl.contains('nocach')) {
+                  fileUrl += fileUrl.contains('?')
+                      ? '&format=.m3u8'
+                      : '?format=.m3u8';
                 }
 
                 final reqHeaders = {
@@ -247,9 +265,7 @@ class MappleScraper extends StreamScraper {
                   headers: reqHeaders,
                   behaviorHints: {
                     'notWebReady': false,
-                    'proxyHeaders': {
-                      'request': reqHeaders,
-                    },
+                    'proxyHeaders': {'request': reqHeaders},
                   },
                 );
               }

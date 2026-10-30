@@ -33,7 +33,9 @@ void main() {
 
     // Test on-the-fly translation
     final trSample = trEntries.first;
-    print('\nTesting on-the-fly translation for [${trSample.code}] ${trSample.label}...');
+    print(
+      '\nTesting on-the-fly translation for [${trSample.code}] ${trSample.label}...',
+    );
     final srt = await SubtitleCatService.instance.translateSrt(
       origUrl: trSample.origUrl,
       targetLang: trSample.code,

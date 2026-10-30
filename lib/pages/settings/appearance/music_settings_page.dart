@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/home/home_page_settings.dart';
 import '../../../services/music/music_settings.dart';
@@ -22,9 +22,9 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
     final palette = AppThemeService.currentPalette.value;
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
@@ -47,13 +47,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
               _buildEnterPlayerStudioBanner(palette),
               const SizedBox(height: 28),
 
-              // 2. Visual Theme Palette
-              _buildSectionHeader('VISUAL THEME PALETTE'),
-              const SizedBox(height: 12),
-              _buildThemesGrid(),
-              const SizedBox(height: 28),
-
-              // 3. Ambient Moving Background Lights
+              // 2. Ambient Moving Background Lights
               _buildSectionHeader('AMBIENT ATMOSPHERE & GLOW'),
               const SizedBox(height: 12),
               _buildAmbientLightsCard(palette),
@@ -90,113 +84,32 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
   }
 
   Widget _buildSectionHeader(String title) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Text(
       title,
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: Colors.white.withValues(alpha: 0.35),
+        color: isLight
+            ? PrismLight.inkSoft
+            : Colors.white.withValues(alpha: 0.35),
         letterSpacing: 1.1,
       ),
     );
   }
 
-  Widget _buildThemesGrid() {
-    return ValueListenableBuilder<AppThemePalette>(
-      valueListenable: AppThemeService.currentPalette,
-      builder: (context, currentPalette, _) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final w = constraints.maxWidth;
-            final int crossAxisCount = w < 400 ? 1 : (w < 700 ? 2 : 3);
-            final double childAspectRatio = w < 400 ? 4.2 : 2.6;
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: childAspectRatio,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemCount: AppThemeService.palettes.length,
-              itemBuilder: (context, index) {
-                final theme = AppThemeService.palettes[index];
-                final isSelected = theme.name == currentPalette.name;
-
-                return InkWell(
-                  onTap: () {
-                    AppThemeService.setPalette(theme);
-                    setState(() {});
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isSelected
-                            ? currentPalette.primaryColor
-                            : Colors.white.withValues(alpha: 0.08),
-                        width: isSelected ? 1.8 : 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [theme.primaryColor, theme.accentColor],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.primaryColor.withValues(alpha: 0.4),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: isSelected
-                              ? const Icon(Icons.check_rounded, color: Colors.white, size: 15)
-                              : null,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            theme.name,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildAmbientLightsCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,13 +119,22 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             builder: (context, enabled, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   'Moving Background Ambient Lighting',
-                  style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 subtitle: Text(
                   'Dynamic moving glowing orbs reacting with your theme accent colors',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
+                  style: TextStyle(
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.45),
+                    fontSize: 12,
+                  ),
                 ),
                 value: enabled,
                 activeColor: palette.primaryColor,
@@ -221,12 +143,22 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             },
           ),
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           const SizedBox(height: 12),
 
           Text(
             'Ambient Light Pattern',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           ValueListenableBuilder<AmbientLightPattern>(
@@ -241,14 +173,24 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                     label: Text(p.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (val) {
                       if (val) MusicSettings.setAmbientLightPattern(p);
@@ -269,21 +211,40 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Glow Strength / Opacity', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
-                      Text('${(intensity * 100).round()}%', style: TextStyle(color: palette.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Glow Strength / Opacity',
+                        style: TextStyle(
+                          color: isLight
+                              ? PrismLight.ink
+                              : Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${(intensity * 100).round()}%',
+                        style: TextStyle(
+                          color: palette.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: palette.primaryColor,
-                      inactiveTrackColor: Colors.white12,
-                      thumbColor: Colors.white,
+                      inactiveTrackColor: isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white12,
+                      thumbColor: isLight ? PrismLight.ink : Colors.white,
                     ),
                     child: Slider(
                       value: intensity,
                       min: 0.05,
                       max: 0.6,
-                      onChanged: (v) => MusicSettings.setAmbientLightIntensity(v),
+                      onChanged: (v) =>
+                          MusicSettings.setAmbientLightIntensity(v),
                     ),
                   ),
                 ],
@@ -296,12 +257,17 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
   }
 
   Widget _buildDiscoveryConfigCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,31 +277,74 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             builder: (context, enabled, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Hero Spotlight Showcase', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                subtitle: const Text('Featured bestselling album & track showcase at the top of the music page', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                title: Text(
+                  'Show Hero Spotlight Showcase',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  'Featured bestselling album & track showcase at the top of the music page',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.inkSoft : Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
                 value: enabled,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => MusicSettings.setEnableSpotlight(val),
               );
             },
           ),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           ValueListenableBuilder<bool>(
             valueListenable: MusicSettings.showLosslessBadge,
             builder: (context, enabled, _) {
               return SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Show Lossless Hi-Res Audio Badges', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                subtitle: const Text('Displays FLAC / Hi-Res lossless stream indicators on music cards and player', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                title: Text(
+                  'Show Lossless Hi-Res Audio Badges',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.ink : Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  'Displays FLAC / Hi-Res lossless stream indicators on music cards and player',
+                  style: TextStyle(
+                    color: isLight ? PrismLight.inkSoft : Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
                 value: enabled,
                 activeColor: palette.primaryColor,
                 onChanged: (val) => MusicSettings.setShowLosslessBadge(val),
               );
             },
           ),
-          Divider(color: Colors.white.withValues(alpha: 0.08)),
+          Divider(
+            color: (isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08)),
+          ),
           const SizedBox(height: 8),
-          Text('Music Card & Grid Density', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            'Music Card & Grid Density',
+            style: TextStyle(
+              color: isLight
+                  ? PrismLight.ink
+                  : Colors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           ValueListenableBuilder<MusicCardDensity>(
             valueListenable: MusicSettings.cardDensity,
@@ -348,14 +357,24 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                     label: Text(d.label),
                     selected: isSelected,
                     selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                    backgroundColor: DizzyVoid.voidB,
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : PrismDark.sunken,
                     labelStyle: TextStyle(
-                      color: isSelected ? palette.primaryColor : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected
+                          ? palette.primaryColor
+                          : (isLight ? PrismLight.inkSoft : Colors.white70),
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                       fontSize: 12,
                     ),
                     side: BorderSide(
-                      color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                      color: isSelected
+                          ? palette.primaryColor.withValues(alpha: 0.6)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.08)),
                     ),
                     onSelected: (val) {
                       if (val) MusicSettings.setCardDensity(d);
@@ -371,6 +390,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
   }
 
   Widget _buildMiniPlayerPresetSelector(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return ValueListenableBuilder<MusicMiniPlayerPreset>(
       valueListenable: MusicSettings.selectedMiniPreset,
       builder: (context, selectedPreset, _) {
@@ -380,41 +400,60 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: isSelected ? palette.primaryColor.withValues(alpha: 0.12) : DizzyVoid.surface1,
+                color: isSelected
+                    ? palette.primaryColor.withValues(alpha: 0.12)
+                    : (isLight ? PrismLight.raisedTop : PrismDark.raised),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
+                  color: isSelected
+                      ? palette.primaryColor
+                      : (isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.08)),
                   width: isSelected ? 1.8 : 1.0,
                 ),
               ),
               child: ListTile(
                 onTap: () => MusicSettings.setSelectedMiniPreset(preset),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 leading: Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.06),
+                    color: isSelected
+                        ? palette.primaryColor
+                        : (isLight
+                              ? PrismLight.raisedBottom
+                              : Colors.white.withValues(alpha: 0.06)),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     preset == MusicMiniPlayerPreset.floatingGlassIsland
                         ? Icons.blur_on_rounded
                         : preset == MusicMiniPlayerPreset.compactPill
-                            ? Icons.crop_portrait_rounded
-                            : preset == MusicMiniPlayerPreset.gradientWave
-                                ? Icons.graphic_eq_rounded
-                                : preset == MusicMiniPlayerPreset.minimalistLine
-                                    ? Icons.linear_scale_rounded
-                                    : Icons.dashboard_customize_rounded,
-                    color: isSelected ? Colors.white : Colors.white70,
+                        ? Icons.crop_portrait_rounded
+                        : preset == MusicMiniPlayerPreset.gradientWave
+                        ? Icons.graphic_eq_rounded
+                        : preset == MusicMiniPlayerPreset.minimalistLine
+                        ? Icons.linear_scale_rounded
+                        : Icons.dashboard_customize_rounded,
+                    color: isSelected
+                        ? Colors.white
+                        : (isLight ? PrismLight.inkSoft : Colors.white70),
                     size: 20,
                   ),
                 ),
                 title: Text(
                   preset.label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                    color: isLight
+                        ? PrismLight.ink
+                        : (isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.9)),
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -422,12 +461,18 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                 subtitle: Text(
                   preset.description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.5),
                     fontSize: 11.5,
                   ),
                 ),
                 trailing: isSelected
-                    ? Icon(Icons.check_circle_rounded, color: palette.primaryColor, size: 22)
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        color: palette.primaryColor,
+                        size: 22,
+                      )
                     : null,
               ),
             );
@@ -438,6 +483,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
   }
 
   Widget _buildFullscreenPlayerPresetSelector(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return ValueListenableBuilder<MusicFullscreenPreset>(
       valueListenable: MusicSettings.selectedFullscreenPreset,
       builder: (context, selectedPreset, _) {
@@ -447,41 +493,60 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: isSelected ? palette.primaryColor.withValues(alpha: 0.12) : DizzyVoid.surface1,
+                color: isSelected
+                    ? palette.primaryColor.withValues(alpha: 0.12)
+                    : (isLight ? PrismLight.raisedTop : PrismDark.raised),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.08),
+                  color: isSelected
+                      ? palette.primaryColor
+                      : (isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.08)),
                   width: isSelected ? 1.8 : 1.0,
                 ),
               ),
               child: ListTile(
                 onTap: () => MusicSettings.setSelectedFullscreenPreset(preset),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 leading: Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isSelected ? palette.primaryColor : Colors.white.withValues(alpha: 0.06),
+                    color: isSelected
+                        ? palette.primaryColor
+                        : (isLight
+                              ? PrismLight.raisedBottom
+                              : Colors.white.withValues(alpha: 0.06)),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     preset == MusicFullscreenPreset.vinylStudio
                         ? Icons.album_rounded
                         : preset == MusicFullscreenPreset.cyberWaveform
-                            ? Icons.graphic_eq_rounded
-                            : preset == MusicFullscreenPreset.liquidGlassNeo
-                                ? Icons.blur_on_rounded
-                                : preset == MusicFullscreenPreset.cinematicArtwork
-                                    ? Icons.fullscreen_rounded
-                                    : Icons.dashboard_customize_rounded,
-                    color: isSelected ? Colors.white : Colors.white70,
+                        ? Icons.graphic_eq_rounded
+                        : preset == MusicFullscreenPreset.liquidGlassNeo
+                        ? Icons.blur_on_rounded
+                        : preset == MusicFullscreenPreset.cinematicArtwork
+                        ? Icons.fullscreen_rounded
+                        : Icons.dashboard_customize_rounded,
+                    color: isSelected
+                        ? Colors.white
+                        : (isLight ? PrismLight.inkSoft : Colors.white70),
                     size: 20,
                   ),
                 ),
                 title: Text(
                   preset.label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                    color: isLight
+                        ? PrismLight.ink
+                        : (isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.9)),
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -489,12 +554,18 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                 subtitle: Text(
                   preset.description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : Colors.white.withValues(alpha: 0.5),
                     fontSize: 11.5,
                   ),
                 ),
                 trailing: isSelected
-                    ? Icon(Icons.check_circle_rounded, color: palette.primaryColor, size: 22)
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        color: palette.primaryColor,
+                        size: 22,
+                      )
                     : null,
               ),
             );
@@ -505,13 +576,14 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
   }
 
   Widget _buildEnterPlayerStudioBanner(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: [
             palette.primaryColor.withValues(alpha: 0.3),
-            DizzyVoid.surface1,
+            isLight ? PrismLight.raisedTop : PrismDark.raised,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -548,7 +620,11 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                   ),
                 ],
               ),
-              child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 28),
+              child: const Icon(
+                Icons.dashboard_customize_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 18),
             Expanded(
@@ -557,24 +633,31 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                 children: [
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'Custom Music Player Studio',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: isLight ? PrismLight.ink : Colors.white,
                           fontSize: 16.5,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: palette.primaryColor.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'DUAL ENGINE',
-                          style: TextStyle(color: palette.primaryColor, fontSize: 9.5, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: palette.primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -583,7 +666,9 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                   Text(
                     'Customize BOTH Mini Player Dock and Fullscreen Player. Drag & drop blocks, waveform equalizers, vinyl turntable & liquid glass buttons.',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: isLight
+                          ? PrismLight.inkSoft
+                          : Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),
@@ -592,18 +677,33 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MusicPlayerStudioPage()),
+                        MaterialPageRoute(
+                          builder: (_) => const MusicPlayerStudioPage(),
+                        ),
                       );
                     },
-                    icon: const Icon(Icons.tune_rounded, size: 18, color: Colors.white),
+                    icon: const Icon(
+                      Icons.tune_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                     label: const Text(
                       'Enter Custom Player Studio',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: palette.primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 11,
+                      ),
                     ),
                   ),
                 ],
@@ -616,12 +716,17 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
   }
 
   Widget _buildCustomPlayerStudioCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,15 +735,27 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Live Waveform & Controls Preview', style: TextStyle(color: palette.primaryColor, fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(
+                'Live Waveform & Controls Preview',
+                style: TextStyle(
+                  color: palette.primaryColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const MusicPlayerStudioPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const MusicPlayerStudioPage(),
+                    ),
                   );
                 },
-                child: const Text('Open Full Studio ➔', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Open Full Studio ➔',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -658,14 +775,29 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const MusicPlayerStudioPage()),
+                MaterialPageRoute(
+                  builder: (_) => const MusicPlayerStudioPage(),
+                ),
               );
             },
-            icon: const Icon(Icons.dashboard_customize_rounded, size: 18, color: Colors.white),
-            label: const Text('Launch Full Custom Player Studio', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5, color: Colors.white)),
+            icon: const Icon(
+              Icons.dashboard_customize_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
+            label: const Text(
+              'Launch Full Custom Player Studio',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 13.5,
+                color: Colors.white,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: palette.primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 13),
               minimumSize: const Size.fromHeight(46),
             ),

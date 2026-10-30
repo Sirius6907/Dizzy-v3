@@ -119,7 +119,8 @@ void main() {
         addonName: 'PlayTorrioHTTP',
         name: 'vadapav.mov 1080P',
         title: '3.Idiots.[2009].1080p.10bit.BluRay.x265.Hindi.AAC.5.1.Esub.mkv',
-        description: '3.Idiots.[2009].1080p.10bit.BluRay.x265.Hindi.AAC.5.1.Esub.mkv',
+        description:
+            '3.Idiots.[2009].1080p.10bit.BluRay.x265.Hindi.AAC.5.1.Esub.mkv',
       );
       final langs = s.getAudioLanguages();
       expect(langs, contains('hindi'));
@@ -129,7 +130,8 @@ void main() {
     test('111477 Telugu Indian dub release', () {
       final s = StreamSource(
         addonName: 'PlayTorrioHTTP',
-        title: 'Inception.2010.720p.AMZN.WEB-DL.TELUGU.DDP2.0.H.265-GTM.mkv [a11 970.6 MB]',
+        title:
+            'Inception.2010.720p.AMZN.WEB-DL.TELUGU.DDP2.0.H.265-GTM.mkv [a11 970.6 MB]',
       );
       final langs = s.getAudioLanguages();
       expect(langs, contains('hindi'));
@@ -156,7 +158,11 @@ void main() {
         description: '2embed Multi-CDN Stream',
       );
       final langs = s.getAudioLanguages();
-      expect(langs.contains('multi'), isFalse, reason: 'Multi-CDN must not trigger multi-audio');
+      expect(
+        langs.contains('multi'),
+        isFalse,
+        reason: 'Multi-CDN must not trigger multi-audio',
+      );
       expect(langs, contains('english'));
       expect(s.getAudioBadge(), isNull);
     });
@@ -185,15 +191,25 @@ void main() {
       expect(s.getAudioBadge(), isNull);
     });
 
-    test('ZERO JUNK: Indiana Jones movie title does NOT trigger Indian/Hindi', () {
-      final s = StreamSource(
-        addonName: 'PlayTorrio',
-        title: 'Indiana.Jones.and.the.Dial.of.Destiny.2023.1080p.WEBRip.x264-FLUX.mkv',
-      );
-      final langs = s.getAudioLanguages(mediaTitle: 'Indiana Jones and the Dial of Destiny');
-      expect(langs.contains('hindi'), isFalse, reason: 'Movie title Indiana Jones must not trigger Indian');
-      expect(langs, contains('english'));
-    });
+    test(
+      'ZERO JUNK: Indiana Jones movie title does NOT trigger Indian/Hindi',
+      () {
+        final s = StreamSource(
+          addonName: 'PlayTorrio',
+          title:
+              'Indiana.Jones.and.the.Dial.of.Destiny.2023.1080p.WEBRip.x264-FLUX.mkv',
+        );
+        final langs = s.getAudioLanguages(
+          mediaTitle: 'Indiana Jones and the Dial of Destiny',
+        );
+        expect(
+          langs.contains('hindi'),
+          isFalse,
+          reason: 'Movie title Indiana Jones must not trigger Indian',
+        );
+        expect(langs, contains('english'));
+      },
+    );
 
     test('ZERO JUNK: German Sub does NOT trigger German audio', () {
       final s = StreamSource(
@@ -202,7 +218,11 @@ void main() {
         description: 'Subs: German, French, Spanish',
       );
       final langs = s.getAudioLanguages();
-      expect(langs.contains('german'), isFalse, reason: 'German-Sub is a subtitle, not audio');
+      expect(
+        langs.contains('german'),
+        isFalse,
+        reason: 'German-Sub is a subtitle, not audio',
+      );
       expect(langs.contains('french'), isFalse);
       expect(langs.contains('spanish'), isFalse);
       expect(langs, contains('english'));
@@ -214,7 +234,11 @@ void main() {
         title: 'Movie.2024.1080p.Multi-Sub.x265',
       );
       final langs = s.getAudioLanguages();
-      expect(langs.contains('multi'), isFalse, reason: 'Multi-Sub is subtitles, not audio');
+      expect(
+        langs.contains('multi'),
+        isFalse,
+        reason: 'Multi-Sub is subtitles, not audio',
+      );
       expect(langs, contains('english'));
     });
 

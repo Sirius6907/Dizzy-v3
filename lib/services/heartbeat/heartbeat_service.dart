@@ -99,6 +99,16 @@ class HeartbeatService {
     );
   }
 
+  /// Stops all internal timers (app backgrounded). Idempotent; [start]
+  /// resumes the cadence from scratch.
+  void stop() {
+    _presenceTimer?.cancel();
+    _presenceTimer = null;
+    _probeTimer?.cancel();
+    _probeTimer = null;
+    _started = false;
+  }
+
   /// The privacy switch (Settings → Privacy). Turning it OFF stops every
   /// future beat immediately; turning it ON resumes on the normal cadence.
   Future<void> setConsent(bool allow) async {
@@ -214,10 +224,10 @@ class HeartbeatService {
   Future<void> _send(Activity activity) async {
     _sending = true;
     try {
-      final reply = await CloudClient.db.rpc('device_heartbeat', params: {
-        'p_hwid_hash': _hwid,
-        'p_activity': activity.rpcKey,
-      });
+      final reply = await CloudClient.db.rpc(
+        'device_heartbeat',
+        params: {'p_hwid_hash': _hwid, 'p_activity': activity.rpcKey},
+      );
       if (HeartbeatPolicy.replyOk(reply)) {
         _lastSent = activity;
         _lastSentMs = DateTime.now().millisecondsSinceEpoch;

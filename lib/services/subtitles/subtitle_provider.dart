@@ -1,4 +1,3 @@
-
 import 'package:dizzy/models/subtitle/subtitle_model.dart';
 
 abstract class SubtitleProvider {

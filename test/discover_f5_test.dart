@@ -56,17 +56,14 @@ void main() {
 
   // Not const: tests mutate a copy to change one answer at a time.
   Map<String, String?> complete() => <String, String?>{
-        'mood': 'chill',
-        'budget': 'oneNight',
-        'company': 'alone',
-      };
+    'mood': 'chill',
+    'budget': 'oneNight',
+    'company': 'alone',
+  };
 
   group('F5 rails — a rail is caused by something real', () {
     test('history seed produces a rail that names its cause', () {
-      final rails = HistoryRailPolicy.railsFrom(
-        [seed],
-        candidates: candidates,
-      );
+      final rails = HistoryRailPolicy.railsFrom([seed], candidates: candidates);
 
       expect(rails, hasLength(1));
       expect(rails.first.title, 'Because you watched Fight Club');
@@ -75,10 +72,7 @@ void main() {
     });
 
     test('a title never re-suggests itself', () {
-      final rails = HistoryRailPolicy.railsFrom(
-        [seed],
-        candidates: candidates,
-      );
+      final rails = HistoryRailPolicy.railsFrom([seed], candidates: candidates);
 
       expect(rails.first.picks.map((p) => p.id), isNot(contains('fc')));
     });
@@ -93,10 +87,10 @@ void main() {
         progress: 1.0,
       );
 
-      final rails = HistoryRailPolicy.railsFrom(
-        [seed, other],
-        candidates: candidates,
-      );
+      final rails = HistoryRailPolicy.railsFrom([
+        seed,
+        other,
+      ], candidates: candidates);
 
       final seen = <String>{};
       for (final rail in rails) {
@@ -111,10 +105,7 @@ void main() {
     });
 
     test('genre overlap beats a genre mismatch', () {
-      final rails = HistoryRailPolicy.railsFrom(
-        [seed],
-        candidates: candidates,
-      );
+      final rails = HistoryRailPolicy.railsFrom([seed], candidates: candidates);
 
       final ids = rails.first.picks.map((p) => p.id).toList();
       // c1 and c2 share Drama+Thriller with the seed; c3 shares nothing.
@@ -169,10 +160,7 @@ void main() {
       expect(MoodQuizPolicy.isComplete(complete()), isTrue);
       expect(MoodQuizPolicy.profileFrom(const {}), isNull);
 
-      final twoAnswers = <String, String?>{
-        'mood': 'chill',
-        'budget': 'quick',
-      };
+      final twoAnswers = <String, String?>{'mood': 'chill', 'budget': 'quick'};
       expect(MoodQuizPolicy.profileFrom(twoAnswers), isNull);
       expect(MoodQuizPolicy.unanswered(twoAnswers), hasLength(1));
     });
@@ -236,11 +224,11 @@ void main() {
     final airsAt = DateTime(2026, 9, 12, 21);
 
     ReminderRequest request({int lead = 30}) => ReminderRequest(
-          showTitle: 'The Bear',
-          season: 4,
-          episode: 2,
-          leadMinutes: lead,
-        );
+      showTitle: 'The Bear',
+      season: 4,
+      episode: 2,
+      leadMinutes: lead,
+    );
 
     test('a follow becomes one slot that fires before air time', () {
       final slots = ReminderSchedule.build(
@@ -307,11 +295,7 @@ void main() {
         episodeTitle: 'Next',
         airsAt: DateTime(2026, 9, 12, 21),
       );
-      final slots = ReminderSchedule.build(
-        [request()],
-        [airing],
-        now: now,
-      );
+      final slots = ReminderSchedule.build([request()], [airing], now: now);
 
       final silenced = ReminderSchedule.without(slots, {'the bear'});
       expect(silenced, isEmpty);
@@ -478,7 +462,10 @@ void main() {
       }
 
       // The error line never echoes the raw failure back at a person.
-      expect(DiscoverCopy.railError('E_HLS_403 from player'), isNot(contains('403')));
+      expect(
+        DiscoverCopy.railError('E_HLS_403 from player'),
+        isNot(contains('403')),
+      );
     });
 
     test('counts read naturally at 0, 1 and many', () {

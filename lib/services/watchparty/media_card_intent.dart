@@ -89,13 +89,13 @@ class MediaCardRef {
   }
 
   Map<String, dynamic> toJson() => {
-        'mediaId': mediaId,
-        'title': title,
-        'mediaType': mediaType,
-        'season': season,
-        'episode': episode,
-        'posterUrl': posterUrl,
-      };
+    'mediaId': mediaId,
+    'title': title,
+    'mediaType': mediaType,
+    'season': season,
+    'episode': episode,
+    'posterUrl': posterUrl,
+  };
 
   /// A card we cannot read is dropped, not rendered as a blank bubble.
   static MediaCardRef? fromJson(Map<String, dynamic> json) {
@@ -108,7 +108,9 @@ class MediaCardRef {
       title: json['title']?.toString() ?? '',
       mediaType: json['mediaType']?.toString() ?? 'movie',
       season: season is int ? season : int.tryParse(season?.toString() ?? ''),
-      episode: episode is int ? episode : int.tryParse(episode?.toString() ?? ''),
+      episode: episode is int
+          ? episode
+          : int.tryParse(episode?.toString() ?? ''),
       posterUrl: json['posterUrl']?.toString(),
     );
   }
@@ -128,10 +130,10 @@ class MediaCardIntent {
 
   /// The line on the "join your friend" button for [m].
   String actionLineFor(SyncMode m) => switch (m) {
-        SyncMode.watch => 'Watch with them',
-        SyncMode.listen => 'Listen with them',
-        SyncMode.read => 'Read with them',
-      };
+    SyncMode.watch => 'Watch with them',
+    SyncMode.listen => 'Listen with them',
+    SyncMode.read => 'Read with them',
+  };
 
   /// The header of the modal. Never empty, even for a card with no title,
   /// because a blank modal looks broken.
@@ -141,8 +143,8 @@ class MediaCardIntent {
   }
 
   Map<String, dynamic> toJson() => {
-        'card': card.toJson(),
-        'kind': mode.kind,
-        'mediaRef': card.toMediaRef(),
-      };
+    'card': card.toJson(),
+    'kind': mode.kind,
+    'mediaRef': card.toMediaRef(),
+  };
 }

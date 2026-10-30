@@ -5,6 +5,7 @@ import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/movie/movie_section.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../pages/calendar/tv_calendar_page.dart';
 import '../../pages/catalog/catalog_page.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -30,7 +31,7 @@ class MovieSliderSection extends StatefulWidget {
 class _MovieSliderSectionState extends State<MovieSliderSection> {
   Offset? _tapPosition;
   late final ScrollController _scrollController;
-  
+
   bool _canScrollLeft = false;
   bool _canScrollRight = true;
   bool _isHoveringSlider = false;
@@ -40,7 +41,7 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_updateScrollButtons);
-    
+
     // Defer the initial check until after first frame so maxScrollExtent is calculated
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _updateScrollButtons();
@@ -56,10 +57,12 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
 
   void _updateScrollButtons() {
     if (!_scrollController.hasClients) return;
-    
+
     final canLeft = _scrollController.position.pixels > 0;
-    final canRight = _scrollController.position.pixels < _scrollController.position.maxScrollExtent;
-    
+    final canRight =
+        _scrollController.position.pixels <
+        _scrollController.position.maxScrollExtent;
+
     if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
       setState(() {
         _canScrollLeft = canLeft;
@@ -70,14 +73,16 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
 
   void _scroll(double directionMultiplier) {
     if (!_scrollController.hasClients) return;
-    
+
     final viewportWidth = _scrollController.position.viewportDimension;
     // Scroll by 80% of the viewport width to leave some context
     final scrollAmount = viewportWidth * 0.8 * directionMultiplier;
-    
-    final target = (_scrollController.position.pixels + scrollAmount)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
-        
+
+    final target = (_scrollController.position.pixels + scrollAmount).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+
     _scrollController.animateTo(
       target,
       duration: const Duration(milliseconds: 650),
@@ -88,14 +93,15 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
   bool _isDesktop() {
     if (kIsWeb) return true;
     return defaultTargetPlatform == TargetPlatform.windows ||
-           defaultTargetPlatform == TargetPlatform.macOS ||
-           defaultTargetPlatform == TargetPlatform.linux;
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.linux;
   }
 
   @override
   Widget build(BuildContext context) {
     final sizing = MovieCardSizing.fromWidth(MediaQuery.sizeOf(context).width);
     final isDesktop = _isDesktop();
+    final isLight = AppThemeService.currentPalette.value.isLight;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DizzySpace.lg),
@@ -112,17 +118,26 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const TvCalendarPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const TvCalendarPage(),
+                          ),
                         );
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: isLight
+                              ? PrismLight.raisedTop
+                              : Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.12),
                           ),
                         ),
                         child: Row(
@@ -131,13 +146,18 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
                             Icon(
                               Icons.calendar_month_rounded,
                               size: 14,
-                              color: AppThemeService.currentPalette.value.primaryColor,
+                              color: AppThemeService
+                                  .currentPalette
+                                  .value
+                                  .primaryColor,
                             ),
                             const SizedBox(width: 5),
-                            const Text(
+                            Text(
                               'Calendar',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: isLight
+                                    ? PrismLight.ink
+                                    : Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -174,7 +194,9 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: sizing.sidePadding,
+                      ),
                       itemCount: widget.section.movies.length,
                       separatorBuilder: (context, index) {
                         return SizedBox(width: sizing.spacing);
@@ -187,7 +209,7 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
                       },
                     ),
                   ),
-                  
+
                   // Desktop Scroll Arrows
                   if (isDesktop) ...[
                     // Left Arrow
@@ -204,7 +226,7 @@ class _MovieSliderSectionState extends State<MovieSliderSection> {
                         ),
                       ),
                     ),
-                    
+
                     // Right Arrow
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 300),
@@ -234,16 +256,14 @@ class _SliderArrow extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _SliderArrow({
-    required this.icon,
-    required this.onTap,
-  });
+  const _SliderArrow({required this.icon, required this.onTap});
 
   @override
   State<_SliderArrow> createState() => _SliderArrowState();
 }
 
-class _SliderArrowState extends State<_SliderArrow> with SingleTickerProviderStateMixin {
+class _SliderArrowState extends State<_SliderArrow>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   bool _isPressed = false;
 
@@ -251,7 +271,7 @@ class _SliderArrowState extends State<_SliderArrow> with SingleTickerProviderSta
   Widget build(BuildContext context) {
     // Dynamic scale based on interaction state
     final scale = _isPressed ? 0.90 : (_isHovered ? 1.08 : 1.0);
-    
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() {
@@ -293,7 +313,7 @@ class _SliderArrowState extends State<_SliderArrow> with SingleTickerProviderSta
                             color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ]
                       : [],
                 ),
@@ -310,4 +330,3 @@ class _SliderArrowState extends State<_SliderArrow> with SingleTickerProviderSta
     );
   }
 }
-

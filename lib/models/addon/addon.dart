@@ -38,7 +38,8 @@ class AddonManifest {
       resources: _parseResourceList(json['resources']),
       types: _parseStringList(json['types']),
       idPrefixes: _parseStringList(json['idPrefixes']),
-      catalogs: (json['catalogs'] as List<dynamic>?)
+      catalogs:
+          (json['catalogs'] as List<dynamic>?)
               ?.map((e) => AddonCatalog.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -46,16 +47,16 @@ class AddonManifest {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'version': version,
-        if (description != null) 'description': description,
-        if (logo != null) 'logo': logo,
-        'resources': resources,
-        'types': types,
-        'idPrefixes': idPrefixes,
-        'catalogs': catalogs.map((c) => c.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'version': version,
+    if (description != null) 'description': description,
+    if (logo != null) 'logo': logo,
+    'resources': resources,
+    'types': types,
+    'idPrefixes': idPrefixes,
+    'catalogs': catalogs.map((c) => c.toJson()).toList(),
+  };
 }
 
 class AddonCatalog {
@@ -122,13 +123,13 @@ class AddonCatalog {
   }
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'id': id,
-        if (name != null) 'name': name,
-        'genres': genres,
-        'supportsSearch': supportsSearch,
-        'supportsSkip': supportsSkip,
-      };
+    'type': type,
+    'id': id,
+    if (name != null) 'name': name,
+    'genres': genres,
+    'supportsSearch': supportsSearch,
+    'supportsSkip': supportsSkip,
+  };
 }
 
 /// An addon that has been installed by the user.
@@ -152,10 +153,15 @@ class InstalledAddon {
   });
 
   bool get isCatalogsActive =>
-      enabled && enableCatalogs && (manifest.supportsCatalog || manifest.catalogs.isNotEmpty);
+      enabled &&
+      enableCatalogs &&
+      (manifest.supportsCatalog || manifest.catalogs.isNotEmpty);
 
   bool get isSearchActive =>
-      enabled && enableSearch && (manifest.catalogs.any((c) => c.supportsSearch) || manifest.supportsCatalog);
+      enabled &&
+      enableSearch &&
+      (manifest.catalogs.any((c) => c.supportsSearch) ||
+          manifest.supportsCatalog);
 
   bool get isSubtitlesActive =>
       enabled && enableSubtitles && manifest.supportsSubtitles;
@@ -166,8 +172,9 @@ class InstalledAddon {
   factory InstalledAddon.fromJson(Map<String, dynamic> json) {
     return InstalledAddon(
       baseUrl: json['baseUrl']?.toString() ?? '',
-      manifest:
-          AddonManifest.fromJson(json['manifest'] as Map<String, dynamic>),
+      manifest: AddonManifest.fromJson(
+        json['manifest'] as Map<String, dynamic>,
+      ),
       enabled: json['enabled'] as bool? ?? true,
       enableCatalogs: json['enableCatalogs'] as bool? ?? true,
       enableSearch: json['enableSearch'] as bool? ?? true,
@@ -177,14 +184,14 @@ class InstalledAddon {
   }
 
   Map<String, dynamic> toJson() => {
-        'baseUrl': baseUrl,
-        'manifest': manifest.toJson(),
-        'enabled': enabled,
-        'enableCatalogs': enableCatalogs,
-        'enableSearch': enableSearch,
-        'enableSubtitles': enableSubtitles,
-        'enableStreams': enableStreams,
-      };
+    'baseUrl': baseUrl,
+    'manifest': manifest.toJson(),
+    'enabled': enabled,
+    'enableCatalogs': enableCatalogs,
+    'enableSearch': enableSearch,
+    'enableSubtitles': enableSubtitles,
+    'enableStreams': enableStreams,
+  };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -203,18 +210,21 @@ List<String> _parseStringList(dynamic value) {
 /// Also recovers from previously stored broken toString dumps.
 List<String> _parseResourceList(dynamic value) {
   if (value is! List) return [];
-  
-  return value.map<String>((e) {
-    if (e is String) {
-      // Check if this is a clean resource name
-      if (!e.contains('{') && !e.contains(':')) return e;
-      // Try to recover from broken toString dump like "{name: stream, types: [...]}"
-      final match = RegExp(r'name:\s*(\w+)').firstMatch(e);
-      if (match != null) return match.group(1)!;
-      return '';
-    }
-    if (e is Map<String, dynamic>) return e['name']?.toString() ?? '';
-    if (e is Map) return e['name']?.toString() ?? '';
-    return e.toString();
-  }).where((s) => s.isNotEmpty).toList();
+
+  return value
+      .map<String>((e) {
+        if (e is String) {
+          // Check if this is a clean resource name
+          if (!e.contains('{') && !e.contains(':')) return e;
+          // Try to recover from broken toString dump like "{name: stream, types: [...]}"
+          final match = RegExp(r'name:\s*(\w+)').firstMatch(e);
+          if (match != null) return match.group(1)!;
+          return '';
+        }
+        if (e is Map<String, dynamic>) return e['name']?.toString() ?? '';
+        if (e is Map) return e['name']?.toString() ?? '';
+        return e.toString();
+      })
+      .where((s) => s.isNotEmpty)
+      .toList();
 }

@@ -6,7 +6,8 @@ class HomeHeroTitle extends StatelessWidget {
   final String? logoUrl;
   final bool isCompact;
 
-  const HomeHeroTitle({super.key,
+  const HomeHeroTitle({
+    super.key,
     required this.title,
     required this.logoUrl,
     required this.isCompact,
@@ -57,4 +58,3 @@ class HomeHeroTitle extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom Scroll Track
 // ─────────────────────────────────────────────────────────────────────────────
-

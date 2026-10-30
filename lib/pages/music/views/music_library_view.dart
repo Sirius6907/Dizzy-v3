@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import '../../../design/prism_tokens.dart';
 import '../../../models/music/music_track.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../services/music/music_download_service.dart';
 import '../../../services/music/music_playlist_sharing_service.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -47,10 +49,12 @@ class MusicLibraryView extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               'Your Library',
               style: TextStyle(
-                color: Colors.white,
+                color: PrismInk.primary(
+                  AppThemeService.currentPalette.value.isLight,
+                ),
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.6,
@@ -62,14 +66,31 @@ class MusicLibraryView extends StatelessWidget {
               scaleFactor: 1.05,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.amberAccent,
-                  side: BorderSide(color: Colors.amberAccent.withValues(alpha: 0.4)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  foregroundColor:
+                      AppThemeService.currentPalette.value.isLight
+                      ? PrismAccent.starTextLight
+                      : Colors.amberAccent,
+                  side: BorderSide(
+                    color:
+                        (AppThemeService.currentPalette.value.isLight
+                                ? PrismAccent.starTextLight
+                                : Colors.amberAccent)
+                            .withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                 ),
                 onPressed: () => MusicWrappedModal.show(context),
                 icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                label: const Text('Wrapped', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                label: const Text(
+                  'Wrapped',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -78,14 +99,30 @@ class MusicLibraryView extends StatelessWidget {
               scaleFactor: 1.05,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF00D2EF),
-                  side: BorderSide(color: const Color(0xFF00D2EF).withValues(alpha: 0.4)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  foregroundColor: AppThemeService.currentPalette.value.isLight
+                      ? const Color(0xFF007A8C)
+                      : const Color(0xFF00D2EF),
+                  side: BorderSide(
+                    color:
+                        (AppThemeService.currentPalette.value.isLight
+                                ? const Color(0xFF007A8C)
+                                : const Color(0xFF00D2EF))
+                            .withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                 ),
                 onPressed: () => MusicListenTogetherModal.show(context),
                 icon: const Icon(Icons.people_alt_rounded, size: 16),
-                label: const Text('Jam Party', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                label: const Text(
+                  'Jam Party',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -95,11 +132,28 @@ class MusicLibraryView extends StatelessWidget {
               child: IconButton(
                 tooltip: 'Import Playlist',
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  backgroundColor:
+                      AppThemeService.currentPalette.value.isLight
+                      ? PrismLight.raisedTop
+                      : Colors.white.withValues(alpha: 0.08),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(
+                      color:
+                          AppThemeService.currentPalette.value.isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
                 ),
                 onPressed: () => _showImportDialog(context),
-                icon: const Icon(Icons.file_download_outlined, color: Colors.white, size: 20),
+                icon: Icon(
+                  Icons.file_download_outlined,
+                  color: PrismInk.soft(
+                    AppThemeService.currentPalette.value.isLight,
+                  ),
+                  size: 20,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -113,10 +167,17 @@ class MusicLibraryView extends StatelessWidget {
                   ),
                 ),
                 onPressed: onCreatePlaylist,
-                icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                icon: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 label: const Text(
                   'New Playlist',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -217,7 +278,8 @@ class MusicLibraryView extends StatelessWidget {
           builder: (context) {
             final downloaded = MusicDownloadService.instance.downloadedTracks;
             final queue = MusicDownloadService.instance.queue;
-            final totalBytes = MusicDownloadService.instance.totalDownloadedSizeBytes;
+            final totalBytes =
+                MusicDownloadService.instance.totalDownloadedSizeBytes;
             final sizeMb = (totalBytes / (1024 * 1024)).toStringAsFixed(1);
 
             return MusicHoverable(
@@ -278,9 +340,14 @@ class MusicLibraryView extends StatelessWidget {
                                   if (queue.isNotEmpty) ...[
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.25),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -332,10 +399,12 @@ class MusicLibraryView extends StatelessWidget {
 
         // User Playlists Section
         if (userPlaylists.isNotEmpty) ...[
-          const Text(
+          Text(
             'Custom Playlists',
             style: TextStyle(
-              color: Colors.white,
+              color: PrismInk.primary(
+                AppThemeService.currentPalette.value.isLight,
+              ),
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
@@ -361,7 +430,9 @@ class MusicLibraryView extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: DizzyVoid.surface1,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -371,7 +442,9 @@ class MusicLibraryView extends StatelessWidget {
                           height: 70,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7C5CFF).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF7C5CFF,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -410,10 +483,12 @@ class MusicLibraryView extends StatelessWidget {
 
         // Recent History Section
         if (recentTracks.isNotEmpty) ...[
-          const Text(
+          Text(
             'Recently Played',
             style: TextStyle(
-              color: Colors.white,
+              color: PrismInk.primary(
+                AppThemeService.currentPalette.value.isLight,
+              ),
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
@@ -451,7 +526,14 @@ class MusicLibraryView extends StatelessWidget {
           children: [
             Icon(Icons.download_rounded, color: Color(0xFF7C5CFF), size: 22),
             SizedBox(width: 8),
-            Text('Import Playlist', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+            Text(
+              'Import Playlist',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -474,7 +556,9 @@ class MusicLibraryView extends StatelessWidget {
                 fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
               ),
             ),
@@ -483,27 +567,41 @@ class MusicLibraryView extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7C5CFF),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () async {
               final text = controller.text.trim();
               if (text.isNotEmpty) {
-                final pl = await MusicPlaylistSharingService.instance.importFromJson(text);
+                final pl = await MusicPlaylistSharingService.instance
+                    .importFromJson(text);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
                   if (pl != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Successfully imported "${pl.title}" with ${pl.tracks.length} tracks! 🎵')),
+                      SnackBar(
+                        content: Text(
+                          'Successfully imported "${pl.title}" with ${pl.tracks.length} tracks! 🎵',
+                        ),
+                      ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invalid playlist format. Please check code.')),
+                      const SnackBar(
+                        content: Text(
+                          'Invalid playlist format. Please check code.',
+                        ),
+                      ),
                     );
                   }
                 }

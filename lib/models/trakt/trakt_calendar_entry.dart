@@ -66,10 +66,17 @@ class TraktCalendarEntry {
         firstAired: dateStr,
         firstAiredLocal: parsedDate,
         showTraktId: (showIds['simkl'] as int?) ?? 0,
-        showTitle: (show['title'] as String?) ?? (json['show_title'] as String?) ?? 'Unknown Show',
+        showTitle:
+            (show['title'] as String?) ??
+            (json['show_title'] as String?) ??
+            'Unknown Show',
         seasonNumber: (json['season'] as int?) ?? 1,
-        episodeNumber: (json['episode'] as int?) ?? (json['number'] as int?) ?? 1,
-        episodeTitle: (json['title'] as String?) ?? (json['episode_title'] as String?) ?? 'Episode',
+        episodeNumber:
+            (json['episode'] as int?) ?? (json['number'] as int?) ?? 1,
+        episodeTitle:
+            (json['title'] as String?) ??
+            (json['episode_title'] as String?) ??
+            'Episode',
         episodeOverview: json['overview'] as String?,
         imdbId: showIds['imdb'] as String?,
       );

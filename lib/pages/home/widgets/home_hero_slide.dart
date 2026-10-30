@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../../models/movie/movie.dart';
 import '../../../models/movie/movie_detail.dart';
@@ -16,7 +17,8 @@ class HomeHeroSlide extends StatelessWidget {
   final MovieDetail? detail;
   final double screenWidth;
 
-  const HomeHeroSlide({super.key,
+  const HomeHeroSlide({
+    super.key,
     required this.movie,
     required this.detail,
     required this.screenWidth,
@@ -68,7 +70,8 @@ class HomeHeroSlide extends StatelessWidget {
         else
           const ColoredBox(color: DizzyVoid.surface1),
 
-        // Left horizontal wash for cinematic readability
+        // Left horizontal wash for cinematic readability.
+        // Always dark clay: hero text stays white in both modes (proto).
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -77,8 +80,8 @@ class HomeHeroSlide extends StatelessWidget {
                 end: Alignment.centerRight,
                 stops: const [0.0, 0.38, 0.85],
                 colors: [
-                  palette.scaffoldBackgroundColor.withValues(alpha: 0.95),
-                  palette.scaffoldBackgroundColor.withValues(alpha: 0.70),
+                  PrismDark.bg.withValues(alpha: 0.95),
+                  PrismDark.bg.withValues(alpha: 0.70),
                   Colors.transparent,
                 ],
               ),
@@ -94,7 +97,7 @@ class HomeHeroSlide extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.center,
                 colors: [
-                  palette.scaffoldBackgroundColor.withValues(alpha: 0.85),
+                  PrismDark.bg.withValues(alpha: 0.85),
                   Colors.transparent,
                 ],
               ),
@@ -102,17 +105,17 @@ class HomeHeroSlide extends StatelessWidget {
           ),
         ),
 
-        // Bottom gradient (fades seamlessly into the body background)
+        // Bottom gradient — thin dark strip so body clay shows through.
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                stops: const [0.0, 0.28, 0.70],
+                stops: const [0.0, 0.15, 0.55],
                 colors: [
-                  palette.scaffoldBackgroundColor,
-                  palette.scaffoldBackgroundColor.withValues(alpha: 0.85),
+                  PrismDark.bg,
+                  PrismDark.bg.withValues(alpha: 0.7),
                   Colors.transparent,
                 ],
               ),
@@ -365,4 +368,3 @@ class HomeHeroSlide extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Hero Title — clearlogo when available, crossfaded text fallback otherwise.
 // ─────────────────────────────────────────────────────────────────────────────
-

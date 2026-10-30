@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/perf/image_caps.dart';
 import '../../utils/perf/performance_mode.dart';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
@@ -15,7 +14,9 @@ import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/anime/anime_slider_section.dart';
-import '../../widgets/common/app_liquid_dock.dart';
+import '../../widgets/prism/prism_dock.dart';
+import '../../design/prism_tokens.dart';
+import '../../design/prism_shadows.dart';
 import '../../widgets/common/custom_scroll_track.dart';
 import '../../widgets/home/continue_watching_slider.dart';
 import '../settings/settings_page.dart';
@@ -24,7 +25,6 @@ import 'anime_stream_sheet.dart';
 import 'anime_search_page.dart';
 import '../anime_arabic/anime_arabic_details_page.dart';
 import '../anime_arabic/anime_arabic_stream_sheet.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class AnimePage extends StatefulWidget {
   const AnimePage({super.key});
@@ -44,6 +44,7 @@ class _AnimePageState extends State<AnimePage> {
   String? _error;
 
   // General Anime data
+  List<AnimeMedia> _airingNow = [];
   List<AnimeMedia> _trending = [];
   List<AnimeMedia> _popularSeason = [];
   List<AnimeMedia> _topRated = [];
@@ -93,6 +94,7 @@ class _AnimePageState extends State<AnimePage> {
             _arabicCards[c.slug.hashCode.abs()] = c;
           }
         }
+
         registerCards(feed.spotlight);
         registerCards(feed.recentEpisodes);
         registerCards(feed.trending);
@@ -112,7 +114,8 @@ class _AnimePageState extends State<AnimePage> {
         debugPrint('Error loading Arabic Anime data: $e');
         if (mounted) {
           setState(() {
-            _error = 'Failed to load Arabic Anime catalog. Check your internet connection.';
+            _error =
+                'Failed to load Arabic Anime catalog. Check your internet connection.';
             _loading = false;
           });
         }
@@ -129,6 +132,7 @@ class _AnimePageState extends State<AnimePage> {
       final romanceFut = _anilistService.fetchByGenre('Romance', perPage: 18);
       final fantasyFut = _anilistService.fetchByGenre('Fantasy', perPage: 18);
       final sciFiFut = _anilistService.fetchByGenre('Sci-Fi', perPage: 18);
+      final airingFut = _anilistService.fetchAiringNow(perPage: 18);
 
       final results = await Future.wait([
         trendingFut,
@@ -139,6 +143,7 @@ class _AnimePageState extends State<AnimePage> {
         romanceFut,
         fantasyFut,
         sciFiFut,
+        airingFut,
       ]);
 
       if (mounted) {
@@ -152,9 +157,11 @@ class _AnimePageState extends State<AnimePage> {
           _romanceAnime = results[5];
           _fantasyAnime = results[6];
           _sciFiAnime = results[7];
+          _airingNow = results[8];
           _loading = false;
           if (!hasAnyData) {
-            _error = 'Failed to load Anime catalog. Please check your internet connection or retry.';
+            _error =
+                'Failed to load Anime catalog. Please check your internet connection or retry.';
           }
         });
       }
@@ -162,7 +169,8 @@ class _AnimePageState extends State<AnimePage> {
       debugPrint('Error loading Anime data: $e');
       if (mounted) {
         setState(() {
-          _error = 'Failed to load Anime catalog. Check your internet connection.';
+          _error =
+              'Failed to load Anime catalog. Check your internet connection.';
           _loading = false;
         });
       }
@@ -172,7 +180,8 @@ class _AnimePageState extends State<AnimePage> {
   void _playEpisode(AnimeMedia anime, int episodeNumber) {
     if ((_isArabicMode || _arabicCards.containsKey(anime.id)) &&
         kEnableArabic) {
-      final card = _arabicCards[anime.id] ??
+      final card =
+          _arabicCards[anime.id] ??
           ArabicAnimeCard(
             slug: anime.titleEnglish.toLowerCase().replaceAll(' ', '-'),
             title: anime.displayTitle,
@@ -220,13 +229,16 @@ class _AnimePageState extends State<AnimePage> {
   void _openDetails(AnimeMedia anime, [int? preferredEpisode]) {
     if ((_isArabicMode || _arabicCards.containsKey(anime.id)) &&
         kEnableArabic) {
-      final card = _arabicCards[anime.id] ??
+      final card =
+          _arabicCards[anime.id] ??
           ArabicAnimeCard(
             slug: anime.titleEnglish.toLowerCase().replaceAll(' ', '-'),
             title: anime.displayTitle,
             cover: anime.coverUrl,
           );
-      final epNum = preferredEpisode ?? (anime.totalEpisodes > 0 ? anime.totalEpisodes : null);
+      final epNum =
+          preferredEpisode ??
+          (anime.totalEpisodes > 0 ? anime.totalEpisodes : null);
       Navigator.push(
         context,
         CinematicSlideRoute(
@@ -241,19 +253,14 @@ class _AnimePageState extends State<AnimePage> {
 
     Navigator.push(
       context,
-      CinematicSlideRoute(
-        page: AnimeDetailsPage(anime: anime),
-      ),
+      CinematicSlideRoute(page: AnimeDetailsPage(anime: anime)),
     );
   }
 
   void _navigateToSettings(Offset? tapPosition) {
     Navigator.push(
       context,
-      LiquidRevealRoute(
-        page: const SettingsPage(),
-        tapPosition: tapPosition,
-      ),
+      LiquidRevealRoute(page: const SettingsPage(), tapPosition: tapPosition),
     );
   }
 
@@ -288,11 +295,13 @@ class _AnimePageState extends State<AnimePage> {
           child: Stack(
             children: [
               // Main scrollable content
-              if (_loading && (_isArabicMode ? _arabicFeed == null : _trending.isEmpty))
+              if (_loading &&
+                  (_isArabicMode ? _arabicFeed == null : _trending.isEmpty))
                 Center(
                   child: CircularProgressIndicator(color: palette.primaryColor),
                 )
-              else if (_error != null && (_isArabicMode ? _arabicFeed == null : _trending.isEmpty))
+              else if (_error != null &&
+                  (_isArabicMode ? _arabicFeed == null : _trending.isEmpty))
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -305,8 +314,10 @@ class _AnimePageState extends State<AnimePage> {
                       const SizedBox(height: 16),
                       Text(
                         _error!,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: palette.isLight
+                              ? PrismLight.ink
+                              : Colors.white70,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -315,6 +326,7 @@ class _AnimePageState extends State<AnimePage> {
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: palette.primaryColor,
+                          foregroundColor: PrismAccent.onAccent,
                         ),
                         onPressed: _loadAnimeData,
                         child: const Text('Retry'),
@@ -338,14 +350,16 @@ class _AnimePageState extends State<AnimePage> {
                       if (_isArabicMode) ...[
                         // 1. Arabic Hero Carousel (Matching Home Page)
                         if (_arabicFeed != null &&
-                            (_arabicFeed!.spotlight.isNotEmpty || _arabicFeed!.trending.isNotEmpty))
+                            (_arabicFeed!.spotlight.isNotEmpty ||
+                                _arabicFeed!.trending.isNotEmpty))
                           _AnimeHeroCarousel(
-                            animeList: (_arabicFeed!.spotlight.isNotEmpty
-                                    ? _arabicFeed!.spotlight
-                                    : _arabicFeed!.trending)
-                                .take(6)
-                                .map((c) => c.toAnimeMedia())
-                                .toList(),
+                            animeList:
+                                (_arabicFeed!.spotlight.isNotEmpty
+                                        ? _arabicFeed!.spotlight
+                                        : _arabicFeed!.trending)
+                                    .take(6)
+                                    .map((c) => c.toAnimeMedia())
+                                    .toList(),
                             onWatchNow: (anime) => _playEpisode(anime, 1),
                             onDetailsTap: _openDetails,
                           ),
@@ -366,49 +380,68 @@ class _AnimePageState extends State<AnimePage> {
                             AnimeSliderSection(
                               title: '⚡ آخر الحلقات المعروضة',
                               subtitle: 'أحدث الحلقات المضافة المترجمة للعربية',
-                              animeList: _arabicFeed!.recentEpisodes.map((c) => c.toAnimeMedia()).toList(),
-                              onAnimeTap: (anime) => _openDetails(anime, anime.totalEpisodes > 0 ? anime.totalEpisodes : null),
+                              animeList: _arabicFeed!.recentEpisodes
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
+                              onAnimeTap: (anime) => _openDetails(
+                                anime,
+                                anime.totalEpisodes > 0
+                                    ? anime.totalEpisodes
+                                    : null,
+                              ),
                             ),
                           if (_arabicFeed!.trending.isNotEmpty)
                             AnimeSliderSection(
                               title: '🔥 الأكثر شهرة وتداولاً',
                               subtitle: 'الأنميات الأكثر مشاهدة حالياً',
-                              animeList: _arabicFeed!.trending.map((c) => c.toAnimeMedia()).toList(),
+                              animeList: _arabicFeed!.trending
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
                               onAnimeTap: _openDetails,
                             ),
                           if (_arabicFeed!.popularMovies.isNotEmpty)
                             AnimeSliderSection(
                               title: '🎬 الأفلام الأكثر شعبية',
                               subtitle: 'أفلام الأنمي المميزة',
-                              animeList: _arabicFeed!.popularMovies.map((c) => c.toAnimeMedia()).toList(),
+                              animeList: _arabicFeed!.popularMovies
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
                               onAnimeTap: _openDetails,
                             ),
                           if (_arabicFeed!.topSeasonal.isNotEmpty)
                             AnimeSliderSection(
                               title: '👑 أفضل الأنميات',
                               subtitle: 'أنميات ذات تقييمات استثنائية',
-                              animeList: _arabicFeed!.topSeasonal.map((c) => c.toAnimeMedia()).toList(),
+                              animeList: _arabicFeed!.topSeasonal
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
                               onAnimeTap: _openDetails,
                             ),
                           if (_arabicFeed!.seasonal.isNotEmpty)
                             AnimeSliderSection(
                               title: '🌟 أنميات موسمية',
                               subtitle: 'عروض الموسم الحالي',
-                              animeList: _arabicFeed!.seasonal.map((c) => c.toAnimeMedia()).toList(),
+                              animeList: _arabicFeed!.seasonal
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
                               onAnimeTap: _openDetails,
                             ),
                           if (_arabicFeed!.legendary.isNotEmpty)
                             AnimeSliderSection(
                               title: '⚔️ أنميات أسطورية',
                               subtitle: 'أعمال خالدة يجب ألا تفوتك',
-                              animeList: _arabicFeed!.legendary.map((c) => c.toAnimeMedia()).toList(),
+                              animeList: _arabicFeed!.legendary
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
                               onAnimeTap: _openDetails,
                             ),
                           if (_arabicFeed!.upcoming.isNotEmpty)
                             AnimeSliderSection(
                               title: '🚀 المنتظرة قريباً',
                               subtitle: 'أنميات قادمة قريباً',
-                              animeList: _arabicFeed!.upcoming.map((c) => c.toAnimeMedia()).toList(),
+                              animeList: _arabicFeed!.upcoming
+                                  .map((c) => c.toAnimeMedia())
+                                  .toList(),
                               onAnimeTap: _openDetails,
                             ),
                         ],
@@ -438,8 +471,16 @@ class _AnimePageState extends State<AnimePage> {
                           animeList: _trending,
                           onAnimeTap: _openDetails,
                         ),
+                        if (_airingNow.isNotEmpty)
+                          AnimeSliderSection(
+                            title: '📺 Airing Now',
+                            subtitle: 'New episodes every week',
+                            animeList: _airingNow,
+                            onAnimeTap: _openDetails,
+                          ),
                         AnimeSliderSection(
-                          title: '🌟 Popular This Season (${AnilistService.currentSeason()})',
+                          title:
+                              '🌟 Popular This Season (${AnilistService.currentSeason()})',
                           subtitle: 'Currently airing hits',
                           animeList: _popularSeason,
                           onAnimeTap: _openDetails,
@@ -476,13 +517,16 @@ class _AnimePageState extends State<AnimePage> {
                         ),
                         AnimeSliderSection(
                           title: '🤖 Sci-Fi & Cyberpunk',
-                          subtitle: 'Futuristic technologies and dystopian worlds',
+                          subtitle:
+                              'Futuristic technologies and dystopian worlds',
                           animeList: _sciFiAnime,
                           onAnimeTap: _openDetails,
                         ),
                       ],
 
-                      SizedBox(height: 110.0 + MediaQuery.paddingOf(context).bottom),
+                      SizedBox(
+                        height: 110.0 + MediaQuery.paddingOf(context).bottom,
+                      ),
                     ],
                   ),
                 ),
@@ -497,9 +541,9 @@ class _AnimePageState extends State<AnimePage> {
             left: 0,
             right: 0,
             child: _AnimeGlassAppBar(
-            topPadding: topPadding,
-            onSearchTap: _navigateToSearch,
-            onSettingsTap: _navigateToSettings,
+              topPadding: topPadding,
+              onSearchTap: _navigateToSearch,
+              onSettingsTap: _navigateToSettings,
             ),
           ),
 
@@ -517,7 +561,7 @@ class _AnimePageState extends State<AnimePage> {
             left: 0,
             right: 0,
             child: Center(
-              child: AppLiquidDock(
+              child: PrismDock(
                 currentDestination: DockItemKey.anime,
                 onSettingsTap: () => _navigateToSettings(null),
                 onSearchTap: () => _navigateToSearch(null),
@@ -526,18 +570,14 @@ class _AnimePageState extends State<AnimePage> {
           ),
         ];
 
-        return GuideTrigger(
-          guideKey: 'anime',
-          steps: AppGuides.anime,
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Stack(
-              fit: StackFit.expand,
-              children: [
-                RepaintBoundary(child: backgroundContent),
-                ...overlayChildren,
-              ],
-            ),
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              RepaintBoundary(child: backgroundContent),
+              ...overlayChildren,
+            ],
           ),
         );
       },
@@ -563,6 +603,9 @@ class _AnimeGlassAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.sizeOf(context).width < 430;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
 
     return RepaintBoundary(
       child: Container(
@@ -573,18 +616,27 @@ class _AnimeGlassAppBar extends StatelessWidget {
           right: 8,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppThemeService.currentPalette.value.appBarBackgroundColor.withValues(alpha: 0.95),
-              AppThemeService.currentPalette.value.appBarBackgroundColor.withValues(alpha: 0.85),
-            ],
-          ),
+          // Light: solid clay bar like HomeGlassAppBar — a translucent light
+          // veil over the dark hero reads as a milky wash.
+          gradient: isLight
+              ? PrismShadows.surfaceGradient(true)
+              // Fully opaque: a translucent dark bar lets hero copy ghost
+              // through behind the logo, which reads as broken text.
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppThemeService.currentPalette.value.appBarBackgroundColor,
+                    AppThemeService.currentPalette.value.appBarBackgroundColor,
+                  ],
+                ),
+          boxShadow: isLight
+              ? PrismShadows.raised(isLight: true, scale: 0.6)
+              : null,
           border: Border(
             bottom: BorderSide(
-              color: AppThemeService.currentPalette.value.isMetallic
-                  ? AppThemeService.currentPalette.value.silverAccent.withValues(alpha: 0.12)
+              color: isLight
+                  ? PrismLight.borderSubtle
                   : Colors.white.withValues(alpha: 0.06),
             ),
           ),
@@ -593,9 +645,10 @@ class _AnimeGlassAppBar extends StatelessWidget {
           children: [
             // Back button
             IconButton(
-              icon: const Icon(
+              tooltip: 'Back',
+              icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
+                color: ink,
                 size: 20,
               ),
               onPressed: () => Navigator.pop(context),
@@ -614,17 +667,18 @@ class _AnimeGlassAppBar extends StatelessWidget {
               RichText(
                 text: TextSpan(
                   text: 'Dizzy ',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
-                    color: Colors.white,
+                    color: ink,
                   ),
                   children: [
                     TextSpan(
                       text: 'Anime',
                       style: TextStyle(
-                        color: AppThemeService.currentPalette.value.primaryColor,
+                        color:
+                            AppThemeService.currentPalette.value.primaryColor,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -638,14 +692,13 @@ class _AnimeGlassAppBar extends StatelessWidget {
             Builder(
               builder: (context) {
                 return IconButton(
-                  icon: Icon(
-                    Icons.search_rounded,
-                    color: Colors.white.withValues(alpha: 0.65),
-                    size: 25,
-                  ),
+                  tooltip: 'Search anime',
+                  icon: Icon(Icons.search_rounded, color: inkSoft, size: 25),
                   onPressed: () {
                     final box = context.findRenderObject() as RenderBox?;
-                    final offset = box?.localToGlobal(box.size.center(Offset.zero));
+                    final offset = box?.localToGlobal(
+                      box.size.center(Offset.zero),
+                    );
                     onSearchTap(offset);
                   },
                 );
@@ -656,14 +709,13 @@ class _AnimeGlassAppBar extends StatelessWidget {
             Builder(
               builder: (context) {
                 return IconButton(
-                  icon: Icon(
-                    Icons.settings_rounded,
-                    color: Colors.white.withValues(alpha: 0.65),
-                    size: 24,
-                  ),
+                  tooltip: 'Anime settings',
+                  icon: Icon(Icons.settings_rounded, color: inkSoft, size: 24),
                   onPressed: () {
                     final box = context.findRenderObject() as RenderBox?;
-                    final offset = box?.localToGlobal(box.size.center(Offset.zero));
+                    final offset = box?.localToGlobal(
+                      box.size.center(Offset.zero),
+                    );
                     onSettingsTap(offset);
                   },
                 );
@@ -828,12 +880,18 @@ class _AnimeHeroCarouselState extends State<_AnimeHeroCarousel> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           color: active
-                              ? AppThemeService.currentPalette.value.primaryColor
+                              ? AppThemeService
+                                    .currentPalette
+                                    .value
+                                    .primaryColor
                               : Colors.white.withValues(alpha: 0.30),
                           boxShadow: active
                               ? [
                                   BoxShadow(
-                                    color: AppThemeService.currentPalette.value.primaryColor
+                                    color: AppThemeService
+                                        .currentPalette
+                                        .value
+                                        .primaryColor
                                         .withValues(alpha: 0.55),
                                     blurRadius: 8,
                                   ),
@@ -851,26 +909,28 @@ class _AnimeHeroCarouselState extends State<_AnimeHeroCarousel> {
                 _isHovering &&
                 screenWidth > 600) ...[
               if (_index > 0)
-                Positioned(
-                  left: 24,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: _CarouselArrow(
-                      icon: Icons.arrow_back_ios_new_rounded,
-                      onTap: () => _goTo(_index - 1),
+                Positioned.fill(
+                  child: Align(
+                    alignment: const Alignment(-1, -0.45),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 24),
+                      child: _CarouselArrow(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () => _goTo(_index - 1),
+                      ),
                     ),
                   ),
                 ),
               if (_index < widget.animeList.length - 1)
-                Positioned(
-                  right: 24,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: _CarouselArrow(
-                      icon: Icons.arrow_forward_ios_rounded,
-                      onTap: () => _goTo(_index + 1),
+                Positioned.fill(
+                  child: Align(
+                    alignment: const Alignment(1, -0.45),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 24),
+                      child: _CarouselArrow(
+                        icon: Icons.arrow_forward_ios_rounded,
+                        onTap: () => _goTo(_index + 1),
+                      ),
                     ),
                   ),
                 ),
@@ -898,6 +958,15 @@ class _AnimeHeroSlide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompact = screenWidth < 600;
+    // Hero copy always sits on artwork behind a dark scrim in both themes
+    // (Prism prototype .hero), so it stays white — never theme ink.
+    const ink = Colors.white;
+    final inkSoft = Colors.white.withValues(alpha: 0.62);
+    final descColor = Colors.white.withValues(alpha: 0.72);
+    final tile = Colors.white.withValues(alpha: 0.12);
+    final tileBorder = Colors.white.withValues(alpha: 0.22);
+    const starColor = Color(0xFFFFD700);
+    const scrimBase = Color(0xFF05060A);
 
     return Stack(
       fit: StackFit.expand,
@@ -911,8 +980,8 @@ class _AnimeHeroSlide extends StatelessWidget {
           // P12: hero backdrop capped (was full-res decode).
           memCacheWidth: ImageCaps.kBackdrop,
           maxWidthDiskCache: ImageCaps.kBackdrop,
-          placeholder: (_, __) => const ColoredBox(color: DizzyVoid.surface1),
-          errorWidget: (_, __, ___) => const ColoredBox(color: DizzyVoid.surface1),
+          placeholder: (_, __) => const ColoredBox(color: scrimBase),
+          errorWidget: (_, __, ___) => const ColoredBox(color: scrimBase),
         ),
 
         // Left horizontal wash for cinematic readability
@@ -922,10 +991,10 @@ class _AnimeHeroSlide extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                stops: const [0.0, 0.38, 0.85],
+                stops: const [0.0, 0.42, 0.9],
                 colors: [
-                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.95),
-                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.70),
+                  scrimBase.withValues(alpha: 0.82),
+                  scrimBase.withValues(alpha: 0.45),
                   Colors.transparent,
                 ],
               ),
@@ -940,10 +1009,7 @@ class _AnimeHeroSlide extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.center,
-                colors: [
-                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.75),
-                  Colors.transparent,
-                ],
+                colors: [scrimBase.withValues(alpha: 0.55), Colors.transparent],
               ),
             ),
           ),
@@ -958,8 +1024,8 @@ class _AnimeHeroSlide extends StatelessWidget {
                 end: Alignment.topCenter,
                 stops: const [0.0, 0.30, 0.75],
                 colors: [
-                  AppThemeService.currentPalette.value.scaffoldBackgroundColor,
-                  AppThemeService.currentPalette.value.scaffoldBackgroundColor.withValues(alpha: 0.80),
+                  scrimBase.withValues(alpha: 0.94),
+                  scrimBase.withValues(alpha: 0.55),
                   Colors.transparent,
                 ],
               ),
@@ -992,10 +1058,10 @@ class _AnimeHeroSlide extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700).withValues(alpha: 0.14),
+                            color: starColor.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(9),
                             border: Border.all(
-                              color: const Color(0xFFFFD700).withValues(alpha: 0.28),
+                              color: starColor.withValues(alpha: 0.28),
                             ),
                           ),
                           child: Row(
@@ -1004,7 +1070,7 @@ class _AnimeHeroSlide extends StatelessWidget {
                               const Icon(
                                 Icons.star_rounded,
                                 size: 17,
-                                color: Color(0xFFFFD700),
+                                color: starColor,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -1012,7 +1078,7 @@ class _AnimeHeroSlide extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFFFFD700),
+                                  color: starColor,
                                 ),
                               ),
                             ],
@@ -1025,42 +1091,42 @@ class _AnimeHeroSlide extends StatelessWidget {
                           '${anime.seasonYear}',
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: inkSoft,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       if (anime.totalEpisodes > 0) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
                           child: Icon(
                             Icons.circle,
                             size: 4,
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: Colors.white24,
                           ),
                         ),
                         Text(
                           '${anime.totalEpisodes} Episodes',
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: inkSoft,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                       if (anime.studioName.isNotEmpty) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
                           child: Icon(
                             Icons.circle,
                             size: 4,
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: Colors.white24,
                           ),
                         ),
                         Text(
                           anime.studioName,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: inkSoft,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1078,7 +1144,7 @@ class _AnimeHeroSlide extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                       letterSpacing: -1.2,
                       height: 1.05,
-                      color: Colors.white,
+                      color: ink,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -1097,7 +1163,7 @@ class _AnimeHeroSlide extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: isCompact ? 14.5 : 15.5,
-                          color: Colors.white.withValues(alpha: 0.65),
+                          color: descColor,
                           height: 1.5,
                         ),
                       ),
@@ -1117,17 +1183,15 @@ class _AnimeHeroSlide extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: tile,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
-                            ),
+                            border: Border.all(color: tileBorder),
                           ),
                           child: Text(
                             genre,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.70),
+                              color: inkSoft,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1151,8 +1215,9 @@ class _AnimeHeroSlide extends StatelessWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppThemeService.currentPalette.value.primaryColor,
-                          foregroundColor: Colors.white,
+                          backgroundColor:
+                              AppThemeService.currentPalette.value.primaryColor,
+                          foregroundColor: PrismAccent.onAccent,
                           padding: EdgeInsets.symmetric(
                             horizontal: isCompact ? 18 : 28,
                             vertical: isCompact ? 12 : 16,
@@ -1161,7 +1226,11 @@ class _AnimeHeroSlide extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 12,
-                          shadowColor: AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.45),
+                          shadowColor: AppThemeService
+                              .currentPalette
+                              .value
+                              .primaryColor
+                              .withValues(alpha: 0.45),
                         ),
                       ),
                       SizedBox(width: isCompact ? 8 : 12),
@@ -1170,14 +1239,14 @@ class _AnimeHeroSlide extends StatelessWidget {
                         icon: Icon(
                           Icons.info_outline_rounded,
                           size: isCompact ? 18 : 21,
-                          color: Colors.white.withValues(alpha: 0.80),
+                          color: ink,
                         ),
                         label: Text(
                           'Details',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: isCompact ? 14 : 15.5,
-                            color: Colors.white.withValues(alpha: 0.80),
+                            color: ink,
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -1189,7 +1258,7 @@ class _AnimeHeroSlide extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.18),
+                            color: Colors.white.withValues(alpha: 0.28),
                             width: 1.2,
                           ),
                         ),

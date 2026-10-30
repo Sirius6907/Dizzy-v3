@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/services/watchparty/party_session.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 
 /// Unified tactile OLED co-experience room for the 3 modes:
@@ -117,13 +120,18 @@ class _UnifiedCoExperienceRoomPageState
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     // P6 narrow compact: 360px pe long title + room-code pill tight hote hain.
     final narrow = MediaQuery.sizeOf(context).width < 420;
     return OfflineAwareScaffold(
-      backgroundColor: DizzyVoid.obsidian,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
-        foregroundColor: DizzyVoid.bone,
+        backgroundColor: palette.appBarBackgroundColor,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: ink,
         title: Text(
           narrow ? 'Co-Room' : 'Co-Experience Room',
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
@@ -148,7 +156,7 @@ class _UnifiedCoExperienceRoomPageState
                       ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(DizzyRadius.md),
-                        gradient: DizzyGradients.tactileSurface,
+                        gradient: PrismShadows.surfaceGradient(isLight),
                         border: Border.fromBorderSide(DizzyEdge.hairline),
                       ),
                       child: Row(
@@ -165,19 +173,15 @@ class _UnifiedCoExperienceRoomPageState
                           const SizedBox(width: 6),
                           Text(
                             code,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.2,
-                              color: DizzyVoid.bone,
+                              color: ink,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(
-                            Icons.copy_rounded,
-                            size: 13,
-                            color: DizzyVoid.ash,
-                          ),
+                          Icon(Icons.copy_rounded, size: 13, color: inkSoft),
                         ],
                       ),
                     ),
@@ -209,28 +213,28 @@ class _UnifiedCoExperienceRoomPageState
               child: RepaintBoundary(
                 child: switch (_mode) {
                   CoExperienceMode.watch => _WatchTogetherBody(
-                      onCopyCode: _copyRoomCode,
-                    ),
+                    onCopyCode: _copyRoomCode,
+                  ),
                   CoExperienceMode.listen => _ListenTogetherBody(
-                      spinning: _spinning,
-                      spin: _spinController,
-                      queue: _queue,
-                      queueController: _queueController,
-                      onToggleSpin: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _spinning = !_spinning;
-                          if (_spinning) {
-                            _spinController.repeat();
-                          } else {
-                            _spinController.stop();
-                          }
-                        });
-                      },
-                      onAddTrack: _addTrack,
-                      onPlayTrack: _playTrack,
-                      onRemoveTrack: _removeTrack,
-                    ),
+                    spinning: _spinning,
+                    spin: _spinController,
+                    queue: _queue,
+                    queueController: _queueController,
+                    onToggleSpin: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _spinning = !_spinning;
+                        if (_spinning) {
+                          _spinController.repeat();
+                        } else {
+                          _spinController.stop();
+                        }
+                      });
+                    },
+                    onAddTrack: _addTrack,
+                    onPlayTrack: _playTrack,
+                    onRemoveTrack: _removeTrack,
+                  ),
                   CoExperienceMode.read => const _ReadTogetherBody(),
                 },
               ),
@@ -279,6 +283,9 @@ class _ModeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         DizzySpace.md,
@@ -305,7 +312,7 @@ class _ModeSwitcher extends StatelessWidget {
                           CoExperienceMode.read => Icons.menu_book_rounded,
                         },
                         size: 16,
-                        color: mode == m ? DizzyVoid.bone : DizzyVoid.ash,
+                        color: mode == m ? ink : inkSoft,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -318,7 +325,7 @@ class _ModeSwitcher extends StatelessWidget {
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.4,
-                          color: mode == m ? DizzyVoid.bone : DizzyVoid.ash,
+                          color: mode == m ? ink : inkSoft,
                         ),
                       ),
                     ],
@@ -339,8 +346,10 @@ class _VoiceStripLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         DizzySpace.md,
         DizzySpace.xs,
         DizzySpace.md,
@@ -354,7 +363,7 @@ class _VoiceStripLabel extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
-            color: DizzyVoid.ash,
+            color: inkSoft,
           ),
         ),
       ),
@@ -377,6 +386,9 @@ class _VoiceStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return SizedBox(
       height: 76,
       child: ListView.separated(
@@ -401,22 +413,24 @@ class _VoiceStrip extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: muted
                           ? DizzyGradients.emberButton
-                          : DizzyGradients.tactileSurface,
+                          : PrismShadows.surfaceGradient(isLight),
                       border: Border.fromBorderSide(DizzyEdge.hairline),
                     ),
                     child: Icon(
                       muted ? Icons.mic_off_rounded : Icons.mic_rounded,
                       size: 20,
-                      color: DizzyVoid.bone,
+                      color: muted
+                          ? PrismAccent.onAccent
+                          : (isLight ? PrismLight.ink : Colors.white),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     muted ? 'Muted' : 'Mute',
-                    style: const TextStyle(
-                      fontSize: 10.5,
+                    style: TextStyle(
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: DizzyVoid.ash,
+                      color: inkSoft,
                     ),
                   ),
                 ],
@@ -435,7 +449,8 @@ class _VoiceStrip extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: DizzyGradients.tactileSurface,
+                    color: isLight ? peer.color.withValues(alpha: 0.16) : null,
+                    gradient: isLight ? null : DizzyGradients.tactileSurface,
                     border: Border.fromBorderSide(
                       speaking
                           ? DizzyEdge.neon(DizzyGlow.volt)
@@ -456,7 +471,7 @@ class _VoiceStrip extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
-                      color: peer.color,
+                      color: isLight ? PrismLight.ink : peer.color,
                     ),
                   ),
                 ),
@@ -464,9 +479,9 @@ class _VoiceStrip extends StatelessWidget {
                 Text(
                   peer.name,
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: speaking ? DizzyVoid.bone : DizzyVoid.ash,
+                    color: speaking ? ink : inkSoft,
                   ),
                 ),
               ],
@@ -487,6 +502,9 @@ class _WatchTogetherBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return ListenableBuilder(
       listenable: PartySession.instance,
       builder: (context, _) {
@@ -495,13 +513,14 @@ class _WatchTogetherBody extends StatelessWidget {
         final code = room == null || room.roomId.isEmpty
             ? 'LOBBY'
             : room.roomId.toUpperCase();
-        final title = session.mediaTitle ??
+        final title =
+            session.mediaTitle ??
             room?.watchingLabel ??
             'Nothing on yet — pick a title';
         return ListView(
           padding: const EdgeInsets.all(DizzySpace.md),
           children: [
-            DizzyTactileCard(
+            PrismCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -516,13 +535,13 @@ class _WatchTogetherBody extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'LIVE ROOM',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 2.0,
-                          color: DizzyVoid.ash,
+                          color: inkSoft,
                         ),
                       ),
                       const Spacer(),
@@ -530,11 +549,11 @@ class _WatchTogetherBody extends StatelessWidget {
                         onTap: () => onCopyCode(code),
                         child: Text(
                           code,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.6,
-                            color: DizzyVoid.bone,
+                            color: ink,
                           ),
                         ),
                       ),
@@ -543,26 +562,26 @@ class _WatchTogetherBody extends StatelessWidget {
                   const SizedBox(height: DizzySpace.sm),
                   Text(
                     room?.title ?? 'Watch Together',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w900,
-                      color: DizzyVoid.bone,
+                      color: ink,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${room?.memberCount ?? 1} in room · ${session.isHost ? 'You host' : 'Guest view'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: DizzyVoid.ash,
+                      color: inkSoft,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: DizzySpace.sm),
-            DizzyTactileCard(
+            PrismCard(
               child: Row(
                 children: [
                   Container(
@@ -577,7 +596,7 @@ class _WatchTogetherBody extends StatelessWidget {
                     child: const Icon(
                       Icons.play_arrow_rounded,
                       size: 40,
-                      color: DizzyVoid.bone,
+                      color: PrismAccent.onAccent,
                     ),
                   ),
                   const SizedBox(width: DizzySpace.md),
@@ -585,13 +604,13 @@ class _WatchTogetherBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'NOW PREVIEWING',
                           style: TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.8,
-                            color: DizzyVoid.ash,
+                            color: inkSoft,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -599,10 +618,10 @@ class _WatchTogetherBody extends StatelessWidget {
                           title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,
-                            color: DizzyVoid.bone,
+                            color: ink,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -610,10 +629,10 @@ class _WatchTogetherBody extends StatelessWidget {
                           session.mediaRef ?? 'No media synced yet',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: DizzyVoid.ash,
+                            color: inkSoft,
                           ),
                         ),
                         const SizedBox(height: DizzySpace.sm),
@@ -631,11 +650,11 @@ class _WatchTogetherBody extends StatelessWidget {
                               : null,
                           child: Text(
                             session.isHost ? 'SYNC EVERYONE' : 'FOLLOWING HOST',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.0,
-                              color: DizzyVoid.bone,
+                              color: ink,
                             ),
                           ),
                         ),
@@ -677,10 +696,14 @@ class _ListenTogetherBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
     return ListView(
       padding: const EdgeInsets.all(DizzySpace.md),
       children: [
-        DizzyTactileCard(
+        PrismCard(
           child: Row(
             children: [
               RepaintBoundary(
@@ -728,13 +751,13 @@ class _ListenTogetherBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'LYRICS PREVIEW',
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.8,
-                        color: DizzyVoid.ash,
+                        color: inkSoft,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -743,11 +766,11 @@ class _ListenTogetherBody extends StatelessWidget {
                         line,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           height: 1.5,
-                          color: DizzyVoid.bone,
+                          color: ink,
                         ),
                       ),
                     const SizedBox(height: DizzySpace.sm),
@@ -755,11 +778,11 @@ class _ListenTogetherBody extends StatelessWidget {
                       onTap: onToggleSpin,
                       child: Text(
                         spinning ? 'PAUSE VINYL' : 'SPIN VINYL',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.0,
-                          color: DizzyVoid.bone,
+                          color: ink,
                         ),
                       ),
                     ),
@@ -770,13 +793,13 @@ class _ListenTogetherBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: DizzySpace.sm),
-        const Text(
+        Text(
           'COLLABORATIVE QUEUE',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
-            color: DizzyVoid.ash,
+            color: inkSoft,
           ),
         ),
         const SizedBox(height: 6),
@@ -784,23 +807,18 @@ class _ListenTogetherBody extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DizzySpace.sm,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: DizzySpace.sm),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(DizzyRadius.md),
-                  gradient: DizzyGradients.carvedSurface,
+                  gradient: PrismShadows.pressedGradient(isLight),
                   border: Border.fromBorderSide(DizzyEdge.hairline),
                 ),
                 child: TextField(
                   controller: queueController,
-                  style: const TextStyle(
-                    color: DizzyVoid.bone,
-                    fontSize: 13.5,
-                  ),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: ink, fontSize: 13.5),
+                  decoration: InputDecoration(
                     hintText: 'Add a track…',
-                    hintStyle: TextStyle(color: DizzyVoid.ash, fontSize: 13),
+                    hintStyle: TextStyle(color: inkSoft, fontSize: 13),
                     border: InputBorder.none,
                   ),
                   onSubmitted: (_) => onAddTrack(),
@@ -810,11 +828,7 @@ class _ListenTogetherBody extends StatelessWidget {
             const SizedBox(width: DizzySpace.sm),
             DizzyTactileButton(
               onTap: onAddTrack,
-              child: const Icon(
-                Icons.add_rounded,
-                size: 20,
-                color: DizzyVoid.bone,
-              ),
+              child: Icon(Icons.add_rounded, size: 20, color: ink),
             ),
           ],
         ),
@@ -828,7 +842,7 @@ class _ListenTogetherBody extends StatelessWidget {
                 for (var i = 0; i < queue.length; i++)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: DizzyTactileCard(
+                    child: PrismCard(
                       padding: const EdgeInsets.symmetric(
                         horizontal: DizzySpace.sm,
                         vertical: DizzySpace.xs,
@@ -842,7 +856,7 @@ class _ListenTogetherBody extends StatelessWidget {
                             size: 18,
                             color: active == queue[i]
                                 ? DizzyGlow.volt
-                                : DizzyVoid.ash,
+                                : inkFaint,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -850,26 +864,26 @@ class _ListenTogetherBody extends StatelessWidget {
                               queue[i],
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: DizzyVoid.bone,
+                                color: ink,
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.play_arrow_rounded,
-                              color: DizzyVoid.bone,
+                              color: ink,
                               size: 20,
                             ),
                             tooltip: 'Play for room',
                             onPressed: () => onPlayTrack(i),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close_rounded,
-                              color: DizzyVoid.ash,
+                              color: inkFaint,
                               size: 18,
                             ),
                             tooltip: 'Remove',
@@ -895,6 +909,9 @@ class _ReadTogetherBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return ListenableBuilder(
       listenable: PartySession.instance,
       builder: (context, _) {
@@ -903,7 +920,7 @@ class _ReadTogetherBody extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(DizzySpace.md),
           children: [
-            DizzyTactileCard(
+            PrismCard(
               glowColor: session.isHost ? DizzyGlow.gold : null,
               child: Row(
                 children: [
@@ -912,7 +929,7 @@ class _ReadTogetherBody extends StatelessWidget {
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: DizzyGradients.tactileSurface,
+                      gradient: PrismShadows.surfaceGradient(isLight),
                       border: Border.fromBorderSide(
                         session.isHost
                             ? DizzyEdge.neon(DizzyGlow.gold)
@@ -926,8 +943,10 @@ class _ReadTogetherBody extends StatelessWidget {
                           : Icons.headset_mic_outlined,
                       size: 20,
                       color: session.isHost
-                          ? DizzyGlow.gold
-                          : DizzyVoid.ash,
+                          ? (isLight
+                                ? PrismAccent.starTextLight
+                                : DizzyGlow.gold)
+                          : inkSoft,
                     ),
                   ),
                   const SizedBox(width: DizzySpace.sm),
@@ -939,11 +958,11 @@ class _ReadTogetherBody extends StatelessWidget {
                           session.isHost
                               ? 'YOU ARE PRESENTING'
                               : 'HOST IS PRESENTING',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.6,
-                            color: DizzyVoid.bone,
+                            color: ink,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -951,10 +970,10 @@ class _ReadTogetherBody extends StatelessWidget {
                           session.isHost
                               ? 'Everyone follows your page turns'
                               : 'Your pages auto-follow the presenter',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: DizzyVoid.ash,
+                            color: inkSoft,
                           ),
                         ),
                       ],
@@ -968,15 +987,19 @@ class _ReadTogetherBody extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       color: DizzyGlow.volt.withValues(alpha: 0.14),
-                      border: Border.fromBorderSide(DizzyEdge.neon(DizzyGlow.volt)),
+                      border: Border.fromBorderSide(
+                        DizzyEdge.neon(DizzyGlow.volt),
+                      ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'SYNCED',
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.4,
-                        color: DizzyGlow.volt,
+                        color: isLight
+                            ? PrismAccent.successTextLight
+                            : DizzyGlow.volt,
                       ),
                     ),
                   ),
@@ -984,28 +1007,28 @@ class _ReadTogetherBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: DizzySpace.sm),
-            DizzyTactileCard(
+            PrismCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'CHAPTER SYNC',
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 11,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.8,
-                          color: DizzyVoid.ash,
+                          color: inkSoft,
                         ),
                       ),
                       const Spacer(),
                       Text(
                         'Ch ${session.chapterIndex + 1}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
-                          color: DizzyVoid.bone,
+                          color: ink,
                         ),
                       ),
                     ],
@@ -1015,10 +1038,10 @@ class _ReadTogetherBody extends StatelessWidget {
                     session.mediaTitle ?? 'Shared manuscript',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15.5,
                       fontWeight: FontWeight.w800,
-                      color: DizzyVoid.bone,
+                      color: ink,
                     ),
                   ),
                   const SizedBox(height: DizzySpace.sm),
@@ -1034,14 +1057,14 @@ class _ReadTogetherBody extends StatelessWidget {
                                   );
                                 }
                               : null,
-                          child: const Text(
+                          child: Text(
                             '− CHAPTER',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.8,
-                              color: DizzyVoid.bone,
+                              color: ink,
                             ),
                           ),
                         ),
@@ -1051,18 +1074,16 @@ class _ReadTogetherBody extends StatelessWidget {
                         child: DizzyTactileButton(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            session.setChapterIndex(
-                              session.chapterIndex + 1,
-                            );
+                            session.setChapterIndex(session.chapterIndex + 1);
                           },
-                          child: const Text(
+                          child: Text(
                             '+ CHAPTER',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.8,
-                              color: DizzyVoid.bone,
+                              color: ink,
                             ),
                           ),
                         ),
@@ -1073,7 +1094,7 @@ class _ReadTogetherBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: DizzySpace.sm),
-            DizzyTactileCard(
+            PrismCard(
               child: Column(
                 children: [
                   Container(
@@ -1120,22 +1141,22 @@ class _ReadTogetherBody extends StatelessWidget {
                                   session.setPageIndex(session.pageIndex - 1);
                                 }
                               : null,
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.arrow_back_rounded,
                                 size: 18,
-                                color: DizzyVoid.bone,
+                                color: ink,
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
                                 'PREV',
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.0,
-                                  color: DizzyVoid.bone,
+                                  color: ink,
                                 ),
                               ),
                             ],
@@ -1150,7 +1171,7 @@ class _ReadTogetherBody extends StatelessWidget {
                             HapticFeedback.lightImpact();
                             session.setPageIndex(session.pageIndex + 1);
                           },
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
@@ -1159,14 +1180,14 @@ class _ReadTogetherBody extends StatelessWidget {
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.0,
-                                  color: DizzyVoid.bone,
+                                  color: ink,
                                 ),
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Icon(
                                 Icons.arrow_forward_rounded,
                                 size: 18,
-                                color: DizzyVoid.bone,
+                                color: ink,
                               ),
                             ],
                           ),
@@ -1191,6 +1212,8 @@ class _PresenterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
     return ListenableBuilder(
       listenable: PartySession.instance,
       builder: (context, _) {
@@ -1208,7 +1231,7 @@ class _PresenterBar extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(DizzyRadius.lg),
-            gradient: DizzyGradients.tactileSurface,
+            gradient: PrismShadows.surfaceGradient(isLight),
             border: Border.fromBorderSide(DizzyEdge.hairline),
             boxShadow: DizzyShadow.card,
           ),
@@ -1219,7 +1242,11 @@ class _PresenterBar extends StatelessWidget {
                 height: 9,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: session.inParty ? DizzyGlow.volt : DizzyVoid.ash,
+                  color: session.inParty
+                      ? (isLight
+                            ? PrismAccent.successTextLight
+                            : DizzyGlow.volt)
+                      : (isLight ? PrismLight.inkFaint : DizzyVoid.ash),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1227,15 +1254,15 @@ class _PresenterBar extends StatelessWidget {
                 child: Text(
                   session.inParty
                       ? (session.isHost
-                          ? 'Presenting · ${session.mediaKind}'
-                          : 'Following host · ${session.mediaKind}')
+                            ? 'Presenting · ${session.mediaKind}'
+                            : 'Following host · ${session.mediaKind}')
                       : 'Preview mode · no live room',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
-                    color: DizzyVoid.bone,
+                    color: ink,
                   ),
                 ),
               ),
@@ -1245,13 +1272,15 @@ class _PresenterBar extends StatelessWidget {
                     HapticFeedback.mediumImpact();
                     session.end();
                   },
-                  child: const Text(
+                  child: Text(
                     'LEAVE',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.2,
-                      color: DizzyGlow.red,
+                      color: isLight
+                          ? PrismAccent.accentTextLight
+                          : DizzyGlow.red,
                     ),
                   ),
                 ),

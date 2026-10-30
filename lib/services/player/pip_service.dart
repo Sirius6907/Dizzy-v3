@@ -31,9 +31,7 @@ class PipService {
     if (!isSupported) return false;
     try {
       final status = await _floating.enable(
-        ImmediatePiP(
-          aspectRatio: Rational(widthRatio, heightRatio),
-        ),
+        ImmediatePiP(aspectRatio: Rational(widthRatio, heightRatio)),
       );
       return status == PiPStatus.enabled;
     } catch (e) {

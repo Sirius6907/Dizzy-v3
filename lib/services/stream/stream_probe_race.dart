@@ -37,6 +37,15 @@ class StreamProbeRace {
 
   bool _closed = false;
 
+  /// True once an alive source has been reported. New probes then stop
+  /// competing with the player's first bytes (concurrency drops to 1).
+  bool _winnerFound = false;
+
+  /// Hard stop for the post-winner probe tail: whatever is still running
+  /// three seconds after the winner is not worth the bandwidth.
+  static const Duration _postWinnerProbeWindow = Duration(seconds: 3);
+  Timer? _postWinnerTimer;
+
   /// True after [closeDrain]: no new offers accepted, but in-flight probes
   /// keep running until they finish (bounded by [_drainDeadline]).
   bool _draining = false;
@@ -48,6 +57,8 @@ class StreamProbeRace {
   final List<StreamSource> _pendingUiBatch = [];
   int _inFlight = 0;
   final List<StreamSource> _probeQueue = [];
+
+  int get _maxConcurrent => _winnerFound ? 1 : maxConcurrentProbes;
 
   StreamProbeRace({
     this.probeFn = StreamHealthChecker.isAlive,
@@ -64,10 +75,11 @@ class StreamProbeRace {
   /// scrape stream. Extra sources wait in a capped queue.
   ///
   /// Probing CONTINUES after the winner so the manual sources list keeps
-  /// filling for the user (bounded — 8 concurrent HEADs cost nothing).
+  /// filling for the user, but at concurrency 1 and only for a 3s tail —
+  /// a 120-probe herd must never compete with the player's first bytes.
   void offer(StreamSource source) {
     if (_closed || _draining) return;
-    if (_inFlight >= maxConcurrentProbes) {
+    if (_inFlight >= _maxConcurrent) {
       if (_probeQueue.length >= maxQueueDepth) return; // shed load
       _probeQueue.add(source);
       return;
@@ -93,7 +105,7 @@ class StreamProbeRace {
       if (_inFlight <= 0) close();
       return;
     }
-    while (_inFlight < maxConcurrentProbes && _probeQueue.isNotEmpty) {
+    while (_inFlight < _maxConcurrent && _probeQueue.isNotEmpty) {
       _launchProbe(_probeQueue.removeAt(0));
     }
   }
@@ -110,6 +122,7 @@ class StreamProbeRace {
     verifiedSources.add(source);
     if (!_winnerCompleter.isCompleted) {
       _winnerCompleter.complete(source);
+      _onWinnerReported();
     }
     _pendingUiBatch.add(source);
     _batchTimer ??= Timer(batchDelay, _flushUiBatch);
@@ -133,13 +146,16 @@ class StreamProbeRace {
       verifiedSources.add(source);
       if (!_winnerCompleter.isCompleted) {
         _winnerCompleter.complete(source);
+        _onWinnerReported();
       }
       // Batch UI updates so rapid-fire verified sources don't spam setState.
       _pendingUiBatch.add(source);
       _batchTimer ??= Timer(batchDelay, _flushUiBatch);
     } else {
-      AppLog.d('[StreamProbeRace] dead source dropped: '
-          '${source.name ?? "?"} (${source.addonName})');
+      AppLog.d(
+        '[StreamProbeRace] dead source dropped: '
+        '${source.name ?? "?"} (${source.addonName})',
+      );
     }
     _onProbeDone();
   }
@@ -153,6 +169,17 @@ class StreamProbeRace {
     onVerifiedBatch?.call(batch);
   }
 
+  /// Winner is live: throttle everything still queued to concurrency 1 and
+  /// arm the hard stop so the probe tail can't starve the actual playback.
+  void _onWinnerReported() {
+    if (_winnerFound) return;
+    _winnerFound = true;
+    _postWinnerTimer?.cancel();
+    _postWinnerTimer = Timer(_postWinnerProbeWindow, () {
+      if (!_closed) close();
+    });
+  }
+
   /// Scraping finished (onDone). Flush pending UI batch and settle the
   /// winner future if nothing passed.
   void close() {
@@ -161,6 +188,9 @@ class StreamProbeRace {
     _draining = false;
     _drainTimer?.cancel();
     _drainTimer = null;
+    _postWinnerTimer?.cancel();
+    _postWinnerTimer = null;
+    _probeQueue.clear();
     _flushUiBatch();
     if (!_winnerCompleter.isCompleted) {
       _winnerCompleter.complete(null); // no alive source found

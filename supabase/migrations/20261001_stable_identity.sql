@@ -54,19 +54,22 @@ begin
       where hwid_hash = r.hwid_hash and device_id <> v_keep
     loop
       -- carry the loser's watch progress onto the keeper's owner
-      insert into public.continue_watching
-        (user_id, content_id, progress_ms, duration_ms, updated_at)
-      select k.user_id, c.content_id, c.progress_ms, c.duration_ms, c.updated_at
-      from public.continue_watching c
-      cross join (select user_id from public.devices where device_id = v_keep) k
-      where c.user_id = v_dup.user_id
-      on conflict (user_id, content_id) do update
-        set progress_ms = greatest(public.continue_watching.progress_ms,
-                                   excluded.progress_ms),
-            updated_at  = greatest(public.continue_watching.updated_at,
-                                   excluded.updated_at);
+      -- (the table does not exist on this project; guard for fresh installs)
+      if to_regclass('public.continue_watching') is not null then
+        insert into public.continue_watching
+          (user_id, content_id, progress_ms, duration_ms, updated_at)
+        select k.user_id, c.content_id, c.progress_ms, c.duration_ms, c.updated_at
+        from public.continue_watching c
+        cross join (select user_id from public.devices where device_id = v_keep) k
+        where c.user_id = v_dup.user_id
+        on conflict (user_id, content_id) do update
+          set progress_ms = greatest(public.continue_watching.progress_ms,
+                                     excluded.progress_ms),
+              updated_at  = greatest(public.continue_watching.updated_at,
+                                     excluded.updated_at);
 
-      delete from public.continue_watching where user_id = v_dup.user_id;
+        delete from public.continue_watching where user_id = v_dup.user_id;
+      end if;
       delete from public.devices where device_id = v_dup.device_id;
     end loop;
   end loop;

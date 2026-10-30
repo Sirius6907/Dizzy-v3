@@ -90,4 +90,3 @@ class MusicCategorySlider extends StatelessWidget {
     );
   }
 }
-

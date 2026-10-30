@@ -30,7 +30,8 @@ class VidNestExtractor {
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-  static const _alphabet = 'RB0fpH8ZEyVLkv7c2i6MAJ5u3IKFDxlS1NTsnGaqmXYdUrtzjwObCgQP94hoeW+/=';
+  static const _alphabet =
+      'RB0fpH8ZEyVLkv7c2i6MAJ5u3IKFDxlS1NTsnGaqmXYdUrtzjwObCgQP94hoeW+/=';
   static final Uint8List _revMap = () {
     final map = Uint8List(256);
     for (var i = 0; i < _alphabet.length; i++) {
@@ -71,17 +72,20 @@ class VidNestExtractor {
 
     try {
       final catParam = category.toLowerCase() == 'dub' ? 'dub' : 'sub';
-      final endpoint = '$_apiBaseUrl/hianime/anime/$anilistId/$episodeNumber/$catParam';
+      final endpoint =
+          '$_apiBaseUrl/hianime/anime/$anilistId/$episodeNumber/$catParam';
 
-      final res = await client.get(
-        Uri.parse(endpoint),
-        headers: {
-          'User-Agent': _ua,
-          'Accept': 'application/json, text/javascript, */*; q=0.01',
-          'Referer': '$_baseUrl/',
-          'Origin': _baseUrl,
-        },
-      ).timeout(const Duration(seconds: 12));
+      final res = await client
+          .get(
+            Uri.parse(endpoint),
+            headers: {
+              'User-Agent': _ua,
+              'Accept': 'application/json, text/javascript, */*; q=0.01',
+              'Referer': '$_baseUrl/',
+              'Origin': _baseUrl,
+            },
+          )
+          .timeout(const Duration(seconds: 12));
 
       if (res.statusCode == 200) {
         final json = jsonDecode(res.body);
@@ -90,28 +94,34 @@ class VidNestExtractor {
               ? _decrypt(json['data']?.toString() ?? '')
               : json['data'];
 
-          if (data is Map && data['sources'] is List && (data['sources'] as List).isNotEmpty) {
+          if (data is Map &&
+              data['sources'] is List &&
+              (data['sources'] as List).isNotEmpty) {
             final file = data['sources'][0]['file']?.toString();
             if (file != null && file.isNotEmpty) {
               const proxyHeaders = {
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
+                'user-agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0',
                 'accept': '*/*',
                 'origin': 'https://megaplay.buzz',
                 'referer': 'https://megaplay.buzz/',
               };
 
-              final proxiedUrl = 'https://megacloud.animanga.fun/proxy?url=${Uri.encodeComponent(file)}&headers=${Uri.encodeComponent(jsonEncode(proxyHeaders))}';
+              final proxiedUrl =
+                  'https://megacloud.animanga.fun/proxy?url=${Uri.encodeComponent(file)}&headers=${Uri.encodeComponent(jsonEncode(proxyHeaders))}';
 
-              results.add(VidNestAnimeResult(
-                url: proxiedUrl,
-                server: 'VidNest (HiAnime)',
-                quality: '1080p',
-                headers: {
-                  'User-Agent': _ua,
-                  'Referer': '$_baseUrl/',
-                  'Origin': _baseUrl,
-                },
-              ));
+              results.add(
+                VidNestAnimeResult(
+                  url: proxiedUrl,
+                  server: 'VidNest (HiAnime)',
+                  quality: '1080p',
+                  headers: {
+                    'User-Agent': _ua,
+                    'Referer': '$_baseUrl/',
+                    'Origin': _baseUrl,
+                  },
+                ),
+              );
             }
           }
         }

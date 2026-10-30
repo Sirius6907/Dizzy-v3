@@ -20,26 +20,26 @@ class Audiobook {
   }) : coverImage = coverImage.trim();
 
   Map<String, dynamic> toJson() => {
-        'uuid': uuid,
-        'audioBookId': audioBookId,
-        'dynamicSlugId': dynamicSlugId,
-        'title': title,
-        'author': author,
-        'coverImage': coverImage,
-        'source': source,
-        'pageUrl': pageUrl,
-      };
+    'uuid': uuid,
+    'audioBookId': audioBookId,
+    'dynamicSlugId': dynamicSlugId,
+    'title': title,
+    'author': author,
+    'coverImage': coverImage,
+    'source': source,
+    'pageUrl': pageUrl,
+  };
 
   factory Audiobook.fromJson(Map<String, dynamic> json) => Audiobook(
-        uuid: (json['uuid'] ?? '').toString(),
-        audioBookId: (json['audioBookId'] ?? '').toString(),
-        dynamicSlugId: (json['dynamicSlugId'] ?? '').toString(),
-        title: (json['title'] ?? '').toString(),
-        author: json['author'] as String?,
-        coverImage: (json['coverImage'] ?? '').toString().trim(),
-        source: (json['source'] ?? '').toString(),
-        pageUrl: (json['pageUrl'] ?? '').toString(),
-      );
+    uuid: (json['uuid'] ?? '').toString(),
+    audioBookId: (json['audioBookId'] ?? '').toString(),
+    dynamicSlugId: (json['dynamicSlugId'] ?? '').toString(),
+    title: (json['title'] ?? '').toString(),
+    author: json['author'] as String?,
+    coverImage: (json['coverImage'] ?? '').toString().trim(),
+    source: (json['source'] ?? '').toString(),
+    pageUrl: (json['pageUrl'] ?? '').toString(),
+  );
 }
 
 class AudiobookChapter {
@@ -58,14 +58,15 @@ class AudiobookChapter {
   });
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'url': url,
-        'httpHeaders': httpHeaders,
-        'isTorrent': isTorrent,
-        'torrentFileIndex': torrentFileIndex,
-      };
+    'title': title,
+    'url': url,
+    'httpHeaders': httpHeaders,
+    'isTorrent': isTorrent,
+    'torrentFileIndex': torrentFileIndex,
+  };
 
-  factory AudiobookChapter.fromJson(Map<String, dynamic> json) => AudiobookChapter(
+  factory AudiobookChapter.fromJson(Map<String, dynamic> json) =>
+      AudiobookChapter(
         title: json['title'] ?? '',
         url: json['url'] ?? '',
         httpHeaders: (json['httpHeaders'] as Map?)?.cast<String, String>(),

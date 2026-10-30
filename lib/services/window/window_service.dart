@@ -51,7 +51,9 @@ class WindowService with WindowListener {
         final next = !isFullscreenNotifier.value;
         isFullscreenNotifier.value = next;
         if (next) {
-          await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+          await SystemChrome.setEnabledSystemUIMode(
+            SystemUiMode.immersiveSticky,
+          );
         } else {
           await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
         }

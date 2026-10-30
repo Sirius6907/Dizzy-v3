@@ -5,13 +5,19 @@ void main() {
   group('PartyVoiceService (WP-P3)', () {
     test('token request carries normalized room + device + role', () {
       final req = PartyVoiceService.buildTokenRequest(
-          'k7q2m9', '4820193', true);
+        'k7q2m9',
+        '4820193',
+        true,
+      );
       expect(req['room_code'], 'K7Q2M9');
       expect(req['device_code'], '4820193');
       expect(req['wants_publish'], isTrue);
 
-      final guest =
-          PartyVoiceService.buildTokenRequest('ABC234', '1000001', false);
+      final guest = PartyVoiceService.buildTokenRequest(
+        'ABC234',
+        '1000001',
+        false,
+      );
       expect(guest['wants_publish'], isFalse);
     });
 

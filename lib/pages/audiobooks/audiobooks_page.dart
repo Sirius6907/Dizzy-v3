@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/audiobook/audiobook_model.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -20,7 +20,6 @@ import 'audiobook_detail_page.dart';
 import 'audiobook_player_screen.dart';
 import 'audiobook_route_transitions.dart';
 import 'generate_audiobook_screen.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class AudiobooksPage extends StatefulWidget {
   const AudiobooksPage({super.key});
@@ -80,7 +79,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
     AudiobookSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     Paper2AudioService.instance.jobs.removeListener(_onSettingsChanged);
-    CustomAudiobookService.instance.audiobooks.removeListener(_onSettingsChanged);
+    CustomAudiobookService.instance.audiobooks.removeListener(
+      _onSettingsChanged,
+    );
     _searchController.dispose();
     _searchFocusNode.dispose();
     _continueScrollController.dispose();
@@ -100,7 +101,10 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
   void _scrollContinueLeft() {
     if (!_continueScrollController.hasClients) return;
     _continueScrollController.animateTo(
-      (_continueScrollController.offset - 280).clamp(0.0, _continueScrollController.position.maxScrollExtent),
+      (_continueScrollController.offset - 280).clamp(
+        0.0,
+        _continueScrollController.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
     );
@@ -109,7 +113,10 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
   void _scrollContinueRight() {
     if (!_continueScrollController.hasClients) return;
     _continueScrollController.animateTo(
-      (_continueScrollController.offset + 280).clamp(0.0, _continueScrollController.position.maxScrollExtent),
+      (_continueScrollController.offset + 280).clamp(
+        0.0,
+        _continueScrollController.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
     );
@@ -168,15 +175,23 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
 
   void _showAudiobookCustomizer(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
 
     showDialog(
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: DizzyVoid.surface1,
+          backgroundColor: panel,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+            side: BorderSide(color: border),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
@@ -188,30 +203,43 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.tune_rounded, color: palette.primaryColor, size: 20),
+                      Icon(
+                        Icons.tune_rounded,
+                        color: palette.primaryColor,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'Customize Audiobook Section',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ink,
                           fontSize: 16.5,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                        tooltip: 'Close',
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: inkSoft,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
+                  Divider(color: border),
                   const SizedBox(height: 12),
 
-                  const Text(
+                  Text(
                     'Poster Card Density',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ValueListenableBuilder<AudiobookCardDensity>(
@@ -225,17 +253,23 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                           return ChoiceChip(
                             label: Text(d.label),
                             selected: isSelected,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: DizzyVoid.voidB,
+                            selectedColor: palette.primaryColor.withValues(
+                              alpha: 0.25,
+                            ),
+                            backgroundColor: well,
                             labelStyle: TextStyle(
-                              color: isSelected ? palette.primaryColor : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected
+                                  ? PrismAccent.text(isLight)
+                                  : inkSoft,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             side: BorderSide(
                               color: isSelected
                                   ? palette.primaryColor.withValues(alpha: 0.6)
-                                  : Colors.white.withValues(alpha: 0.08),
+                                  : border,
                             ),
                             onSelected: (selected) {
                               if (selected) AudiobookSettings.setCardDensity(d);
@@ -253,10 +287,14 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     builder: (context, enabled, _) {
                       return SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Featured Hero Spotlight Carousel', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                        title: Text(
+                          'Featured Hero Spotlight Carousel',
+                          style: TextStyle(color: ink, fontSize: 13.5),
+                        ),
                         value: enabled,
                         activeColor: palette.primaryColor,
-                        onChanged: (val) => AudiobookSettings.setEnableSpotlight(val),
+                        onChanged: (val) =>
+                            AudiobookSettings.setEnableSpotlight(val),
                       );
                     },
                   ),
@@ -266,10 +304,14 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     builder: (context, enabled, _) {
                       return SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Moving Ambient Background Glow', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                        title: Text(
+                          'Moving Ambient Background Glow',
+                          style: TextStyle(color: ink, fontSize: 13.5),
+                        ),
                         value: enabled,
                         activeColor: palette.primaryColor,
-                        onChanged: (val) => AudiobookSettings.setEnableAmbientLights(val),
+                        onChanged: (val) =>
+                            AudiobookSettings.setEnableAmbientLights(val),
                       );
                     },
                   ),
@@ -279,35 +321,53 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     builder: (context, show, _) {
                       return SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Show "Continue Listening" Carousel', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                        title: Text(
+                          'Show "Continue Listening" Carousel',
+                          style: TextStyle(color: ink, fontSize: 13.5),
+                        ),
                         value: show,
                         activeColor: palette.primaryColor,
-                        onChanged: (val) => AudiobookSettings.setShowContinueListening(val),
+                        onChanged: (val) =>
+                            AudiobookSettings.setShowContinueListening(val),
                       );
                     },
                   ),
 
                   const SizedBox(height: 12),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
+                  Divider(color: border),
                   const SizedBox(height: 12),
 
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: palette.primaryColor.withValues(alpha: 0.15),
-                        foregroundColor: palette.primaryColor,
-                        side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.4)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: palette.primaryColor.withValues(
+                          alpha: 0.15,
+                        ),
+                        foregroundColor: PrismAccent.text(isLight),
+                        side: BorderSide(
+                          color: palette.primaryColor.withValues(alpha: 0.4),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       icon: const Icon(Icons.palette_rounded, size: 18),
-                      label: const Text('Open Player Studio & Themes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      label: const Text(
+                        'Open Player Studio & Themes',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const AudiobookSettingsPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const AudiobookSettingsPage(),
+                          ),
                         );
                       },
                     ),
@@ -328,396 +388,483 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
     final screenW = MediaQuery.sizeOf(context).width;
     final isMobile = screenW < 600;
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
     final ambientEnabled = AudiobookSettings.enableAmbientLights.value;
     final showSpotlight = AudiobookSettings.enableSpotlight.value;
     final showContinue = AudiobookSettings.showContinueListening.value;
     final showCategoryPills = AudiobookSettings.showCategoryPills.value;
     final cardDensity = AudiobookSettings.cardDensity.value;
 
-    final spotlightBook = _searchResults.isNotEmpty ? _searchResults.first : null;
+    final spotlightBook = _searchResults.isNotEmpty
+        ? _searchResults.first
+        : null;
 
-    return GuideTrigger(
-      guideKey: 'audiobooks',
-      steps: AppGuides.audiobooks,
-      child: Scaffold(
-        backgroundColor: palette.scaffoldBackgroundColor,
-        body: Stack(
-          children: [
-            // ── Ambient Background Glows ──
-            if (ambientEnabled)
-              const Positioned.fill(child: AnimatedAmbientBackground())
-            else
-              Positioned.fill(
-                child: Container(color: palette.scaffoldBackgroundColor),
-              ),
+    return Scaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // ── Ambient Background Glows ──
+          if (ambientEnabled)
+            const Positioned.fill(child: AnimatedAmbientBackground())
+          else
+            Positioned.fill(
+              child: Container(color: palette.scaffoldBackgroundColor),
+            ),
 
-            // ── Main Content Scroll ──
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Top Header Bar
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      topInset + 12,
-                      isMobile ? 16 : 24,
-                      12,
-                    ),
-                    child: Row(
-                      children: [
-                        // Back Button
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                              ),
-                              child: IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-
-                        // Glowing Headphones Icon
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [palette.primaryColor, palette.accentColor],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: palette.primaryColor.withValues(alpha: 0.5),
-                                blurRadius: 16,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.headphones_rounded, color: Colors.white, size: 22),
-                        ),
-                        const SizedBox(width: 14),
-
-                        // Title
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Audiobook Hub',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.4,
-                                ),
-                              ),
-                              Text(
-                                'Explore, stream & listen to thousands of stories',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 12,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // AI Generator & Studio Button
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    palette.primaryColor.withValues(alpha: 0.25),
-                                    const Color(0xFF7C5CFF).withValues(alpha: 0.25),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: palette.primaryColor.withValues(alpha: 0.35)),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
-                                tooltip: 'Audiobook Generator & Studio',
-                                onPressed: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
-                                  );
-                                  _loadContinueListening();
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Quick Customize Button
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.tune_rounded, color: Colors.white70, size: 20),
-                                tooltip: 'Audiobook Customizer',
-                                onPressed: () => _showAudiobookCustomizer(context),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+          // ── Main Content Scroll ──
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Top Header Bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isMobile ? 16 : 24,
+                    topInset + 12,
+                    isMobile ? 16 : 24,
+                    12,
                   ),
-                ),
-
-                // Search Bar
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 6),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: DizzyVoid.surface1.withValues(alpha: 0.75),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: _searchController.text.isNotEmpty ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
+                  child: Row(
+                    children: [
+                      // Back Button
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: panel,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: border),
                             ),
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            focusNode: _searchFocusNode,
-                            style: const TextStyle(color: Colors.white, fontSize: 15),
-                            textInputAction: TextInputAction.search,
-                            onChanged: _onSearchChanged,
-                            onSubmitted: _performSearch,
-                            decoration: InputDecoration(
-                              hintText: 'Search audiobooks by title, author, or genre...',
-                              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14),
-                              prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor),
-                              suffixIcon: _searchController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 18),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() {});
-                                      },
-                                    )
-                                  : null,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            child: IconButton(
+                              tooltip: 'Back',
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: ink,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
+                      const SizedBox(width: 14),
 
-                // Genre / Category Filter Pills
-                if (showCategoryPills)
-                  SliverToBoxAdapter(
-                    child: Container(
-                      height: 48,
-                      margin: const EdgeInsets.only(top: 8, bottom: 6),
-                      child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: _categories.length,
-                        itemBuilder: (context, index) {
-                          final cat = _categories[index];
-                          final isSelected = cat == _selectedCategory;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(cat),
-                              selected: isSelected,
-                              selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                              backgroundColor: DizzyVoid.surface1.withValues(alpha: 0.8),
-                              labelStyle: TextStyle(
-                                color: isSelected ? palette.primaryColor : Colors.white70,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                                fontSize: 12,
+                      // Glowing Headphones Icon
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [palette.primaryColor, palette.accentColor],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: palette.primaryColor.withValues(
+                                alpha: 0.5,
                               ),
-                              side: BorderSide(
-                                color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.headphones_rounded,
+                          color: PrismAccent.onAccent,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Title
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Audiobook Hub',
+                              style: TextStyle(
+                                color: ink,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.4,
                               ),
-                              onSelected: (selected) {
-                                if (selected) _selectCategory(cat);
+                            ),
+                            Text(
+                              'Explore, stream & listen to thousands of stories',
+                              style: TextStyle(color: inkSoft, fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // AI Generator & Studio Button
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  palette.primaryColor.withValues(alpha: 0.25),
+                                  palette.accentColor.withValues(alpha: 0.14),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.auto_awesome_rounded,
+                                color: isLight
+                                    ? PrismAccent.text(isLight)
+                                    : Colors.white,
+                                size: 20,
+                              ),
+                              tooltip: 'Audiobook Generator & Studio',
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const GenerateAudiobookScreen(),
+                                  ),
+                                );
+                                _loadContinueListening();
                               },
                             ),
-                          );
-                        },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Quick Customize Button
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: panel,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: border),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.tune_rounded,
+                                color: inkSoft,
+                                size: 20,
+                              ),
+                              tooltip: 'Audiobook Customizer',
+                              onPressed: () =>
+                                  _showAudiobookCustomizer(context),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Search Bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 24,
+                    vertical: 6,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: well,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: _searchController.text.isNotEmpty
+                                ? palette.primaryColor
+                                : border,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          style: TextStyle(color: ink, fontSize: 15),
+                          textInputAction: TextInputAction.search,
+                          onChanged: _onSearchChanged,
+                          onSubmitted: _performSearch,
+                          decoration: InputDecoration(
+                            hintText:
+                                'Search audiobooks by title, author, or genre...',
+                            hintStyle: TextStyle(color: inkFaint, fontSize: 14),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: palette.primaryColor,
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    tooltip: 'Clear search',
+                                    icon: Icon(
+                                      Icons.clear_rounded,
+                                      color: inkSoft,
+                                      size: 18,
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
+                ),
+              ),
 
-                // Hero Spotlight Carousel (Home-style Featured Card)
-                if (showSpotlight && spotlightBook != null && !_isSearching)
-                  SliverToBoxAdapter(
-                    child: _buildHeroSpotlight(spotlightBook, isMobile, palette),
-                  ),
-
-                // Continue Listening Section (If available)
-                if (showContinue && _continueListeningList.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: _buildContinueListeningSection(palette),
-                  ),
-
-                // Generated & Personal Audiobooks Studio Shelf
-                if (!_isSearching)
-                  SliverToBoxAdapter(
-                    child: _buildGeneratedAndUploadedSection(palette),
-                  ),
-
-                // Discovery Header
+              // Genre / Category Filter Pills
+              if (showCategoryPills)
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      16,
-                      isMobile ? 16 : 24,
-                      8,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          _searchController.text.isNotEmpty ? 'Search Results' : 'Featured Audiobooks',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.3,
+                  child: Container(
+                    height: 48,
+                    margin: const EdgeInsets.only(top: 8, bottom: 6),
+                    child: ListView.builder(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 16 : 24,
+                      ),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final cat = _categories[index];
+                        final isSelected = cat == _selectedCategory;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(cat),
+                            selected: isSelected,
+                            selectedColor: palette.primaryColor.withValues(
+                              alpha: 0.25,
+                            ),
+                            backgroundColor: panel,
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? PrismAccent.text(isLight)
+                                  : inkSoft,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? palette.primaryColor.withValues(alpha: 0.6)
+                                  : border,
+                            ),
+                            onSelected: (selected) {
+                              if (selected) _selectCategory(cat);
+                            },
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: palette.primaryColor.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${_searchResults.length} TITLES',
-                            style: TextStyle(color: palette.primaryColor, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
                 ),
 
-                // Search Status / Loading / Grid
-                if (_isSearching)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(color: palette.primaryColor),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Scraping high-quality audiobook sources...',
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
+              // Hero Spotlight Carousel (Home-style Featured Card)
+              if (showSpotlight && spotlightBook != null && !_isSearching)
+                SliverToBoxAdapter(
+                  child: _buildHeroSpotlight(spotlightBook, isMobile, palette),
+                ),
+
+              // Continue Listening Section (If available)
+              if (showContinue && _continueListeningList.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _buildContinueListeningSection(palette),
+                ),
+
+              // Generated & Personal Audiobooks Studio Shelf
+              if (!_isSearching)
+                SliverToBoxAdapter(
+                  child: _buildGeneratedAndUploadedSection(palette),
+                ),
+
+              // Discovery Header
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isMobile ? 16 : 24,
+                    16,
+                    isMobile ? 16 : 24,
+                    8,
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        _searchController.text.isNotEmpty
+                            ? 'Search Results'
+                            : 'Featured Audiobooks',
+                        style: TextStyle(
+                          color: ink,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: palette.primaryColor.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${_searchResults.length} TITLES',
+                          style: TextStyle(
+                            color: PrismAccent.text(isLight),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Search Status / Loading / Grid
+              if (_isSearching)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: palette.primaryColor),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Scraping high-quality audiobook sources...',
+                          style: TextStyle(color: inkSoft, fontSize: 14),
+                        ),
+                      ],
                     ),
-                  )
-                else if (_errorMessage != null)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 15),
-                      ),
-                    ),
-                  )
-                else if (_searchResults.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Text(
-                        'No audiobooks found. Try another search query.',
-                        style: TextStyle(color: Colors.white54, fontSize: 16),
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      8,
-                      isMobile ? 16 : 24,
-                      32 + bottomInset,
-                    ),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: (isMobile ? 150 : 180) * cardDensity.scale,
-                        childAspectRatio: 0.60,
-                        crossAxisSpacing: isMobile ? 12 : 16,
-                        mainAxisSpacing: isMobile ? 12 : 16,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final book = _searchResults[index];
-                          final heroTag = 'audiobook-cover-$index-${book.uuid.isNotEmpty ? book.uuid : book.title}';
-                          return _AudiobookCard(
-                            key: ValueKey('book-$index-${book.uuid}'),
-                            book: book,
-                            heroTag: heroTag,
-                            palette: palette,
-                            onReturn: _loadContinueListening,
-                          );
-                        },
-                        childCount: _searchResults.length,
+                  ),
+                )
+              else if (_errorMessage != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 15,
                       ),
                     ),
                   ),
-              ],
-            ),
-          ],
-        ),
+                )
+              else if (_searchResults.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'No audiobooks found. Try another search query.',
+                      style: TextStyle(color: inkSoft, fontSize: 16),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    isMobile ? 16 : 24,
+                    8,
+                    isMobile ? 16 : 24,
+                    32 + bottomInset,
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent:
+                          (isMobile ? 150 : 180) * cardDensity.scale,
+                      childAspectRatio: 0.60,
+                      crossAxisSpacing: isMobile ? 12 : 16,
+                      mainAxisSpacing: isMobile ? 12 : 16,
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final book = _searchResults[index];
+                      final heroTag =
+                          'audiobook-cover-$index-${book.uuid.isNotEmpty ? book.uuid : book.title}';
+                      return _AudiobookCard(
+                        key: ValueKey('book-$index-${book.uuid}'),
+                        book: book,
+                        heroTag: heroTag,
+                        palette: palette,
+                        onReturn: _loadContinueListening,
+                      );
+                    }, childCount: _searchResults.length),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   // ── Hero Spotlight Section ──
-  Widget _buildHeroSpotlight(Audiobook book, bool isMobile, AppThemePalette palette) {
-    final heroTag = 'spotlight-hero-${book.uuid.isNotEmpty ? book.uuid : book.title}';
+  Widget _buildHeroSpotlight(
+    Audiobook book,
+    bool isMobile,
+    AppThemePalette palette,
+  ) {
+    final heroTag =
+        'spotlight-hero-${book.uuid.isNotEmpty ? book.uuid : book.title}';
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.12);
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 12),
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 24,
+        vertical: 12,
+      ),
       height: isMobile ? 220 : 260,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
             color: palette.primaryColor.withValues(alpha: 0.25),
@@ -754,9 +901,15 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    palette.scaffoldBackgroundColor.withValues(alpha: 0.95),
-                    palette.scaffoldBackgroundColor.withValues(alpha: 0.70),
-                    palette.scaffoldBackgroundColor.withValues(alpha: 0.50),
+                    palette.scaffoldBackgroundColor.withValues(
+                      alpha: isLight ? 0.97 : 0.95,
+                    ),
+                    palette.scaffoldBackgroundColor.withValues(
+                      alpha: isLight ? 0.90 : 0.70,
+                    ),
+                    palette.scaffoldBackgroundColor.withValues(
+                      alpha: isLight ? 0.78 : 0.50,
+                    ),
                   ],
                 ),
               ),
@@ -785,13 +938,16 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                 memCacheWidth: ImageCaps.kCardW,
                                 memCacheHeight: ImageCaps.kCardH,
                                 maxWidthDiskCache: ImageCaps.kCardW,
-                                placeholder: (_, __) => Container(color: DizzyVoid.surface1),
+                                placeholder: (_, __) => Container(color: panel),
                                 errorWidget: (_, __, ___) => Container(
-                                  color: DizzyVoid.surface1,
-                                  child: const Icon(Icons.headphones_rounded, color: Colors.white38),
+                                  color: panel,
+                                  child: Icon(
+                                    Icons.headphones_rounded,
+                                    color: inkFaint,
+                                  ),
                                 ),
                               )
-                            : Container(color: DizzyVoid.surface1),
+                            : Container(color: panel),
                       ),
                     ),
                   ),
@@ -804,14 +960,21 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: palette.primaryColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             'SPOTLIGHT FEATURED',
-                            style: TextStyle(color: palette.primaryColor, fontSize: 10, fontWeight: FontWeight.w900),
+                            style: TextStyle(
+                              color: PrismAccent.text(isLight),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -820,7 +983,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: isMobile ? 17 : 22,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.4,
@@ -829,10 +992,7 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                         const SizedBox(height: 4),
                         Text(
                           book.source.toUpperCase(),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: inkSoft, fontSize: 12),
                         ),
                         const SizedBox(height: 14),
 
@@ -844,20 +1004,36 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                 await Navigator.push(
                                   context,
                                   AudiobookPageRoute(
-                                    page: AudiobookDetailPage(audiobook: book, heroTag: heroTag),
+                                    page: AudiobookDetailPage(
+                                      audiobook: book,
+                                      heroTag: heroTag,
+                                    ),
                                   ),
                                 );
                                 _loadContinueListening();
                               },
-                              icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
+                              icon: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: PrismAccent.onAccent,
+                                size: 20,
+                              ),
                               label: const Text(
                                 'Listen Now',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(
+                                  color: PrismAccent.onAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: palette.primaryColor,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                               ),
                             ),
                           ],
@@ -878,6 +1054,8 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
   Widget _buildContinueListeningSection(AppThemePalette palette) {
     final screenW = MediaQuery.sizeOf(context).width;
     final isMobile = screenW < 600;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -894,12 +1072,16 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.history_rounded, color: palette.primaryColor, size: 20),
+                  Icon(
+                    Icons.history_rounded,
+                    color: palette.primaryColor,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Continue Listening',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: ink,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.3,
@@ -911,11 +1093,13 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                 children: [
                   _ScrollArrowButton(
                     icon: Icons.chevron_left_rounded,
+                    tooltip: 'Scroll left',
                     onTap: _scrollContinueLeft,
                   ),
                   const SizedBox(width: 8),
                   _ScrollArrowButton(
                     icon: Icons.chevron_right_rounded,
+                    tooltip: 'Scroll right',
                     onTap: _scrollContinueRight,
                   ),
                 ],
@@ -936,7 +1120,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                   progress: item,
                   palette: palette,
                   onDelete: () async {
-                    await AudiobookProgressService.instance.removeProgress(item.key);
+                    await AudiobookProgressService.instance.removeProgress(
+                      item.key,
+                    );
                     _loadContinueListening();
                   },
                   onTap: () async {
@@ -947,7 +1133,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                           audiobook: item.audiobook,
                           chapters: item.chapters,
                           initialChapterIndex: item.chapterIndex,
-                          initialPosition: Duration(milliseconds: item.positionMs),
+                          initialPosition: Duration(
+                            milliseconds: item.positionMs,
+                          ),
                         ),
                       ),
                     );
@@ -966,6 +1154,15 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
   Widget _buildGeneratedAndUploadedSection(AppThemePalette palette) {
     final screenW = MediaQuery.sizeOf(context).width;
     final isMobile = screenW < 600;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
 
     final jobs = Paper2AudioService.instance.jobs.value;
     final uploaded = CustomAudiobookService.instance.audiobooks.value;
@@ -984,7 +1181,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
+              MaterialPageRoute(
+                builder: (_) => const GenerateAudiobookScreen(),
+              ),
             );
             _loadContinueListening();
           },
@@ -995,13 +1194,15 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
               gradient: LinearGradient(
                 colors: [
                   palette.primaryColor.withValues(alpha: 0.15),
-                  const Color(0xFF7C5CFF).withValues(alpha: 0.10),
+                  palette.accentColor.withValues(alpha: 0.10),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: palette.primaryColor.withValues(alpha: 0.25)),
+              border: Border.all(
+                color: palette.primaryColor.withValues(alpha: 0.25),
+              ),
             ),
             child: Row(
               children: [
@@ -1012,20 +1213,28 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     color: palette.primaryColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.auto_stories_rounded, color: palette.primaryColor, size: 20),
+                  child: Icon(
+                    Icons.auto_stories_rounded,
+                    color: palette.primaryColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'AI Audiobook Studio & EPUB Generator',
-                        style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          color: ink,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       Text(
                         'Generate audiobooks from EPUBs or import your own MP3/M4B audiobooks.',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
+                        style: TextStyle(color: inkSoft, fontSize: 11),
                       ),
                     ],
                   ),
@@ -1033,18 +1242,28 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: palette.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    foregroundColor: PrismAccent.onAccent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () async {
                     await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const GenerateAudiobookScreen(),
+                      ),
                     );
                     _loadContinueListening();
                   },
-                  child: const Text('Open Studio', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Open Studio',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -1068,12 +1287,16 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.record_voice_over_rounded, color: palette.primaryColor, size: 20),
+                  Icon(
+                    Icons.record_voice_over_rounded,
+                    color: palette.primaryColor,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'My Generated & Uploaded Audiobooks',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: ink,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.3,
@@ -1083,12 +1306,19 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
               ),
               TextButton.icon(
                 icon: const Icon(Icons.tune_rounded, size: 14),
-                label: const Text('Studio', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                style: TextButton.styleFrom(foregroundColor: palette.primaryColor),
+                label: const Text(
+                  'Studio',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: palette.primaryColor,
+                ),
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const GenerateAudiobookScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const GenerateAudiobookScreen(),
+                    ),
                   );
                   _loadContinueListening();
                 },
@@ -1104,7 +1334,10 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
               children: [
                 // Render Generated Jobs
                 ...jobs.map((job) {
-                  final cleanTitle = job.fileName.replaceAll(RegExp(r'\.epub$', caseSensitive: false), '');
+                  final cleanTitle = job.fileName.replaceAll(
+                    RegExp(r'\.epub$', caseSensitive: false),
+                    '',
+                  );
                   final isDone = job.isDone;
                   final isFailed = job.isFailed;
 
@@ -1113,9 +1346,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1.withValues(alpha: 0.85),
+                      color: panel,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(color: border),
                     ),
                     child: Row(
                       children: [
@@ -1123,13 +1356,22 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                           width: 48,
                           height: 100,
                           decoration: BoxDecoration(
-                            color: Colors.white10,
+                            color: well,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: job.coverPath != null && File(job.coverPath!).existsSync()
-                              ? Image.file(File(job.coverPath!), fit: BoxFit.cover)
-                              : const Icon(Icons.headphones_rounded, color: Colors.white30, size: 24),
+                          child:
+                              job.coverPath != null &&
+                                  File(job.coverPath!).existsSync()
+                              ? Image.file(
+                                  File(job.coverPath!),
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  Icons.headphones_rounded,
+                                  color: inkFaint,
+                                  size: 24,
+                                ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -1141,13 +1383,29 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                 cleanTitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  color: ink,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                isDone ? 'Voice: ${job.voiceId}' : (isFailed ? 'Failed' : 'Generating ${(job.progress * 100).round()}%'),
+                                isDone
+                                    ? 'Voice: ${job.voiceId}'
+                                    : (isFailed
+                                          ? 'Failed'
+                                          : 'Generating ${(job.progress * 100).round()}%'),
                                 style: TextStyle(
-                                  color: isDone ? const Color(0xFF10B981) : (isFailed ? Colors.redAccent : const Color(0xFFF59E0B)),
+                                  color: isDone
+                                      ? (isLight
+                                            ? PrismAccent.successTextLight
+                                            : PrismAccent.success)
+                                      : (isFailed
+                                            ? Colors.redAccent
+                                            : (isLight
+                                                  ? PrismAccent.starTextLight
+                                                  : PrismAccent.warning)),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1155,16 +1413,31 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                               const SizedBox(height: 8),
                               if (isDone)
                                 ElevatedButton.icon(
-                                  icon: const Icon(Icons.play_arrow_rounded, size: 14),
-                                  label: const Text('Play', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  icon: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 14,
+                                  ),
+                                  label: const Text(
+                                    'Play',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: palette.primaryColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                    foregroundColor: PrismAccent.onAccent,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
                                   ),
                                   onPressed: () {
-                                    final streamOrLocalPath = job.localAudioPath ?? job.downloadUrl!;
+                                    final streamOrLocalPath =
+                                        job.localAudioPath ?? job.downloadUrl!;
                                     final book = Audiobook(
                                       uuid: 'p2a_${job.runId}',
                                       audioBookId: 'p2a_${job.runId}',
@@ -1180,7 +1453,12 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                       AudiobookPageRoute(
                                         page: AudiobookPlayerScreen(
                                           audiobook: book,
-                                          chapters: [AudiobookChapter(title: cleanTitle, url: streamOrLocalPath)],
+                                          chapters: [
+                                            AudiobookChapter(
+                                              title: cleanTitle,
+                                              url: streamOrLocalPath,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     );
@@ -1190,8 +1468,10 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(4),
                                   child: LinearProgressIndicator(
-                                    value: job.progress > 0 ? job.progress : null,
-                                    backgroundColor: Colors.white10,
+                                    value: job.progress > 0
+                                        ? job.progress
+                                        : null,
+                                    backgroundColor: well,
                                     color: palette.primaryColor,
                                     minHeight: 4,
                                   ),
@@ -1211,9 +1491,9 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1.withValues(alpha: 0.85),
+                      color: panel,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(color: border),
                     ),
                     child: Row(
                       children: [
@@ -1221,13 +1501,22 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                           width: 48,
                           height: 100,
                           decoration: BoxDecoration(
-                            color: Colors.white10,
+                            color: well,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: b.coverPath != null && File(b.coverPath!).existsSync()
-                              ? Image.file(File(b.coverPath!), fit: BoxFit.cover)
-                              : const Icon(Icons.library_music_rounded, color: Colors.white30, size: 24),
+                          child:
+                              b.coverPath != null &&
+                                  File(b.coverPath!).existsSync()
+                              ? Image.file(
+                                  File(b.coverPath!),
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  Icons.library_music_rounded,
+                                  color: inkFaint,
+                                  size: 24,
+                                ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -1239,24 +1528,42 @@ class _AudiobooksPageState extends State<AudiobooksPage> {
                                 b.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  color: ink,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                               const SizedBox(height: 3),
                               Text(
                                 '${b.author} • Local',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                style: TextStyle(color: inkSoft, fontSize: 11),
                               ),
                               const SizedBox(height: 8),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.play_arrow_rounded, size: 14),
-                                label: const Text('Play', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                icon: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 14,
+                                ),
+                                label: const Text(
+                                  'Play',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: palette.primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                  foregroundColor: PrismAccent.onAccent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
                                 ),
                                 onPressed: () {
                                   Navigator.push(
@@ -1313,14 +1620,25 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
     final item = widget.progress;
     final book = item.audiobook;
     final hasCover = book.coverImage.isNotEmpty;
-    final heroTag = 'continue-cover-${book.uuid.isNotEmpty ? book.uuid : book.title}';
+    final heroTag =
+        'continue-cover-${book.uuid.isNotEmpty ? book.uuid : book.title}';
     final palette = widget.palette;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
 
     final percent = item.durationMs > 0
         ? (item.positionMs / item.durationMs).clamp(0.0, 1.0)
         : 0.0;
 
-    final currentChapterTitle = item.chapters.isNotEmpty && item.chapterIndex < item.chapters.length
+    final currentChapterTitle =
+        item.chapters.isNotEmpty && item.chapterIndex < item.chapters.length
         ? item.chapters[item.chapterIndex].title
         : 'Chapter ${item.chapterIndex + 1}';
 
@@ -1349,20 +1667,22 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: _isHovered
-                        ? DizzyVoid.surface2
-                        : DizzyVoid.surface1.withValues(alpha: 0.85),
+                        ? (isLight ? PrismLight.raisedTop : PrismDark.raisedTop)
+                        : panel,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _isHovered
                           ? palette.primaryColor.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : border,
                       width: _isHovered ? 1.5 : 1.0,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: _isHovered
                             ? palette.primaryColor.withValues(alpha: 0.3)
-                            : Colors.black.withValues(alpha: 0.4),
+                            : Colors.black.withValues(
+                                alpha: isLight ? 0.10 : 0.4,
+                              ),
                         blurRadius: _isHovered ? 14 : 8,
                         offset: const Offset(0, 4),
                       ),
@@ -1386,15 +1706,22 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                                     memCacheWidth: ImageCaps.kCardW,
                                     memCacheHeight: ImageCaps.kCardH,
                                     maxWidthDiskCache: ImageCaps.kCardW,
-                                    placeholder: (_, __) => Container(color: DizzyVoid.surface2),
+                                    placeholder: (_, __) =>
+                                        Container(color: well),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: DizzyVoid.surface2,
-                                      child: const Icon(Icons.headphones_rounded, color: Colors.white38),
+                                      color: well,
+                                      child: Icon(
+                                        Icons.headphones_rounded,
+                                        color: inkFaint,
+                                      ),
                                     ),
                                   )
                                 : Container(
-                                    color: DizzyVoid.surface2,
-                                    child: const Icon(Icons.headphones_rounded, color: Colors.white38),
+                                    color: well,
+                                    child: Icon(
+                                      Icons.headphones_rounded,
+                                      color: inkFaint,
+                                    ),
                                   ),
                           ),
                         ),
@@ -1411,8 +1738,8 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                               book.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: ink,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1422,10 +1749,7 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                               currentChapterTitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: 11,
-                              ),
+                              style: TextStyle(color: inkSoft, fontSize: 11),
                             ),
                             const SizedBox(height: 8),
                             // Progress bar
@@ -1434,16 +1758,18 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                               child: LinearProgressIndicator(
                                 value: percent,
                                 minHeight: 4,
-                                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                                valueColor: AlwaysStoppedAnimation<Color>(palette.primaryColor),
+                                backgroundColor: well,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  palette.primaryColor,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '${(percent * 100).toInt()}% completed',
                               style: TextStyle(
-                                color: palette.primaryColor,
-                                fontSize: 10,
+                                color: PrismAccent.text(isLight),
+                                fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1463,7 +1789,9 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
                         ),
                         child: Icon(
                           Icons.play_arrow_rounded,
-                          color: _isHovered ? Colors.white : palette.primaryColor,
+                          color: _isHovered
+                              ? PrismAccent.onAccent
+                              : PrismAccent.text(isLight),
                           size: 20,
                         ),
                       ),
@@ -1482,33 +1810,29 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
               cursor: SystemMouseCursors.click,
               onEnter: (_) => setState(() => _isDeleteHovered = true),
               onExit: (_) => setState(() => _isDeleteHovered = false),
-              child: GestureDetector(
-                onTap: widget.onDelete,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: _isDeleteHovered
-                        ? const Color(0xFFFF4D4D)
-                        : DizzyVoid.surface2,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _isDeleteHovered
-                          ? const Color(0xFFFF4D4D)
-                          : Colors.white.withValues(alpha: 0.2),
-                      width: 1.2,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 6,
+              child: Tooltip(
+                message: 'Remove from Continue Listening',
+                child: GestureDetector(
+                  onTap: widget.onDelete,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _isDeleteHovered ? PrismAccent.danger : well,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isDeleteHovered ? PrismAccent.danger : border,
+                        width: 1.2,
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.close_rounded,
-                    color: Colors.white,
-                    size: 14,
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black54, blurRadius: 6),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: _isDeleteHovered ? PrismAccent.onAccent : inkSoft,
+                      size: 14,
+                    ),
                   ),
                 ),
               ),
@@ -1522,11 +1846,13 @@ class _ContinueListeningCardState extends State<_ContinueListeningCard> {
 
 class _ScrollArrowButton extends StatefulWidget {
   final IconData icon;
+  final String tooltip;
   final VoidCallback onTap;
 
   const _ScrollArrowButton({
     required this.icon,
     required this.onTap,
+    this.tooltip = '',
   });
 
   @override
@@ -1538,30 +1864,36 @@ class _ScrollArrowButtonState extends State<_ScrollArrowButton> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? Colors.white.withValues(alpha: 0.15)
-                : Colors.white.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: _isHovered
-                  ? Colors.white.withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.1),
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
+
+    return Tooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: _isHovered ? panel : well,
+              shape: BoxShape.circle,
+              border: Border.all(color: border),
             ),
-          ),
-          child: Icon(
-            widget.icon,
-            color: _isHovered ? Colors.white : Colors.white70,
-            size: 18,
+            child: Icon(
+              widget.icon,
+              color: _isHovered ? ink : ink.withValues(alpha: 0.78),
+              size: 18,
+            ),
           ),
         ),
       ),
@@ -1598,6 +1930,17 @@ class _AudiobookCardState extends State<_AudiobookCard> {
     final heroTag = widget.heroTag;
     final palette = widget.palette;
     final cardHoverGlow = AudiobookSettings.cardHoverGlow.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final border = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+    final torrentInk = isLight
+        ? PrismAccent.starTextLight
+        : const Color(0xFFFFB74D);
 
     final scale = _isPressed ? 0.95 : (_isHovered ? 1.04 : 1.0);
 
@@ -1613,10 +1956,7 @@ class _AudiobookCardState extends State<_AudiobookCard> {
           await Navigator.push(
             context,
             AudiobookPageRoute(
-              page: AudiobookDetailPage(
-                audiobook: book,
-                heroTag: heroTag,
-              ),
+              page: AudiobookDetailPage(audiobook: book, heroTag: heroTag),
             ),
           );
           widget.onReturn?.call();
@@ -1629,19 +1969,21 @@ class _AudiobookCardState extends State<_AudiobookCard> {
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              color: _isHovered ? DizzyVoid.surface2 : DizzyVoid.surface1,
+              color: _isHovered
+                  ? (isLight ? PrismLight.raisedTop : PrismDark.raisedTop)
+                  : panel,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isHovered
                     ? palette.primaryColor.withValues(alpha: 0.6)
-                    : Colors.white.withValues(alpha: 0.08),
+                    : border,
                 width: _isHovered ? 1.5 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
                   color: _isHovered && cardHoverGlow
                       ? palette.primaryColor.withValues(alpha: 0.35)
-                      : Colors.black.withValues(alpha: 0.4),
+                      : Colors.black.withValues(alpha: isLight ? 0.10 : 0.4),
                   blurRadius: _isHovered ? 16 : 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1655,7 +1997,9 @@ class _AudiobookCardState extends State<_AudiobookCard> {
                   child: Hero(
                     tag: heroTag,
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                       child: hasCover
                           ? CachedNetworkImage(
                               imageUrl: book.coverImage,
@@ -1664,16 +2008,24 @@ class _AudiobookCardState extends State<_AudiobookCard> {
                               // P12: full-width banner capped.
                               memCacheWidth: ImageCaps.kBackdrop,
                               maxWidthDiskCache: ImageCaps.kBackdrop,
-                              placeholder: (_, __) => Container(color: DizzyVoid.surface2),
+                              placeholder: (_, __) => Container(color: well),
                               errorWidget: (_, __, ___) => Container(
-                                color: DizzyVoid.surface2,
-                                child: const Icon(Icons.headphones_rounded, size: 40, color: Colors.white38),
+                                color: well,
+                                child: Icon(
+                                  Icons.headphones_rounded,
+                                  size: 40,
+                                  color: inkFaint,
+                                ),
                               ),
                             )
                           : Container(
-                              color: DizzyVoid.surface2,
-                              child: const Center(
-                                child: Icon(Icons.headphones_rounded, size: 40, color: Colors.white38),
+                              color: well,
+                              child: Center(
+                                child: Icon(
+                                  Icons.headphones_rounded,
+                                  size: 40,
+                                  color: inkFaint,
+                                ),
                               ),
                             ),
                     ),
@@ -1690,7 +2042,7 @@ class _AudiobookCardState extends State<_AudiobookCard> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: _isHovered ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                          color: ink,
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           height: 1.2,
@@ -1699,35 +2051,59 @@ class _AudiobookCardState extends State<_AudiobookCard> {
                       const SizedBox(height: 6),
                       Builder(
                         builder: (context) {
-                          final isTorrent = book.source.toLowerCase().contains('audiobookbay');
+                          final isTorrent = book.source.toLowerCase().contains(
+                            'audiobookbay',
+                          );
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: isTorrent
-                                  ? const Color(0xFFFF9800).withValues(alpha: 0.25)
+                                  ? const Color(
+                                      0xFFFF9800,
+                                    ).withValues(alpha: 0.25)
                                   : (_isHovered
-                                      ? palette.primaryColor.withValues(alpha: 0.35)
-                                      : palette.primaryColor.withValues(alpha: 0.2)),
+                                        ? palette.primaryColor.withValues(
+                                            alpha: 0.35,
+                                          )
+                                        : palette.primaryColor.withValues(
+                                            alpha: 0.2,
+                                          )),
                               borderRadius: BorderRadius.circular(6),
                               border: isTorrent
-                                  ? Border.all(color: const Color(0xFFFF9800).withValues(alpha: 0.4), width: 0.8)
+                                  ? Border.all(
+                                      color: const Color(
+                                        0xFFFF9800,
+                                      ).withValues(alpha: 0.4),
+                                      width: 0.8,
+                                    )
                                   : null,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (isTorrent) ...[
-                                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFB74D), size: 10),
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: torrentInk,
+                                    size: 11,
+                                  ),
                                   const SizedBox(width: 3),
                                 ],
                                 Flexible(
                                   child: Text(
-                                    isTorrent ? 'AUDIOBOOKBAY' : book.source.toUpperCase(),
+                                    isTorrent
+                                        ? 'AUDIOBOOKBAY'
+                                        : book.source.toUpperCase(),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: isTorrent ? const Color(0xFFFFB74D) : palette.primaryColor,
-                                      fontSize: 9,
+                                      color: isTorrent
+                                          ? torrentInk
+                                          : PrismAccent.text(isLight),
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

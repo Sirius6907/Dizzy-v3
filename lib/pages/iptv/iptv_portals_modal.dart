@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../models/iptv/iptv_models.dart';
 import '../../services/iptv/iptv_controller.dart';
@@ -49,7 +51,16 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
 
   Offset? _tapPosition;
 
-  String _portalSourceFilter = 'all'; // 'all', 'custom', 'cloud', 'reddit', 'fav'
+  String _portalSourceFilter =
+      'all'; // 'all', 'custom', 'cloud', 'reddit', 'fav'
+
+  bool get _isLight => AppThemeService.currentPalette.value.isLight;
+  Color get _ink => _isLight ? PrismLight.ink : Colors.white;
+  Color get _inkSoft => _isLight ? PrismLight.inkSoft : Colors.white70;
+  Color get _panel => _isLight ? PrismLight.raisedTop : PrismDark.raised;
+  Color get _well => _isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+  Color get _hairline =>
+      _isLight ? PrismLight.borderSubtle : Colors.white.withValues(alpha: 0.08);
 
   List<VerifiedPortal> get _filteredPortals {
     return _ctrl.verified.where((p) {
@@ -132,7 +143,10 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed $count portal${count == 1 ? "" : "s"}'),
+          content: Text(
+            'Removed $count portal${count == 1 ? "" : "s"}',
+            style: const TextStyle(color: Colors.white),
+          ),
           duration: const Duration(seconds: 2),
           backgroundColor: DizzyVoid.surface2,
         ),
@@ -150,7 +164,10 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed all $count portals'),
+          content: Text(
+            'Removed all $count portals',
+            style: const TextStyle(color: Colors.white),
+          ),
           duration: const Duration(seconds: 2),
           backgroundColor: DizzyVoid.surface2,
         ),
@@ -172,7 +189,10 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed $count playlist${count == 1 ? "" : "s"}'),
+          content: Text(
+            'Removed $count playlist${count == 1 ? "" : "s"}',
+            style: const TextStyle(color: Colors.white),
+          ),
           duration: const Duration(seconds: 2),
           backgroundColor: DizzyVoid.surface2,
         ),
@@ -190,7 +210,10 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed all $count playlists'),
+          content: Text(
+            'Removed all $count playlists',
+            style: const TextStyle(color: Colors.white),
+          ),
           duration: const Duration(seconds: 2),
           backgroundColor: DizzyVoid.surface2,
         ),
@@ -204,164 +227,226 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: DizzyVoid.surface1,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.tune_rounded, color: palette.primaryColor, size: 20),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Customize Portals Modal',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w800,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: PrismShadows.surfaceGradient(
+                AppThemeService.currentPalette.value.isLight,
+              ),
+              boxShadow: PrismShadows.floating(
+                isLight: AppThemeService.currentPalette.value.isLight,
+              ),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          color: palette.primaryColor,
+                          size: 20,
                         ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
-                  const SizedBox(height: 12),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Customize Portals Modal',
+                          style: TextStyle(
+                            color: _ink,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: _inkSoft,
+                            size: 20,
+                          ),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(color: _hairline),
+                    const SizedBox(height: 12),
 
-                  const Text(
-                    'Card Display Style',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  ValueListenableBuilder<PortalCardStyle>(
-                    valueListenable: IptvSettings.portalCardStyle,
-                    builder: (context, style, _) {
-                      return Row(
-                        children: PortalCardStyle.values.map((s) {
-                          final isSelected = s == style;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(s.label),
-                              selected: isSelected,
-                              selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                              backgroundColor: DizzyVoid.voidB,
+                    Text(
+                      'Card Display Style',
+                      style: TextStyle(
+                        color: _ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<PortalCardStyle>(
+                      valueListenable: IptvSettings.portalCardStyle,
+                      builder: (context, style, _) {
+                        return Row(
+                          children: PortalCardStyle.values.map((s) {
+                            final isSelected = s == style;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(s.label),
+                                selected: isSelected,
+                                selectedColor: palette.primaryColor.withValues(
+                                  alpha: 0.25,
+                                ),
+                                backgroundColor: _well,
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? PrismAccent.text(palette.isLight)
+                                      : _inkSoft,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? palette.primaryColor.withValues(
+                                          alpha: 0.6,
+                                        )
+                                      : _hairline,
+                                ),
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    IptvSettings.setPortalCardStyle(s);
+                                  }
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    ValueListenableBuilder<bool>(
+                      valueListenable: IptvSettings.showPortalExpiry,
+                      builder: (context, showExpiry, _) {
+                        return SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Show Portal Expiry Date',
+                            style: TextStyle(color: _ink, fontSize: 13.5),
+                          ),
+                          value: showExpiry,
+                          activeColor: palette.primaryColor,
+                          onChanged: (val) =>
+                              IptvSettings.setShowPortalExpiry(val),
+                        );
+                      },
+                    ),
+
+                    ValueListenableBuilder<bool>(
+                      valueListenable: IptvSettings.showPortalConnections,
+                      builder: (context, showConn, _) {
+                        return SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Show Max Connections',
+                            style: TextStyle(color: _ink, fontSize: 13.5),
+                          ),
+                          value: showConn,
+                          activeColor: palette.primaryColor,
+                          onChanged: (val) =>
+                              IptvSettings.setShowPortalConnections(val),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      'Default Starting Tab',
+                      style: TextStyle(
+                        color: _ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<int>(
+                      valueListenable: IptvSettings.defaultPortalTab,
+                      builder: (context, tabIdx, _) {
+                        return Row(
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Xtream Panels'),
+                              selected: tabIdx == 0,
+                              selectedColor: palette.primaryColor.withValues(
+                                alpha: 0.25,
+                              ),
+                              backgroundColor: _well,
                               labelStyle: TextStyle(
-                                color: isSelected ? palette.primaryColor : Colors.white70,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                                color: tabIdx == 0
+                                    ? PrismAccent.text(palette.isLight)
+                                    : _inkSoft,
+                                fontWeight: tabIdx == 0
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
                                 fontSize: 12,
                               ),
                               side: BorderSide(
-                                color: isSelected
-                                    ? palette.primaryColor.withValues(alpha: 0.6)
-                                    : Colors.white.withValues(alpha: 0.08),
+                                color: tabIdx == 0
+                                    ? palette.primaryColor.withValues(
+                                        alpha: 0.6,
+                                      )
+                                    : _hairline,
                               ),
                               onSelected: (selected) {
-                                if (selected) IptvSettings.setPortalCardStyle(s);
+                                if (selected) {
+                                  IptvSettings.setDefaultPortalTab(0);
+                                }
                               },
                             ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  ValueListenableBuilder<bool>(
-                    valueListenable: IptvSettings.showPortalExpiry,
-                    builder: (context, showExpiry, _) {
-                      return SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Show Portal Expiry Date', style: TextStyle(color: Colors.white, fontSize: 13.5)),
-                        value: showExpiry,
-                        activeColor: palette.primaryColor,
-                        onChanged: (val) => IptvSettings.setShowPortalExpiry(val),
-                      );
-                    },
-                  ),
-
-                  ValueListenableBuilder<bool>(
-                    valueListenable: IptvSettings.showPortalConnections,
-                    builder: (context, showConn, _) {
-                      return SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Show Max Connections', style: TextStyle(color: Colors.white, fontSize: 13.5)),
-                        value: showConn,
-                        activeColor: palette.primaryColor,
-                        onChanged: (val) => IptvSettings.setShowPortalConnections(val),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  const Text(
-                    'Default Starting Tab',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  ValueListenableBuilder<int>(
-                    valueListenable: IptvSettings.defaultPortalTab,
-                    builder: (context, tabIdx, _) {
-                      return Row(
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Xtream Panels'),
-                            selected: tabIdx == 0,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: DizzyVoid.voidB,
-                            labelStyle: TextStyle(
-                              color: tabIdx == 0 ? palette.primaryColor : Colors.white70,
-                              fontWeight: tabIdx == 0 ? FontWeight.w800 : FontWeight.w500,
-                              fontSize: 12,
+                            const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: const Text('M3U Playlists'),
+                              selected: tabIdx == 1,
+                              selectedColor: palette.primaryColor.withValues(
+                                alpha: 0.25,
+                              ),
+                              backgroundColor: _well,
+                              labelStyle: TextStyle(
+                                color: tabIdx == 1
+                                    ? PrismAccent.text(palette.isLight)
+                                    : _inkSoft,
+                                fontWeight: tabIdx == 1
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                              side: BorderSide(
+                                color: tabIdx == 1
+                                    ? palette.primaryColor.withValues(
+                                        alpha: 0.6,
+                                      )
+                                    : _hairline,
+                              ),
+                              onSelected: (selected) {
+                                if (selected) {
+                                  IptvSettings.setDefaultPortalTab(1);
+                                }
+                              },
                             ),
-                            side: BorderSide(
-                              color: tabIdx == 0
-                                  ? palette.primaryColor.withValues(alpha: 0.6)
-                                  : Colors.white.withValues(alpha: 0.08),
-                            ),
-                            onSelected: (selected) {
-                              if (selected) IptvSettings.setDefaultPortalTab(0);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          ChoiceChip(
-                            label: const Text('M3U Playlists'),
-                            selected: tabIdx == 1,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: DizzyVoid.voidB,
-                            labelStyle: TextStyle(
-                              color: tabIdx == 1 ? palette.primaryColor : Colors.white70,
-                              fontWeight: tabIdx == 1 ? FontWeight.w800 : FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                            side: BorderSide(
-                              color: tabIdx == 1
-                                  ? palette.primaryColor.withValues(alpha: 0.6)
-                                  : Colors.white.withValues(alpha: 0.08),
-                            ),
-                            onSelected: (selected) {
-                              if (selected) IptvSettings.setDefaultPortalTab(1);
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -378,100 +463,132 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
       animation: _ctrl,
       builder: (context, _) {
         return Dialog(
-          backgroundColor: DizzyVoid.voidB,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 480;
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: PrismShadows.surfaceGradient(
+                AppThemeService.currentPalette.value.isLight,
+              ),
+              boxShadow: PrismShadows.floating(
+                isLight: AppThemeService.currentPalette.value.isLight,
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 480;
 
-              return ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680, maxHeight: 680),
-                child: Column(
-                  children: [
-                    // Header
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(isMobile ? 14 : 20, isMobile ? 14 : 18, isMobile ? 10 : 16, 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(isMobile ? 6 : 8),
-                            decoration: BoxDecoration(
-                              color: palette.primaryColor.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.settings_input_antenna_rounded,
-                              color: palette.primaryColor,
-                              size: isMobile ? 19 : 22,
-                            ),
-                          ),
-                          SizedBox(width: isMobile ? 8 : 12),
-                          Expanded(
-                            child: Text(
-                              'IPTV Portals & Playlists',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isMobile ? 16 : 19,
-                                fontWeight: FontWeight.w900,
+                return ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 680,
+                    maxHeight: 680,
+                  ),
+                  child: Column(
+                    children: [
+                      // Header
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          isMobile ? 14 : 20,
+                          isMobile ? 14 : 18,
+                          isMobile ? 10 : 16,
+                          10,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(isMobile ? 6 : 8),
+                              decoration: BoxDecoration(
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.18,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              child: Icon(
+                                Icons.settings_input_antenna_rounded,
+                                color: palette.primaryColor,
+                                size: isMobile ? 19 : 22,
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.tune_rounded, color: Colors.white70, size: 19),
-                            tooltip: 'Customize Modal Style',
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(),
-                            onPressed: () => _openModalCustomizer(context),
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
+                            SizedBox(width: isMobile ? 8 : 12),
+                            Expanded(
+                              child: Text(
+                                'IPTV Portals & Playlists',
+                                style: TextStyle(
+                                  color: _ink,
+                                  fontSize: isMobile ? 16 : 19,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.tune_rounded,
+                                color: _inkSoft,
+                                size: 19,
+                              ),
+                              tooltip: 'Customize Modal Style',
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _openModalCustomizer(context),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: _inkSoft,
+                                size: 20,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    // Tab Bar
-                    TabBar(
-                      controller: _tabController,
-                      indicatorColor: palette.primaryColor,
-                      indicatorWeight: 3,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white54,
-                      labelStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: isMobile ? 12.5 : 14),
-                      unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: isMobile ? 12.5 : 14),
-                      tabs: [
-                        Tab(text: 'Xtream Panels (${_ctrl.verified.length})'),
-                        Tab(text: 'M3U Playlists (${_ctrl.m3uPlaylists.length})'),
-                      ],
-                    ),
-
-                    const Divider(color: Colors.white10, height: 1),
-
-                    // Tab Views
-                    Expanded(
-                      child: TabBarView(
+                      // Tab Bar
+                      TabBar(
                         controller: _tabController,
-                        children: [
-                          _buildPortalsTab(),
-                          _buildM3uTab(),
+                        indicatorColor: palette.primaryColor,
+                        indicatorWeight: 3,
+                        labelColor: _ink,
+                        unselectedLabelColor: _inkSoft,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: isMobile ? 12.5 : 14,
+                        ),
+                        unselectedLabelStyle: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: isMobile ? 12.5 : 14,
+                        ),
+                        tabs: [
+                          Tab(text: 'Xtream Panels (${_ctrl.verified.length})'),
+                          Tab(
+                            text:
+                                'M3U Playlists (${_ctrl.m3uPlaylists.length})',
+                          ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
+
+                      Divider(color: _hairline, height: 1),
+
+                      // Tab Views
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [_buildPortalsTab(), _buildM3uTab()],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         );
       },
@@ -481,7 +598,9 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
   Widget _buildPortalsTab() {
     final palette = AppThemeService.currentPalette.value;
     final currentList = _filteredPortals;
-    final allSelected = currentList.isNotEmpty && _selectedPortalKeys.length == currentList.length;
+    final allSelected =
+        currentList.isNotEmpty &&
+        _selectedPortalKeys.length == currentList.length;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -497,21 +616,36 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: palette.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                 ),
                 icon: _ctrl.isScraping
                     ? const SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Icon(Icons.radar_rounded, size: 16, color: Colors.white),
+                    : const Icon(
+                        Icons.radar_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                 label: Text(
                   _ctrl.isScraping
                       ? 'Finding ${_ctrl.scrapeSource == CatalogSource.cloudVault ? 'Cloud Vault' : 'Reddit'}…'
                       : 'Generate Portals',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 onPressed: _ctrl.isScraping ? null : _ctrl.scrape,
               ),
@@ -526,15 +660,18 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                  side: BorderSide(color: _hairline),
                 ),
-                color: DizzyVoid.surface1,
+                color: _panel,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9.5,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: _well,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    border: Border.all(color: _hairline),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -550,15 +687,21 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _ctrl.scrapeSource == CatalogSource.cloudVault ? 'Cloud Vault' : 'Reddit',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        _ctrl.scrapeSource == CatalogSource.cloudVault
+                            ? 'Cloud Vault'
+                            : 'Reddit',
+                        style: TextStyle(
+                          color: _ink,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.arrow_drop_down_rounded, size: 18, color: Colors.white70),
+                      Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 18,
+                        color: _inkSoft,
+                      ),
                     ],
                   ),
                 ),
@@ -568,7 +711,11 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.cloud_done_rounded, color: Color(0xFF00E5FF), size: 18),
+                        const Icon(
+                          Icons.cloud_done_rounded,
+                          color: Color(0xFF00E5FF),
+                          size: 18,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -577,27 +724,40 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                             children: [
                               Row(
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Cloud Vault',
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: TextStyle(
+                                      color: _ink,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                   const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 1,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.2),
+                                      color: const Color(
+                                        0xFF00E5FF,
+                                      ).withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Text(
                                       '9.6k+',
-                                      style: TextStyle(color: Color(0xFF00E5FF), fontSize: 9.5, fontWeight: FontWeight.w800),
+                                      style: TextStyle(
+                                        color: Color(0xFF00E5FF),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const Text(
+                              Text(
                                 'High-speed cloud database with live IPTV servers',
-                                style: TextStyle(color: Colors.white60, fontSize: 10.5),
+                                style: TextStyle(color: _inkSoft, fontSize: 11),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -607,13 +767,17 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: CatalogSource.reddit,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.forum_rounded, color: Color(0xFFFF5722), size: 18),
-                        SizedBox(width: 10),
+                        const Icon(
+                          Icons.forum_rounded,
+                          color: Color(0xFFFF5722),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,11 +785,15 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                             children: [
                               Text(
                                 'Reddit Communities',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(
+                                  color: _ink,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                               Text(
                                 'Scrapes live shared pastes from subreddits',
-                                style: TextStyle(color: Colors.white60, fontSize: 10.5),
+                                style: TextStyle(color: _inkSoft, fontSize: 11),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -640,13 +808,21 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
 
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  foregroundColor: _ink,
+                  side: BorderSide(color: _hairline),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                 ),
                 icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Add Portal', style: TextStyle(fontWeight: FontWeight.w700)),
+                label: const Text(
+                  'Add Portal',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
                 onPressed: () => setState(() {
                   _showAddForm = !_showAddForm;
                 }),
@@ -655,15 +831,36 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
               if (_ctrl.verified.isNotEmpty)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _isPortalsEditMode ? const Color(0xFF00D2EF) : Colors.white,
+                    foregroundColor: _isPortalsEditMode
+                        ? (_isLight
+                              ? palette.primaryColor
+                              : const Color(0xFF00D2EF))
+                        : _ink,
                     side: BorderSide(
-                      color: _isPortalsEditMode ? const Color(0xFF00D2EF) : Colors.white.withValues(alpha: 0.2),
+                      color: _isPortalsEditMode
+                          ? (_isLight
+                                ? palette.primaryColor
+                                : const Color(0xFF00D2EF))
+                          : _hairline,
                     ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
-                  icon: Icon(_isPortalsEditMode ? Icons.edit_off_rounded : Icons.edit_rounded, size: 16),
-                  label: Text(_isPortalsEditMode ? 'Done' : 'Manage', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  icon: Icon(
+                    _isPortalsEditMode
+                        ? Icons.edit_off_rounded
+                        : Icons.edit_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    _isPortalsEditMode ? 'Done' : 'Manage',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   onPressed: () {
                     setState(() {
                       _isPortalsEditMode = !_isPortalsEditMode;
@@ -682,7 +879,9 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
               decoration: BoxDecoration(
                 color: const Color(0xFF7C5CFF).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: const Color(0xFF7C5CFF).withValues(alpha: 0.3),
+                ),
               ),
               child: Wrap(
                 spacing: 8,
@@ -695,19 +894,29 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                     children: [
                       TextButton.icon(
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          foregroundColor: _ink,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         icon: Icon(
-                          allSelected ? Icons.deselect_rounded : Icons.select_all_rounded,
+                          allSelected
+                              ? Icons.deselect_rounded
+                              : Icons.select_all_rounded,
                           size: 17,
-                          color: const Color(0xFF00D2EF),
+                          color: _isLight
+                              ? palette.primaryColor
+                              : const Color(0xFF00D2EF),
                         ),
                         label: Text(
                           allSelected ? 'Deselect All' : 'Select All',
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
                         ),
                         onPressed: () {
                           setState(() {
@@ -715,7 +924,9 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                               _selectedPortalKeys.clear();
                             } else {
                               _selectedPortalKeys.clear();
-                              _selectedPortalKeys.addAll(currentList.map((v) => v.key));
+                              _selectedPortalKeys.addAll(
+                                currentList.map((v) => v.key),
+                              );
                             }
                           });
                         },
@@ -724,7 +935,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       Text(
                         '(${_selectedPortalKeys.length}/${currentList.length})',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: _inkSoft,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -742,30 +953,57 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                           backgroundColor: Colors.redAccent,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         icon: const Icon(Icons.delete_rounded, size: 14),
                         label: Text(
                           'Delete (${_selectedPortalKeys.length})',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        onPressed: _selectedPortalKeys.isEmpty ? null : _deleteSelectedPortals,
+                        onPressed: _selectedPortalKeys.isEmpty
+                            ? null
+                            : _deleteSelectedPortals,
                       ),
                       // Delete All
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          foregroundColor: _isLight
+                              ? PrismAccent.accentTextLight
+                              : Colors.redAccent,
+                          side: BorderSide(
+                            color: _isLight
+                                ? PrismAccent.accentTextLight
+                                : Colors.redAccent,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         onPressed: _deleteAllPortals,
-                        child: const Text('Delete All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Delete All',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -778,7 +1016,11 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
             const SizedBox(height: 10),
             Text(
               _ctrl.statusText,
-              style: const TextStyle(color: Color(0xFF00D2EF), fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: _isLight ? PrismLight.inkSoft : const Color(0xFF00D2EF),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
 
@@ -788,19 +1030,21 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: _well,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: _hairline),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Add Xtream Codes Portal',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  Text(
+                    'Add Xtream Codes Portal',
+                    style: TextStyle(color: _ink, fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _urlCtrl,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: TextStyle(color: _ink, fontSize: 13),
                     decoration: const InputDecoration(
                       labelText: 'Server URL (e.g. http://example.com:8080)',
                       isDense: true,
@@ -813,7 +1057,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       Expanded(
                         child: TextField(
                           controller: _userCtrl,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(color: _ink, fontSize: 13),
                           decoration: const InputDecoration(
                             labelText: 'Username',
                             isDense: true,
@@ -825,7 +1069,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       Expanded(
                         child: TextField(
                           controller: _passCtrl,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(color: _ink, fontSize: 13),
                           decoration: const InputDecoration(
                             labelText: 'Password',
                             isDense: true,
@@ -837,19 +1081,30 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                   ),
                   if (_ctrl.addError != null) ...[
                     const SizedBox(height: 6),
-                    Text(_ctrl.addError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                    Text(
+                      _ctrl.addError!,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C5CFF)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C5CFF),
+                      ),
                       onPressed: _ctrl.isAdding ? null : _submitAddPortal,
                       child: _ctrl.isAdding
                           ? const SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('Verify & Save'),
                     ),
@@ -868,7 +1123,12 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  _buildSourceChip('all', 'All (${_ctrl.verified.length})', Icons.apps_rounded, palette),
+                  _buildSourceChip(
+                    'all',
+                    'All (${_ctrl.verified.length})',
+                    Icons.apps_rounded,
+                    palette,
+                  ),
                   const SizedBox(width: 6),
                   _buildSourceChip(
                     'custom',
@@ -933,215 +1193,332 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                   final isFav = _ctrl.isFavoritePortal(p.key);
                   final isSelected = _selectedPortalKeys.contains(p.key);
 
-                      final isRich = IptvSettings.portalCardStyle.value == PortalCardStyle.rich;
-                      final showExp = IptvSettings.showPortalExpiry.value && p.expiry.isNotEmpty;
-                      final showConn = IptvSettings.showPortalConnections.value && p.maxConnections.isNotEmpty;
+                  final isRich =
+                      IptvSettings.portalCardStyle.value ==
+                      PortalCardStyle.rich;
+                  final showExp =
+                      IptvSettings.showPortalExpiry.value &&
+                      p.expiry.isNotEmpty;
+                  final showConn =
+                      IptvSettings.showPortalConnections.value &&
+                      p.maxConnections.isNotEmpty;
 
-                      return MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          onTapDown: (details) => _tapPosition = details.globalPosition,
-                          onTap: () {
-                            if (_isPortalsEditMode) {
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedPortalKeys.remove(p.key);
-                                } else {
-                                  _selectedPortalKeys.add(p.key);
-                                }
-                              });
+                  return MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTapDown: (details) =>
+                          _tapPosition = details.globalPosition,
+                      onTap: () {
+                        if (_isPortalsEditMode) {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedPortalKeys.remove(p.key);
                             } else {
-                              final tapPos = _tapPosition;
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                LiquidRevealRoute(
-                                  page: IptvPortalBrowserPage(portal: p),
-                                  tapPosition: tapPos,
-                                ),
-                              );
+                              _selectedPortalKeys.add(p.key);
                             }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 14, vertical: isRich ? 12 : 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? palette.primaryColor.withValues(alpha: 0.15)
-                                  : Colors.white.withValues(alpha: 0.04),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? palette.primaryColor
-                                    : Colors.white.withValues(alpha: 0.08),
-                                width: isSelected ? 1.5 : 1.0,
-                              ),
+                          });
+                        } else {
+                          final tapPos = _tapPosition;
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            LiquidRevealRoute(
+                              page: IptvPortalBrowserPage(portal: p),
+                              tapPosition: tapPos,
                             ),
-                            child: Row(
-                              children: [
-                                if (_isPortalsEditMode)
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    margin: const EdgeInsets.only(right: 12),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? palette.primaryColor : Colors.transparent,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected ? palette.primaryColor : Colors.white38,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: isSelected
-                                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 15)
-                                        : null,
-                                  )
-                                else ...[
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.greenAccent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                ],
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.name.isNotEmpty ? p.name : p.portal.url,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 4,
-                                        crossAxisAlignment: WrapCrossAlignment.center,
-                                        children: [
-                                          Text(
-                                            p.portal.url,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
-                                          ),
-                                          if (showExp)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: palette.primaryColor.withValues(alpha: 0.15),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                'Exp: ${p.expiry}',
-                                                style: TextStyle(color: palette.primaryColor, fontSize: 10, fontWeight: FontWeight.w700),
-                                              ),
-                                            ),
-                                          if (showConn)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.08),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                'Conn: ${p.activeConnections}/${p.maxConnections}',
-                                                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                          if (p.portal.source.isNotEmpty)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                              decoration: BoxDecoration(
-                                                color: p.portal.source.toLowerCase().contains('cloud') || p.portal.source.toLowerCase().contains('vault')
-                                                    ? const Color(0xFF00E5FF).withValues(alpha: 0.15)
-                                                    : (p.portal.source.toLowerCase().contains('reddit')
-                                                        ? const Color(0xFFFF5722).withValues(alpha: 0.15)
-                                                        : Colors.white.withValues(alpha: 0.08)),
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                p.portal.source,
-                                                style: TextStyle(
-                                                  color: p.portal.source.toLowerCase().contains('cloud') || p.portal.source.toLowerCase().contains('vault')
-                                                      ? const Color(0xFF00E5FF)
-                                                      : (p.portal.source.toLowerCase().contains('reddit')
-                                                          ? const Color(0xFFFF7043)
-                                                          : Colors.white70),
-                                                  fontSize: 9.5,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.copy_rounded, color: Colors.white54, size: 18),
-                                  tooltip: 'Copy Login (url:username:password)',
-                                  onPressed: () {
-                                    final text = '${p.portal.url}:${p.portal.username}:${p.portal.password}';
-                                    Clipboard.setData(ClipboardData(text: text));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Copied: $text'),
-                                        duration: const Duration(seconds: 2),
-                                        backgroundColor: DizzyVoid.surface2,
-                                      ),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    isFav ? Icons.star_rounded : Icons.star_outline_rounded,
-                                    color: isFav ? DizzyGlow.gold : Colors.white38,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _ctrl.toggleFavoritePortal(p.key),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                                  onPressed: () => _ctrl.deletePortalsByKeys({p.key}),
-                                ),
-                                const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 20),
-                              ],
-                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: isRich ? 12 : 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? palette.primaryColor.withValues(alpha: 0.15)
+                              : Colors.white.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? palette.primaryColor
+                                : Colors.white.withValues(alpha: 0.08),
+                            width: isSelected ? 1.5 : 1.0,
                           ),
                         ),
-                      );
-                    },
+                        child: Row(
+                          children: [
+                            if (_isPortalsEditMode)
+                              Container(
+                                width: 24,
+                                height: 24,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? palette.primaryColor
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? palette.primaryColor
+                                        : Colors.white38,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Icon(
+                                        Icons.check_rounded,
+                                        color: Colors.white,
+                                        size: 15,
+                                      )
+                                    : null,
+                              )
+                            else ...[
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.greenAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    p.name.isNotEmpty ? p.name : p.portal.url,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        p.portal.url,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      if (showExp)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: palette.primaryColor
+                                                .withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Exp: ${p.expiry}',
+                                            style: TextStyle(
+                                              color: palette.primaryColor,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      if (showConn)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Conn: ${p.activeConnections}/${p.maxConnections}',
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      if (p.portal.source.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                p.portal.source
+                                                        .toLowerCase()
+                                                        .contains('cloud') ||
+                                                    p.portal.source
+                                                        .toLowerCase()
+                                                        .contains('vault')
+                                                ? const Color(
+                                                    0xFF00E5FF,
+                                                  ).withValues(alpha: 0.15)
+                                                : (p.portal.source
+                                                          .toLowerCase()
+                                                          .contains('reddit')
+                                                      ? const Color(
+                                                          0xFFFF5722,
+                                                        ).withValues(
+                                                          alpha: 0.15,
+                                                        )
+                                                      : Colors.white.withValues(
+                                                          alpha: 0.08,
+                                                        )),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            p.portal.source,
+                                            style: TextStyle(
+                                              color:
+                                                  p.portal.source
+                                                          .toLowerCase()
+                                                          .contains('cloud') ||
+                                                      p.portal.source
+                                                          .toLowerCase()
+                                                          .contains('vault')
+                                                  ? const Color(0xFF00E5FF)
+                                                  : (p.portal.source
+                                                            .toLowerCase()
+                                                            .contains('reddit')
+                                                        ? const Color(
+                                                            0xFFFF7043,
+                                                          )
+                                                        : Colors.white70),
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.copy_rounded,
+                                color: Colors.white54,
+                                size: 18,
+                              ),
+                              tooltip: 'Copy Login (url:username:password)',
+                              onPressed: () {
+                                final text =
+                                    '${p.portal.url}:${p.portal.username}:${p.portal.password}';
+                                Clipboard.setData(ClipboardData(text: text));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Copied: $text',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                    backgroundColor: DizzyVoid.surface2,
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                isFav
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                color: isFav ? DizzyGlow.gold : Colors.white38,
+                                size: 20,
+                              ),
+                              onPressed: () =>
+                                  _ctrl.toggleFavoritePortal(p.key),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.redAccent,
+                                size: 20,
+                              ),
+                              onPressed: () =>
+                                  _ctrl.deletePortalsByKeys({p.key}),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.white38,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   );
-                }(),
+                },
+              );
+            }(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSourceChip(String filterKey, String label, IconData icon, AppThemePalette palette, {Color? activeColor}) {
+  Widget _buildSourceChip(
+    String filterKey,
+    String label,
+    IconData icon,
+    AppThemePalette palette, {
+    Color? activeColor,
+  }) {
     final isSelected = _portalSourceFilter == filterKey;
     final color = activeColor ?? palette.primaryColor;
+    final isLight = palette.isLight;
 
     return ChoiceChip(
-      avatar: Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.white60),
+      avatar: Icon(
+        icon,
+        size: 14,
+        color: isSelected
+            ? PrismAccent.onAccent
+            : (isLight ? PrismLight.inkSoft : Colors.white60),
+      ),
       label: Text(label),
       selected: isSelected,
       selectedColor: color.withValues(alpha: 0.3),
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: isLight ? PrismLight.raisedBottom : DizzyVoid.surface1,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.white70,
+        color: isSelected
+            ? (isLight ? PrismAccent.text(true) : Colors.white)
+            : (isLight ? PrismLight.inkSoft : Colors.white70),
         fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
         fontSize: 11.5,
       ),
       side: BorderSide(
-        color: isSelected ? color : Colors.white.withValues(alpha: 0.1),
+        color: isSelected
+            ? color
+            : (isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.1)),
         width: isSelected ? 1.5 : 1.0,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1157,7 +1534,9 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
 
   Widget _buildM3uTab() {
     final palette = AppThemeService.currentPalette.value;
-    final allSelected = _ctrl.m3uPlaylists.isNotEmpty && _selectedM3uIds.length == _ctrl.m3uPlaylists.length;
+    final allSelected =
+        _ctrl.m3uPlaylists.isNotEmpty &&
+        _selectedM3uIds.length == _ctrl.m3uPlaylists.length;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -1169,11 +1548,26 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: palette.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                 ),
-                icon: const Icon(Icons.playlist_add_rounded, size: 18, color: Colors.white),
-                label: const Text('Add M3U URL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                icon: const Icon(
+                  Icons.playlist_add_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'Add M3U URL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 onPressed: () => setState(() => _showM3uForm = !_showM3uForm),
               ),
 
@@ -1181,15 +1575,32 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _isM3uEditMode ? const Color(0xFF00D2EF) : Colors.white,
+                    foregroundColor: _isM3uEditMode
+                        ? const Color(0xFF00D2EF)
+                        : Colors.white,
                     side: BorderSide(
-                      color: _isM3uEditMode ? const Color(0xFF00D2EF) : Colors.white.withValues(alpha: 0.2),
+                      color: _isM3uEditMode
+                          ? const Color(0xFF00D2EF)
+                          : Colors.white.withValues(alpha: 0.2),
                     ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
-                  icon: Icon(_isM3uEditMode ? Icons.edit_off_rounded : Icons.edit_rounded, size: 16),
-                  label: Text(_isM3uEditMode ? 'Done' : 'Manage', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  icon: Icon(
+                    _isM3uEditMode
+                        ? Icons.edit_off_rounded
+                        : Icons.edit_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    _isM3uEditMode ? 'Done' : 'Manage',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   onPressed: () {
                     setState(() {
                       _isM3uEditMode = !_isM3uEditMode;
@@ -1209,7 +1620,9 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
               decoration: BoxDecoration(
                 color: palette.primaryColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: palette.primaryColor.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: palette.primaryColor.withValues(alpha: 0.3),
+                ),
               ),
               child: Wrap(
                 spacing: 8,
@@ -1222,19 +1635,29 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                     children: [
                       TextButton.icon(
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          foregroundColor: _ink,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         icon: Icon(
-                          allSelected ? Icons.deselect_rounded : Icons.select_all_rounded,
+                          allSelected
+                              ? Icons.deselect_rounded
+                              : Icons.select_all_rounded,
                           size: 17,
-                          color: const Color(0xFF00D2EF),
+                          color: _isLight
+                              ? palette.primaryColor
+                              : const Color(0xFF00D2EF),
                         ),
                         label: Text(
                           allSelected ? 'Deselect All' : 'Select All',
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
                         ),
                         onPressed: () {
                           setState(() {
@@ -1242,7 +1665,9 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                               _selectedM3uIds.clear();
                             } else {
                               _selectedM3uIds.clear();
-                              _selectedM3uIds.addAll(_ctrl.m3uPlaylists.map((pl) => pl.id));
+                              _selectedM3uIds.addAll(
+                                _ctrl.m3uPlaylists.map((pl) => pl.id),
+                              );
                             }
                           });
                         },
@@ -1251,7 +1676,7 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       Text(
                         '(${_selectedM3uIds.length}/${_ctrl.m3uPlaylists.length})',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: _inkSoft,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1269,30 +1694,57 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                           backgroundColor: Colors.redAccent,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         icon: const Icon(Icons.delete_rounded, size: 14),
                         label: Text(
                           'Delete (${_selectedM3uIds.length})',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        onPressed: _selectedM3uIds.isEmpty ? null : _deleteSelectedM3u,
+                        onPressed: _selectedM3uIds.isEmpty
+                            ? null
+                            : _deleteSelectedM3u,
                       ),
                       // Delete All
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          foregroundColor: _isLight
+                              ? PrismAccent.accentTextLight
+                              : Colors.redAccent,
+                          side: BorderSide(
+                            color: _isLight
+                                ? PrismAccent.accentTextLight
+                                : Colors.redAccent,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         onPressed: _deleteAllM3u,
-                        child: const Text('Delete All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Delete All',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1306,15 +1758,20 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: _well,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: _hairline),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Add M3U Playlist Subscription',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Add M3U Playlist Subscription',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: _m3uNameCtrl,
@@ -1339,13 +1796,18 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C5CFF)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C5CFF),
+                      ),
                       onPressed: _ctrl.isM3uLoading ? null : _submitAddM3u,
                       child: _ctrl.isM3uLoading
                           ? const SizedBox(
                               width: 14,
                               height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('Fetch & Save'),
                     ),
@@ -1360,7 +1822,10 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
           Expanded(
             child: _ctrl.m3uPlaylists.isEmpty
                 ? const Center(
-                    child: Text('No M3U playlists saved.', style: TextStyle(color: Colors.white54)),
+                    child: Text(
+                      'No M3U playlists saved.',
+                      style: TextStyle(color: Colors.white54),
+                    ),
                   )
                 : ListView.separated(
                     itemCount: _ctrl.m3uPlaylists.length,
@@ -1372,7 +1837,8 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                       return MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                          onTapDown: (details) => _tapPosition = details.globalPosition,
+                          onTapDown: (details) =>
+                              _tapPosition = details.globalPosition,
                           onTap: () {
                             if (_isM3uEditMode) {
                               setState(() {
@@ -1395,7 +1861,10 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? palette.primaryColor.withValues(alpha: 0.15)
@@ -1416,48 +1885,83 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                                     height: 24,
                                     margin: const EdgeInsets.only(right: 12),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? palette.primaryColor : Colors.transparent,
+                                      color: isSelected
+                                          ? palette.primaryColor
+                                          : Colors.transparent,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: isSelected ? palette.primaryColor : Colors.white38,
+                                        color: isSelected
+                                            ? palette.primaryColor
+                                            : Colors.white38,
                                         width: 2,
                                       ),
                                     ),
                                     child: isSelected
-                                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 15)
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 15,
+                                          )
                                         : null,
                                   )
                                 else ...[
-                                  Icon(Icons.queue_music_rounded, color: palette.primaryColor, size: 20),
+                                  Icon(
+                                    Icons.queue_music_rounded,
+                                    color: palette.primaryColor,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 12),
                                 ],
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         pl.name,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
+                                        ),
                                       ),
                                       Text(
                                         '${pl.channels.length} channels ${pl.sourceUrl != null ? '· ${pl.sourceUrl!}' : ''}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          fontSize: 11,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.copy_rounded, color: Colors.white54, size: 18),
+                                  icon: const Icon(
+                                    Icons.copy_rounded,
+                                    color: Colors.white54,
+                                    size: 18,
+                                  ),
                                   tooltip: 'Copy Playlist URL',
                                   onPressed: () {
                                     final text = pl.sourceUrl ?? '';
                                     if (text.isNotEmpty) {
-                                      Clipboard.setData(ClipboardData(text: text));
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      Clipboard.setData(
+                                        ClipboardData(text: text),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(
-                                          content: Text('Copied: $text'),
+                                          content: Text(
+                                            'Copied: $text',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                           duration: const Duration(seconds: 2),
                                           backgroundColor: DizzyVoid.surface2,
                                         ),
@@ -1466,10 +1970,19 @@ class _IptvPortalsModalState extends State<IptvPortalsModal>
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                                  onPressed: () => _ctrl.deleteM3uPlaylist(pl.id),
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Colors.redAccent,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      _ctrl.deleteM3uPlaylist(pl.id),
                                 ),
-                                const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 20),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: Colors.white38,
+                                  size: 20,
+                                ),
                               ],
                             ),
                           ),

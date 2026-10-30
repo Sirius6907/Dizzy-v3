@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 
-import '../../services/theme/app_theme_service.dart';
+import 'player_glass.dart';
 
 /// Callbacks the host player screen must provide.
 class PlayerGestureHost {
@@ -132,13 +132,15 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
       _sideMode = _SideDragMode.brightness;
       _dragStartValue = _liveValue = 1;
       if (_brightnessSupported) {
-        ScreenBrightness.instance.application.then((v) {
-          if (mounted) {
-            _dragStartValue = _liveValue = v.clamp(0.05, 1.0);
-          }
-        }).catchError((_) {
-          _brightnessSupported = false;
-        });
+        ScreenBrightness.instance.application
+            .then((v) {
+              if (mounted) {
+                _dragStartValue = _liveValue = v.clamp(0.05, 1.0);
+              }
+            })
+            .catchError((_) {
+              _brightnessSupported = false;
+            });
       }
     }
   }
@@ -148,7 +150,8 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
     final totalMs = widget.host.duration().inMilliseconds;
     if (totalMs <= 0) return;
 
-    final horizontal = (d.localPosition.dy - _dragStartDy).abs() <
+    final horizontal =
+        (d.localPosition.dy - _dragStartDy).abs() <
         (d.localPosition.dx - _dragStartDx).abs();
 
     if (horizontal || _seeking) {
@@ -183,9 +186,9 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
         ScreenBrightness.instance
             .setApplicationScreenBrightness(next.clamp(0.05, 1.0))
             .catchError((_) {
-          _brightnessSupported = false;
-          return null;
-        });
+              _brightnessSupported = false;
+              return null;
+            });
       }
     } else {
       widget.host.setVolume(next);
@@ -281,12 +284,13 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
     );
   }
 
-  Color get _accentColor => AppThemeService.currentPalette.value.primaryColor;
+  Color get _accentColor => PlayerTheme.accent;
 
   Widget _buildSeekHud() {
     final total = widget.host.duration();
     final diff = _seekTarget - _seekFrom;
     final sign = diff.isNegative ? '- ' : '+ ';
+    final forward = !diff.isNegative;
 
     return Container(
       color: Colors.black.withValues(alpha: 0.25),
@@ -301,7 +305,11 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.fast_forward_rounded, color: _accentColor, size: 34),
+            Icon(
+              forward ? Icons.fast_forward_rounded : Icons.fast_rewind_rounded,
+              color: _accentColor,
+              size: 34,
+            ),
             const SizedBox(height: 10),
             Text(
               _fmt(_seekTarget),
@@ -330,15 +338,15 @@ class _PlayerGestureLayerState extends State<PlayerGestureLayer> {
     final value = _liveValue;
     final icon = isBrightness
         ? (value > 0.55
-            ? Icons.brightness_high_rounded
-            : value > 0.15
-                ? Icons.brightness_4_rounded
-                : Icons.brightness_low_rounded)
+              ? Icons.brightness_high_rounded
+              : value > 0.15
+              ? Icons.brightness_4_rounded
+              : Icons.brightness_low_rounded)
         : (value <= 0.0
-            ? Icons.volume_off_rounded
-            : value > 0.55
-                ? Icons.volume_up_rounded
-                : Icons.volume_down_rounded);
+              ? Icons.volume_off_rounded
+              : value > 0.55
+              ? Icons.volume_up_rounded
+              : Icons.volume_down_rounded);
     final label = isBrightness ? 'Brightness' : 'Volume';
 
     return Container(

@@ -24,7 +24,8 @@ abstract final class DiscoverCopy {
   // ── Rails ─────────────────────────────────────────────────────────────────
   static const String musicRailTitle = 'Smart Mix';
   static const String musicRailSubtitle = 'Your mixes, ready to play';
-  static const String musicEmpty = 'Like a few songs and mixes will build here.';
+  static const String musicEmpty =
+      'Like a few songs and mixes will build here.';
 
   static const String quizRailTitle = 'What is your mood?';
   static const String quizRailSubtitle = 'Three taps, then tonight is sorted';

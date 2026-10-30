@@ -21,10 +21,11 @@ class _PosterSkeletonState extends State<PosterSkeleton>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    
-    _animation = Tween<double>(begin: 0.2, end: 0.6).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+
+    _animation = Tween<double>(
+      begin: 0.2,
+      end: 0.6,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -35,13 +36,11 @@ class _PosterSkeletonState extends State<PosterSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    // FadeTransition is hardware accelerated and bypasses expensive paint/layout 
+    // FadeTransition is hardware accelerated and bypasses expensive paint/layout
     // phases during animation, making it extremely performant for scrolling lists.
     return FadeTransition(
       opacity: _animation,
-      child: Container(
-        color: const Color(0xFF38405A),
-      ),
+      child: Container(color: const Color(0xFF38405A)),
     );
   }
 }

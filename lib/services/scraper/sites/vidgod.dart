@@ -6,6 +6,7 @@ import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 import '../../errors/app_log.dart';
+import '../../config/env_service.dart';
 
 /// Pure-Dart VidGod Stream Scraper.
 ///
@@ -15,8 +16,17 @@ class VidGodScraper extends StreamScraper {
   @override
   String get name => 'vidgod';
 
-  static const _redisUrl = 'https://vidnest-redis-fell-prism-rest.cloud.layerbase.dev/';
-  static const _redisAuth = 'Bearer ve8z9XSKatu74M7FjLU8eQ29';
+  static const _redisUrl =
+      'https://vidnest-redis-fell-prism-rest.cloud.layerbase.dev/';
+
+  /// Shared cache credential — build-time / `.env` only; the cache simply
+  /// misses when unset, and workers still serve the scrape.
+  static const _compileRedisAuth = String.fromEnvironment('VIDGOD_REDIS_AUTH');
+  static String get _redisAuth => _compileRedisAuth.isNotEmpty
+      ? 'Bearer $_compileRedisAuth'
+      : (EnvService.get('VIDGOD_REDIS_AUTH').isEmpty
+            ? ''
+            : 'Bearer ${EnvService.get('VIDGOD_REDIS_AUTH')}');
   static const _origin = 'https://vidgod.space';
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -50,30 +60,38 @@ class VidGodScraper extends StreamScraper {
     int? season,
     int? episode,
   ) async {
+    final auth = _redisAuth;
+    if (auth.isEmpty) return null;
     try {
       final cacheKey = type == 'tv'
           ? '$serverKey:$type:$tmdbId:${season ?? 1}:${episode ?? 1}'
           : '$serverKey:$type:$tmdbId';
 
-      final res = await client.post(
-        Uri.parse(_redisUrl),
-        headers: {
-          'Authorization': _redisAuth,
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
-          'Origin': _origin,
-          'Referer': '$_origin/',
-          'User-Agent': _ua,
-        },
-        body: jsonEncode(['GET', cacheKey]),
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .post(
+            Uri.parse(_redisUrl),
+            headers: {
+              'Authorization': auth,
+              'Content-Type': 'application/json',
+              'Accept': '*/*',
+              'Origin': _origin,
+              'Referer': '$_origin/',
+              'User-Agent': _ua,
+            },
+            body: jsonEncode(['GET', cacheKey]),
+          )
+          .timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data != null && data['result'] != null) {
           final rawResult = data['result'];
-          final parsed = rawResult is String ? jsonDecode(rawResult) : rawResult;
-          if (parsed is Map && parsed['streams'] is List && (parsed['streams'] as List).isNotEmpty) {
+          final parsed = rawResult is String
+              ? jsonDecode(rawResult)
+              : rawResult;
+          if (parsed is Map &&
+              parsed['streams'] is List &&
+              (parsed['streams'] as List).isNotEmpty) {
             return Map<String, dynamic>.from(parsed);
           }
         }
@@ -98,19 +116,23 @@ class VidGodScraper extends StreamScraper {
           ? '$base/movie/$tmdbId?server=$param'
           : '$base/tv/$tmdbId/${season ?? 1}/${episode ?? 1}?server=$param';
 
-      final res = await client.get(
-        Uri.parse(endpoint),
-        headers: {
-          'Accept': 'application/json',
-          'Origin': _origin,
-          'Referer': '$_origin/',
-          'User-Agent': _ua,
-        },
-      ).timeout(const Duration(seconds: 8));
+      final res = await client
+          .get(
+            Uri.parse(endpoint),
+            headers: {
+              'Accept': 'application/json',
+              'Origin': _origin,
+              'Referer': '$_origin/',
+              'User-Agent': _ua,
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        if (data is Map && data['streams'] is List && (data['streams'] as List).isNotEmpty) {
+        if (data is Map &&
+            data['streams'] is List &&
+            (data['streams'] as List).isNotEmpty) {
           return Map<String, dynamic>.from(data);
         }
       }
@@ -139,7 +161,9 @@ class VidGodScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidGodScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidGodScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -150,16 +174,27 @@ class VidGodScraper extends StreamScraper {
           final serverName = srv['name']!;
 
           // Check cache first
-          var data = await _getFromCache(client, serverKey, mediaType, tmdbId, season, episode);
+          var data = await _getFromCache(
+            client,
+            serverKey,
+            mediaType,
+            tmdbId,
+            season,
+            episode,
+          );
 
           // Fallback to live worker
-          data ??= await _fetchFromWorker(client, srv, mediaType, tmdbId, season, episode);
+          data ??= await _fetchFromWorker(
+            client,
+            srv,
+            mediaType,
+            tmdbId,
+            season,
+            episode,
+          );
 
           if (data != null) {
-            return {
-              'serverName': serverName,
-              'streams': data['streams'],
-            };
+            return {'serverName': serverName, 'streams': data['streams']};
           }
           return null;
         });
@@ -193,9 +228,7 @@ class VidGodScraper extends StreamScraper {
               headers: headers,
               behaviorHints: {
                 'notWebReady': false,
-                'proxyHeaders': {
-                  'request': headers,
-                },
+                'proxyHeaders': {'request': headers},
               },
             );
           }

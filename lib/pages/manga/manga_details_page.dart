@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
 import '../../models/manga/manga.dart';
@@ -63,7 +63,9 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
     final historyList = results[2] as List<Map<String, dynamic>>;
     Map<String, dynamic>? matchingHistory;
     try {
-      matchingHistory = historyList.firstWhere((h) => h['manga']['id'] == widget.manga.id);
+      matchingHistory = historyList.firstWhere(
+        (h) => h['manga']['id'] == widget.manga.id,
+      );
     } catch (_) {
       // No history found
     }
@@ -81,21 +83,25 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
   void _startReading(int chapterIndex, {int pageIndex = 0}) {
     if (_chapters == null || _chapters!.isEmpty) return;
 
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => MangaReaderPage(
-          manga: _fullDetails ?? widget.manga,
-          chapters: _chapters!,
-          currentChapterIndex: chapterIndex,
-          resumePageIndex: pageIndex,
-        ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    ).then((_) {
-      _loadDetails();
-    });
+    Navigator.of(context)
+        .push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                MangaReaderPage(
+                  manga: _fullDetails ?? widget.manga,
+                  chapters: _chapters!,
+                  currentChapterIndex: chapterIndex,
+                  resumePageIndex: pageIndex,
+                ),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+          ),
+        )
+        .then((_) {
+          _loadDetails();
+        });
   }
 
   List<MangaChapter> get _filteredChapters {
@@ -103,9 +109,13 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
     if (_chapterSearchQuery.isEmpty) return _chapters!;
 
     final query = _chapterSearchQuery.toLowerCase();
-    return _chapters!.where((c) =>
-        c.name.toLowerCase().contains(query) ||
-        c.number.toString().contains(query)).toList();
+    return _chapters!
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(query) ||
+              c.number.toString().contains(query),
+        )
+        .toList();
   }
 
   List<MangaChapter> get _paginatedChapters {
@@ -119,13 +129,16 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final scrim = isLight ? PrismLight.bg : PrismDark.bg;
     final displayManga = _fullDetails ?? widget.manga;
     final coverUrl = displayManga.coverNormal.isNotEmpty
         ? displayManga.coverNormal
         : displayManga.coverSmall;
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidB,
+      backgroundColor: palette.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background Hero Cover with ambient blur
@@ -136,12 +149,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                 coverUrl,
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
-                errorBuilder: (_, __, ___) => const ColoredBox(color: DizzyVoid.voidB),
+                errorBuilder: (_, __, ___) => ColoredBox(color: scrim),
               ),
             ),
           ),
 
-          // Dark Gradient Overlay
+          // Theme gradient overlay over the cover art
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -149,9 +162,9 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    DizzyVoid.voidB.withValues(alpha: 0.65),
-                    DizzyVoid.voidB.withValues(alpha: 0.96),
-                    DizzyVoid.voidB,
+                    scrim.withValues(alpha: 0.65),
+                    scrim.withValues(alpha: 0.96),
+                    scrim,
                   ],
                   stops: const [0.0, 0.45, 1.0],
                 ),
@@ -164,11 +177,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
             pixelRatio: 0.25,
             refreshRate: LiquidGlassRefreshRate.low,
             backgroundWidget: _buildScrollableContent(displayManga),
-            child: Stack(
-              children: [
-                _buildAppBar(),
-              ],
-            ),
+            child: Stack(children: [_buildAppBar()]),
           ),
         ],
       ),
@@ -181,6 +190,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
     final horizontalPad = isDesktop ? 40.0 : 18.0;
 
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.4);
     final paginatedList = _paginatedChapters;
     final totalFiltered = _filteredChapters.length;
     final totalPages = (totalFiltered / _chaptersPerPage).ceil();
@@ -216,7 +231,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   Text(
                     'Synopsis',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: ink,
                       fontSize: isDesktop ? 22 : 18,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.2,
@@ -226,16 +241,20 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   Container(
                     padding: EdgeInsets.all(isDesktop ? 18 : 14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: isLight
+                          ? PrismLight.raisedTop
+                          : Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.07),
+                        color: isLight
+                            ? PrismLight.borderSubtle
+                            : Colors.white.withValues(alpha: 0.07),
                       ),
                     ),
                     child: Text(
                       manga.synopsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.82),
+                        color: inkSoft,
                         fontSize: isDesktop ? 15 : 13.5,
                         height: 1.55,
                       ),
@@ -258,10 +277,10 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Chapters',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ink,
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.2,
@@ -270,15 +289,20 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                           if (_chapters != null) ...[
                             const SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: palette.primaryColor.withValues(alpha: 0.20),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.20,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 '${_chapters!.length}',
                                 style: TextStyle(
-                                  color: palette.primaryColor,
+                                  color: PrismAccent.text(isLight),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -299,10 +323,10 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             'Chapters',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: ink,
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.2,
@@ -311,15 +335,20 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                           if (_chapters != null) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: palette.primaryColor.withValues(alpha: 0.20),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.20,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 '${_chapters!.length}',
                                 style: TextStyle(
-                                  color: palette.primaryColor,
+                                  color: PrismAccent.text(isLight),
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -341,11 +370,11 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
         const SliverToBoxAdapter(child: SizedBox(height: 14)),
 
         if (_isLoading)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(40.0),
+              padding: const EdgeInsets.all(40.0),
               child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: CircularProgressIndicator(color: palette.primaryColor),
               ),
             ),
           )
@@ -358,88 +387,102 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   _chapterSearchQuery.isNotEmpty
                       ? 'No chapters matching "$_chapterSearchQuery"'
                       : 'No chapters found.',
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: inkSoft),
                 ),
               ),
             ),
           )
         else ...[
           SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final chapter = paginatedList[index];
-                final originalIndex = _chapters!.indexOf(chapter);
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final chapter = paginatedList[index];
+              final originalIndex = _chapters!.indexOf(chapter);
 
-                final isRead = _historyEntry != null &&
-                    _historyEntry!['chapterIndex'] < originalIndex;
-                final isCurrent = _historyEntry != null &&
-                    _historyEntry!['chapterIndex'] == originalIndex;
+              final isRead =
+                  _historyEntry != null &&
+                  _historyEntry!['chapterIndex'] < originalIndex;
+              final isCurrent =
+                  _historyEntry != null &&
+                  _historyEntry!['chapterIndex'] == originalIndex;
 
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPad,
-                    vertical: 3.5,
-                  ),
-                  child: ListTile(
-                    onTap: () => _startReading(originalIndex),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isCurrent
-                            ? palette.primaryColor.withValues(alpha: 0.40)
-                            : Colors.white.withValues(alpha: 0.05),
-                      ),
+              return Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPad,
+                  vertical: 3.5,
+                ),
+                child: ListTile(
+                  onTap: () => _startReading(originalIndex),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isCurrent
+                          ? palette.primaryColor.withValues(alpha: 0.40)
+                          : (isLight
+                                ? PrismLight.borderSubtle
+                                : Colors.white.withValues(alpha: 0.05)),
                     ),
-                    tileColor: isCurrent
-                        ? palette.primaryColor.withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.04),
-                    leading: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: isCurrent
-                            ? palette.primaryColor.withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          chapter.number > 0
-                              ? chapter.number.toStringAsFixed(
-                                  chapter.number.truncateToDouble() == chapter.number ? 0 : 1)
-                              : '#',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11.5,
-                          ),
+                  ),
+                  tileColor: isCurrent
+                      ? palette.primaryColor.withValues(alpha: 0.18)
+                      : (isLight
+                            ? PrismLight.raisedTop
+                            : Colors.white.withValues(alpha: 0.04)),
+                  leading: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? palette.primaryColor.withValues(alpha: 0.3)
+                          : (isLight
+                                ? PrismLight.raisedBottom
+                                : Colors.white.withValues(alpha: 0.08)),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        chapter.number > 0
+                            ? chapter.number.toStringAsFixed(
+                                chapter.number.truncateToDouble() ==
+                                        chapter.number
+                                    ? 0
+                                    : 1,
+                              )
+                            : '#',
+                        style: TextStyle(
+                          color: isCurrent
+                              ? (isLight
+                                    ? PrismAccent.text(true)
+                                    : Colors.white)
+                              : ink,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.5,
                         ),
                       ),
                     ),
-                    title: Text(
-                      (chapter.name.isNotEmpty && chapter.name.toLowerCase() != 'last read')
-                          ? chapter.name
-                          : (chapter.number > 0
+                  ),
+                  title: Text(
+                    (chapter.name.isNotEmpty &&
+                            chapter.name.toLowerCase() != 'last read')
+                        ? chapter.name
+                        : (chapter.number > 0
                               ? 'Chapter ${chapter.number.toStringAsFixed(chapter.number.truncateToDouble() == chapter.number ? 0 : 1)}'
                               : 'Chapter'),
-                      style: TextStyle(
-                        color: isRead ? Colors.white54 : Colors.white,
-                        fontSize: isDesktop ? 14.5 : 13.5,
-                        fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isRead ? inkSoft : ink,
+                      fontSize: isDesktop ? 14.5 : 13.5,
+                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                     ),
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white38,
-                      size: 20,
-                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                );
-              },
-              childCount: paginatedList.length,
-            ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: inkFaint,
+                    size: 20,
+                  ),
+                ),
+              );
+            }, childCount: paginatedList.length),
           ),
 
           // Pagination Controls
@@ -454,7 +497,8 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                      tooltip: 'Previous page',
+                      icon: Icon(Icons.chevron_left_rounded, color: ink),
                       onPressed: _currentChapterPage > 0
                           ? () => setState(() => _currentChapterPage--)
                           : null,
@@ -462,11 +506,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                     const SizedBox(width: 14),
                     Text(
                       'Page ${_currentChapterPage + 1} of $totalPages',
-                      style: const TextStyle(color: Colors.white70, fontSize: 14.5),
+                      style: TextStyle(color: inkSoft, fontSize: 14.5),
                     ),
                     const SizedBox(width: 14),
                     IconButton(
-                      icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                      tooltip: 'Next page',
+                      icon: Icon(Icons.chevron_right_rounded, color: ink),
                       onPressed: _currentChapterPage < totalPages - 1
                           ? () => setState(() => _currentChapterPage++)
                           : null,
@@ -483,6 +528,15 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
   }
 
   Widget _buildSearchTextField(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.35);
+    final fieldBorder = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     return TextField(
       controller: _searchController,
       onChanged: (val) {
@@ -491,14 +545,19 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
           _currentChapterPage = 0;
         });
       },
-      style: const TextStyle(color: Colors.white, fontSize: 13.5),
+      style: TextStyle(color: ink, fontSize: 13.5),
       decoration: InputDecoration(
         hintText: 'Search chapters...',
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
-        prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor, size: 18),
+        hintStyle: TextStyle(color: inkFaint),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          color: PrismAccent.text(isLight),
+          size: 18,
+        ),
         suffixIcon: _chapterSearchQuery.isNotEmpty
             ? IconButton(
-                icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 16),
+                tooltip: 'Clear chapter search',
+                icon: Icon(Icons.clear_rounded, color: inkSoft, size: 16),
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
@@ -509,15 +568,17 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
+        fillColor: isLight
+            ? PrismLight.raisedTop
+            : Colors.white.withValues(alpha: 0.05),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: BorderSide(color: fieldBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: BorderSide(color: fieldBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -532,7 +593,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildDesktopHeader(Manga manga, AppThemePalette palette) {
-    final coverUrl = manga.coverNormal.isNotEmpty ? manga.coverNormal : manga.coverSmall;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final coverUrl = manga.coverNormal.isNotEmpty
+        ? manga.coverNormal
+        : manga.coverSmall;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,8 +625,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
               errorBuilder: (_, __, ___) => Container(
                 width: 200,
                 height: 290,
-                color: DizzyVoid.surface2,
-                child: const Icon(Icons.book_rounded, color: Colors.white38, size: 48),
+                color: isLight ? PrismLight.raisedBottom : PrismDark.raised,
+                child: Icon(
+                  Icons.book_rounded,
+                  color: isLight ? PrismLight.inkFaint : Colors.white38,
+                  size: 48,
+                ),
               ),
             ),
           ),
@@ -574,8 +644,8 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
             children: [
               Text(
                 manga.title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: ink,
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
@@ -587,7 +657,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                 Text(
                   '${manga.author}${manga.author.isNotEmpty && manga.year.isNotEmpty ? ' • ' : ''}${manga.year}',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: inkSoft,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -601,15 +671,24 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                   runSpacing: 6,
                   children: manga.tags.take(6).map((tag) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: isLight
+                            ? PrismLight.raisedTop
+                            : Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                        border: Border.all(
+                          color: isLight
+                              ? PrismLight.borderSubtle
+                              : Colors.white.withValues(alpha: 0.15),
+                        ),
                       ),
                       child: Text(
                         tag,
-                        style: const TextStyle(color: Colors.white, fontSize: 11.5),
+                        style: TextStyle(color: ink, fontSize: 11.5),
                       ),
                     );
                   }).toList(),
@@ -618,7 +697,8 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
               const SizedBox(height: 24),
 
               // Action Buttons
-              if (!_isLoading) _buildHeaderActionButtons(palette, isFullWidth: false),
+              if (!_isLoading)
+                _buildHeaderActionButtons(palette, isFullWidth: false),
             ],
           ),
         ),
@@ -631,7 +711,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildMobileHeader(Manga manga, AppThemePalette palette) {
-    final coverUrl = manga.coverNormal.isNotEmpty ? manga.coverNormal : manga.coverSmall;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final coverUrl = manga.coverNormal.isNotEmpty
+        ? manga.coverNormal
+        : manga.coverSmall;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -642,7 +727,9 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: isLight
+                    ? PrismLight.borderSubtle
+                    : Colors.white.withValues(alpha: 0.15),
                 width: 1.5,
               ),
               boxShadow: [
@@ -668,8 +755,12 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
                 errorBuilder: (_, __, ___) => Container(
                   width: 165,
                   height: 240,
-                  color: DizzyVoid.surface2,
-                  child: const Icon(Icons.book_rounded, color: Colors.white38, size: 40),
+                  color: isLight ? PrismLight.raisedBottom : PrismDark.raised,
+                  child: Icon(
+                    Icons.book_rounded,
+                    color: isLight ? PrismLight.inkFaint : Colors.white38,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
@@ -681,8 +772,8 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
         Text(
           manga.title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: ink,
             fontSize: 22,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
@@ -697,7 +788,7 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
             '${manga.author}${manga.author.isNotEmpty && manga.year.isNotEmpty ? ' • ' : ''}${manga.year}',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.65),
+              color: inkSoft,
               fontSize: 13.5,
               fontWeight: FontWeight.w500,
             ),
@@ -714,13 +805,19 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: isLight
+                      ? PrismLight.raisedTop
+                      : Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                  border: Border.all(
+                    color: isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.12),
+                  ),
                 ),
                 child: Text(
                   tag,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  style: TextStyle(color: inkSoft, fontSize: PrismType.micro),
                 ),
               );
             }).toList(),
@@ -734,12 +831,18 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
     );
   }
 
-  Widget _buildHeaderActionButtons(AppThemePalette palette, {required bool isFullWidth}) {
+  Widget _buildHeaderActionButtons(
+    AppThemePalette palette, {
+    required bool isFullWidth,
+  }) {
     if (_historyEntry != null) {
-      final chNum = (_chapters != null && _historyEntry!['chapterIndex'] < _chapters!.length)
+      final chNum =
+          (_chapters != null &&
+              _historyEntry!['chapterIndex'] < _chapters!.length)
           ? _chapters![_historyEntry!['chapterIndex']].number
           : '';
-      final label = 'Resume Chapter ${chNum.toString().isNotEmpty ? chNum : ''}';
+      final label =
+          'Resume Chapter ${chNum.toString().isNotEmpty ? chNum : ''}';
 
       return _buildActionButton(
         icon: Icons.play_arrow_rounded,
@@ -815,6 +918,9 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
 
   Widget _buildAppBar() {
     final topPadding = MediaQuery.paddingOf(context).top;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
 
     return Positioned(
       top: topPadding + 10,
@@ -825,15 +931,24 @@ class _MangaDetailsPageState extends State<MangaDetailsPage> {
           filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
           child: Container(
             decoration: BoxDecoration(
-              color: DizzyVoid.surface1.withValues(alpha: 0.75),
+              color: isLight
+                  ? PrismLight.raisedTop.withValues(alpha: 0.85)
+                  : PrismDark.raised.withValues(alpha: 0.75),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
+                color: isLight
+                    ? PrismLight.borderSubtle
+                    : Colors.white.withValues(alpha: 0.12),
                 width: 1.2,
               ),
               borderRadius: BorderRadius.circular(24),
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+              tooltip: 'Back',
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: ink,
+                size: 18,
+              ),
               onPressed: () => Navigator.of(context).pop(),
               splashRadius: 20,
             ),

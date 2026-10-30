@@ -45,16 +45,20 @@ class AniPMExtractor {
         if (title != null && title.isNotEmpty) 'title': title,
       };
 
-      final uri = Uri.parse('$_baseUrl/api/anime/src/servers').replace(queryParameters: queryParams);
+      final uri = Uri.parse(
+        '$_baseUrl/api/anime/src/servers',
+      ).replace(queryParameters: queryParams);
 
-      final res = await client.get(
-        uri,
-        headers: {
-          'User-Agent': _ua,
-          'Referer': '$_baseUrl/',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 8));
+      final res = await client
+          .get(
+            uri,
+            headers: {
+              'User-Agent': _ua,
+              'Referer': '$_baseUrl/',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -68,19 +72,23 @@ class AniPMExtractor {
               final rawUrl = srv['url']?.toString();
               if (rawUrl == null || rawUrl.isEmpty) continue;
 
-              final streamUrl = rawUrl.startsWith('/') ? '$_baseUrl$rawUrl' : rawUrl;
+              final streamUrl = rawUrl.startsWith('/')
+                  ? '$_baseUrl$rawUrl'
+                  : rawUrl;
               final provider = srv['provider']?.toString() ?? 'AniPM';
 
-              results.add(AniPMAnimeResult(
-                url: streamUrl,
-                server: 'AniPM ($provider)',
-                quality: '1080p',
-                headers: {
-                  'User-Agent': _ua,
-                  'Referer': '$_baseUrl/',
-                  'Origin': _baseUrl,
-                },
-              ));
+              results.add(
+                AniPMAnimeResult(
+                  url: streamUrl,
+                  server: 'AniPM ($provider)',
+                  quality: '1080p',
+                  headers: {
+                    'User-Agent': _ua,
+                    'Referer': '$_baseUrl/',
+                    'Origin': _baseUrl,
+                  },
+                ),
+              );
             }
           }
         }

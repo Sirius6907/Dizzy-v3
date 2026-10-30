@@ -5,10 +5,7 @@ class StorageSpaceInfo {
   final int freeBytes;
   final int totalBytes;
 
-  const StorageSpaceInfo({
-    required this.freeBytes,
-    required this.totalBytes,
-  });
+  const StorageSpaceInfo({required this.freeBytes, required this.totalBytes});
 
   String get freeFormatted => _formatBytes(freeBytes);
   String get totalFormatted => _formatBytes(totalBytes);
@@ -30,7 +27,9 @@ class StorageSpaceInfo {
 class StorageSpaceHelper {
   /// Checks free space for the partition containing [directoryPath].
   /// Returns a [StorageSpaceInfo] or null if undetermined.
-  static Future<StorageSpaceInfo?> getAvailableSpace(String directoryPath) async {
+  static Future<StorageSpaceInfo?> getAvailableSpace(
+    String directoryPath,
+  ) async {
     try {
       final dir = Directory(directoryPath);
       if (!await dir.exists()) {
@@ -47,7 +46,7 @@ class StorageSpaceHelper {
           'DeviceID="$driveLetter"',
           'get',
           'FreeSpace,Size',
-          '/value'
+          '/value',
         ]);
 
         if (result.exitCode == 0) {
@@ -60,7 +59,8 @@ class StorageSpaceHelper {
             return StorageSpaceInfo(freeBytes: free, totalBytes: size);
           }
         }
-      } else if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isAndroid)) {
+      } else if (!kIsWeb &&
+          (Platform.isLinux || Platform.isMacOS || Platform.isAndroid)) {
         final result = await Process.run('df', ['-k', directoryPath]);
         if (result.exitCode == 0) {
           final lines = result.stdout.toString().trim().split('\n');
@@ -88,11 +88,15 @@ class StorageSpaceHelper {
   }
 
   /// Verifies if there is sufficient space for [requiredBytes] + 100MB margin.
-  static Future<bool> hasEnoughSpace(String directoryPath, int requiredBytes) async {
+  static Future<bool> hasEnoughSpace(
+    String directoryPath,
+    int requiredBytes,
+  ) async {
     if (requiredBytes <= 0) return true;
     final info = await getAvailableSpace(directoryPath);
     if (info == null) return true;
-    final requiredWithMargin = requiredBytes + (100 * 1024 * 1024); // 100MB safety margin
+    final requiredWithMargin =
+        requiredBytes + (100 * 1024 * 1024); // 100MB safety margin
     return info.freeBytes >= requiredWithMargin;
   }
 }

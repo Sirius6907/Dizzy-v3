@@ -78,14 +78,13 @@ class MediaProgress {
     int? totalDurationSeconds,
     DateTime? lastWatchedAt,
     Map<String, dynamic>? meta,
-  }) =>
-      MediaProgress(
-        key: key,
-        positionSeconds: positionSeconds ?? this.positionSeconds,
-        totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
-        lastWatchedAt: lastWatchedAt ?? this.lastWatchedAt,
-        meta: meta ?? this.meta,
-      );
+  }) => MediaProgress(
+    key: key,
+    positionSeconds: positionSeconds ?? this.positionSeconds,
+    totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
+    lastWatchedAt: lastWatchedAt ?? this.lastWatchedAt,
+    meta: meta ?? this.meta,
+  );
 }
 
 /// What a merge did, so the UI can say something true and the tests can
@@ -101,11 +100,7 @@ class ProgressMergeReport {
   /// Rows both sides had and this device was already at or ahead of.
   final int kept;
 
-  const ProgressMergeReport({
-    this.added = 0,
-    this.advanced = 0,
-    this.kept = 0,
-  });
+  const ProgressMergeReport({this.added = 0, this.advanced = 0, this.kept = 0});
 
   /// Rows the incoming side spoke about: added + advanced + kept.
   ///
@@ -157,8 +152,9 @@ abstract final class ProgressMerge {
     final total = _betterDuration(winner, loser);
     // Newer metadata wins, progress does not.
     final metaSource = a.lastWatchedAt.isAfter(b.lastWatchedAt) ? a : b;
-    final seenAt =
-        a.lastWatchedAt.isAfter(b.lastWatchedAt) ? a.lastWatchedAt : b.lastWatchedAt;
+    final seenAt = a.lastWatchedAt.isAfter(b.lastWatchedAt)
+        ? a.lastWatchedAt
+        : b.lastWatchedAt;
 
     return MediaProgress(
       key: winner.key,
@@ -175,7 +171,9 @@ abstract final class ProgressMerge {
           ? a.totalDurationSeconds
           : b.totalDurationSeconds;
     }
-    return a.totalDurationSeconds > 0 ? a.totalDurationSeconds : b.totalDurationSeconds;
+    return a.totalDurationSeconds > 0
+        ? a.totalDurationSeconds
+        : b.totalDurationSeconds;
   }
 
   /// Merge [incoming] (usually the cloud / the other device) into [local].
@@ -220,7 +218,10 @@ abstract final class ProgressMerge {
       out[key] = winner;
     }
 
-    return (_cap(out), ProgressMergeReport(added: added, advanced: advanced, kept: kept));
+    return (
+      _cap(out),
+      ProgressMergeReport(added: added, advanced: advanced, kept: kept),
+    );
   }
 
   /// Union of two maps, same max rule, no report (for "add everything"
@@ -228,8 +229,7 @@ abstract final class ProgressMerge {
   static Map<String, MediaProgress> union(
     Map<String, MediaProgress> a,
     Map<String, MediaProgress> b,
-  ) =>
-      merge(a, b).$1;
+  ) => merge(a, b).$1;
 
   /// Keep the most recently touched [maxRows]. Ties fall back to the key so
   /// the cut is stable across devices.

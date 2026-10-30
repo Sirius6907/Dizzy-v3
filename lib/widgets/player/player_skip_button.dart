@@ -68,8 +68,12 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
     final isCredits = widget.segment.type == 'credits';
     // P6 hex sweep: these stay literal on purpose — the skip-segment identity
     // colors (intro violet / credits green) and their alpha-tinted glow below.
-    final accentColor = isCredits ? const Color(0xFF10B981) : const Color(0xFF7C5CFF);
-    final accentGlow = isCredits ? const Color(0xFF34D399) : const Color(0xFF9D84FF);
+    final accentColor = isCredits
+        ? const Color(0xFF10B981)
+        : const Color(0xFF7C5CFF);
+    final accentGlow = isCredits
+        ? const Color(0xFF34D399)
+        : const Color(0xFF9D84FF);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -155,7 +159,9 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
                               ).createShader(bounds);
                             },
                             blendMode: BlendMode.srcOver,
-                            child: Container(color: Colors.white.withValues(alpha: 0.04)),
+                            child: Container(
+                              color: Colors.white.withValues(alpha: 0.04),
+                            ),
                           );
                         },
                       ),
@@ -183,7 +189,9 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
                                   children: [
                                     // Animated Action Icon
                                     AnimatedContainer(
-                                      duration: const Duration(milliseconds: 180),
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
                                       transform: Matrix4.translationValues(
                                         _isHovered ? 2.0 : 0.0,
                                         0.0,
@@ -192,7 +200,9 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
                                       child: Icon(
                                         widget.segment.icon,
                                         size: isCompact ? 16 : 20,
-                                        color: _isHovered ? accentGlow : accentColor,
+                                        color: _isHovered
+                                            ? accentGlow
+                                            : accentColor,
                                       ),
                                     ),
                                     SizedBox(width: isCompact ? 7 : 10),
@@ -207,7 +217,9 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
                                         letterSpacing: -0.2,
                                         shadows: [
                                           Shadow(
-                                            color: Colors.black.withValues(alpha: 0.8),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.8,
+                                            ),
                                             offset: const Offset(0, 1),
                                             blurRadius: 4,
                                           ),
@@ -229,14 +241,20 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
 
                           // '✕' Dismiss Button
                           MouseRegion(
-                            onEnter: (_) => setState(() => _isDismissHovered = true),
-                            onExit: (_) => setState(() => _isDismissHovered = false),
+                            onEnter: (_) =>
+                                setState(() => _isDismissHovered = true),
+                            onExit: (_) =>
+                                setState(() => _isDismissHovered = false),
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: widget.onDismiss,
-                                hoverColor: Colors.white.withValues(alpha: 0.15),
-                                splashColor: Colors.white.withValues(alpha: 0.25),
+                                hoverColor: Colors.white.withValues(
+                                  alpha: 0.15,
+                                ),
+                                splashColor: Colors.white.withValues(
+                                  alpha: 0.25,
+                                ),
                                 child: Tooltip(
                                   message: 'Dismiss (✕)',
                                   child: Container(
@@ -247,13 +265,17 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
                                     alignment: Alignment.center,
                                     child: AnimatedScale(
                                       scale: _isDismissHovered ? 1.15 : 1.0,
-                                      duration: const Duration(milliseconds: 140),
+                                      duration: const Duration(
+                                        milliseconds: 140,
+                                      ),
                                       child: Icon(
                                         Icons.close_rounded,
                                         size: isCompact ? 15 : 17,
                                         color: _isDismissHovered
                                             ? Colors.white
-                                            : Colors.white.withValues(alpha: 0.60),
+                                            : Colors.white.withValues(
+                                                alpha: 0.60,
+                                              ),
                                       ),
                                     ),
                                   ),
@@ -274,7 +296,10 @@ class _PlayerSkipButtonState extends State<PlayerSkipButton>
                       child: AnimatedBuilder(
                         animation: _sweepController,
                         builder: (context, _) {
-                          final sweepProgress = _sweepController.value.clamp(0.0, 1.0);
+                          final sweepProgress = _sweepController.value.clamp(
+                            0.0,
+                            1.0,
+                          );
 
                           return FractionallySizedBox(
                             alignment: Alignment.centerLeft,

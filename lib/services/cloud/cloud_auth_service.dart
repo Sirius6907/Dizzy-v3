@@ -7,6 +7,13 @@ import 'package:uuid/uuid.dart';
 import 'cloud_client.dart';
 import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
+import '../my_list/my_list_service.dart';
+import '../continue_watching/continue_watching_service.dart';
+import '../messaging/dm_outbox.dart';
+import '../heartbeat/heartbeat_service.dart';
+import '../profiles/dizzy_profile_service.dart';
+import '../social/dizzy_social_service.dart';
+import '../notification/notification_inbox.dart';
 
 /// S2 (v1.1.9): identity + consent. Anonymous-first, Google optional.
 /// Everything fails soft — offline means local-only, never an error screen.
@@ -20,22 +27,23 @@ class CloudAuthService {
 
   static final ValueNotifier<bool> signedIn = ValueNotifier<bool>(false);
   static final ValueNotifier<bool> onboarded = ValueNotifier<bool>(false);
-  static final ValueNotifier<bool> consentTelemetry =
-      ValueNotifier<bool>(false);
-  static final ValueNotifier<bool> consentGenrePrefs =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> consentTelemetry = ValueNotifier<bool>(
+    false,
+  );
+  static final ValueNotifier<bool> consentGenrePrefs = ValueNotifier<bool>(
+    false,
+  );
   static final ValueNotifier<bool> consentCrash = ValueNotifier<bool>(false);
-  static final ValueNotifier<bool> consentWatchParty =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> consentWatchParty = ValueNotifier<bool>(
+    false,
+  );
 
   static String? _anonId;
   static String? get anonId => _anonId;
 
   /// Owner key for cloud rows: user uuid when logged in, else anon id.
   static String? get ownerKey {
-    final u = CloudClient.isReady
-        ? CloudClient.db.auth.currentUser?.id
-        : null;
+    final u = CloudClient.isReady ? CloudClient.db.auth.currentUser?.id : null;
     return u ?? _anonId;
   }
 
@@ -113,6 +121,23 @@ class CloudAuthService {
     } catch (_) {}
     // Keep anon id — local app keeps working, cloud pauses.
     signedIn.value = false;
+    await _resetOwnerState();
+  }
+
+  /// Shared-device safety: owner-scoped notifiers and timers must not carry
+  /// the previous account's library/history into the next session.
+  static Future<void> _resetOwnerState() async {
+    try {
+      await MyListService.clearLocal();
+      await ContinueWatchingService.clearLocal();
+      DmOutbox.stopScheduler();
+      HeartbeatService.instance.stop();
+      DizzyProfileService.activeProfileId.value = null;
+      DizzySocialService.currentUsername.value = null;
+      NotificationInbox.clear();
+    } catch (e) {
+      AppLog.d('[CloudAuth] owner-state reset failed (soft): $e');
+    }
   }
 
   static Future<void> setOnboarded() async {
@@ -121,11 +146,12 @@ class CloudAuthService {
     await prefs.setBool(_keyOnboarded, true);
   }
 
-  static Future<void> setConsent(
-      {bool? telemetry,
-      bool? genrePrefs,
-      bool? crash,
-      bool? watchParty}) async {
+  static Future<void> setConsent({
+    bool? telemetry,
+    bool? genrePrefs,
+    bool? crash,
+    bool? watchParty,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     if (telemetry != null) {
       consentTelemetry.value = telemetry;
@@ -176,37 +202,19 @@ class CloudAuthService {
           .from('genre_prefs')
           .delete()
           .eq('owner_user_id', uid);
-      await CloudClient.db
-          .from('consents')
-          .delete()
-          .eq('owner_user_id', uid);
-      await CloudClient.db
-          .from('installs')
-          .delete()
-          .eq('owner_user_id', uid);
+      await CloudClient.db.from('consents').delete().eq('owner_user_id', uid);
+      await CloudClient.db.from('installs').delete().eq('owner_user_id', uid);
       if (uid.isNotEmpty) {
-        await CloudClient.db
-            .from('cloud_backups')
-            .delete()
-            .eq('user_id', uid);
+        await CloudClient.db.from('cloud_backups').delete().eq('user_id', uid);
         await CloudClient.db.from('profiles').delete().eq('user_id', uid);
         // WP-P5: full wipe — party traces too (chat cascade-follows rooms).
         await CloudClient.db
             .from('room_messages')
             .delete()
             .eq('sender_id', uid);
-        await CloudClient.db
-            .from('room_members')
-            .delete()
-            .eq('user_id', uid);
-        await CloudClient.db
-            .from('rooms')
-            .delete()
-            .eq('host_user_id', uid);
-        await CloudClient.db
-            .from('cloud_sessions')
-            .delete()
-            .eq('user_id', uid);
+        await CloudClient.db.from('room_members').delete().eq('user_id', uid);
+        await CloudClient.db.from('rooms').delete().eq('host_user_id', uid);
+        await CloudClient.db.from('cloud_sessions').delete().eq('user_id', uid);
       }
       return true;
     } catch (e) {

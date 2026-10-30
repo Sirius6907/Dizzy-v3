@@ -34,10 +34,7 @@ class DuloClient {
   static final DuloClient instance = DuloClient._internal();
   DuloClient._internal();
 
-  static const List<String> _domains = [
-    'https://dulo.gd',
-    'https://dulo.cx',
-  ];
+  static const List<String> _domains = ['https://dulo.gd', 'https://dulo.cx'];
 
   static const String _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -49,10 +46,10 @@ class DuloClient {
   String get activeDomain => _activeDomain;
 
   Map<String, String> get playbackHeaders => {
-        'User-Agent': _ua,
-        'Referer': 'https://d.dulo.gd/',
-        'Origin': 'https://d.dulo.gd',
-      };
+    'User-Agent': _ua,
+    'Referer': 'https://d.dulo.gd/',
+    'Origin': 'https://d.dulo.gd',
+  };
 
   /// Obtains or reuses an active `__Host-amri_session` cookie from Dulo.
   Future<String?> _getSessionCookie(String domain) async {
@@ -64,28 +61,36 @@ class DuloClient {
 
     try {
       final uri = Uri.parse('$domain/api/session');
-      final res = await http.get(
-        uri,
-        headers: {
-          'User-Agent': _ua,
-          'Accept': 'application/json',
-          'Referer': '$domain/',
-          'Origin': domain,
-        },
-      ).timeout(const Duration(seconds: 8));
+      final res = await http
+          .get(
+            uri,
+            headers: {
+              'User-Agent': _ua,
+              'Accept': 'application/json',
+              'Referer': '$domain/',
+              'Origin': domain,
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final setCookie = res.headers['set-cookie'];
         if (setCookie != null && setCookie.isNotEmpty) {
-          final match = RegExp(r'(__Host-amri_session=[^;]+)').firstMatch(setCookie);
-          final cookieVal = match != null ? match.group(1) : setCookie.split(';').first;
+          final match = RegExp(
+            r'(__Host-amri_session=[^;]+)',
+          ).firstMatch(setCookie);
+          final cookieVal = match != null
+              ? match.group(1)
+              : setCookie.split(';').first;
           _cachedSessionCookie = cookieVal;
           _sessionExpiry = DateTime.now().add(const Duration(hours: 6));
           return _cachedSessionCookie;
         }
       }
     } catch (e) {
-      if (kDebugMode) AppLog.d('[DuloClient] Session fetch error ($domain): $e');
+      if (kDebugMode) {
+        AppLog.d('[DuloClient] Session fetch error ($domain): $e');
+      }
     }
 
     return null;
@@ -112,7 +117,9 @@ class DuloClient {
         });
         request.body = jsonEncode(payload);
 
-        final response = await client.send(request).timeout(const Duration(seconds: 12));
+        final response = await client
+            .send(request)
+            .timeout(const Duration(seconds: 12));
 
         if (response.statusCode == 200) {
           _activeDomain = domain;
@@ -161,7 +168,9 @@ class DuloClient {
           _sessionExpiry = null;
         }
       } catch (e) {
-        if (kDebugMode) AppLog.d('[DuloClient] SSE extraction error ($domain): $e');
+        if (kDebugMode) {
+          AppLog.d('[DuloClient] SSE extraction error ($domain): $e');
+        }
       } finally {
         client.close();
       }
@@ -172,10 +181,7 @@ class DuloClient {
 
   /// Helper for Movies.
   Stream<DuloStream> getMovieStreams(int tmdbId) {
-    return fetchSourcesStream({
-      'type': 'movie',
-      'tmdbId': tmdbId,
-    });
+    return fetchSourcesStream({'type': 'movie', 'tmdbId': tmdbId});
   }
 
   /// Helper for TV series.

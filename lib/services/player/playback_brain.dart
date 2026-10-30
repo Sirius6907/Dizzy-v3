@@ -189,20 +189,19 @@ class PlaybackBrain {
         case SourceKind.direct:
         case SourceKind.debrid:
         case SourceKind.unknown:
-          plan.add(BrainAttempt(
-              sourceIndex: i, url: s.url, reason: 'direct'));
+          plan.add(BrainAttempt(sourceIndex: i, url: s.url, reason: 'direct'));
           plan.addAll(_renditionAttempts(i, s));
           break;
         case SourceKind.hlsMaster:
-          plan.add(BrainAttempt(
-              sourceIndex: i, url: s.url, reason: 'hls-master'));
+          plan.add(
+            BrainAttempt(sourceIndex: i, url: s.url, reason: 'hls-master'),
+          );
           plan.addAll(_renditionAttempts(i, s));
           break;
         case SourceKind.torrent:
           // Torrents start slow — main link first, renditions rarely
           // exist, but honour them when they do.
-          plan.add(BrainAttempt(
-              sourceIndex: i, url: s.url, reason: 'torrent'));
+          plan.add(BrainAttempt(sourceIndex: i, url: s.url, reason: 'torrent'));
           plan.addAll(_renditionAttempts(i, s));
           break;
       }
@@ -232,7 +231,10 @@ class PlaybackBrain {
       for (final r in sorted)
         if (r.url.isNotEmpty && !_failedUrls.contains(r.url))
           BrainAttempt(
-              sourceIndex: index, url: r.url, reason: 'rendition-${r.label}'),
+            sourceIndex: index,
+            url: r.url,
+            reason: 'rendition-${r.label}',
+          ),
     ];
   }
 

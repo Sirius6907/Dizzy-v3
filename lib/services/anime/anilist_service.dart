@@ -66,10 +66,7 @@ class AnilistService {
           'Origin': 'https://anilist.co',
           'Referer': 'https://anilist.co/',
         },
-        body: jsonEncode({
-          'query': query,
-          'variables': variables,
-        }),
+        body: jsonEncode({'query': query, 'variables': variables}),
         timeout: const Duration(seconds: 15),
         policy: RetryPolicy.quick,
         screen: 'anime',
@@ -142,10 +139,32 @@ class AnilistService {
     int page = 1,
     int perPage = 20,
   }) async {
-    const query = '''
+    const query =
+        '''
       query (\$page: Int, \$perPage: Int) {
         Page(page: \$page, perPage: \$perPage) {
           media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
+            $_mediaFields
+          }
+        }
+      }
+    ''';
+
+    final data = await _postGraphQL(query, {'page': page, 'perPage': perPage});
+    return _parseMediaList(data);
+  }
+
+  /// Airing Now — shows still releasing episodes, so the rail advances on
+  /// its own as new episodes drop (no hardcoded season or year).
+  Future<List<AnimeMedia>> fetchAiringNow({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    const query =
+        '''
+      query (\$page: Int, \$perPage: Int) {
+        Page(page: \$page, perPage: \$perPage) {
+          media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
             $_mediaFields
           }
         }
@@ -161,7 +180,8 @@ class AnilistService {
     int page = 1,
     int perPage = 20,
   }) async {
-    const query = '''
+    const query =
+        '''
       query (\$page: Int, \$perPage: Int, \$season: MediaSeason, \$seasonYear: Int) {
         Page(page: \$page, perPage: \$perPage) {
           media(type: ANIME, season: \$season, seasonYear: \$seasonYear, sort: POPULARITY_DESC, isAdult: false) {
@@ -185,7 +205,8 @@ class AnilistService {
     int page = 1,
     int perPage = 20,
   }) async {
-    const query = '''
+    const query =
+        '''
       query (\$page: Int, \$perPage: Int, \$season: MediaSeason, \$seasonYear: Int) {
         Page(page: \$page, perPage: \$perPage) {
           media(type: ANIME, season: \$season, seasonYear: \$seasonYear, sort: POPULARITY_DESC, isAdult: false) {
@@ -209,7 +230,8 @@ class AnilistService {
     int page = 1,
     int perPage = 20,
   }) async {
-    const query = '''
+    const query =
+        '''
       query (\$page: Int, \$perPage: Int) {
         Page(page: \$page, perPage: \$perPage) {
           media(type: ANIME, sort: SCORE_DESC, isAdult: false) {
@@ -229,7 +251,8 @@ class AnilistService {
     int page = 1,
     int perPage = 20,
   }) async {
-    const query = '''
+    const query =
+        '''
       query (\$page: Int, \$perPage: Int, \$genre: String) {
         Page(page: \$page, perPage: \$perPage) {
           media(type: ANIME, genre: \$genre, sort: POPULARITY_DESC, isAdult: false) {
@@ -261,10 +284,14 @@ class AnilistService {
     int perPage = 30,
   }) async {
     final hasSearch = search.trim().isNotEmpty;
-    final sortClause = hasSearch ? '[SEARCH_MATCH, POPULARITY_DESC]' : '[$sort]';
-    final isAdultFinal = isAdult || (genre != null && genre.toLowerCase() == 'hentai');
+    final sortClause = hasSearch
+        ? '[SEARCH_MATCH, POPULARITY_DESC]'
+        : '[$sort]';
+    final isAdultFinal =
+        isAdult || (genre != null && genre.toLowerCase() == 'hentai');
 
-    final query = '''
+    final query =
+        '''
       query (\$page: Int, \$perPage: Int, \$search: String, \$genre: String, \$year: Int, \$season: MediaSeason, \$format: MediaFormat, \$status: MediaStatus, \$isAdult: Boolean) {
         Page(page: \$page, perPage: \$perPage) {
           media(type: ANIME, search: \$search, genre: \$genre, seasonYear: \$year, season: \$season, format: \$format, status: \$status, sort: $sortClause, isAdult: \$isAdult) {
@@ -281,7 +308,8 @@ class AnilistService {
       if (hasSearch) 'search': search.trim(),
       if (genre != null && genre.isNotEmpty && genre != 'All') 'genre': genre,
       if (year != null) 'year': year,
-      if (season != null && season.isNotEmpty && season != 'All') 'season': season.toUpperCase(),
+      if (season != null && season.isNotEmpty && season != 'All')
+        'season': season.toUpperCase(),
       if (format != null && format.isNotEmpty && format != 'All')
         'format': format.toUpperCase(),
       if (status != null && status.isNotEmpty && status != 'All')
@@ -320,7 +348,8 @@ class AnilistService {
 
   /// Full Anime Details (Including Voice Actors/Characters, Relations, Recommendations)
   Future<AnimeMedia?> fetchAnimeDetails(int anilistId) async {
-    const query = '''
+    const query =
+        '''
       query (\$id: Int) {
         Media(id: \$id, type: ANIME) {
           $_mediaFields

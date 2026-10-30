@@ -46,22 +46,27 @@ class DownloadedEpubDetector {
             String? coverPath;
             try {
               final bytes = await entity.readAsBytes();
-              final safeName = 'book_${fileName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}';
+              final safeName =
+                  'book_${fileName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}';
               coverPath = await EpubCover.extractAndSave(
                 epubBytes: bytes,
                 saveAsName: safeName,
               );
             } catch (_) {}
 
-            results.add(DetectedEpubBook(
-              filePath: entity.path,
-              fileName: fileName,
-              title: title,
-              fileSizeBytes: len,
-              coverPath: coverPath,
-            ));
+            results.add(
+              DetectedEpubBook(
+                filePath: entity.path,
+                fileName: fileName,
+                title: title,
+                fileSizeBytes: len,
+                coverPath: coverPath,
+              ),
+            );
           } catch (e) {
-            debugPrint('[DownloadedEpubDetector] Error processing ${entity.path}: $e');
+            debugPrint(
+              '[DownloadedEpubDetector] Error processing ${entity.path}: $e',
+            );
           }
         }
       }

@@ -35,7 +35,10 @@ class MyListItem {
   }
 
   bool matches(MyListItem other) {
-    if (imdbId != null && other.imdbId != null && imdbId!.isNotEmpty && other.imdbId!.isNotEmpty) {
+    if (imdbId != null &&
+        other.imdbId != null &&
+        imdbId!.isNotEmpty &&
+        other.imdbId!.isNotEmpty) {
       return imdbId == other.imdbId;
     }
     if (tmdbId != null && other.tmdbId != null) {
@@ -49,16 +52,29 @@ class MyListItem {
     }
 
     // Don't fallback to title if there are conflicting IDs of the same authority
-    final hasConflictingIds = (imdbId != null && other.imdbId != null && imdbId != other.imdbId) ||
+    final hasConflictingIds =
+        (imdbId != null && other.imdbId != null && imdbId != other.imdbId) ||
         (tmdbId != null && other.tmdbId != null && tmdbId != other.tmdbId) ||
-        (traktId != null && other.traktId != null && traktId != other.traktId) ||
+        (traktId != null &&
+            other.traktId != null &&
+            traktId != other.traktId) ||
         (simklId != null && other.simklId != null && simklId != other.simklId);
 
     if (hasConflictingIds) return false;
 
-    final cleanA = title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
-    final cleanB = other.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
-    if (cleanA.isNotEmpty && cleanA == cleanB && (year == null || other.year == null || (year! - other.year!).abs() <= 1)) {
+    final cleanA = title
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        .trim();
+    final cleanB = other.title
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        .trim();
+    if (cleanA.isNotEmpty &&
+        cleanA == cleanB &&
+        (year == null ||
+            other.year == null ||
+            (year! - other.year!).abs() <= 1)) {
       return type == other.type;
     }
     return false;
@@ -68,7 +84,9 @@ class MyListItem {
     return copyWith(
       traktId: other.traktId ?? traktId,
       simklId: other.simklId ?? simklId,
-      imdbId: (other.imdbId != null && other.imdbId!.isNotEmpty) ? other.imdbId : imdbId,
+      imdbId: (other.imdbId != null && other.imdbId!.isNotEmpty)
+          ? other.imdbId
+          : imdbId,
       tmdbId: other.tmdbId ?? tmdbId,
       poster: poster ?? other.poster,
       source: other.source != MyListSource.local ? other.source : source,
@@ -88,12 +106,18 @@ class MyListItem {
   }) {
     return MyListItem(
       imdbId: id.startsWith('tt') ? id : imdbId,
-      tmdbId: tmdbId ?? (int.tryParse(id) != null && !id.startsWith('tt') ? int.tryParse(id) : null),
+      tmdbId:
+          tmdbId ??
+          (int.tryParse(id) != null && !id.startsWith('tt')
+              ? int.tryParse(id)
+              : null),
       traktId: traktId,
       simklId: simklId,
       title: name,
       poster: poster,
-      year: year != null ? int.tryParse(year.replaceAll(RegExp(r'[^0-9]'), '')) : null,
+      year: year != null
+          ? int.tryParse(year.replaceAll(RegExp(r'[^0-9]'), ''))
+          : null,
       type: type == 'series' || type == 'anime' ? 'series' : 'movie',
       addedAt: DateTime.now(),
       source: MyListSource.local,
@@ -113,12 +137,18 @@ class MyListItem {
   }) {
     return MyListItem(
       imdbId: id.startsWith('tt') ? id : imdbId,
-      tmdbId: tmdbId ?? (int.tryParse(id) != null && !id.startsWith('tt') ? int.tryParse(id) : null),
+      tmdbId:
+          tmdbId ??
+          (int.tryParse(id) != null && !id.startsWith('tt')
+              ? int.tryParse(id)
+              : null),
       traktId: traktId,
       simklId: simklId,
       title: name,
       poster: poster,
-      year: year != null ? int.tryParse(year.replaceAll(RegExp(r'[^0-9]'), '')) : null,
+      year: year != null
+          ? int.tryParse(year.replaceAll(RegExp(r'[^0-9]'), ''))
+          : null,
       type: type == 'series' || type == 'anime' ? 'series' : 'movie',
       addedAt: DateTime.now(),
       source: MyListSource.local,
@@ -137,8 +167,12 @@ class MyListItem {
       tmdbId: ids['tmdb'] as int?,
       title: media['title']?.toString() ?? 'Unknown',
       year: media['year'] as int?,
-      type: (media['type']?.toString() == 'show' || show != null) ? 'series' : 'movie',
-      poster: imdbId != null ? 'https://images.metahub.space/poster/medium/$imdbId/img' : null,
+      type: (media['type']?.toString() == 'show' || show != null)
+          ? 'series'
+          : 'movie',
+      poster: imdbId != null
+          ? 'https://images.metahub.space/poster/medium/$imdbId/img'
+          : null,
       addedAt: json['listed_at'] != null
           ? DateTime.tryParse(json['listed_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -148,14 +182,18 @@ class MyListItem {
 
   factory MyListItem.fromSimklJson(Map<String, dynamic> json) {
     final movie = json['movie'] as Map<String, dynamic>?;
-    final show = json['show'] as Map<String, dynamic>? ?? json['anime'] as Map<String, dynamic>?;
+    final show =
+        json['show'] as Map<String, dynamic>? ??
+        json['anime'] as Map<String, dynamic>?;
     final media = movie ?? show ?? json;
     final ids = media['ids'] as Map<String, dynamic>? ?? {};
     final imdbId = ids['imdb']?.toString();
     final posterPath = media['poster'] as String?;
     final posterUrl = posterPath != null
         ? 'https://simkl.in/posters/${posterPath}_m.jpg'
-        : (imdbId != null ? 'https://images.metahub.space/poster/medium/$imdbId/img' : null);
+        : (imdbId != null
+              ? 'https://images.metahub.space/poster/medium/$imdbId/img'
+              : null);
 
     return MyListItem(
       simklId: ids['simkl'] as int?,
@@ -166,7 +204,8 @@ class MyListItem {
       type: (movie != null) ? 'movie' : 'series',
       poster: posterUrl,
       addedAt: json['last_watched_at'] != null
-          ? DateTime.tryParse(json['last_watched_at'].toString()) ?? DateTime.now()
+          ? DateTime.tryParse(json['last_watched_at'].toString()) ??
+                DateTime.now()
           : DateTime.now(),
       source: MyListSource.simkl,
     );
@@ -238,7 +277,8 @@ class MyListItem {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is MyListItem && uniqueKey == other.uniqueKey;
+      identical(this, other) ||
+      other is MyListItem && uniqueKey == other.uniqueKey;
 
   @override
   int get hashCode => uniqueKey.hashCode;

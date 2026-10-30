@@ -168,7 +168,9 @@ class StremioSubtitleProvider extends SubtitleProvider {
     for (final addon in activeAddons) {
       try {
         final url = '${addon.baseUrl}/subtitles/$type/$id.json';
-        print('[StremioSubtitleProvider] Querying ${addon.manifest.name}: $url');
+        print(
+          '[StremioSubtitleProvider] Querying ${addon.manifest.name}: $url',
+        );
         final res = await http
             .get(Uri.parse(url), headers: _headers)
             .timeout(const Duration(seconds: 6));
@@ -187,19 +189,22 @@ class StremioSubtitleProvider extends SubtitleProvider {
 
             idx++;
             final rawLang = (map['lang'] ?? 'en').toString().toLowerCase();
-            final language = _iso3ToLangName[rawLang] ??
+            final language =
+                _iso3ToLangName[rawLang] ??
                 (rawLang.length <= 3 ? rawLang.toUpperCase() : rawLang);
 
-            final fileTitle = map['subtitleFileName']?.toString() ??
+            final fileTitle =
+                map['subtitleFileName']?.toString() ??
                 map['movieReleaseName']?.toString() ??
                 map['title']?.toString();
             final title = fileTitle?.isNotEmpty == true
                 ? fileTitle!
                 : '${addon.manifest.name} #$idx';
 
-            final format = (map['SubFormat']?.toString() ??
-                    (title.toLowerCase().endsWith('.vtt') ? 'vtt' : 'srt'))
-                .toLowerCase();
+            final format =
+                (map['SubFormat']?.toString() ??
+                        (title.toLowerCase().endsWith('.vtt') ? 'vtt' : 'srt'))
+                    .toLowerCase();
 
             results.add(
               SubtitleVariant(
@@ -217,10 +222,14 @@ class StremioSubtitleProvider extends SubtitleProvider {
               ),
             );
           }
-          print('[StremioSubtitleProvider] ${addon.manifest.name} returned $idx subtitles');
+          print(
+            '[StremioSubtitleProvider] ${addon.manifest.name} returned $idx subtitles',
+          );
         }
       } catch (e) {
-        print('[StremioSubtitleProvider] Error querying ${addon.manifest.name}: $e');
+        print(
+          '[StremioSubtitleProvider] Error querying ${addon.manifest.name}: $e',
+        );
       }
     }
 

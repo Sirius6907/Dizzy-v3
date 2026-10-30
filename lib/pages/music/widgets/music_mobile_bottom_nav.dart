@@ -72,4 +72,3 @@ class MusicMobileBottomNav extends StatelessWidget {
     );
   }
 }
-

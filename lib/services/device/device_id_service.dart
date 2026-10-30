@@ -37,8 +37,7 @@ class DeviceIdService {
 
   /// Pure helper for collision-retry unit tests: picks the first candidate
   /// not present in [taken]. Returns null after exhausting [candidates].
-  static String? pickUniqueCode(
-      List<String> candidates, Set<String> taken) {
+  static String? pickUniqueCode(List<String> candidates, Set<String> taken) {
     for (final c in candidates) {
       if (validCode(c) && !taken.contains(c)) return c;
     }

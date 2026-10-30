@@ -11,6 +11,7 @@ import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
 import '../adult/adult_section_gate.dart';
 import 'dizzy_social_service.dart';
+import 'username_gate_state.dart';
 
 /// Progressive Identity & Cross-Device Sync Service for Dizzy-v3.
 ///
@@ -88,6 +89,20 @@ class DizzyIdentityService {
         deviceRevoked.value = true;
       } else if (res is Map && res['success'] == true) {
         deviceRevoked.value = false;
+      }
+      // v1.3.3: a reinstall boots a fresh anonymous uid while the devices
+      // row still remembers the guest who used this phone. Surface that
+      // guest so the username gate can offer "Welcome back" instead of a
+      // duplicate claim (which would strand the old name on a dead uid).
+      if (res is Map) {
+        final candidate = UsernameGatePolicy.returningUser(
+          currentUid: uid,
+          previousUid: res['previous_uid']?.toString(),
+          previousUsername: res['previous_username']?.toString(),
+        );
+        if (candidate != null) {
+          UsernameGateState.returning.value = candidate;
+        }
       }
       // 18+ Heaven: server allow rides the same boot response (fail-closed —
       // a missing key keeps the last-known value, never grants).

@@ -7,7 +7,8 @@ enum DockItemKey {
     label: 'Home',
     icon: Icons.home_rounded,
     isRemovable: false,
-    description: 'Explore trending, continue watching, and catalog recommendations.',
+    description:
+        'Explore trending, continue watching, and catalog recommendations.',
   ),
   manga(
     key: 'manga',
@@ -35,14 +36,16 @@ enum DockItemKey {
     label: 'Music',
     icon: Icons.music_note_rounded,
     isRemovable: true,
-    description: 'High-res lossless streaming, visualizer, and studio playback.',
+    description:
+        'High-res lossless streaming, visualizer, and studio playback.',
   ),
   anime(
     key: 'anime',
     label: 'Anime',
     icon: Icons.animation_rounded,
     isRemovable: true,
-    description: 'Discover trending seasonal anime, Arabic/Eng subs, and episodes.',
+    description:
+        'Discover trending seasonal anime, Arabic/Eng subs, and episodes.',
   ),
   liveTv(
     key: 'livetv',
@@ -108,8 +111,8 @@ abstract final class DockSettings {
   /// Reactive notifier containing the map of enabled dock item keys.
   static final ValueNotifier<Map<String, bool>> enabledNotifier =
       ValueNotifier<Map<String, bool>>({
-    for (final item in DockItemKey.values) item.key: true,
-  });
+        for (final item in DockItemKey.values) item.key: true,
+      });
 
   /// Initialize and load saved state from SharedPreferences.
   static Future<void> initialize() async {

@@ -78,23 +78,34 @@ class LunaExtractor {
         final pName = p['name']!;
 
         try {
-          final res = await client.post(
-            Uri.parse(_watchUrl),
-            headers: {
-              'User-Agent': _ua,
-              'Next-Action': _actionFetchSources,
-              'Content-Type': 'text/plain;charset=UTF-8',
-              'Accept': 'text/x-component',
-              'Referer': _watchUrl,
-              'Origin': 'https://luna-stream.me',
-            },
-            body: jsonEncode([anilistId, pId, '$episodeNumber', episodeNumber, subtype, null]),
-          ).timeout(const Duration(seconds: 8));
+          final res = await client
+              .post(
+                Uri.parse(_watchUrl),
+                headers: {
+                  'User-Agent': _ua,
+                  'Next-Action': _actionFetchSources,
+                  'Content-Type': 'text/plain;charset=UTF-8',
+                  'Accept': 'text/x-component',
+                  'Referer': _watchUrl,
+                  'Origin': 'https://luna-stream.me',
+                },
+                body: jsonEncode([
+                  anilistId,
+                  pId,
+                  '$episodeNumber',
+                  episodeNumber,
+                  subtype,
+                  null,
+                ]),
+              )
+              .timeout(const Duration(seconds: 8));
 
           if (res.statusCode != 200) return <LunaAnimeResult>[];
 
           final parsed = _parseRscResponse(res.body);
-          if (parsed == null || parsed['sources'] is! List) return <LunaAnimeResult>[];
+          if (parsed == null || parsed['sources'] is! List) {
+            return <LunaAnimeResult>[];
+          }
 
           final sources = parsed['sources'] as List;
           final list = <LunaAnimeResult>[];
@@ -106,18 +117,24 @@ class LunaExtractor {
 
             final url = _cleanUrl(rawUrl);
             final format = (s['type']?.toString() ?? '').toLowerCase();
-            final isHls = format == 'hls' || format == 'm3u8' || url.contains('.m3u8') || url.contains('.txt');
+            final isHls =
+                format == 'hls' ||
+                format == 'm3u8' ||
+                url.contains('.m3u8') ||
+                url.contains('.txt');
 
-            list.add(LunaAnimeResult(
-              url: url,
-              server: 'Luna ($pName)',
-              quality: s['quality']?.toString() ?? '1080p',
-              type: isHls ? 'hls' : 'mp4',
-              headers: {
-                'User-Agent': _ua,
-                'Referer': 'https://luna-stream.me/',
-              },
-            ));
+            list.add(
+              LunaAnimeResult(
+                url: url,
+                server: 'Luna ($pName)',
+                quality: s['quality']?.toString() ?? '1080p',
+                type: isHls ? 'hls' : 'mp4',
+                headers: {
+                  'User-Agent': _ua,
+                  'Referer': 'https://luna-stream.me/',
+                },
+              ),
+            );
           }
           return list;
         } catch (_) {

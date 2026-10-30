@@ -27,8 +27,8 @@ class BanState {
     final until = daysLeft < 0
         ? 'permanently'
         : daysLeft == 0
-            ? 'until review'
-            : 'for $daysLeft more day${daysLeft == 1 ? '' : 's'}';
+        ? 'until review'
+        : 'for $daysLeft more day${daysLeft == 1 ? '' : 's'}';
     if (level == BanLevel.full) {
       return 'This account is suspended $until.'
           '${reason.isEmpty ? '' : ' Reason: $reason'}';
@@ -60,8 +60,9 @@ class BanState {
 /// Boot-time ban check + long-press report (D3).
 class BanService {
   static const _kAppealText = 'ban_appeal_text'; // last draft, offline-safe
-  static final ValueNotifier<BanState> state =
-      ValueNotifier<BanState>(const BanState(level: BanLevel.none));
+  static final ValueNotifier<BanState> state = ValueNotifier<BanState>(
+    const BanState(level: BanLevel.none),
+  );
 
   /// Boot gate: refresh from server. Never throws; offline → keep last state.
   static Future<BanState> refresh() async {
@@ -82,11 +83,14 @@ class BanService {
     try {
       if (!CloudClient.isReady) return false;
       if (reason.trim().length < 3) return false;
-      await CloudClient.db.rpc('report_user', params: {
-        'p_target_id': targetId,
-        'p_reason': reason.trim(),
-        'p_context': <String, dynamic>{},
-      });
+      await CloudClient.db.rpc(
+        'report_user',
+        params: {
+          'p_target_id': targetId,
+          'p_reason': reason.trim(),
+          'p_context': <String, dynamic>{},
+        },
+      );
       return true;
     } catch (e) {
       debugPrint('[Ban] report fail-soft: $e');

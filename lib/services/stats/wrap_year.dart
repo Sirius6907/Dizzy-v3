@@ -72,16 +72,16 @@ class YearlyWrap {
   });
 
   static YearlyWrap empty(int year) => YearlyWrap(
-        year: year,
-        minutesWatched: 0,
-        titlesFinished: 0,
-        titlesStarted: 0,
-        longestStreakDays: 0,
-        longestSessionMinutes: 0,
-        topType: '',
-        busiestDay: null,
-        busiestDayMinutes: 0,
-      );
+    year: year,
+    minutesWatched: 0,
+    titlesFinished: 0,
+    titlesStarted: 0,
+    longestStreakDays: 0,
+    longestSessionMinutes: 0,
+    topType: '',
+    busiestDay: null,
+    busiestDayMinutes: 0,
+  );
 
   bool get hasAnything => minutesWatched > 0 || titlesStarted > 0;
 
@@ -97,22 +97,15 @@ class YearlyWrap {
   ///
   /// `year` is injectable so a test can pin the calendar and so the wrap for
   /// last year can be opened later without changing any other call site.
-  static YearlyWrap fromFacts(
-    List<WrapFact> facts, {
-    int year = 0,
-  }) {
+  static YearlyWrap fromFacts(List<WrapFact> facts, {int year = 0}) {
     final usable = facts.where((f) => f.isUsable && f.minutes > 0).toList();
     if (usable.isEmpty) return empty(year);
 
     final targetYear = year != 0
         ? year
-        : usable
-            .map((f) => f.watchedAt.year)
-            .reduce((a, b) => a > b ? a : b);
+        : usable.map((f) => f.watchedAt.year).reduce((a, b) => a > b ? a : b);
 
-    final inYear = usable
-        .where((f) => f.watchedAt.year == targetYear)
-        .toList();
+    final inYear = usable.where((f) => f.watchedAt.year == targetYear).toList();
     if (inYear.isEmpty) return empty(targetYear);
 
     var minutes = 0;
@@ -126,7 +119,11 @@ class YearlyWrap {
     for (final f in inYear) {
       minutes += f.minutes;
       if (f.minutes > longestSession) longestSession = f.minutes;
-      final key = DateTime(f.watchedAt.year, f.watchedAt.month, f.watchedAt.day);
+      final key = DateTime(
+        f.watchedAt.year,
+        f.watchedAt.month,
+        f.watchedAt.day,
+      );
       days[key] = (days[key] ?? 0) + f.minutes;
       titles.add(f.title);
       if (f.finished) finished++;
@@ -172,9 +169,11 @@ class YearlyWrap {
     for (var i = 1; i < sorted.length; i++) {
       final prev = sorted[i - 1];
       final cur = sorted[i];
-      final gapDays = DateTime(cur.year, cur.month, cur.day)
-          .difference(DateTime(prev.year, prev.month, prev.day))
-          .inDays;
+      final gapDays = DateTime(
+        cur.year,
+        cur.month,
+        cur.day,
+      ).difference(DateTime(prev.year, prev.month, prev.day)).inDays;
       if (gapDays == 1) {
         run++;
         if (run > best) best = run;
@@ -190,31 +189,30 @@ class YearlyWrap {
   static YearlyWrap fromItems(
     List<ContinueWatchingItem> items, {
     int year = 0,
-  }) =>
-      fromFacts(
-        items
-            .map((i) => WrapFact(
-                  title: i.title,
-                  type: i.type,
-                  minutes: i.positionSeconds ~/ 60,
-                  watchedAt: i.lastWatchedAt,
-                  // Same completion rule the stats page uses.
-                  finished: i.isCompleted,
-                ))
-            .toList(),
-        year: year,
-      );
+  }) => fromFacts(
+    items
+        .map(
+          (i) => WrapFact(
+            title: i.title,
+            type: i.type,
+            minutes: i.positionSeconds ~/ 60,
+            watchedAt: i.lastWatchedAt,
+            // Same completion rule the stats page uses.
+            finished: i.isCompleted,
+          ),
+        )
+        .toList(),
+    year: year,
+  );
 
   /// The existing aggregate, for the tiles that already have a shape.
   WatchStats toWatchStats() => WatchStats(
-        titlesCount: titlesStarted,
-        episodesFinished: titlesFinished,
-        minutesWatched: minutesWatched,
-        currentStreakDays: longestStreakDays,
-        typeCounts: topType.isEmpty
-            ? const {}
-            : {topType: titlesStarted},
-      );
+    titlesCount: titlesStarted,
+    episodesFinished: titlesFinished,
+    minutesWatched: minutesWatched,
+    currentStreakDays: longestStreakDays,
+    typeCounts: topType.isEmpty ? const {} : {topType: titlesStarted},
+  );
 }
 
 /// The words on the card, and the one line a person shares.

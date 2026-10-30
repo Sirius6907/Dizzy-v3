@@ -33,7 +33,9 @@ class SubtitleExtractor {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
-        print('[SubtitleExtractor] Download failed for $url (Status: ${response.statusCode})');
+        print(
+          '[SubtitleExtractor] Download failed for $url (Status: ${response.statusCode})',
+        );
         return null;
       }
 
@@ -84,7 +86,8 @@ class SubtitleExtractor {
               continue;
             }
 
-            final isSub = lowerName.endsWith('.srt') ||
+            final isSub =
+                lowerName.endsWith('.srt') ||
                 lowerName.endsWith('.vtt') ||
                 lowerName.endsWith('.ass') ||
                 lowerName.endsWith('.sub');
@@ -129,17 +132,23 @@ class SubtitleExtractor {
       }
 
       // 3. Convert character encoding to clean UTF-8
-      final decodedString = SubtitleParser.decodeBytesWithFallback(extractedRawBytes);
+      final decodedString = SubtitleParser.decodeBytesWithFallback(
+        extractedRawBytes,
+      );
       final utf8Bytes = utf8.encode(decodedString);
 
       final savePath = '${targetDir.path}/$fileName.$targetExt';
       final localFile = File(savePath);
       await localFile.writeAsBytes(utf8Bytes, flush: true);
 
-      print('[SubtitleExtractor SUCCESS] Extracted subtitle to $savePath (${utf8Bytes.length} bytes)');
+      print(
+        '[SubtitleExtractor SUCCESS] Extracted subtitle to $savePath (${utf8Bytes.length} bytes)',
+      );
       return savePath;
     } catch (e, st) {
-      print('[SubtitleExtractor ERROR] Subtitle extraction error ($providerName): $e\n$st');
+      print(
+        '[SubtitleExtractor ERROR] Subtitle extraction error ($providerName): $e\n$st',
+      );
     }
     return null;
   }

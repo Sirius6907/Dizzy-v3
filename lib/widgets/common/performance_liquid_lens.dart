@@ -35,10 +35,7 @@ class PerformanceLiquidLens extends StatelessWidget {
         end: Alignment.bottomRight,
         colors: [DizzyVoid.surface1, DizzyVoid.voidB],
       ),
-      border: Border.all(
-        color: const Color(0x1CE2E8F0),
-        width: 1,
-      ),
+      border: Border.all(color: const Color(0x1CE2E8F0), width: 1),
     );
   }
 

@@ -17,7 +17,11 @@ class WatchHentaiResult {
   final String url;
   final String referer;
   final String origin;
-  WatchHentaiResult({required this.url, required this.referer, required this.origin});
+  WatchHentaiResult({
+    required this.url,
+    required this.referer,
+    required this.origin,
+  });
 }
 
 class _SearchHit {
@@ -54,8 +58,10 @@ class WatchHentaiExtractor {
 
   void _setHeaders(HttpClientRequest req, {String? referer}) {
     req.headers.set('User-Agent', _ua);
-    req.headers.set('Accept',
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8');
+    req.headers.set(
+      'Accept',
+      'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    );
     req.headers.set('Accept-Language', 'en-US,en;q=0.9');
     req.headers.set('Cache-Control', 'no-cache');
     if (referer != null) req.headers.set('Referer', referer);
@@ -67,7 +73,9 @@ class WatchHentaiExtractor {
       _setHeaders(req, referer: referer);
       final resp = await req.close().timeout(const Duration(seconds: 25));
       if (resp.statusCode != 200) {
-        if (kDebugMode) debugPrint('[WatchHentai] $url HTTP ${resp.statusCode}');
+        if (kDebugMode) {
+          debugPrint('[WatchHentai] $url HTTP ${resp.statusCode}');
+        }
         await resp.drain<void>();
         return null;
       }
@@ -109,11 +117,11 @@ class WatchHentaiExtractor {
     final out = <String>{t.trim()};
     // Split on punctuation/separators that mark a subtitle.
     for (final pat in [
-      RegExp(r'[:–—]'),    // colon, en/em dash
-      RegExp(r'\s+~'),          // space + tilde
-      RegExp(r'\s+-\s+'),       // " - "
-      RegExp(r'\s*\('),         // parenthesis
-      RegExp(r'\s*/'),          // slash
+      RegExp(r'[:–—]'), // colon, en/em dash
+      RegExp(r'\s+~'), // space + tilde
+      RegExp(r'\s+-\s+'), // " - "
+      RegExp(r'\s*\('), // parenthesis
+      RegExp(r'\s*/'), // slash
       // " side " / " part " / " arc " subtitle markers (case-insensitive).
       RegExp(r'\s+(?:side|part|arc)\s+', caseSensitive: false),
     ]) {
@@ -192,7 +200,10 @@ class WatchHentaiExtractor {
       ..sort((a, b) => a.length.compareTo(b.length));
 
     // Pre-tokenize ALL variants for scoring.
-    final qSets = orderedVariants.map(_tokens).where((s) => s.isNotEmpty).toList();
+    final qSets = orderedVariants
+        .map(_tokens)
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (qSets.isEmpty) return null;
 
     final triedQueries = <String>{};
@@ -204,7 +215,9 @@ class WatchHentaiExtractor {
       final html = await _get('$_origin/?s=${Uri.encodeQueryComponent(q)}');
       if (html == null) continue;
       final hits = _parseHits(html);
-      if (kDebugMode) debugPrint('[WatchHentai] search "$q" -> ${hits.length} hits');
+      if (kDebugMode) {
+        debugPrint('[WatchHentai] search "$q" -> ${hits.length} hits');
+      }
       for (final h in hits) {
         if (allHits.any((x) => x.url == h.url)) continue;
         allHits.add(h);
@@ -229,21 +242,30 @@ class WatchHentaiExtractor {
       }
     }
 
-    if (kDebugMode) debugPrint('[WatchHentai] best: "${best!.title}" score=${bestScore.toStringAsFixed(2)}');
+    if (kDebugMode) {
+      debugPrint(
+        '[WatchHentai] best: "${best!.title}" score=${bestScore.toStringAsFixed(2)}',
+      );
+    }
     if (bestScore < 0.50) {
-      if (kDebugMode) debugPrint('[WatchHentai] best score below threshold, no match');
+      if (kDebugMode) {
+        debugPrint('[WatchHentai] best score below threshold, no match');
+      }
       return null;
     }
     return best?.url;
   }
 
   String? _pickEpisode(String seriesHtml, int ep) {
-    final all = RegExp(r'/videos/([a-z0-9\-]+-episode-(\d+)[a-z0-9\-]*)/?',
-            caseSensitive: false)
-        .allMatches(seriesHtml)
-        .map((m) => '/videos/${m.group(1)!}/')
-        .toSet()
-        .toList();
+    final all =
+        RegExp(
+              r'/videos/([a-z0-9\-]+-episode-(\d+)[a-z0-9\-]*)/?',
+              caseSensitive: false,
+            )
+            .allMatches(seriesHtml)
+            .map((m) => '/videos/${m.group(1)!}/')
+            .toSet()
+            .toList();
     final epStr = ep.toString();
     final matching = all.where((u) {
       final m = RegExp(r'-episode-(\d+)').firstMatch(u);
@@ -260,6 +282,7 @@ class WatchHentaiExtractor {
         if (u.contains('uncensored')) s -= 10;
         return s;
       }
+
       return score(a).compareTo(score(b));
     });
     return '$_origin${matching.first}';
@@ -275,11 +298,10 @@ class WatchHentaiExtractor {
   }
 
   String? _pickBestSource(String jwHtml) {
-    final all = RegExp(r'''file\s*:\s*["'](https?://[^"']+\.mp4)["']''',
-            caseSensitive: false)
-        .allMatches(jwHtml)
-        .map((m) => m.group(1)!)
-        .toList();
+    final all = RegExp(
+      r'''file\s*:\s*["'](https?://[^"']+\.mp4)["']''',
+      caseSensitive: false,
+    ).allMatches(jwHtml).map((m) => m.group(1)!).toList();
     if (all.isEmpty) return null;
 
     final qualified = all
@@ -287,8 +309,10 @@ class WatchHentaiExtractor {
         .toList();
     if (qualified.isNotEmpty) {
       qualified.sort((a, b) {
-        int q(String u) => int.tryParse(
-                RegExp(r'_(\d+)p\.mp4$').firstMatch(u)?.group(1) ?? '0') ??
+        int q(String u) =>
+            int.tryParse(
+              RegExp(r'_(\d+)p\.mp4$').firstMatch(u)?.group(1) ?? '0',
+            ) ??
             0;
         return q(b).compareTo(q(a));
       });
@@ -316,7 +340,9 @@ class WatchHentaiExtractor {
     if (videoHtml == null) return null;
     final jwUrl = _extractStreamUrl(videoHtml);
     if (jwUrl == null) {
-      if (kDebugMode) debugPrint('[WatchHentai] no jwplayer iframe in $videoUrl');
+      if (kDebugMode) {
+        debugPrint('[WatchHentai] no jwplayer iframe in $videoUrl');
+      }
       return null;
     }
 
@@ -327,7 +353,9 @@ class WatchHentaiExtractor {
     }
     final stream = _pickBestSource(jwHtml);
     if (stream == null) {
-      if (kDebugMode) debugPrint('[WatchHentai] no playable source in jwplayer page');
+      if (kDebugMode) {
+        debugPrint('[WatchHentai] no playable source in jwplayer page');
+      }
       return null;
     }
     if (kDebugMode) debugPrint('[WatchHentai] stream: $stream');

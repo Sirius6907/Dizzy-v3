@@ -213,25 +213,27 @@ class HomeHeroCarouselState extends State<HomeHeroCarousel> {
                         selected: active,
                         label: 'Show featured title ${i + 1}',
                         child: AnimatedContainer(
-                        duration: DizzyMotion.fast,
-                        curve: DizzyMotion.easeOut,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: active ? 22 : 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          color: active
-                              ? primaryColor
-                              : Colors.white.withValues(alpha: 0.30),
-                          boxShadow: active
-                              ? [
-                                  BoxShadow(
-                                    color: primaryColor.withValues(alpha: 0.55),
-                                    blurRadius: 8,
-                                  ),
-                                ]
-                              : null,
-                        ),
+                          duration: DizzyMotion.fast,
+                          curve: DizzyMotion.easeOut,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: active ? 22 : 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: active
+                                ? primaryColor
+                                : Colors.white.withValues(alpha: 0.30),
+                            boxShadow: active
+                                ? [
+                                    BoxShadow(
+                                      color: primaryColor.withValues(
+                                        alpha: 0.55,
+                                      ),
+                                      blurRadius: 8,
+                                    ),
+                                  ]
+                                : null,
+                          ),
                         ),
                       ),
                     );
@@ -244,28 +246,30 @@ class HomeHeroCarouselState extends State<HomeHeroCarousel> {
                 _isHovering &&
                 screenWidth > 600) ...[
               if (_index > 0)
-                Positioned(
-                  left: 24,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: HomeCarouselArrow(
-                      icon: Icons.arrow_back_ios_new_rounded,
-                      label: 'Previous featured title',
-                      onTap: () => _goTo(_index - 1),
+                Positioned.fill(
+                  child: Align(
+                    alignment: const Alignment(-1, -0.45),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 24),
+                      child: HomeCarouselArrow(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        label: 'Previous featured title',
+                        onTap: () => _goTo(_index - 1),
+                      ),
                     ),
                   ),
                 ),
               if (_index < widget.movies.length - 1)
-                Positioned(
-                  right: 24,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: HomeCarouselArrow(
-                      icon: Icons.arrow_forward_ios_rounded,
-                      label: 'Next featured title',
-                      onTap: () => _goTo(_index + 1),
+                Positioned.fill(
+                  child: Align(
+                    alignment: const Alignment(1, -0.45),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 24),
+                      child: HomeCarouselArrow(
+                        icon: Icons.arrow_forward_ios_rounded,
+                        label: 'Next featured title',
+                        onTap: () => _goTo(_index + 1),
+                      ),
                     ),
                   ),
                 ),
@@ -276,4 +280,3 @@ class HomeHeroCarouselState extends State<HomeHeroCarousel> {
     );
   }
 }
-

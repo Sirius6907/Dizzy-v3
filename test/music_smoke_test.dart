@@ -20,8 +20,14 @@ void main() {
     expect(lyrics.isSynced, isTrue);
     expect(lyrics.syncedLines.length, 3);
     expect(lyrics.syncedLines[0].text, 'Hello darkness my old friend');
-    expect(lyrics.syncedLines[0].timestamp, const Duration(seconds: 12, milliseconds: 500));
-    expect(lyrics.syncedLines[1].timestamp, const Duration(seconds: 18, milliseconds: 200));
+    expect(
+      lyrics.syncedLines[0].timestamp,
+      const Duration(seconds: 12, milliseconds: 500),
+    );
+    expect(
+      lyrics.syncedLines[1].timestamp,
+      const Duration(seconds: 18, milliseconds: 200),
+    );
 
     // Test active line lookup
     expect(lyrics.activeLineIndex(const Duration(seconds: 5)), -1);

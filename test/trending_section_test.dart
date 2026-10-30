@@ -25,7 +25,8 @@ void main() {
           mediaType: 'tv',
         ),
       ])!;
-      expect(section.title, 'Trending Now');
+      expect(section.title, 'New & Trending');
+      expect(section.subtitle, 'Fresh in Hindi & English');
       expect(section.movies, hasLength(2));
 
       final movie = section.movies[0];

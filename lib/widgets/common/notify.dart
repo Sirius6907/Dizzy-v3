@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../design/dizzy_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 
 /// Polish P18 — ONE voice for toasts, dialogs, sheets.
 ///
@@ -19,6 +21,8 @@ abstract final class DizzyNotify {
   /// Toast lifetime, frozen.
   static const Duration kLifetime = Duration(seconds: 3);
 
+  /// Toast surface stays dark in both themes: Material's floating SnackBar is
+  /// an inverse-surface element, and every tone here pairs it with white text.
   static Color backgroundFor(NotifyTone tone) {
     switch (tone) {
       case NotifyTone.success:
@@ -68,33 +72,31 @@ abstract final class DizzyDialogs {
     String confirmLabel = 'Confirm',
     bool danger = false,
   }) async {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor: palette.cardBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: DizzyRadius.lgAll),
         title: Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: ink,
             fontSize: DizzyType.subtitle,
             fontWeight: DizzyType.wBold,
           ),
         ),
         content: Text(
           line,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: DizzyType.body,
-          ),
+          style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white60),
-            ),
+            child: Text('Cancel', style: TextStyle(color: inkSoft)),
           ),
           FilledButton(
             style: danger

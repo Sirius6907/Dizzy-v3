@@ -52,25 +52,36 @@ class AniHQExtractor {
     return out.toString();
   }
 
-  Future<Map<String, String>?> _extractVoe(http.Client client, String voeUrl) async {
+  Future<Map<String, String>?> _extractVoe(
+    http.Client client,
+    String voeUrl,
+  ) async {
     try {
-      var res = await client.get(
-        Uri.parse(voeUrl),
-        headers: {'User-Agent': _ua, 'Referer': '$_baseUrl/'},
-      ).timeout(const Duration(seconds: 8));
+      var res = await client
+          .get(
+            Uri.parse(voeUrl),
+            headers: {'User-Agent': _ua, 'Referer': '$_baseUrl/'},
+          )
+          .timeout(const Duration(seconds: 8));
 
       var html = res.body;
 
-      final redirectMatch = RegExp(r'''window\.location\.href\s*=\s*['"](https?://[^'"]+)['"]''').firstMatch(html);
+      final redirectMatch = RegExp(
+        r'''window\.location\.href\s*=\s*['"](https?://[^'"]+)['"]''',
+      ).firstMatch(html);
       if (redirectMatch != null && redirectMatch.group(1) != null) {
-        res = await client.get(
-          Uri.parse(redirectMatch.group(1)!),
-          headers: {'User-Agent': _ua, 'Referer': '$_baseUrl/'},
-        ).timeout(const Duration(seconds: 8));
+        res = await client
+            .get(
+              Uri.parse(redirectMatch.group(1)!),
+              headers: {'User-Agent': _ua, 'Referer': '$_baseUrl/'},
+            )
+            .timeout(const Duration(seconds: 8));
         html = res.body;
       }
 
-      final scriptMatch = RegExp(r'''<script type="application/json">\["(.*?)"\]</script>''').firstMatch(html);
+      final scriptMatch = RegExp(
+        r'''<script type="application/json">\["(.*?)"\]</script>''',
+      ).firstMatch(html);
       if (scriptMatch == null || scriptMatch.group(1) == null) return null;
 
       var str = scriptMatch.group(1)!;
@@ -89,10 +100,13 @@ class AniHQExtractor {
       }
 
       final reversed = shifted.toString().split('').reversed.join('');
-      final finalJsonStr = utf8.decode(base64.decode(base64.normalize(reversed)));
+      final finalJsonStr = utf8.decode(
+        base64.decode(base64.normalize(reversed)),
+      );
 
       final finalData = jsonDecode(finalJsonStr);
-      if (finalData is Map && (finalData['file'] != null || finalData['source'] != null)) {
+      if (finalData is Map &&
+          (finalData['file'] != null || finalData['source'] != null)) {
         final streamUrl = (finalData['file'] ?? finalData['source']).toString();
         return {'url': streamUrl};
       }
@@ -116,22 +130,34 @@ class AniHQExtractor {
         final clean = _cleanSlug(title);
         if (clean.isEmpty) continue;
 
-        final directUrl = '$_baseUrl/watch/$clean-episode-$episodeNumber-$typeSuffix/';
+        final directUrl =
+            '$_baseUrl/watch/$clean-episode-$episodeNumber-$typeSuffix/';
 
-        var pageRes = await client.get(
-          Uri.parse(directUrl),
-          headers: {'User-Agent': _ua},
-        ).timeout(const Duration(seconds: 5));
+        var pageRes = await client
+            .get(Uri.parse(directUrl), headers: {'User-Agent': _ua})
+            .timeout(const Duration(seconds: 5));
 
         var html = pageRes.body;
 
         if (pageRes.statusCode != 200) {
-          final sUri = Uri.parse('$_baseUrl/search').replace(queryParameters: {'keyword': title});
-          final sRes = await client.get(sUri, headers: {'User-Agent': _ua}).timeout(const Duration(seconds: 6));
+          final sUri = Uri.parse(
+            '$_baseUrl/search',
+          ).replace(queryParameters: {'keyword': title});
+          final sRes = await client
+              .get(sUri, headers: {'User-Agent': _ua})
+              .timeout(const Duration(seconds: 6));
           if (sRes.statusCode == 200) {
-            final sMatch = RegExp('''href="(https://anihq\\.cc/watch/[^"]+-episode-$episodeNumber-$typeSuffix/)"''', caseSensitive: false).firstMatch(sRes.body);
+            final sMatch = RegExp(
+              '''href="(https://anihq\\.cc/watch/[^"]+-episode-$episodeNumber-$typeSuffix/)"''',
+              caseSensitive: false,
+            ).firstMatch(sRes.body);
             if (sMatch != null && sMatch.group(1) != null) {
-              final rRes = await client.get(Uri.parse(sMatch.group(1)!), headers: {'User-Agent': _ua}).timeout(const Duration(seconds: 6));
+              final rRes = await client
+                  .get(
+                    Uri.parse(sMatch.group(1)!),
+                    headers: {'User-Agent': _ua},
+                  )
+                  .timeout(const Duration(seconds: 6));
               if (rRes.statusCode == 200) {
                 html = rRes.body;
               }
@@ -139,19 +165,28 @@ class AniHQExtractor {
           }
         }
 
-        final voeMatch = RegExp(r'''data-video=["'](https?://[^"']*voe[^"']*)["']''', caseSensitive: false).firstMatch(html) ??
-            RegExp(r'''href=["'](https?://[^"']*voe[^"']*)["']''', caseSensitive: false).firstMatch(html);
+        final voeMatch =
+            RegExp(
+              r'''data-video=["'](https?://[^"']*voe[^"']*)["']''',
+              caseSensitive: false,
+            ).firstMatch(html) ??
+            RegExp(
+              r'''href=["'](https?://[^"']*voe[^"']*)["']''',
+              caseSensitive: false,
+            ).firstMatch(html);
 
         if (voeMatch != null && voeMatch.group(1) != null) {
           final voeUrl = voeMatch.group(1)!;
           final voeResult = await _extractVoe(client, voeUrl);
           if (voeResult != null && voeResult['url'] != null) {
-            results.add(AniHQAnimeResult(
-              url: voeResult['url']!,
-              server: 'AniHQ (VOE)',
-              quality: '1080p',
-              headers: {'User-Agent': _ua, 'Referer': '$_baseUrl/'},
-            ));
+            results.add(
+              AniHQAnimeResult(
+                url: voeResult['url']!,
+                server: 'AniHQ (VOE)',
+                quality: '1080p',
+                headers: {'User-Agent': _ua, 'Referer': '$_baseUrl/'},
+              ),
+            );
             break;
           }
         }

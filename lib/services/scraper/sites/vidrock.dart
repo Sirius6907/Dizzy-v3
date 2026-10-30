@@ -16,7 +16,8 @@ class VidRockScraper extends StreamScraper {
   @override
   String get name => 'vidrock';
 
-  static const _gcmHexKey = '7f3e9c2a8b5d1f4e6a9c3b7d2e5f8a1c4b6d9e2f5a8c1b4d7e9f2a5c8b1d4e7f';
+  static const _gcmHexKey =
+      '7f3e9c2a8b5d1f4e6a9c3b7d2e5f8a1c4b6d9e2f5a8c1b4d7e9f2a5c8b1d4e7f';
   static const _baseUrl = 'https://vidrock.ru/';
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -50,7 +51,10 @@ class VidRockScraper extends StreamScraper {
 
       final keyBytes = _hexToBytes(_gcmHexKey);
       final cipher = GCMBlockCipher(AESEngine());
-      cipher.init(false, AEADParameters(KeyParameter(keyBytes), 128, iv, Uint8List(0)));
+      cipher.init(
+        false,
+        AEADParameters(KeyParameter(keyBytes), 128, iv, Uint8List(0)),
+      );
 
       final decrypted = cipher.process(ciphertext);
       return utf8.decode(decrypted);
@@ -80,7 +84,9 @@ class VidRockScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidRockScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidRockScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -90,14 +96,16 @@ class VidRockScraper extends StreamScraper {
             ? 'tv/$tmdbId/${season ?? 1}/${episode ?? 1}'
             : 'movie/$tmdbId';
 
-        final res = await client.get(
-          Uri.parse('${_baseUrl}api/$path'),
-          headers: {
-            'User-Agent': _ua,
-            'Referer': _baseUrl,
-            'Origin': _baseUrl,
-          },
-        ).timeout(const Duration(seconds: 8));
+        final res = await client
+            .get(
+              Uri.parse('${_baseUrl}api/$path'),
+              headers: {
+                'User-Agent': _ua,
+                'Referer': _baseUrl,
+                'Origin': _baseUrl,
+              },
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (res.statusCode != 200) return;
         final data = jsonDecode(res.body);
@@ -109,33 +117,42 @@ class VidRockScraper extends StreamScraper {
 
           String? streamUrl;
           if (info is String) {
-            streamUrl = info.startsWith('http') ? info : await compute(_decryptStreamUrl, info);
+            streamUrl = info.startsWith('http')
+                ? info
+                : await compute(_decryptStreamUrl, info);
           } else if (info is Map) {
-            final raw = info['url']?.toString() ?? info['stream']?.toString() ?? info['file']?.toString();
+            final raw =
+                info['url']?.toString() ??
+                info['stream']?.toString() ??
+                info['file']?.toString();
             if (raw != null) {
-              streamUrl = raw.startsWith('http') ? raw : await compute(_decryptStreamUrl, raw);
+              streamUrl = raw.startsWith('http')
+                  ? raw
+                  : await compute(_decryptStreamUrl, raw);
             }
           }
 
           if (streamUrl != null && streamUrl.isNotEmpty) {
             if (streamUrl.contains('/playlist/')) {
               try {
-                final pRes = await client.get(
-                  Uri.parse(streamUrl),
-                  headers: {
-                    'User-Agent': _ua,
-                    'Referer': _baseUrl,
-                  },
-                ).timeout(const Duration(seconds: 6));
+                final pRes = await client
+                    .get(
+                      Uri.parse(streamUrl),
+                      headers: {'User-Agent': _ua, 'Referer': _baseUrl},
+                    )
+                    .timeout(const Duration(seconds: 6));
 
-                if (pRes.statusCode == 200 && pRes.body.trim().startsWith('[')) {
+                if (pRes.statusCode == 200 &&
+                    pRes.body.trim().startsWith('[')) {
                   final pList = jsonDecode(pRes.body);
                   if (pList is List && pList.isNotEmpty) {
                     for (final item in pList) {
                       if (item is Map) {
                         final rawItemUrl = item['url']?.toString();
-                        if (rawItemUrl != null && rawItemUrl.startsWith('http')) {
-                          final resVal = item['resolution']?.toString() ?? '1080';
+                        if (rawItemUrl != null &&
+                            rawItemUrl.startsWith('http')) {
+                          final resVal =
+                              item['resolution']?.toString() ?? '1080';
                           final isHls = rawItemUrl.contains('.m3u8');
                           final reqHeaders = {
                             'User-Agent': _ua,
@@ -146,14 +163,13 @@ class VidRockScraper extends StreamScraper {
                             name: 'VidRock',
                             addonName: 'vidrock',
                             title: 'VidRock · $provider · ${resVal}p',
-                            description: 'VidRock Stream · ${isHls ? 'HLS' : 'MP4'}',
+                            description:
+                                'VidRock Stream · ${isHls ? 'HLS' : 'MP4'}',
                             url: rawItemUrl,
                             headers: reqHeaders,
                             behaviorHints: {
                               'notWebReady': false,
-                              'proxyHeaders': {
-                                'request': reqHeaders,
-                              },
+                              'proxyHeaders': {'request': reqHeaders},
                             },
                           );
                         }
@@ -166,10 +182,7 @@ class VidRockScraper extends StreamScraper {
             }
 
             final isHls = streamUrl.contains('.m3u8');
-            final reqHeaders = {
-              'User-Agent': _ua,
-              'Referer': _baseUrl,
-            };
+            final reqHeaders = {'User-Agent': _ua, 'Referer': _baseUrl};
 
             yield StreamSource(
               name: 'VidRock',
@@ -180,9 +193,7 @@ class VidRockScraper extends StreamScraper {
               headers: reqHeaders,
               behaviorHints: {
                 'notWebReady': false,
-                'proxyHeaders': {
-                  'request': reqHeaders,
-                },
+                'proxyHeaders': {'request': reqHeaders},
               },
             );
           }

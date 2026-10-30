@@ -75,8 +75,7 @@ class SourceRanker {
     // 4. Seeder count, log-scaled 0.._wSeeders (1000+ = full weight).
     final seeders = _parseSeeders(s);
     if (seeders != null) {
-      score += (_wSeeders *
-              (_log2(seeders + 1) / _log2(1001)))
+      score += (_wSeeders * (_log2(seeders + 1) / _log2(1001)))
           .clamp(0, _wSeeders)
           .round();
     }
@@ -127,8 +126,10 @@ class SourceRanker {
   static int? _parseSeeders(StreamSource s) {
     // Common patterns: " Tracker: 1,234 seeders", "S: 123"
     final text = '${s.name ?? ''} ${s.description ?? ''}';
-    final m = RegExp(r'(\d[\d,]*)\s*seeders?', caseSensitive: false)
-        .firstMatch(text);
+    final m = RegExp(
+      r'(\d[\d,]*)\s*seeders?',
+      caseSensitive: false,
+    ).firstMatch(text);
     if (m == null) return null;
     return int.tryParse(m.group(1)!.replaceAll(',', ''));
   }

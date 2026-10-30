@@ -63,6 +63,11 @@ class WatchResolveController {
   Timer? _batchTimer;
   StreamProbeRace? _race;
 
+  /// First exposure waits for this window so a fast HTTP source that lands a
+  /// few hundred ms later can outrank an early torrent that would stall.
+  static const Duration _exposureWindow = Duration(milliseconds: 400);
+  bool _exposureWindowOpen = true;
+
   /// F1: "first valid source wins" lives here, not in the race. The race
   /// answers "which source is alive?"; the gate answers "should this
   /// source open playback right now, or is the race already won?" — so a
@@ -101,8 +106,11 @@ class WatchResolveController {
       // chahiye (strict same-language playback). Non-hindi embedded links
       // fallback pool mein jayengi — zero hindi mila to release ho jayengi.
       if (DubModeService.isHindi) {
-        final embeddedHindi = filterByDubMode(embeddedStreams,
-            hindi: true, mediaTitle: mediaTitle);
+        final embeddedHindi = filterByDubMode(
+          embeddedStreams,
+          hindi: true,
+          mediaTitle: mediaTitle,
+        );
         final embeddedOther = embeddedStreams
             .where((s) => !embeddedHindi.contains(s))
             .toList();
@@ -124,7 +132,8 @@ class WatchResolveController {
     }
 
     try {
-      final scrape = scrapeOverride ??
+      final scrape =
+          scrapeOverride ??
           StreamService.fetchStreams(
             type: type,
             id: streamId,
@@ -147,10 +156,9 @@ class WatchResolveController {
           continue;
         }
         _pending.add(source);
-        _batchTimer ??= Timer(
-          const Duration(milliseconds: 60),
-          flush,
-        );
+        _scheduleBatch();
+        // 3+ verified-looking HTTP hits are enough to expose immediately.
+        if (_pending.where(_isHttpLike).length >= 3) flush();
         // Parallel health probe for the autoplay race (never blocks UI).
         _race?.offer(source);
       }
@@ -192,6 +200,7 @@ class WatchResolveController {
   void flush() {
     _batchTimer?.cancel();
     _batchTimer = null;
+    _exposureWindowOpen = false;
     // Refresh the screen-visible hindi count on EVERY flush (even empty
     // ones) so the English-fallback check reads a live value.
     final reader = hindiCountReader;
@@ -200,7 +209,73 @@ class WatchResolveController {
 
     final batch = List<StreamSource>.of(_pending);
     _pending.clear();
+    _sortForExposure(batch);
     onBatch(batch);
+  }
+
+  void _scheduleBatch() {
+    if (_batchTimer != null) return;
+    _batchTimer = Timer(
+      _exposureWindowOpen ? _exposureWindow : const Duration(milliseconds: 60),
+      flush,
+    );
+  }
+
+  static bool _isHttpLike(StreamSource source) => _protocolTier(source) >= 2;
+
+  /// https/HLS > plain HTTP > torrent. Everything else is treated as direct.
+  static int _protocolTier(StreamSource source) {
+    if (source.infoHash != null &&
+        source.infoHash!.isNotEmpty &&
+        !source.isDebrid) {
+      return 0;
+    }
+    final url = (source.url ?? source.externalUrl ?? '').toLowerCase();
+    if (url.contains('.m3u8') ||
+        url.contains('/hls/') ||
+        url.startsWith('https://')) {
+      return 2;
+    }
+    if (url.startsWith('http://')) return 1;
+    return 1;
+  }
+
+  /// Stable rank: protocol, seeders, quality/bitrate, title; arrival order
+  /// is the final tiebreaker (explicit index sort — Dart's sort isn't stable).
+  static void _sortForExposure(List<StreamSource> batch) {
+    final order = List<int>.generate(batch.length, (i) => i);
+    order.sort((a, b) {
+      final byRank = _compareForExposure(batch[a], batch[b]);
+      return byRank != 0 ? byRank : a.compareTo(b);
+    });
+    final sorted = [for (final i in order) batch[i]];
+    for (var i = 0; i < batch.length; i++) {
+      batch[i] = sorted[i];
+    }
+  }
+
+  static int _compareForExposure(StreamSource a, StreamSource b) {
+    final byProtocol = _protocolTier(b).compareTo(_protocolTier(a));
+    if (byProtocol != 0) return byProtocol;
+
+    final bySeeders = (b.seeders ?? 0).compareTo(a.seeders ?? 0);
+    if (bySeeders != 0) return bySeeders;
+
+    final byQuality = b.qualityRank.compareTo(a.qualityRank);
+    if (byQuality != 0) return byQuality;
+
+    final byBitrate = _maxBitrate(b).compareTo(_maxBitrate(a));
+    if (byBitrate != 0) return byBitrate;
+
+    return a.displayTitle.toLowerCase().compareTo(b.displayTitle.toLowerCase());
+  }
+
+  static int _maxBitrate(StreamSource source) {
+    var max = 0;
+    for (final rendition in source.renditions) {
+      if (rendition.bitrate > max) max = rendition.bitrate;
+    }
+    return max;
   }
 
   /// User tapped a source manually — stop the autoplay race (was inline

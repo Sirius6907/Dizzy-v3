@@ -25,7 +25,8 @@ class MusicWaveformSeekbar extends StatefulWidget {
   State<MusicWaveformSeekbar> createState() => _MusicWaveformSeekbarState();
 }
 
-class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with SingleTickerProviderStateMixin {
+class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar>
+    with SingleTickerProviderStateMixin {
   bool _isDragging = false;
   double _dragProgress = 0.0;
   late final AnimationController _waveAnimController;
@@ -70,7 +71,8 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
   double get _currentProgress {
     if (_isDragging) return _dragProgress;
     if (widget.duration.inMilliseconds <= 0) return 0.0;
-    return (widget.position.inMilliseconds / widget.duration.inMilliseconds).clamp(0.0, 1.0);
+    return (widget.position.inMilliseconds / widget.duration.inMilliseconds)
+        .clamp(0.0, 1.0);
   }
 
   String _formatDuration(Duration d) {
@@ -109,7 +111,10 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
     final posDuration = _isDragging
-        ? Duration(milliseconds: (_dragProgress * widget.duration.inMilliseconds).round())
+        ? Duration(
+            milliseconds: (_dragProgress * widget.duration.inMilliseconds)
+                .round(),
+          )
         : widget.position;
 
     return Column(
@@ -125,7 +130,9 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                   activeTrackColor: palette.primaryColor,
                   inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
                   thumbColor: Colors.white,
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 6,
+                  ),
                   trackHeight: 4,
                   overlayColor: palette.primaryColor.withValues(alpha: 0.2),
                 ),
@@ -139,7 +146,8 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                   },
                   onChangeEnd: (val) {
                     setState(() => _isDragging = false);
-                    final targetMs = (val * widget.duration.inMilliseconds).round();
+                    final targetMs = (val * widget.duration.inMilliseconds)
+                        .round();
                     widget.onSeek(Duration(milliseconds: targetMs));
                   },
                 ),
@@ -149,9 +157,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
             if (widget.style == MusicSeekbarStyle.neonGradient) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
-                onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
-                onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                onHorizontalDragStart: (d) =>
+                    _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragUpdate: (d) =>
+                    _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragEnd: (d) =>
+                    _commitSeek(width * _dragProgress, width),
                 onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
                 onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
                 onTapCancel: () => setState(() => _isDragging = false),
@@ -174,12 +185,18 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                           height: widget.compact ? 4 : 6,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [palette.primaryColor, palette.accentColor, Colors.white],
+                              colors: [
+                                palette.primaryColor,
+                                palette.accentColor,
+                                Colors.white,
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(4),
                             boxShadow: [
                               BoxShadow(
-                                color: palette.primaryColor.withValues(alpha: 0.6),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.6,
+                                ),
                                 blurRadius: 10,
                                 spreadRadius: 1,
                               ),
@@ -188,7 +205,10 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                         ),
                       ),
                       Positioned(
-                        left: (width * _currentProgress - 6).clamp(0.0, math.max(0.0, width - 12)),
+                        left: (width * _currentProgress - 6).clamp(
+                          0.0,
+                          math.max(0.0, width - 12),
+                        ),
                         child: Container(
                           width: 12,
                           height: 12,
@@ -214,9 +234,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
             if (widget.style == MusicSeekbarStyle.liquidGlassSlider) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
-                onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
-                onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                onHorizontalDragStart: (d) =>
+                    _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragUpdate: (d) =>
+                    _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragEnd: (d) =>
+                    _commitSeek(width * _dragProgress, width),
                 onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
                 onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
                 onTapCancel: () => setState(() => _isDragging = false),
@@ -226,7 +249,9 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
                   ),
                   child: Stack(
                     alignment: Alignment.centerLeft,
@@ -246,17 +271,25 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                         ),
                       ),
                       Positioned(
-                        left: (width * _currentProgress - 10).clamp(0.0, math.max(0.0, width - 20)),
+                        left: (width * _currentProgress - 10).clamp(
+                          0.0,
+                          math.max(0.0, width - 20),
+                        ),
                         child: Container(
                           width: 18,
                           height: 18,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
-                            border: Border.all(color: palette.primaryColor, width: 2),
+                            border: Border.all(
+                              color: palette.primaryColor,
+                              width: 2,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: palette.primaryColor.withValues(alpha: 0.7),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.7,
+                                ),
                                 blurRadius: 10,
                               ),
                             ],
@@ -272,9 +305,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
             if (widget.style == MusicSeekbarStyle.radialDial) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
-                onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
-                onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                onHorizontalDragStart: (d) =>
+                    _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragUpdate: (d) =>
+                    _updateDrag(d.localPosition.dx, width),
+                onHorizontalDragEnd: (d) =>
+                    _commitSeek(width * _dragProgress, width),
                 onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
                 onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
                 onTapCancel: () => setState(() => _isDragging = false),
@@ -300,9 +336,12 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar> with Single
                 final animPhase = _waveAnimController.value * 2 * math.pi;
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onHorizontalDragStart: (d) => _updateDrag(d.localPosition.dx, width),
-                  onHorizontalDragUpdate: (d) => _updateDrag(d.localPosition.dx, width),
-                  onHorizontalDragEnd: (d) => _commitSeek(width * _dragProgress, width),
+                  onHorizontalDragStart: (d) =>
+                      _updateDrag(d.localPosition.dx, width),
+                  onHorizontalDragUpdate: (d) =>
+                      _updateDrag(d.localPosition.dx, width),
+                  onHorizontalDragEnd: (d) =>
+                      _commitSeek(width * _dragProgress, width),
                   onTapDown: (d) => _updateDrag(d.localPosition.dx, width),
                   onTapUp: (d) => _commitSeek(d.localPosition.dx, width),
                   onTapCancel: () => setState(() => _isDragging = false),
@@ -414,10 +453,7 @@ class _MusicWaveformPainter extends CustomPainter {
         activePaint.shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            accentColor,
-            primaryColor,
-          ],
+          colors: [accentColor, primaryColor],
         ).createShader(Rect.fromLTWH(x, top, barWidth, h));
         canvas.drawRRect(rect, activePaint);
       } else {
@@ -472,5 +508,6 @@ class _RadialDialSeekPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RadialDialSeekPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.primaryColor != primaryColor;
+      oldDelegate.progress != progress ||
+      oldDelegate.primaryColor != primaryColor;
 }

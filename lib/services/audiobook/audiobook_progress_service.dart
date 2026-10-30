@@ -19,20 +19,24 @@ class AudiobookProgress {
     required this.lastListenedTimestamp,
   });
 
-  String get key => audiobook.uuid.isNotEmpty ? audiobook.uuid : audiobook.title;
+  String get key =>
+      audiobook.uuid.isNotEmpty ? audiobook.uuid : audiobook.title;
 
   Map<String, dynamic> toJson() => {
-        'audiobook': audiobook.toJson(),
-        'chapters': chapters.map((c) => c.toJson()).toList(),
-        'chapterIndex': chapterIndex,
-        'positionMs': positionMs,
-        'durationMs': durationMs,
-        'lastListenedTimestamp': lastListenedTimestamp,
-      };
+    'audiobook': audiobook.toJson(),
+    'chapters': chapters.map((c) => c.toJson()).toList(),
+    'chapterIndex': chapterIndex,
+    'positionMs': positionMs,
+    'durationMs': durationMs,
+    'lastListenedTimestamp': lastListenedTimestamp,
+  };
 
-  factory AudiobookProgress.fromJson(Map<String, dynamic> json) => AudiobookProgress(
+  factory AudiobookProgress.fromJson(Map<String, dynamic> json) =>
+      AudiobookProgress(
         audiobook: Audiobook.fromJson(json['audiobook']),
-        chapters: (json['chapters'] as List).map((c) => AudiobookChapter.fromJson(c)).toList(),
+        chapters: (json['chapters'] as List)
+            .map((c) => AudiobookChapter.fromJson(c))
+            .toList(),
         chapterIndex: json['chapterIndex'] ?? 0,
         positionMs: json['positionMs'] ?? 0,
         durationMs: json['durationMs'] ?? 0,
@@ -41,7 +45,8 @@ class AudiobookProgress {
 }
 
 class AudiobookProgressService {
-  static final AudiobookProgressService instance = AudiobookProgressService._internal();
+  static final AudiobookProgressService instance =
+      AudiobookProgressService._internal();
   AudiobookProgressService._internal();
 
   static const String _storageKey = 'audiobook_continue_listening_v1';
@@ -95,7 +100,9 @@ class AudiobookProgressService {
         } catch (_) {}
       }
 
-      result.sort((a, b) => b.lastListenedTimestamp.compareTo(a.lastListenedTimestamp));
+      result.sort(
+        (a, b) => b.lastListenedTimestamp.compareTo(a.lastListenedTimestamp),
+      );
       return result;
     } catch (e) {
       print('[AudiobookProgressService] Error loading progress: $e');

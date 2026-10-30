@@ -15,10 +15,7 @@ import '../pdf_reader_page.dart';
 class ContinueReadingSlider extends StatefulWidget {
   final String title;
 
-  const ContinueReadingSlider({
-    super.key,
-    this.title = 'Continue Reading',
-  });
+  const ContinueReadingSlider({super.key, this.title = 'Continue Reading'});
 
   @override
   State<ContinueReadingSlider> createState() => _ContinueReadingSliderState();
@@ -52,7 +49,8 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
     if (!_scrollController.hasClients) return;
     final canLeft = _scrollController.position.pixels > 10;
     final canRight =
-        _scrollController.position.pixels < _scrollController.position.maxScrollExtent - 10;
+        _scrollController.position.pixels <
+        _scrollController.position.maxScrollExtent - 10;
 
     if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
       setState(() {
@@ -66,8 +64,10 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
     if (!_scrollController.hasClients) return;
     final viewportWidth = _scrollController.position.viewportDimension;
     final scrollAmount = viewportWidth * 0.8 * directionMultiplier;
-    final target = (_scrollController.position.pixels + scrollAmount)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    final target = (_scrollController.position.pixels + scrollAmount).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
     _scrollController.animateTo(
       target,
@@ -134,7 +134,10 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
             children: [
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -182,14 +185,18 @@ class _ContinueReadingSliderState extends State<ContinueReadingSlider> {
                         controller: _scrollController,
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 8,
+                        ),
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return _ContinueReadingCard(
                             item: item,
                             onTap: () => _openReader(context, item),
-                            onRemove: () => ContinueReadingService.removeProgress(item.md5),
+                            onRemove: () =>
+                                ContinueReadingService.removeProgress(item.md5),
                           );
                         },
                       ),
@@ -309,7 +316,9 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: _hovered ? const Color(0xFF7C3AED) : Colors.white12,
+                        color: _hovered
+                            ? const Color(0xFF7C3AED)
+                            : Colors.white12,
                         width: _hovered ? 2.0 : 1.0,
                       ),
                       boxShadow: [
@@ -334,20 +343,32 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                               placeholder: (_, __) => Container(
                                 color: DizzyVoid.surface2,
                                 child: const Center(
-                                  child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
+                                  child: Icon(
+                                    Icons.menu_book_rounded,
+                                    color: Colors.white24,
+                                    size: 36,
+                                  ),
                                 ),
                               ),
                               errorWidget: (_, __, ___) => Container(
                                 color: DizzyVoid.surface2,
                                 child: const Center(
-                                  child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
+                                  child: Icon(
+                                    Icons.menu_book_rounded,
+                                    color: Colors.white24,
+                                    size: 36,
+                                  ),
                                 ),
                               ),
                             )
                           : Container(
                               color: DizzyVoid.surface2,
                               child: const Center(
-                                child: Icon(Icons.menu_book_rounded, color: Colors.white24, size: 36),
+                                child: Icon(
+                                  Icons.menu_book_rounded,
+                                  color: Colors.white24,
+                                  size: 36,
+                                ),
                               ),
                             ),
                     ),
@@ -358,7 +379,10 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.75),
                         borderRadius: BorderRadius.circular(6),
@@ -377,7 +401,10 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                   ),
 
                   // Remove Button Top-Right (always on mobile, hover-only on desktop)
-                  if (_hovered || !(defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.linux))
+                  if (_hovered ||
+                      !(defaultTargetPlatform == TargetPlatform.windows ||
+                          defaultTargetPlatform == TargetPlatform.macOS ||
+                          defaultTargetPlatform == TargetPlatform.linux))
                     Positioned(
                       top: 6,
                       right: 6,
@@ -389,7 +416,11 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                             color: Colors.black87,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.close_rounded, color: Colors.white, size: 14),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -403,7 +434,9 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                       height: 5,
                       decoration: const BoxDecoration(
                         color: Colors.black54,
-                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+                        borderRadius: BorderRadius.vertical(
+                          bottom: Radius.circular(13),
+                        ),
                       ),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
@@ -411,7 +444,9 @@ class _ContinueReadingCardState extends State<_ContinueReadingCard> {
                         child: Container(
                           decoration: const BoxDecoration(
                             color: Color(0xFF7C3AED),
-                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+                            borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(13),
+                            ),
                           ),
                         ),
                       ),

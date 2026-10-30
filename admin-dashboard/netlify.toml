@@ -1,0 +1,5 @@
+# Admin dashboard. Deploy from this directory:
+#   netlify deploy --prod --dir=. --site 5c9dca14-8c4b-4a10-ac18-c6f2b74dac76
+# Headers live in _headers next to this file (no CSP: index.html is inline-handler based).
+[build]
+  publish = "."

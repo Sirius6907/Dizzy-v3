@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/cloud/watch_party_service.dart';
 import '../../services/share/native_share.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../services/watchparty/party_session.dart';
 import '../common/notify.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 
 /// v1.2.0-T2.8: one-tap Watch Together entry (non-tech flagship).
 /// Movie/TV page pe bada button → room auto-create with media prefilled →
@@ -75,10 +76,17 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
   }
 
   void _showCodeSheet(WatchPartyRoom room) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.12);
     final code = room.roomId;
     showModalBottomSheet(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: palette.cardBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -89,10 +97,10 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
           children: [
             const Text('👥', style: TextStyle(fontSize: 40)),
             const SizedBox(height: DizzySpace.xs),
-            const Text(
+            Text(
               'Room ready! Send this code to your friend.',
               style: TextStyle(
-                color: Colors.white,
+                color: ink,
                 fontSize: DizzyType.subtitle,
                 fontWeight: DizzyType.wBold,
               ),
@@ -105,15 +113,14 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                 vertical: DizzySpace.md - 2,
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.07),
+                color: well,
                 borderRadius: DizzyRadius.mdAll,
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12)),
+                border: Border.all(color: hairline),
               ),
               child: Text(
                 code,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: ink,
                   fontSize: DizzyType.display - 2,
                   fontWeight: DizzyType.wBold,
                   letterSpacing: 6,
@@ -127,8 +134,11 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: code));
-                      DizzyNotify.show(ctx, 'Code copied.',
-                          tone: NotifyTone.success);
+                      DizzyNotify.show(
+                        ctx,
+                        'Code copied.',
+                        tone: NotifyTone.success,
+                      );
                     },
                     icon: const Icon(Icons.copy_rounded, size: 18),
                     label: const Text('Copy'),
@@ -176,8 +186,9 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF7C5CFF),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         onPressed: _busy ? null : _start,
         icon: _busy
@@ -185,7 +196,9 @@ class _WatchTogetherButtonState extends State<WatchTogetherButton> {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : const Text('👥', style: TextStyle(fontSize: 20)),
         label: Text(

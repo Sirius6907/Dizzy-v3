@@ -240,22 +240,26 @@ abstract final class MoodQuizPolicy {
     };
 
     for (final g in <String>[genres.first, second]) {
-      out.add(MoodPick(
-        title: _headlineFor(g, type),
-        query: g,
-        mediaType: type,
-        reason: _reasonFor(p),
-      ));
+      out.add(
+        MoodPick(
+          title: _headlineFor(g, type),
+          query: g,
+          mediaType: type,
+          reason: _reasonFor(p),
+        ),
+      );
     }
 
     // The night always ends with something everyone knows, so the row is
     // never three deep cuts and a shrug.
-    out.add(MoodPick(
-      title: 'Because you liked it before',
-      query: 'Top rated ${type == 'series' ? 'series' : 'movies'}',
-      mediaType: type,
-      reason: _reasonFor(p),
-    ));
+    out.add(
+      MoodPick(
+        title: 'Because you liked it before',
+        query: 'Top rated ${type == 'series' ? 'series' : 'movies'}',
+        mediaType: type,
+        reason: _reasonFor(p),
+      ),
+    );
 
     return out;
   }
@@ -296,7 +300,8 @@ abstract final class MoodQuizPolicy {
   }
 
   /// Headline above tonight's picks.
-  static String resultTitle(MoodProfile p) => 'Tonight looks like ${p.mood.label.toLowerCase()}';
+  static String resultTitle(MoodProfile p) =>
+      'Tonight looks like ${p.mood.label.toLowerCase()}';
 
   /// One line under the result headline.
   static String resultLine(MoodProfile p) =>

@@ -32,10 +32,8 @@ void installGlobalErrorHandlers({required void Function() restartApp}) {
     return true; // handled — keep the app alive
   };
 
-  ErrorWidget.builder = (details) => ErrorScreen(
-        message: 'Something went wrong here.',
-        onRestart: restartApp,
-      );
+  ErrorWidget.builder = (details) =>
+      ErrorScreen(message: 'Something went wrong here.', onRestart: restartApp);
 }
 
 /// Branded fallback shown instead of the red/white error screen.
@@ -74,8 +72,7 @@ class ErrorScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 message,
-                style: const TextStyle(
-                    color: Colors.white60, fontSize: 13.5),
+                style: const TextStyle(color: Colors.white60, fontSize: 13.5),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
@@ -90,9 +87,7 @@ class ErrorScreen extends StatelessWidget {
                         screen: 'error_screen',
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Thanks! Report saved.'),
-                        ),
+                        const SnackBar(content: Text('Thanks! Report saved.')),
                       );
                     },
                     icon: const Icon(Icons.flag_outlined, size: 18),

@@ -23,7 +23,7 @@ class TorrentGalaxyScraper extends StreamScraper {
     String? imdbId,
   }) async {
     final sources = <StreamSource>[];
-    
+
     String query = title.trim();
     if (type == 'movie' && year != null) {
       query += ' $year';
@@ -33,20 +33,30 @@ class TorrentGalaxyScraper extends StreamScraper {
     }
 
     final encodedQuery = Uri.encodeComponent(query);
-    final searchUrl = 'https://torrentgalaxy.info/get-posts/keywords:$encodedQuery';
+    final searchUrl =
+        'https://torrentgalaxy.info/get-posts/keywords:$encodedQuery';
 
     try {
-      final response = await http.get(Uri.parse(searchUrl), headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-      });
+      final response = await http
+          .get(
+            Uri.parse(searchUrl),
+            headers: {
+              'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+            },
+          )
+          .timeout(const Duration(seconds: 12));
 
       if (response.statusCode != 200) return sources;
 
       final document = parser.parse(response.body);
       final rows = document.querySelectorAll('.tgxtable .tgxtablerow');
-      
+
       final titleParser = ParseTorrentTitle();
-      final searchTitleLower = title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final searchTitleLower = title.toLowerCase().replaceAll(
+        RegExp(r'[^a-z0-9]'),
+        '',
+      );
 
       // We will parse the page concurrently or sequentially.
       // Doing it concurrently is faster, but we shouldn't spam the server too much.
@@ -55,16 +65,18 @@ class TorrentGalaxyScraper extends StreamScraper {
 
       for (final row in rows) {
         // Extract title
-        final titleNode = row.querySelector('.tgxtablecell.clickable-row a[title]');
+        final titleNode = row.querySelector(
+          '.tgxtablecell.clickable-row a[title]',
+        );
         final torrentName = titleNode?.attributes['title']?.trim() ?? '';
-        
+
         final postUrlPath = titleNode?.attributes['href'] ?? '';
         if (torrentName.isEmpty || postUrlPath.isEmpty) continue;
-        
+
         // Extract size
         final sizeNode = row.querySelector('.badge-secondary');
         final size = sizeNode?.text.trim() ?? 'Unknown Size';
-        
+
         // Extract seeders
         // [ <font color="green"><b>13</b></font> / <font color="#ff0000"><b>25</b></font> ]
         final seedersFonts = row.querySelectorAll('font[color="green"] b');
@@ -76,33 +88,42 @@ class TorrentGalaxyScraper extends StreamScraper {
         // Filter out bad matches using ParseTorrentTitle
         final parsed = titleParser.parse(torrentName);
         final parsedTitle = (parsed['title'] ?? '').toString().toLowerCase();
-        final cleanParsedTitle = parsedTitle.replaceAll(RegExp(r'[^a-z0-9]'), '');
+        final cleanParsedTitle = parsedTitle.replaceAll(
+          RegExp(r'[^a-z0-9]'),
+          '',
+        );
 
         // 1. Exact show/movie match filter
         if (cleanParsedTitle != searchTitleLower) {
           continue;
         }
-        
+
         // 2. Series specific filtering
         if (type == 'series') {
           final parsedSeason = parsed['season'];
           final parsedEpisode = parsed['episode'];
-          
-          if (season != null && parsedSeason != null && parsedSeason != season) {
+
+          if (season != null &&
+              parsedSeason != null &&
+              parsedSeason != season) {
             continue;
           }
-          if (episode != null && parsedEpisode != null && parsedEpisode != episode) {
+          if (episode != null &&
+              parsedEpisode != null &&
+              parsedEpisode != episode) {
             continue;
           }
         }
-        
+
         // If we passed all filters, queue fetching the detail page for the magnet link
-        detailFutures.add(_fetchDetailAndBuildSource(
-          postUrl: 'https://torrentgalaxy.info$postUrlPath',
-          torrentName: torrentName,
-          size: size,
-          seeders: seeders,
-        ));
+        detailFutures.add(
+          _fetchDetailAndBuildSource(
+            postUrl: 'https://torrentgalaxy.info$postUrlPath',
+            torrentName: torrentName,
+            size: size,
+            seeders: seeders,
+          ),
+        );
       }
 
       // Wait for all detail pages to be fetched
@@ -112,11 +133,10 @@ class TorrentGalaxyScraper extends StreamScraper {
           sources.add(s);
         }
       }
-
     } catch (e) {
       AppLog.d('TorrentGalaxy scrape error: $e');
     }
-    
+
     return sources;
   }
 
@@ -127,9 +147,15 @@ class TorrentGalaxyScraper extends StreamScraper {
     required int seeders,
   }) async {
     try {
-      final response = await http.get(Uri.parse(postUrl), headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      });
+      final response = await http
+          .get(
+            Uri.parse(postUrl),
+            headers: {
+              'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
+          )
+          .timeout(const Duration(seconds: 12));
 
       if (response.statusCode != 200) return null;
 
@@ -140,9 +166,12 @@ class TorrentGalaxyScraper extends StreamScraper {
       if (magnetUrl == null || magnetUrl.isEmpty) return null;
 
       // Extract infoHash from magnet
-      final match = RegExp(r'urn:btih:([a-zA-Z0-9]+)', caseSensitive: false).firstMatch(magnetUrl);
+      final match = RegExp(
+        r'urn:btih:([a-zA-Z0-9]+)',
+        caseSensitive: false,
+      ).firstMatch(magnetUrl);
       final infoHash = match?.group(1);
-      
+
       if (infoHash == null) return null;
 
       // Extract trackers

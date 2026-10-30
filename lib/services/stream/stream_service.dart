@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-
 import '../../models/addon/addon.dart';
 import '../../models/stream/stream_model.dart';
 import '../addon/addon_manager.dart';
@@ -147,50 +146,94 @@ class StreamService {
 
     int pending = addons.length + (isHttpActive ? 1 : 0);
 
+    // A listener cancel does NOT set isClosed, so cancellation needs its own
+    // flag — otherwise queued addons keep hitting the network after the user
+    // has left the sheet (and every late result is buffered forever).
+    var disposed = false;
+    StreamSubscription<StreamSource>? scraperSub;
+    Timer? budget;
+    var closed = false;
+
+    void closeOnce() {
+      if (closed) return;
+      closed = true;
+      budget?.cancel();
+      if (!controller.isClosed) controller.close();
+    }
+
+    // Hard resolve budget: past 20s the sheet shows what it already has, and
+    // the scrape itself is cancelled (not just the UI stream).
+    budget = Timer(const Duration(seconds: 20), () {
+      scraperSub?.cancel();
+      closeOnce();
+    });
+
+    controller.onCancel = () {
+      disposed = true;
+      budget?.cancel();
+      scraperSub?.cancel();
+    };
+
     // Built-in scrapers (if active)
     if (isHttpActive) {
       final isImdb = id.startsWith('tt');
       final cleanImdbId = isImdb ? id.split(':')[0] : null;
 
-      ScraperManager.instance.scrapeAll(
-        type: type,
-        title: title,
-        year: year,
-        season: season,
-        episode: episode,
-        imdbId: cleanImdbId,
-      ).listen((source) {
-        if (!controller.isClosed) controller.add(source);
-      }, onDone: () {
-        pending--;
-        if (pending <= 0 && !controller.isClosed) controller.close();
-      });
+      scraperSub = ScraperManager.instance
+          .scrapeAll(
+            type: type,
+            title: title,
+            year: year,
+            season: season,
+            episode: episode,
+            imdbId: cleanImdbId,
+          )
+          .listen(
+            (source) {
+              if (!disposed && !controller.isClosed) controller.add(source);
+            },
+            onDone: () {
+              pending--;
+              if (pending <= 0) closeOnce();
+            },
+          );
     }
 
-    // P4: bounded addon pool — max 10 parallel addon fetches. 20+ Stremio
-    // addons firing at once is the same socket bomb as uncapped scrapers.
-    // Chunks run sequentially; close semantics identical to before.
+    // P4: bounded addon pool — a flat window of 10 addon fetches. A worker
+    // takes the next addon the moment its own fetch finishes, so addon #11
+    // no longer waits for #10's whole wave. Close semantics unchanged.
     () async {
       const addonParallel = 10;
-      for (var i = 0; i < addons.length; i += addonParallel) {
-        if (controller.isClosed) return;
-        final chunk = addons.skip(i).take(addonParallel).toList();
-        await Future.wait(chunk.map((addon) async {
-          try {
-            final sources = await _fetchFromAddon(addon, type, id);
-            if (!controller.isClosed) {
-              for (final source in sources) {
-                controller.add(source);
-              }
-            }
-          } catch (_) {} finally {
-            pending--;
-            if (pending <= 0 && !controller.isClosed) {
-              controller.close();
+      final queue = List<InstalledAddon>.from(addons);
+
+      Future<void> runAddon(InstalledAddon addon) async {
+        try {
+          final sources = await _fetchFromAddon(addon, type, id);
+          if (!disposed && !controller.isClosed) {
+            for (final source in sources) {
+              controller.add(source);
             }
           }
-        }));
+        } catch (_) {
+        } finally {
+          pending--;
+          if (pending <= 0) closeOnce();
+        }
       }
+
+      Future<void> worker() async {
+        while (queue.isNotEmpty) {
+          if (disposed || controller.isClosed) return;
+          await runAddon(queue.removeAt(0));
+        }
+      }
+
+      await Future.wait(
+        List.generate(
+          addons.length < addonParallel ? addons.length : addonParallel,
+          (_) => worker(),
+        ),
+      );
     }();
 
     return controller.stream;
@@ -214,7 +257,8 @@ class StreamService {
     final controller = StreamController<StreamSource>();
     final normalizedTarget = targetAddonName.trim().toLowerCase();
 
-    final isArabicAnime = id.startsWith('arabic_anime:') ||
+    final isArabicAnime =
+        id.startsWith('arabic_anime:') ||
         normalizedTarget == 'arabicanime' ||
         normalizedTarget.contains('arabic');
 
@@ -229,7 +273,9 @@ class StreamService {
             slug = id;
           }
           if (slug.isEmpty && title.isNotEmpty) {
-            final searchResults = await AnimeArabicService.instance.search(title);
+            final searchResults = await AnimeArabicService.instance.search(
+              title,
+            );
             if (searchResults.isNotEmpty) {
               slug = searchResults.first.slug;
             }
@@ -246,7 +292,9 @@ class StreamService {
                 watchPath: '/e/$slug-$epNum#tok',
               ),
             );
-            final hits = await AnimeArabicExtractor.instance.resolveEpisode(targetEp);
+            final hits = await AnimeArabicExtractor.instance.resolveEpisode(
+              targetEp,
+            );
             final sources = AnimeArabicExtractor.toSources(
               hits,
               animeTitle: details.title,
@@ -263,7 +311,8 @@ class StreamService {
     }
 
     // Check if targeting general anime providers
-    final isAnime = type == 'anime' ||
+    final isAnime =
+        type == 'anime' ||
         id.startsWith('anilist:') ||
         normalizedTarget == 'megaplay' ||
         normalizedTarget == 'anidb' ||
@@ -293,12 +342,14 @@ class StreamService {
     // run. Legacy 'Dizzy' = torrent-only filter. Zero-match targets fall back
     // to the general fetch (never an empty screen).
     final isLocalDizzyTorrent = normalizedTarget == 'dizzy';
-    final isLegacyHttpPool = normalizedTarget == 'dizzyhttp' ||
+    final isLegacyHttpPool =
+        normalizedTarget == 'dizzyhttp' ||
         (normalizedTarget.contains('dizzy') && !isLocalDizzyTorrent);
 
     // A unique v1.2.0 site key (e.g. 'flystream') = prefer that scraper's
     // sources, fall back to the full pool when it yields nothing.
-    final isUniqueSiteKey = !isLegacyHttpPool &&
+    final isUniqueSiteKey =
+        !isLegacyHttpPool &&
         !isLocalDizzyTorrent &&
         ScraperManager.instance.hasScraper(normalizedTarget);
 
@@ -310,73 +361,83 @@ class StreamService {
       final siteKeyFallback = <StreamSource>[];
       var siteKeyDirectHits = 0;
 
-      ScraperManager.instance.scrapeAll(
-        type: type,
-        title: title,
-        year: year,
-        season: season,
-        episode: episode,
-        imdbId: cleanImdbId,
-      ).listen(
-        (source) {
-          if (!controller.isClosed) {
-            // Legacy DizzyHTTP pool = HTTP-only; legacy Dizzy = torrents-only.
-            if (isLegacyHttpPool &&
-                (source.infoHash != null && source.infoHash!.isNotEmpty)) {
-              return;
-            }
-            if (isLocalDizzyTorrent &&
-                (source.infoHash == null || source.infoHash!.isEmpty)) {
-              return;
-            }
-            // Unique site key: stash non-matching sources for fallback.
-            if (isUniqueSiteKey &&
-                source.addonName.trim().toLowerCase() != normalizedTarget) {
-              siteKeyFallback.add(source);
-              return;
-            }
-            if (isUniqueSiteKey) siteKeyDirectHits++;
-            controller.add(source);
-          }
-        },
-        onError: (_) {},
-        onDone: () {
-          // Unique key with zero direct hits → release the fallback pool.
-          if (isUniqueSiteKey &&
-              siteKeyDirectHits == 0 &&
-              !controller.isClosed) {
-            for (final s in siteKeyFallback) {
-              controller.add(s);
-            }
-          }
-          if (!controller.isClosed) controller.close();
-        },
-      );
+      StreamSubscription<StreamSource>? sub;
+      controller.onCancel = () => sub?.cancel();
+
+      sub = ScraperManager.instance
+          .scrapeAll(
+            type: type,
+            title: title,
+            year: year,
+            season: season,
+            episode: episode,
+            imdbId: cleanImdbId,
+          )
+          .listen(
+            (source) {
+              if (!controller.isClosed) {
+                // Legacy DizzyHTTP pool = HTTP-only; legacy Dizzy = torrents-only.
+                if (isLegacyHttpPool &&
+                    (source.infoHash != null && source.infoHash!.isNotEmpty)) {
+                  return;
+                }
+                if (isLocalDizzyTorrent &&
+                    (source.infoHash == null || source.infoHash!.isEmpty)) {
+                  return;
+                }
+                // Unique site key: stash non-matching sources for fallback.
+                if (isUniqueSiteKey &&
+                    source.addonName.trim().toLowerCase() != normalizedTarget) {
+                  siteKeyFallback.add(source);
+                  return;
+                }
+                if (isUniqueSiteKey) siteKeyDirectHits++;
+                controller.add(source);
+              }
+            },
+            onError: (_) {},
+            onDone: () {
+              // Unique key with zero direct hits → release the fallback pool.
+              if (isUniqueSiteKey &&
+                  siteKeyDirectHits == 0 &&
+                  !controller.isClosed) {
+                for (final s in siteKeyFallback) {
+                  controller.add(s);
+                }
+              }
+              if (!controller.isClosed) controller.close();
+            },
+          );
 
       return controller.stream;
     }
 
     // Otherwise, find the matching Stremio addon.
     // 18+ Heaven: adult addons match only when the gate is open.
-    final matchingAddons = AddonManager.instance.activeStreamAddons.where(
-      (a) =>
-          AddonManager.allowAddon(a) &&
-          (a.manifest.name.toLowerCase() == normalizedTarget ||
-              a.manifest.name.toLowerCase().contains(normalizedTarget) ||
-              normalizedTarget.contains(a.manifest.name.toLowerCase())),
-    ).toList();
+    final matchingAddons = AddonManager.instance.activeStreamAddons
+        .where(
+          (a) =>
+              AddonManager.allowAddon(a) &&
+              (a.manifest.name.toLowerCase() == normalizedTarget ||
+                  a.manifest.name.toLowerCase().contains(normalizedTarget) ||
+                  normalizedTarget.contains(a.manifest.name.toLowerCase())),
+        )
+        .toList();
 
     if (matchingAddons.isNotEmpty) {
       final matchingAddon = matchingAddons.first;
-      _fetchFromAddon(matchingAddon, type, id).then((sources) {
-        if (!controller.isClosed) {
-          for (final source in sources) {
-            controller.add(source);
-          }
-        }
-      }).catchError((_) {}).whenComplete(() {
-        if (!controller.isClosed) controller.close();
-      });
+      _fetchFromAddon(matchingAddon, type, id)
+          .then((sources) {
+            if (!controller.isClosed) {
+              for (final source in sources) {
+                controller.add(source);
+              }
+            }
+          })
+          .catchError((_) {})
+          .whenComplete(() {
+            if (!controller.isClosed) controller.close();
+          });
     } else {
       // Fallback: If no exact addon match found, run general fetch
       return fetchStreams(
@@ -400,7 +461,9 @@ class StreamService {
     try {
       // Check idPrefixes filtering if declared by addon
       if (addon.manifest.idPrefixes.isNotEmpty) {
-        final matchesPrefix = addon.manifest.idPrefixes.any((p) => id.startsWith(p));
+        final matchesPrefix = addon.manifest.idPrefixes.any(
+          (p) => id.startsWith(p),
+        );
         if (!matchesPrefix) return [];
       }
 
@@ -413,13 +476,16 @@ class StreamService {
       final pathId = Uri.encodeComponent(id);
       final url = '${addon.baseUrl}/stream/$type/$pathId.json';
 
-      final response = await DizzyNet.instance.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await DizzyNet.instance
+          .get(
+            Uri.parse(url),
+            headers: {
+              'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) return [];
 
@@ -430,8 +496,15 @@ class StreamService {
 
       return streams
           .whereType<Map>()
-          .map((json) => StreamSource.fromJson(Map<String, dynamic>.from(json), addon.manifest.name))
-          .where((s) => s.url != null || s.infoHash != null || s.externalUrl != null)
+          .map(
+            (json) => StreamSource.fromJson(
+              Map<String, dynamic>.from(json),
+              addon.manifest.name,
+            ),
+          )
+          .where(
+            (s) => s.url != null || s.infoHash != null || s.externalUrl != null,
+          )
           .toList();
     } catch (e) {
       AppLog.d('Addon ${addon.manifest.name} stream fetch failed: $e');

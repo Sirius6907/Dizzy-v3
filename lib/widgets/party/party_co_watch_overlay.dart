@@ -15,20 +15,14 @@ class PartyCoWatchOverlay extends StatelessWidget {
   final PartyOverlayKind kind;
   final String? hostTitle;
 
-  const PartyCoWatchOverlay({
-    super.key,
-    required this.kind,
-    this.hostTitle,
-  });
+  const PartyCoWatchOverlay({super.key, required this.kind, this.hostTitle});
 
   @override
   Widget build(BuildContext context) {
     final isCatching = kind == PartyOverlayKind.catchingUp;
     return Semantics(
       liveRegion: true,
-      label: isCatching
-          ? 'Catching up with host'
-          : 'Paused by host',
+      label: isCatching ? 'Catching up with host' : 'Paused by host',
       child: Center(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: DizzySpace.lg),
@@ -39,9 +33,7 @@ class PartyCoWatchOverlay extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.72),
             borderRadius: DizzyRadius.lgAll,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.14),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -67,8 +59,8 @@ class PartyCoWatchOverlay extends StatelessWidget {
                   isCatching
                       ? 'Catching up with host…'
                       : hostTitle != null && hostTitle!.trim().isNotEmpty
-                          ? 'Host paused • ${hostTitle!.trim()}'
-                          : 'Host paused. You just watch.',
+                      ? 'Host paused • ${hostTitle!.trim()}'
+                      : 'Host paused. You just watch.',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: DizzyType.body,

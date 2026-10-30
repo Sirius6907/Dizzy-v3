@@ -17,14 +17,13 @@ void main() {
     int pos = 0,
     int total = 3600,
     DateTime? at,
-  }) =>
-      MediaProgress(
-        key: MediaProgress.forProfile(profile, media),
-        positionSeconds: pos,
-        totalDurationSeconds: total,
-        lastWatchedAt: at ?? t0,
-        meta: const {'title': 'X'},
-      );
+  }) => MediaProgress(
+    key: MediaProgress.forProfile(profile, media),
+    positionSeconds: pos,
+    totalDurationSeconds: total,
+    lastWatchedAt: at ?? t0,
+    meta: const {'title': 'X'},
+  );
 
   group('progress merge — max progress wins', () {
     test('a farther position wins even when it is older', () {
@@ -155,16 +154,20 @@ void main() {
         'p1::tt2': row('p1', 'tt2', pos: 42, at: t0),
       };
       // New phone: empty storage, then the cloud copy arrives.
-      final (after, report) =
-          ProgressMerge.merge(<String, MediaProgress>{}, before);
+      final (after, report) = ProgressMerge.merge(
+        <String, MediaProgress>{},
+        before,
+      );
       expect(after.keys.toSet(), before.keys.toSet());
       expect(after['p1::tt1']!.positionSeconds, 300);
       expect(report.added, 2);
     });
 
     test('an empty account restores to an empty state, not an error', () {
-      final (merged, report) =
-          ProgressMerge.merge(<String, MediaProgress>{}, <String, MediaProgress>{});
+      final (merged, report) = ProgressMerge.merge(
+        <String, MediaProgress>{},
+        <String, MediaProgress>{},
+      );
       expect(merged, isEmpty);
       expect(report.total, 0);
     });
@@ -172,7 +175,12 @@ void main() {
     test('row cap keeps the most recently touched rows', () {
       final many = <String, MediaProgress>{
         for (var i = 0; i < ProgressMerge.maxRows + 25; i++)
-          'p1::tt$i': row('p1', 'tt$i', pos: i, at: t0.add(Duration(minutes: i))),
+          'p1::tt$i': row(
+            'p1',
+            'tt$i',
+            pos: i,
+            at: t0.add(Duration(minutes: i)),
+          ),
       };
       final capped = ProgressMerge.merge(many, const {}).$1;
       expect(capped.length, ProgressMerge.maxRows);
@@ -182,12 +190,28 @@ void main() {
 
   group('custom lists — per person', () {
     List<CustomList> seed() => [
-          CustomList(id: 'l1', name: 'Weekend', itemKeys: const [], createdAt: t0, updatedAt: t0),
-          CustomList(id: 'l2', name: 'Road Trip', itemKeys: const [], createdAt: t0, updatedAt: t0),
-        ];
+      CustomList(
+        id: 'l1',
+        name: 'Weekend',
+        itemKeys: const [],
+        createdAt: t0,
+        updatedAt: t0,
+      ),
+      CustomList(
+        id: 'l2',
+        name: 'Road Trip',
+        itemKeys: const [],
+        createdAt: t0,
+        updatedAt: t0,
+      ),
+    ];
 
     test('create puts the new list first with a clean name', () {
-      final made = CustomListPolicy.create(seed(), id: 'l3', name: '  Late   Night  ');
+      final made = CustomListPolicy.create(
+        seed(),
+        id: 'l3',
+        name: '  Late   Night  ',
+      );
       expect(made, isNotNull);
       expect(made!.first.name, 'Late Night');
       expect(made.first.length, 0);
@@ -208,7 +232,8 @@ void main() {
     test('create refuses past the cap', () {
       var many = seed();
       for (var i = 0; i < CustomListPolicy.maxLists; i++) {
-        many = CustomListPolicy.create(many, id: 'x$i', name: 'List $i') ?? many;
+        many =
+            CustomListPolicy.create(many, id: 'x$i', name: 'List $i') ?? many;
       }
       expect(CustomListPolicy.canCreate(many), isFalse);
       expect(CustomListPolicy.create(many, id: 'y', name: 'One More'), isNull);
@@ -218,7 +243,13 @@ void main() {
       final renamed = CustomListPolicy.rename(
         [
           ...seed(),
-          CustomList(id: 'l1', name: 'Weekend', itemKeys: const ['a'], createdAt: t0, updatedAt: t0),
+          CustomList(
+            id: 'l1',
+            name: 'Weekend',
+            itemKeys: const ['a'],
+            createdAt: t0,
+            updatedAt: t0,
+          ),
         ],
         id: 'l1',
         name: 'Lazy Sunday',
@@ -248,7 +279,11 @@ void main() {
         listId: 'l1',
         itemKey: 'imdb:tt1',
       )!;
-      final twice = CustomListPolicy.addItem(once, listId: 'l1', itemKey: 'imdb:tt1');
+      final twice = CustomListPolicy.addItem(
+        once,
+        listId: 'l1',
+        itemKey: 'imdb:tt1',
+      );
       expect(twice, isNull);
       expect(once.first.length, 1);
     });
@@ -276,7 +311,11 @@ void main() {
     test('a corrupt stored list is dropped, siblings survive', () {
       final parsed = <CustomList?>[
         CustomList.fromJson({'id': '', 'name': 'Broken'}),
-        CustomList.fromJson({'id': 'ok', 'name': 'Fine', 'itemKeys': ['', 'a']}),
+        CustomList.fromJson({
+          'id': 'ok',
+          'name': 'Fine',
+          'itemKeys': ['', 'a'],
+        }),
         CustomList.fromJson({'id': 'x'}),
       ].whereType<CustomList>().toList();
       expect(parsed.length, 1);
@@ -384,9 +423,21 @@ void main() {
     });
 
     test('a code goes stale after its window', () {
-      expect(DeviceMergePolicy.isFresh(t0, now: t0.add(const Duration(minutes: 5))), isTrue);
-      expect(DeviceMergePolicy.isFresh(t0, now: t0.add(const Duration(minutes: 20))), isFalse);
-      expect(DeviceMergePolicy.isFresh(t0, now: t0.subtract(const Duration(minutes: 1))), isFalse);
+      expect(
+        DeviceMergePolicy.isFresh(t0, now: t0.add(const Duration(minutes: 5))),
+        isTrue,
+      );
+      expect(
+        DeviceMergePolicy.isFresh(t0, now: t0.add(const Duration(minutes: 20))),
+        isFalse,
+      );
+      expect(
+        DeviceMergePolicy.isFresh(
+          t0,
+          now: t0.subtract(const Duration(minutes: 1)),
+        ),
+        isFalse,
+      );
     });
 
     test('union never overwrites and is idempotent', () {

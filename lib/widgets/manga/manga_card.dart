@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 
 import '../../models/manga/manga.dart';
 import '../../pages/manga/manga_details_page.dart';
@@ -28,7 +29,10 @@ class MangaCardSizing {
     required this.sidePadding,
   });
 
-  factory MangaCardSizing.fromWidth(double screenWidth, {MangaCardDensity density = MangaCardDensity.standard}) {
+  factory MangaCardSizing.fromWidth(
+    double screenWidth, {
+    MangaCardDensity density = MangaCardDensity.standard,
+  }) {
     double baseWidth;
 
     if (screenWidth < 360) {
@@ -74,11 +78,7 @@ class MangaCard extends StatefulWidget {
   final Manga manga;
   final VoidCallback? onTap;
 
-  const MangaCard({
-    super.key,
-    required this.manga,
-    this.onTap,
-  });
+  const MangaCard({super.key, required this.manga, this.onTap});
 
   @override
   State<MangaCard> createState() => _MangaCardState();
@@ -96,7 +96,9 @@ class _MangaCardState extends State<MangaCard> {
     final showBadge = MangaSettings.showContentTypeBadge.value;
     final ambientGlow = MangaSettings.ambientCardGlow.value;
 
-    final genreText = manga.tags.isNotEmpty ? manga.tags.first : (manga.type.isNotEmpty ? manga.type : '');
+    final genreText = manga.tags.isNotEmpty
+        ? manga.tags.first
+        : (manga.type.isNotEmpty ? manga.type : '');
     final metaText = [
       if (showYear && manga.year.isNotEmpty) manga.year,
       if (genreText.isNotEmpty) genreText,
@@ -131,7 +133,8 @@ class _MangaCardState extends State<MangaCard> {
             _pressed = false;
           });
         },
-        onTap: widget.onTap ??
+        onTap:
+            widget.onTap ??
             () {
               Navigator.push(
                 context,
@@ -155,7 +158,9 @@ class _MangaCardState extends State<MangaCard> {
                 // ── Poster ──────────────────────────────────────────────
                 Expanded(
                   child: _PosterFrame(
-                    posterUrl: manga.coverNormal.isNotEmpty ? manga.coverNormal : manga.coverSmall,
+                    posterUrl: manga.coverNormal.isNotEmpty
+                        ? manga.coverNormal
+                        : manga.coverSmall,
                     hovered: _hovered,
                     contentType: manga.type.isNotEmpty ? manga.type : 'MANGA',
                     palette: palette,
@@ -163,7 +168,7 @@ class _MangaCardState extends State<MangaCard> {
                     ambientGlow: ambientGlow,
                   ),
                 ),
-                
+
                 // ── Title & Info ─────────────────────────────────────────
                 const SizedBox(height: 10),
                 AnimatedDefaultTextStyle(
@@ -173,7 +178,9 @@ class _MangaCardState extends State<MangaCard> {
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.15,
                     height: 1.25,
-                    color: _hovered ? Colors.white : Colors.white.withOpacity(0.92),
+                    color: _hovered
+                        ? Colors.white
+                        : Colors.white.withOpacity(0.92),
                   ),
                   child: Text(
                     manga.title,
@@ -230,20 +237,11 @@ class _PosterFrame extends StatelessWidget {
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(hovered ? 0.60 : 0.34),
-            blurRadius: hovered ? 32 : 20,
-            offset: Offset(0, hovered ? 18 : 10),
-          ),
-          if (hovered && ambientGlow)
-            BoxShadow(
-              color: palette.primaryColor.withOpacity(0.30),
-              blurRadius: 34,
-              spreadRadius: 1,
-              offset: const Offset(0, 8),
-            ),
-        ],
+        boxShadow: PrismFrame.poster(
+          isLight: palette.isLight,
+          hovered: hovered,
+          glow: ambientGlow ? palette.primaryColor : null,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
@@ -251,9 +249,7 @@ class _PosterFrame extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Background fill
-            const ColoredBox(
-              color: DizzyVoid.surface1,
-            ),
+            const ColoredBox(color: DizzyVoid.surface1),
 
             // Poster image (cached) — P15: own raster boundary (see movie_card).
             if (hasPoster)
@@ -319,7 +315,10 @@ class _PosterFrame extends StatelessWidget {
                   opacity: hovered ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 170),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: palette.primaryColor.withOpacity(0.88),
                       borderRadius: BorderRadius.circular(8),

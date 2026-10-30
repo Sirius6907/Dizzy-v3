@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../net/dizzy_net.dart';
+import '../config/env_service.dart';
 
 /// Voice option exposed in the picker. IDs match paper2audio.com (kokoro voices).
 class Paper2AudioVoice {
@@ -13,27 +14,92 @@ class Paper2AudioVoice {
   final String group;
   final String description;
 
-  const Paper2AudioVoice(this.id, this.label, this.group, [this.description = '']);
+  const Paper2AudioVoice(
+    this.id,
+    this.label,
+    this.group, [
+    this.description = '',
+  ]);
 }
 
 const List<Paper2AudioVoice> kPaper2AudioVoices = [
   // US Female
-  Paper2AudioVoice('af_heart',    'Narrator (Heart)',    'US Female', 'Bright, engaging, natural rhythm (Recommended)'),
-  Paper2AudioVoice('af_bella',    'Librarian (Bella)',   'US Female', 'Calm, warm, soothing storytelling'),
-  Paper2AudioVoice('af_sarah',    'Reporter (Sarah)',    'US Female', 'Crisp, articulate, dynamic pacing'),
-  Paper2AudioVoice('af_alloy',    'Professor (Alloy)',   'US Female', 'Polished, controlled, educational'),
+  Paper2AudioVoice(
+    'af_heart',
+    'Narrator (Heart)',
+    'US Female',
+    'Bright, engaging, natural rhythm (Recommended)',
+  ),
+  Paper2AudioVoice(
+    'af_bella',
+    'Librarian (Bella)',
+    'US Female',
+    'Calm, warm, soothing storytelling',
+  ),
+  Paper2AudioVoice(
+    'af_sarah',
+    'Reporter (Sarah)',
+    'US Female',
+    'Crisp, articulate, dynamic pacing',
+  ),
+  Paper2AudioVoice(
+    'af_alloy',
+    'Professor (Alloy)',
+    'US Female',
+    'Polished, controlled, educational',
+  ),
   // US Male
-  Paper2AudioVoice('am_echo',     'Orator (Echo)',       'US Male',   'Resonant, clear, cinematic presence'),
-  Paper2AudioVoice('am_liam',     'Interviewer (Liam)',  'US Male',   'Engaging, conversational, friendly'),
-  Paper2AudioVoice('am_puck',     'Teacher (Puck)',      'US Male',   'Natural, lively, spirited character'),
-  Paper2AudioVoice('am_michael',  'News Anchor (Michael)','US Male',  'Polished, deliberate, deep tone'),
+  Paper2AudioVoice(
+    'am_echo',
+    'Orator (Echo)',
+    'US Male',
+    'Resonant, clear, cinematic presence',
+  ),
+  Paper2AudioVoice(
+    'am_liam',
+    'Interviewer (Liam)',
+    'US Male',
+    'Engaging, conversational, friendly',
+  ),
+  Paper2AudioVoice(
+    'am_puck',
+    'Teacher (Puck)',
+    'US Male',
+    'Natural, lively, spirited character',
+  ),
+  Paper2AudioVoice(
+    'am_michael',
+    'News Anchor (Michael)',
+    'US Male',
+    'Polished, deliberate, deep tone',
+  ),
   // UK
-  Paper2AudioVoice('bf_isabella', 'Adviser (Isabella)',  'UK Female', 'Centred, harmonised, British accent'),
-  Paper2AudioVoice('bm_daniel',   'Counsellor (Daniel)', 'UK Male',   'Warm, articulate British voice'),
-  Paper2AudioVoice('bf_emma',     'Emma',                'UK Female', 'Classic British storytelling'),
-  Paper2AudioVoice('bm_george',   'George',              'UK Male',   'Distinguished British narrator'),
+  Paper2AudioVoice(
+    'bf_isabella',
+    'Adviser (Isabella)',
+    'UK Female',
+    'Centred, harmonised, British accent',
+  ),
+  Paper2AudioVoice(
+    'bm_daniel',
+    'Counsellor (Daniel)',
+    'UK Male',
+    'Warm, articulate British voice',
+  ),
+  Paper2AudioVoice(
+    'bf_emma',
+    'Emma',
+    'UK Female',
+    'Classic British storytelling',
+  ),
+  Paper2AudioVoice(
+    'bm_george',
+    'George',
+    'UK Male',
+    'Distinguished British narrator',
+  ),
   // Legacy / Character
-  Paper2AudioVoice('am_fenrir',   'Fenrir',              'Character', 'Gritty, dramatic tone'),
+  Paper2AudioVoice('am_fenrir', 'Fenrir', 'Character', 'Gritty, dramatic tone'),
 ];
 
 /// Persistent record of a generation job.
@@ -42,11 +108,11 @@ class GeneratedAudiobookJob {
   final String fileName;
   final String voiceId;
   final int createdAt;
-  String status;          // "pending" / "processing" / "completed" / "failed"
-  double progress;        // 0..1 (normalized)
+  String status; // "pending" / "processing" / "completed" / "failed"
+  double progress; // 0..1 (normalized)
   String? downloadUrl;
   String? error;
-  String? coverPath;      // local path to extracted EPUB cover image
+  String? coverPath; // local path to extracted EPUB cover image
   String? localAudioPath; // local path if downloaded
   int? durationSec;
 
@@ -65,18 +131,18 @@ class GeneratedAudiobookJob {
   });
 
   Map<String, dynamic> toJson() => {
-        'runId': runId,
-        'fileName': fileName,
-        'voiceId': voiceId,
-        'createdAt': createdAt,
-        'status': status,
-        'progress': progress,
-        'downloadUrl': downloadUrl,
-        'error': error,
-        'coverPath': coverPath,
-        'localAudioPath': localAudioPath,
-        'durationSec': durationSec,
-      };
+    'runId': runId,
+    'fileName': fileName,
+    'voiceId': voiceId,
+    'createdAt': createdAt,
+    'status': status,
+    'progress': progress,
+    'downloadUrl': downloadUrl,
+    'error': error,
+    'coverPath': coverPath,
+    'localAudioPath': localAudioPath,
+    'durationSec': durationSec,
+  };
 
   factory GeneratedAudiobookJob.fromJson(Map<String, dynamic> j) =>
       GeneratedAudiobookJob(
@@ -93,8 +159,11 @@ class GeneratedAudiobookJob {
         durationSec: j['durationSec'] as int?,
       );
 
-  bool get isDone => (downloadUrl != null && downloadUrl!.isNotEmpty) || (localAudioPath != null && localAudioPath!.isNotEmpty);
-  bool get isFailed => status.toLowerCase() == 'failed' || (error != null && error!.isNotEmpty);
+  bool get isDone =>
+      (downloadUrl != null && downloadUrl!.isNotEmpty) ||
+      (localAudioPath != null && localAudioPath!.isNotEmpty);
+  bool get isFailed =>
+      status.toLowerCase() == 'failed' || (error != null && error!.isNotEmpty);
 }
 
 /// Talks directly to paper2audio.com (Kokoro TTS backend).
@@ -104,7 +173,13 @@ class Paper2AudioService {
   Paper2AudioService._();
   static final Paper2AudioService instance = Paper2AudioService._();
 
-  static const String _firebaseKey = 'AIzaSyAq9_a8hU7sNkwUBJFmSlbmhepbu8bRgqw';
+  /// Rotated Firebase web key — build-time / `.env` only.
+  static const String _compileFirebaseKey = String.fromEnvironment(
+    'PAPER2AUDIO_FIREBASE_KEY',
+  );
+  static String get _firebaseKey => _compileFirebaseKey.isNotEmpty
+      ? _compileFirebaseKey
+      : EnvService.get('PAPER2AUDIO_FIREBASE_KEY');
   static const String _baseUrl = 'https://www.paper2audio.com';
   static const String _prefsKey = 'p2a_jobs_v1';
 
@@ -118,7 +193,9 @@ class Paper2AudioService {
     if (raw != null && raw.isNotEmpty) {
       try {
         final list = (jsonDecode(raw) as List)
-            .map((e) => GeneratedAudiobookJob.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => GeneratedAudiobookJob.fromJson(e as Map<String, dynamic>),
+            )
             .toList();
         jobs.value = list;
       } catch (_) {}
@@ -144,10 +221,14 @@ class Paper2AudioService {
   }
 
   Future<String> _getAuthToken() async {
+    if (_firebaseKey.isEmpty) {
+      throw StateError('Paper2Audio is not configured');
+    }
     final email = '${_uuid()}@mailinator.com';
     final resp = await DizzyNet.instance.post(
       Uri.parse(
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_firebaseKey'),
+        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$_firebaseKey',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
@@ -171,8 +252,8 @@ class Paper2AudioService {
     String? fileNameOverride,
     String? coverPath,
   }) async {
-    final fileName = fileNameOverride ??
-        epub.path.split(Platform.pathSeparator).last;
+    final fileName =
+        fileNameOverride ?? epub.path.split(Platform.pathSeparator).last;
     final bytes = await epub.readAsBytes();
     return uploadBytes(
       bytes: bytes,
@@ -191,18 +272,20 @@ class Paper2AudioService {
   }) async {
     await _ensureLoaded();
     final token = await _getAuthToken();
-    final uri = Uri.parse('$_baseUrl/v2/summarize').replace(queryParameters: {
-      'fileName': fileName,
-      'link': '',
-      'client': 'web',
-      'summarizationMethod': 'ultimate',
-      'context': '',
-      'sendEmailToUser': 'false',
-      'appendix': 'false',
-      'primaryVoice': voiceId,
-      'secondaryVoice': 'am_echo',
-      'tertiaryVoice': 'af_alloy',
-    });
+    final uri = Uri.parse('$_baseUrl/v2/summarize').replace(
+      queryParameters: {
+        'fileName': fileName,
+        'link': '',
+        'client': 'web',
+        'summarizationMethod': 'ultimate',
+        'context': '',
+        'sendEmailToUser': 'false',
+        'appendix': 'false',
+        'primaryVoice': voiceId,
+        'secondaryVoice': 'am_echo',
+        'tertiaryVoice': 'af_alloy',
+      },
+    );
 
     final resp = await DizzyNet.instance.post(
       uri,
@@ -244,7 +327,9 @@ class Paper2AudioService {
       final resp = await DizzyNet.instance.post(
         Uri.parse('$_baseUrl/batchCheckStatus'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'runIds': [runId]}),
+        body: jsonEncode({
+          'runIds': [runId],
+        }),
       );
       if (resp.statusCode >= 400) {
         return job;
@@ -292,23 +377,32 @@ class Paper2AudioService {
   }
 
   /// Downloads the generated audiobook MP3/M4A file locally for offline listening.
-  Future<File?> downloadAudiobook(GeneratedAudiobookJob job, {void Function(double)? onProgress}) async {
+  Future<File?> downloadAudiobook(
+    GeneratedAudiobookJob job, {
+    void Function(double)? onProgress,
+  }) async {
     if (!job.isDone || job.downloadUrl == null) return null;
     try {
       Directory? targetDir;
       try {
         final appDocDir = await getApplicationDocumentsDirectory();
-        targetDir = Directory(p.join(appDocDir.path, 'Dizzy', 'GeneratedAudiobooks'));
+        targetDir = Directory(
+          p.join(appDocDir.path, 'Dizzy', 'GeneratedAudiobooks'),
+        );
       } catch (_) {
         final temp = await getTemporaryDirectory();
-        targetDir = Directory(p.join(temp.path, 'Dizzy', 'GeneratedAudiobooks'));
+        targetDir = Directory(
+          p.join(temp.path, 'Dizzy', 'GeneratedAudiobooks'),
+        );
       }
       if (!await targetDir.exists()) {
         await targetDir.create(recursive: true);
       }
 
       final safeName = job.fileName.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
-      final targetFile = File(p.join(targetDir.path, '${job.runId}_$safeName.mp3'));
+      final targetFile = File(
+        p.join(targetDir.path, '${job.runId}_$safeName.mp3'),
+      );
 
       if (await targetFile.exists() && await targetFile.length() > 1000) {
         job.localAudioPath = targetFile.path;
@@ -350,7 +444,10 @@ class Paper2AudioService {
   String _uuid() {
     final r = DateTime.now().microsecondsSinceEpoch;
     final rnd = (r ^ (r >> 16)).toRadixString(16).padLeft(8, '0');
-    final tail = (r * 1664525 + 1013904223).toUnsigned(32).toRadixString(16).padLeft(8, '0');
+    final tail = (r * 1664525 + 1013904223)
+        .toUnsigned(32)
+        .toRadixString(16)
+        .padLeft(8, '0');
     return '$rnd-${tail.substring(0, 4)}-4${tail.substring(4, 7)}-a${rnd.substring(0, 3)}-$tail$rnd'
         .substring(0, 36);
   }

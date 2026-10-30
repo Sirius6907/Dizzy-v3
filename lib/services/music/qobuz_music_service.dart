@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -35,8 +36,10 @@ class QobuzTrack {
       album: json['album']?.toString() ?? 'Single',
       durationSeconds: int.tryParse(json['duration']?.toString() ?? '') ?? 0,
       isrc: json['isrc']?.toString(),
-      audioQuality: json['audioQuality']?.toString() ?? json['quality']?.toString(),
-      artworkUrl: json['artworkURL']?.toString() ?? json['artworkUrl']?.toString(),
+      audioQuality:
+          json['audioQuality']?.toString() ?? json['quality']?.toString(),
+      artworkUrl:
+          json['artworkURL']?.toString() ?? json['artworkUrl']?.toString(),
       format: json['format']?.toString() ?? 'flac',
     );
   }
@@ -70,7 +73,11 @@ class QobuzMusicService {
   String? get currentManifestUrl => _manifestUrl;
   String? get currentQuality => _quality;
 
-  final Map<String, ({String url, Map<String, String> headers, String quality, String format})> _cache = {};
+  final Map<
+    String,
+    ({String url, Map<String, String> headers, String quality, String format})
+  >
+  _cache = {};
 
   /// Generates a fresh Eclipse token and manifestUrl dynamically on app launch
   Future<void> initialize() async {
@@ -82,21 +89,27 @@ class QobuzMusicService {
       _manifestUrl = prefs.getString(_storageManifestKey);
     } catch (_) {}
 
-    // Request new dynamic token and manifest from /generate
-    await refreshEndpoint();
+    // Request new dynamic token and manifest from /generate — never awaited:
+    // it sits in the pre-runApp bootstrap and a slow endpoint used to hold
+    // the first frame for the full 12s timeout. activeEndpoint already falls
+    // back to defaultEndpoint, so search/stream work without the refresh.
+    unawaited(refreshEndpoint());
   }
 
   /// Performs POST https://qobuz-tidal-eclipse.cyrusna29.workers.dev/generate
   Future<bool> refreshEndpoint() async {
     try {
-      debugPrint('[QobuzMusicService] Generating fresh FLAC Eclipse session on app launch...');
+      debugPrint(
+        '[QobuzMusicService] Generating fresh FLAC Eclipse session on app launch...',
+      );
       final uri = Uri.parse(generateUrl);
       final headers = {
         'Content-Type': 'application/json',
         'Origin': 'https://qobuz-tidal-eclipse.cyrusna29.workers.dev',
         'Referer': 'https://qobuz-tidal-eclipse.cyrusna29.workers.dev/',
         'User-Agent': userAgent,
-        'sec-ch-ua': '"Not=A?Brand";v="99", "Brave";v="151", "Chromium";v="151"',
+        'sec-ch-ua':
+            '"Not=A?Brand";v="99", "Brave";v="151", "Chromium";v="151"',
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Windows"',
         'sec-fetch-dest': 'empty',
@@ -107,11 +120,7 @@ class QobuzMusicService {
       };
 
       final response = await http
-          .post(
-            uri,
-            headers: headers,
-            body: '{}',
-          )
+          .post(uri, headers: headers, body: '{}')
           .timeout(const Duration(seconds: 12));
 
       if (response.statusCode == 200) {
@@ -126,29 +135,42 @@ class QobuzMusicService {
           _quality = quality;
           _activeEndpoint = manifestUrl.replaceAll('/manifest.json', '');
 
-          debugPrint('[QobuzMusicService] Successfully generated fresh FLAC endpoint: $_activeEndpoint (Token: $_token, Quality: $_quality)');
+          // Headline only — the token/endpoint/quality are credentials and
+          // must never reach logcat or a crash report.
+          if (kDebugMode) {
+            debugPrint('[QobuzMusicService] Fresh FLAC endpoint generated.');
+          }
 
           // Cache in local preferences
           try {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString(_storageEndpointKey, _activeEndpoint!);
-            if (_token != null) await prefs.setString(_storageTokenKey, _token!);
+            if (_token != null) {
+              await prefs.setString(_storageTokenKey, _token!);
+            }
             await prefs.setString(_storageManifestKey, _manifestUrl!);
           } catch (_) {}
 
           return true;
         }
       } else {
-        debugPrint('[QobuzMusicService] Generate request returned status code ${response.statusCode}');
+        debugPrint(
+          '[QobuzMusicService] Generate request returned status code ${response.statusCode}',
+        );
       }
     } catch (e) {
-      debugPrint('[QobuzMusicService] Failed to generate fresh FLAC endpoint: $e');
+      debugPrint(
+        '[QobuzMusicService] Failed to generate fresh FLAC endpoint: $e',
+      );
     }
     return false;
   }
 
   /// Searches Qobuz tracks by query string using Eclipse /search endpoint
-  Future<List<QobuzTrack>> searchTracks(String query, {String? endpoint}) async {
+  Future<List<QobuzTrack>> searchTracks(
+    String query, {
+    String? endpoint,
+  }) async {
     if (query.trim().isEmpty) return [];
     final base = endpoint ?? activeEndpoint;
 
@@ -159,16 +181,14 @@ class QobuzMusicService {
       final res = await http
           .get(
             url,
-            headers: {
-              'User-Agent': userAgent,
-              'Accept': 'application/json',
-            },
+            headers: {'User-Agent': userAgent, 'Accept': 'application/json'},
           )
           .timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final tracksList = (data['tracks'] as List<dynamic>?)
+        final tracksList =
+            (data['tracks'] as List<dynamic>?)
                 ?.whereType<Map<String, dynamic>>()
                 .map((json) => QobuzTrack.fromJson(json))
                 .where((t) => t.id.isNotEmpty)
@@ -195,10 +215,7 @@ class QobuzMusicService {
       final res = await http
           .get(
             url,
-            headers: {
-              'User-Agent': userAgent,
-              'Accept': 'application/json',
-            },
+            headers: {'User-Agent': userAgent, 'Accept': 'application/json'},
           )
           .timeout(const Duration(seconds: 10));
 
@@ -211,7 +228,9 @@ class QobuzMusicService {
           return (url: streamUrl, format: format, quality: quality);
         }
       } else {
-        debugPrint('Qobuz stream HTTP error ${res.statusCode} for track $trackId');
+        debugPrint(
+          'Qobuz stream HTTP error ${res.statusCode} for track $trackId',
+        );
       }
     } catch (e) {
       debugPrint('Failed to get Qobuz stream for track $trackId: $e');
@@ -220,10 +239,10 @@ class QobuzMusicService {
   }
 
   /// Matches a MusicTrack with Qobuz and returns the resolved FLAC stream URL & headers
-  Future<({String url, Map<String, String> headers, String quality, String format})?> resolveLosslessUrl(
-    MusicTrack track, {
-    String? endpoint,
-  }) async {
+  Future<
+    ({String url, Map<String, String> headers, String quality, String format})?
+  >
+  resolveLosslessUrl(MusicTrack track, {String? endpoint}) async {
     if (_cache.containsKey(track.id)) {
       return _cache[track.id];
     }
@@ -233,7 +252,9 @@ class QobuzMusicService {
       final artist = track.artist;
       final query = '$title $artist'.trim();
 
-      debugPrint('Resolving FLAC lossless track on Qobuz for "$query" using endpoint $activeEndpoint...');
+      debugPrint(
+        'Resolving FLAC lossless track on Qobuz for "$query" using endpoint $activeEndpoint...',
+      );
       var results = await searchTracks(query, endpoint: endpoint);
 
       // Fallback search with cleaned title if no results found
@@ -241,7 +262,9 @@ class QobuzMusicService {
         final cleanTitle = _cleanTitle(title);
         if (cleanTitle != title) {
           final fallbackQuery = '$cleanTitle $artist'.trim();
-          debugPrint('Retrying Qobuz search with cleaned query "$fallbackQuery"...');
+          debugPrint(
+            'Retrying Qobuz search with cleaned query "$fallbackQuery"...',
+          );
           results = await searchTracks(fallbackQuery, endpoint: endpoint);
         }
       }
@@ -264,9 +287,7 @@ class QobuzMusicService {
         );
         final result = (
           url: streamResult.url,
-          headers: <String, String>{
-            'User-Agent': userAgent,
-          },
+          headers: <String, String>{'User-Agent': userAgent},
           quality: streamResult.quality,
           format: streamResult.format,
         );
@@ -318,7 +339,8 @@ class QobuzMusicService {
       if (normArtist.isNotEmpty) {
         if (cArtist == normArtist) {
           score += 40;
-        } else if (cArtist.contains(normArtist) || normArtist.contains(cArtist)) {
+        } else if (cArtist.contains(normArtist) ||
+            normArtist.contains(cArtist)) {
           score += 25;
         }
       } else {

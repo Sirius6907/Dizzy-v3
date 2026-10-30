@@ -1,0 +1,9 @@
+# Admin console: never framed, never indexed, never sniffed.
+# No CSP here on purpose — the panel uses inline onclick handlers throughout,
+# so a script-src without 'unsafe-inline' would disable every control.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Robots-Tag: noindex, nofollow
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

@@ -45,7 +45,8 @@ class MusicTrackPalette {
 /// Samples a tiny 16x16 thumbnail of the artwork (~256 pixels) in microseconds.
 class MusicArtworkPaletteService {
   MusicArtworkPaletteService._();
-  static final MusicArtworkPaletteService instance = MusicArtworkPaletteService._();
+  static final MusicArtworkPaletteService instance =
+      MusicArtworkPaletteService._();
 
   final Map<String, MusicTrackPalette> _cache = {};
   final Map<String, Completer<MusicTrackPalette>> _inFlight = {};
@@ -68,7 +69,12 @@ class MusicArtworkPaletteService {
       HSLColor.fromAHSL(1.0, hue1, 0.40, 0.08).toColor(),
       MusicTrackPalette.minBackgroundLuminance,
     );
-    final accent = HSLColor.fromAHSL(1.0, (hue1 + 40) % 360, 0.80, 0.70).toColor();
+    final accent = HSLColor.fromAHSL(
+      1.0,
+      (hue1 + 40) % 360,
+      0.80,
+      0.70,
+    ).toColor();
 
     final palette = MusicTrackPalette(
       primary: c1,
@@ -86,7 +92,9 @@ class MusicArtworkPaletteService {
     if (color.computeLuminance() >= minLuminance) return color;
     final hsl = HSLColor.fromColor(color);
     for (var step = 1; step <= 20; step++) {
-      final lifted = hsl.withLightness((hsl.lightness + step * 0.02).clamp(0.0, 1.0)).toColor();
+      final lifted = hsl
+          .withLightness((hsl.lightness + step * 0.02).clamp(0.0, 1.0))
+          .toColor();
       if (lifted.computeLuminance() >= minLuminance) return lifted;
     }
     return color;
@@ -115,7 +123,9 @@ class MusicArtworkPaletteService {
 
     try {
       final ImageProvider provider = NetworkImage(track.coverUrl);
-      final ImageStream stream = provider.resolve(const ImageConfiguration(size: Size(32, 32)));
+      final ImageStream stream = provider.resolve(
+        const ImageConfiguration(size: Size(32, 32)),
+      );
 
       late ImageStreamListener listener;
       final timer = Timer(const Duration(milliseconds: 1800), () {
@@ -127,119 +137,124 @@ class MusicArtworkPaletteService {
         }
       });
 
-      listener = ImageStreamListener((ImageInfo info, bool _) async {
-        timer.cancel();
-        try {
-          final image = info.image;
-          // Downscale to 16x16 to keep calculation microsecond-fast
-          final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-          if (byteData == null) {
+      listener = ImageStreamListener(
+        (ImageInfo info, bool _) async {
+          timer.cancel();
+          try {
+            final image = info.image;
+            // Downscale to 16x16 to keep calculation microsecond-fast
+            final byteData = await image.toByteData(
+              format: ui.ImageByteFormat.rawRgba,
+            );
+            if (byteData == null) {
+              final fallback = getFastPalette(track);
+              _cache[track.id] = fallback;
+              if (!completer.isCompleted) completer.complete(fallback);
+              return;
+            }
+
+            int rTotal = 0, gTotal = 0, bTotal = 0;
+            int sampleCount = 0;
+            final totalBytes = byteData.lengthInBytes;
+
+            // Bucket colors by hue
+            int maxBucket = 0;
+            Color vibrantColor = const Color(0xFF7C5CFF);
+            final buckets = <int, int>{};
+            final bucketColors = <int, Color>{};
+
+            // Step by 16 bytes (every 4th pixel)
+            for (int i = 0; i < totalBytes; i += 16) {
+              final r = byteData.getUint8(i);
+              final g = byteData.getUint8(i + 1);
+              final b = byteData.getUint8(i + 2);
+              final a = byteData.getUint8(i + 3);
+
+              if (a < 128) continue;
+              // Ignore near blacks and near whites for vibrant color
+              final brightness = (0.299 * r + 0.587 * g + 0.114 * b);
+              if (brightness < 30 || brightness > 235) continue;
+
+              rTotal += r;
+              gTotal += g;
+              bTotal += b;
+              sampleCount++;
+
+              final hsl = HSLColor.fromColor(Color.fromARGB(255, r, g, b));
+              // Only consider reasonably saturated colors
+              if (hsl.saturation >= 0.25) {
+                final hueBucket = (hsl.hue / 30).floor();
+                final count = (buckets[hueBucket] ?? 0) + 1;
+                buckets[hueBucket] = count;
+                if (count > maxBucket) {
+                  maxBucket = count;
+                  vibrantColor = Color.fromARGB(255, r, g, b);
+                }
+                bucketColors[hueBucket] = Color.fromARGB(255, r, g, b);
+              }
+            }
+
+            Color primary = vibrantColor;
+            if (sampleCount > 0 && maxBucket == 0) {
+              // If all pixels were desaturated, average them
+              primary = Color.fromARGB(
+                255,
+                (rTotal / sampleCount).round().clamp(0, 255),
+                (gTotal / sampleCount).round().clamp(0, 255),
+                (bTotal / sampleCount).round().clamp(0, 255),
+              );
+            }
+
+            // Generate complementary secondary color
+            final hslPrimary = HSLColor.fromColor(primary);
+            final secondary = HSLColor.fromAHSL(
+              1.0,
+              (hslPrimary.hue + 45) % 360,
+              (hslPrimary.saturation * 0.9).clamp(0.4, 0.9),
+              (hslPrimary.lightness * 1.1).clamp(0.35, 0.75),
+            ).toColor();
+
+            final background = _liftUntilVisible(
+              HSLColor.fromAHSL(
+                1.0,
+                hslPrimary.hue,
+                (hslPrimary.saturation * 0.5).clamp(0.2, 0.5),
+                0.07,
+              ).toColor(),
+              MusicTrackPalette.minBackgroundLuminance,
+            );
+
+            final accent = HSLColor.fromAHSL(
+              1.0,
+              (hslPrimary.hue + 180) % 360,
+              0.85,
+              0.65,
+            ).toColor();
+
+            final palette = MusicTrackPalette(
+              primary: primary,
+              secondary: secondary,
+              background: background,
+              accent: accent,
+            );
+
+            _cache[track.id] = palette;
+            if (!completer.isCompleted) completer.complete(palette);
+          } catch (_) {
             final fallback = getFastPalette(track);
             _cache[track.id] = fallback;
             if (!completer.isCompleted) completer.complete(fallback);
-            return;
+          } finally {
+            _inFlight.remove(track.id);
           }
-
-          int rTotal = 0, gTotal = 0, bTotal = 0;
-          int sampleCount = 0;
-          final totalBytes = byteData.lengthInBytes;
-
-          // Bucket colors by hue
-          int maxBucket = 0;
-          Color vibrantColor = const Color(0xFF7C5CFF);
-          final buckets = <int, int>{};
-          final bucketColors = <int, Color>{};
-
-          // Step by 16 bytes (every 4th pixel)
-          for (int i = 0; i < totalBytes; i += 16) {
-            final r = byteData.getUint8(i);
-            final g = byteData.getUint8(i + 1);
-            final b = byteData.getUint8(i + 2);
-            final a = byteData.getUint8(i + 3);
-
-            if (a < 128) continue;
-            // Ignore near blacks and near whites for vibrant color
-            final brightness = (0.299 * r + 0.587 * g + 0.114 * b);
-            if (brightness < 30 || brightness > 235) continue;
-
-            rTotal += r;
-            gTotal += g;
-            bTotal += b;
-            sampleCount++;
-
-            final hsl = HSLColor.fromColor(Color.fromARGB(255, r, g, b));
-            // Only consider reasonably saturated colors
-            if (hsl.saturation >= 0.25) {
-              final hueBucket = (hsl.hue / 30).floor();
-              final count = (buckets[hueBucket] ?? 0) + 1;
-              buckets[hueBucket] = count;
-              if (count > maxBucket) {
-                maxBucket = count;
-                vibrantColor = Color.fromARGB(255, r, g, b);
-              }
-              bucketColors[hueBucket] = Color.fromARGB(255, r, g, b);
-            }
-          }
-
-          Color primary = vibrantColor;
-          if (sampleCount > 0 && maxBucket == 0) {
-            // If all pixels were desaturated, average them
-            primary = Color.fromARGB(
-              255,
-              (rTotal / sampleCount).round().clamp(0, 255),
-              (gTotal / sampleCount).round().clamp(0, 255),
-              (bTotal / sampleCount).round().clamp(0, 255),
-            );
-          }
-
-          // Generate complementary secondary color
-          final hslPrimary = HSLColor.fromColor(primary);
-          final secondary = HSLColor.fromAHSL(
-            1.0,
-            (hslPrimary.hue + 45) % 360,
-            (hslPrimary.saturation * 0.9).clamp(0.4, 0.9),
-            (hslPrimary.lightness * 1.1).clamp(0.35, 0.75),
-          ).toColor();
-
-          final background = _liftUntilVisible(
-            HSLColor.fromAHSL(
-              1.0,
-              hslPrimary.hue,
-              (hslPrimary.saturation * 0.5).clamp(0.2, 0.5),
-              0.07,
-            ).toColor(),
-            MusicTrackPalette.minBackgroundLuminance,
-          );
-
-          final accent = HSLColor.fromAHSL(
-            1.0,
-            (hslPrimary.hue + 180) % 360,
-            0.85,
-            0.65,
-          ).toColor();
-
-          final palette = MusicTrackPalette(
-            primary: primary,
-            secondary: secondary,
-            background: background,
-            accent: accent,
-          );
-
-          _cache[track.id] = palette;
-          if (!completer.isCompleted) completer.complete(palette);
-        } catch (_) {
+        },
+        onError: (_, __) {
           final fallback = getFastPalette(track);
           _cache[track.id] = fallback;
           if (!completer.isCompleted) completer.complete(fallback);
-        } finally {
           _inFlight.remove(track.id);
-        }
-      }, onError: (_, __) {
-        final fallback = getFastPalette(track);
-        _cache[track.id] = fallback;
-        if (!completer.isCompleted) completer.complete(fallback);
-        _inFlight.remove(track.id);
-      });
+        },
+      );
 
       stream.addListener(listener);
     } catch (_) {

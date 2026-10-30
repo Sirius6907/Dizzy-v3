@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/services/theme/app_theme_service.dart';
 import 'package:dizzy/widgets/common/notify.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 
@@ -45,10 +47,14 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
     return PopScope(
       canPop: false, // post-deadline: no back escape, only Update now
       child: Scaffold(
-        backgroundColor: DizzyVoid.voidA,
+        backgroundColor: palette.scaffoldBackgroundColor,
         body: SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -73,11 +79,11 @@ class UpdateRequiredScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: DizzySpace.lg),
-                    const Text(
+                    Text(
                       'Please update Dizzy',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: DizzyVoid.bone,
+                        color: ink,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -91,8 +97,8 @@ class UpdateRequiredScreen extends StatelessWidget {
                                 'to keep watching — your list and progress stay '
                                 'exactly where they are.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: DizzyVoid.ash,
+                      style: TextStyle(
+                        color: inkSoft,
                         fontSize: 14,
                         height: 1.5,
                       ),

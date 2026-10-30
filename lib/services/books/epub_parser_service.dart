@@ -78,7 +78,9 @@ class EpubBookData {
     final decodedSrc = Uri.decodeComponent(src);
     if (images.containsKey(decodedSrc)) return images[decodedSrc];
 
-    final embedMatch = RegExp(r'(?:kindle:embed:|recindex=)["0]*(\d+)').firstMatch(src);
+    final embedMatch = RegExp(
+      r'(?:kindle:embed:|recindex=)["0]*(\d+)',
+    ).firstMatch(src);
     if (embedMatch != null) {
       final recNum = embedMatch.group(1);
       if (recNum != null && images.containsKey(recNum)) {
@@ -87,7 +89,9 @@ class EpubBookData {
     }
 
     final chapterDir = p.dirname(chapterHref);
-    final resolved = p.normalize(p.join(chapterDir, decodedSrc)).replaceAll(r'\', '/');
+    final resolved = p
+        .normalize(p.join(chapterDir, decodedSrc))
+        .replaceAll(r'\', '/');
     if (images.containsKey(resolved)) return images[resolved];
 
     final cleanPath = resolved.replaceFirst(RegExp(r'^\.?/+'), '');
@@ -114,7 +118,10 @@ class EpubParserService {
     final bytes = await file.readAsBytes();
     final fmt = format.toLowerCase().trim();
 
-    return compute(_parseBookInBackground, _ParseBookPayload(bytes, fmt, p.basename(file.path)));
+    return compute(
+      _parseBookInBackground,
+      _ParseBookPayload(bytes, fmt, p.basename(file.path)),
+    );
   }
 }
 
@@ -153,7 +160,10 @@ EpubBookData _parseEpubSync(Uint8List bytes, String fileName) {
   String? opfPath;
   for (final file in archive.files) {
     if (file.name == 'META-INF/container.xml') {
-      final xmlContent = utf8.decode(file.content as List<int>, allowMalformed: true);
+      final xmlContent = utf8.decode(
+        file.content as List<int>,
+        allowMalformed: true,
+      );
       final match = RegExp(r'full-path="([^"]+)"').firstMatch(xmlContent);
       if (match != null) {
         opfPath = match.group(1);
@@ -166,22 +176,37 @@ EpubBookData _parseEpubSync(Uint8List bytes, String fileName) {
   if (opfPath != null) {
     opfFile = archive.files.firstWhere(
       (f) => f.name == opfPath || f.name == opfPath?.replaceAll(r'\', '/'),
-      orElse: () => archive.files.firstWhere((f) => f.name.endsWith('.opf'), orElse: () => archive.files.first),
+      orElse: () => archive.files.firstWhere(
+        (f) => f.name.endsWith('.opf'),
+        orElse: () => archive.files.first,
+      ),
     );
   } else {
-    opfFile = archive.files.firstWhere((f) => f.name.endsWith('.opf'), orElse: () => archive.files.first);
+    opfFile = archive.files.firstWhere(
+      (f) => f.name.endsWith('.opf'),
+      orElse: () => archive.files.first,
+    );
   }
 
   final opfDir = p.dirname(opfFile.name);
-  final opfXml = utf8.decode(opfFile.content as List<int>, allowMalformed: true);
+  final opfXml = utf8.decode(
+    opfFile.content as List<int>,
+    allowMalformed: true,
+  );
   final opfDoc = html_parser.parse(opfXml);
 
-  final title = opfDoc.querySelector('title, dc\\:title')?.text.trim() ??
+  final title =
+      opfDoc.querySelector('title, dc\\:title')?.text.trim() ??
       p.basenameWithoutExtension(fileName).replaceAll(RegExp(r'[_\-]+'), ' ');
-  final author = opfDoc.querySelector('creator, dc\\:creator')?.text.trim() ?? 'Unknown Author';
-  final description = opfDoc.querySelector('description, dc\\:description')?.text.trim() ?? '';
-  final publisher = opfDoc.querySelector('publisher, dc\\:publisher')?.text.trim() ?? '';
-  final language = opfDoc.querySelector('language, dc\\:language')?.text.trim() ?? 'en';
+  final author =
+      opfDoc.querySelector('creator, dc\\:creator')?.text.trim() ??
+      'Unknown Author';
+  final description =
+      opfDoc.querySelector('description, dc\\:description')?.text.trim() ?? '';
+  final publisher =
+      opfDoc.querySelector('publisher, dc\\:publisher')?.text.trim() ?? '';
+  final language =
+      opfDoc.querySelector('language, dc\\:language')?.text.trim() ?? 'en';
 
   final manifestItems = <String, String>{};
   final manifestTypes = <String, String>{};
@@ -241,20 +266,26 @@ EpubBookData _parseEpubSync(Uint8List bytes, String fileName) {
   if (ncxPath != null) {
     final ncxFile = archive.files.firstWhere(
       (f) => f.name == ncxPath || f.name == ncxPath?.replaceAll(r'\', '/'),
-      orElse: () => archive.files.firstWhere((f) => f.name.endsWith('.ncx'), orElse: () => archive.files.first),
+      orElse: () => archive.files.firstWhere(
+        (f) => f.name.endsWith('.ncx'),
+        orElse: () => archive.files.first,
+      ),
     );
     if (ncxFile.name.endsWith('.ncx')) {
-      final ncxXml = utf8.decode(ncxFile.content as List<int>, allowMalformed: true);
+      final ncxXml = utf8.decode(
+        ncxFile.content as List<int>,
+        allowMalformed: true,
+      );
       final ncxDoc = html_parser.parse(ncxXml);
       int navIdx = 0;
       for (final navPoint in ncxDoc.querySelectorAll('navPoint')) {
-        final label = navPoint.querySelector('navLabel > text, text')?.text.trim() ?? 'Chapter ${navIdx + 1}';
+        final label =
+            navPoint.querySelector('navLabel > text, text')?.text.trim() ??
+            'Chapter ${navIdx + 1}';
         final src = navPoint.querySelector('content')?.attributes['src'] ?? '';
-        toc.add(EpubTocItem(
-          title: label,
-          contentSrc: src,
-          chapterIndex: navIdx,
-        ));
+        toc.add(
+          EpubTocItem(title: label, contentSrc: src, chapterIndex: navIdx),
+        );
         navIdx++;
       }
     }
@@ -264,9 +295,14 @@ EpubBookData _parseEpubSync(Uint8List bytes, String fileName) {
   final chapterPaths = spineItemIds.isNotEmpty
       ? spineItemIds.map((id) => manifestItems[id]!).toList()
       : archive.files
-          .where((f) => f.name.endsWith('.xhtml') || f.name.endsWith('.html') || f.name.endsWith('.htm'))
-          .map((f) => f.name)
-          .toList();
+            .where(
+              (f) =>
+                  f.name.endsWith('.xhtml') ||
+                  f.name.endsWith('.html') ||
+                  f.name.endsWith('.htm'),
+            )
+            .map((f) => f.name)
+            .toList();
 
   for (int idx = 0; idx < chapterPaths.length; idx++) {
     final path = chapterPaths[idx];
@@ -276,7 +312,10 @@ EpubBookData _parseEpubSync(Uint8List bytes, String fileName) {
     );
 
     if (file.name == path || file.name == path.replaceAll(r'\', '/')) {
-      final rawHtml = utf8.decode(file.content as List<int>, allowMalformed: true);
+      final rawHtml = utf8.decode(
+        file.content as List<int>,
+        allowMalformed: true,
+      );
       final doc = html_parser.parse(rawHtml);
 
       String chapterTitle = '';
@@ -294,24 +333,27 @@ EpubBookData _parseEpubSync(Uint8List bytes, String fileName) {
 
       final text = doc.body?.text.trim() ?? '';
       final preview = text.length > 200 ? '${text.substring(0, 200)}...' : text;
-      final wordCount = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final wordCount = text
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .length;
 
-      chapters.add(EpubChapterData(
-        id: 'ch_$idx',
-        title: chapterTitle,
-        href: path,
-        htmlContent: rawHtml,
-        textPreview: preview,
-        orderIndex: idx,
-        wordCount: wordCount,
-      ));
+      chapters.add(
+        EpubChapterData(
+          id: 'ch_$idx',
+          title: chapterTitle,
+          href: path,
+          htmlContent: rawHtml,
+          textPreview: preview,
+          orderIndex: idx,
+          wordCount: wordCount,
+        ),
+      );
 
       if (toc.length <= idx) {
-        toc.add(EpubTocItem(
-          title: chapterTitle,
-          contentSrc: path,
-          chapterIndex: idx,
-        ));
+        toc.add(
+          EpubTocItem(title: chapterTitle, contentSrc: path, chapterIndex: idx),
+        );
       }
     }
   }
@@ -342,7 +384,10 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
         (f) => f.name.toLowerCase().endsWith('.fb2'),
         orElse: () => archive.files.first,
       );
-      xmlString = utf8.decode(fb2File.content as List<int>, allowMalformed: true);
+      xmlString = utf8.decode(
+        fb2File.content as List<int>,
+        allowMalformed: true,
+      );
     } else {
       xmlString = utf8.decode(bytes, allowMalformed: true);
     }
@@ -353,7 +398,10 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
   final images = <String, Uint8List>{};
   Uint8List? coverBytes;
 
-  final binaryMatches = RegExp(r'<binary[\s\S]*?id="([^"]+)"[\s\S]*?>([\s\S]*?)<\/binary>', caseSensitive: false).allMatches(xmlString);
+  final binaryMatches = RegExp(
+    r'<binary[\s\S]*?id="([^"]+)"[\s\S]*?>([\s\S]*?)<\/binary>',
+    caseSensitive: false,
+  ).allMatches(xmlString);
   for (final match in binaryMatches) {
     final id = match.group(1)?.trim() ?? '';
     final base64Data = match.group(2)?.replaceAll(RegExp(r'\s+'), '') ?? '';
@@ -369,25 +417,46 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
     }
   }
 
-  String title = p.basenameWithoutExtension(fileName).replaceAll(RegExp(r'[_\-]+'), ' ');
+  String title = p
+      .basenameWithoutExtension(fileName)
+      .replaceAll(RegExp(r'[_\-]+'), ' ');
   String author = 'Unknown Author';
   String description = '';
 
-  final descMatch = RegExp(r'<description>([\s\S]*?)<\/description>', caseSensitive: false).firstMatch(xmlString);
+  final descMatch = RegExp(
+    r'<description>([\s\S]*?)<\/description>',
+    caseSensitive: false,
+  ).firstMatch(xmlString);
   if (descMatch != null) {
     final descXml = descMatch.group(1)!;
 
-    final titleMatch = RegExp(r'<book-title>([\s\S]*?)<\/book-title>', caseSensitive: false).firstMatch(descXml);
+    final titleMatch = RegExp(
+      r'<book-title>([\s\S]*?)<\/book-title>',
+      caseSensitive: false,
+    ).firstMatch(descXml);
     if (titleMatch != null && titleMatch.group(1)!.trim().isNotEmpty) {
       title = titleMatch.group(1)!.trim();
     }
 
-    final authorMatches = RegExp(r'<author>([\s\S]*?)<\/author>', caseSensitive: false).allMatches(descXml);
+    final authorMatches = RegExp(
+      r'<author>([\s\S]*?)<\/author>',
+      caseSensitive: false,
+    ).allMatches(descXml);
     final authorNames = <String>[];
     for (final aMatch in authorMatches) {
       final aBlock = aMatch.group(1)!;
-      final first = RegExp(r'<first-name>([\s\S]*?)<\/first-name>', caseSensitive: false).firstMatch(aBlock)?.group(1)?.trim() ?? '';
-      final last = RegExp(r'<last-name>([\s\S]*?)<\/last-name>', caseSensitive: false).firstMatch(aBlock)?.group(1)?.trim() ?? '';
+      final first =
+          RegExp(
+            r'<first-name>([\s\S]*?)<\/first-name>',
+            caseSensitive: false,
+          ).firstMatch(aBlock)?.group(1)?.trim() ??
+          '';
+      final last =
+          RegExp(
+            r'<last-name>([\s\S]*?)<\/last-name>',
+            caseSensitive: false,
+          ).firstMatch(aBlock)?.group(1)?.trim() ??
+          '';
       final full = '$first $last'.trim();
       if (full.isNotEmpty) authorNames.add(full);
     }
@@ -395,21 +464,33 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
       author = authorNames.join(', ');
     }
 
-    final annotMatch = RegExp(r'<annotation>([\s\S]*?)<\/annotation>', caseSensitive: false).firstMatch(descXml);
+    final annotMatch = RegExp(
+      r'<annotation>([\s\S]*?)<\/annotation>',
+      caseSensitive: false,
+    ).firstMatch(descXml);
     if (annotMatch != null) {
-      description = annotMatch.group(1)!.replaceAll(RegExp(r'<[^>]+>'), ' ').trim();
+      description = annotMatch
+          .group(1)!
+          .replaceAll(RegExp(r'<[^>]+>'), ' ')
+          .trim();
     }
   }
 
   final chapters = <EpubChapterData>[];
   final toc = <EpubTocItem>[];
 
-  final bodyMatches = RegExp(r'<body[^>]*>([\s\S]*?)<\/body>', caseSensitive: false).allMatches(xmlString);
+  final bodyMatches = RegExp(
+    r'<body[^>]*>([\s\S]*?)<\/body>',
+    caseSensitive: false,
+  ).allMatches(xmlString);
   int sectionCounter = 0;
 
   for (final bMatch in bodyMatches) {
     final bodyContent = bMatch.group(1)!;
-    final sectionMatches = RegExp(r'<section[^>]*>([\s\S]*?)<\/section>', caseSensitive: false).allMatches(bodyContent);
+    final sectionMatches = RegExp(
+      r'<section[^>]*>([\s\S]*?)<\/section>',
+      caseSensitive: false,
+    ).allMatches(bodyContent);
 
     if (sectionMatches.isNotEmpty) {
       for (final sMatch in sectionMatches) {
@@ -417,23 +498,31 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
         final ch = _convertFb2SectionToChapter(secRaw, sectionCounter, images);
         if (ch != null) {
           chapters.add(ch);
-          toc.add(EpubTocItem(
-            title: ch.title,
-            contentSrc: ch.href,
-            chapterIndex: chapters.length - 1,
-          ));
+          toc.add(
+            EpubTocItem(
+              title: ch.title,
+              contentSrc: ch.href,
+              chapterIndex: chapters.length - 1,
+            ),
+          );
           sectionCounter++;
         }
       }
     } else {
-      final ch = _convertFb2SectionToChapter(bodyContent, sectionCounter, images);
+      final ch = _convertFb2SectionToChapter(
+        bodyContent,
+        sectionCounter,
+        images,
+      );
       if (ch != null) {
         chapters.add(ch);
-        toc.add(EpubTocItem(
-          title: ch.title,
-          contentSrc: ch.href,
-          chapterIndex: chapters.length - 1,
-        ));
+        toc.add(
+          EpubTocItem(
+            title: ch.title,
+            contentSrc: ch.href,
+            chapterIndex: chapters.length - 1,
+          ),
+        );
         sectionCounter++;
       }
     }
@@ -441,16 +530,20 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
 
   if (chapters.isEmpty) {
     final cleanXml = _cleanFb2XmlToHtml(xmlString);
-    chapters.add(EpubChapterData(
-      id: 'ch_0',
-      title: title,
-      href: 'ch_0.html',
-      htmlContent: cleanXml,
-      textPreview: title,
-      orderIndex: 0,
-      wordCount: 100,
-    ));
-    toc.add(EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0));
+    chapters.add(
+      EpubChapterData(
+        id: 'ch_0',
+        title: title,
+        href: 'ch_0.html',
+        htmlContent: cleanXml,
+        textPreview: title,
+        orderIndex: 0,
+        wordCount: 100,
+      ),
+    );
+    toc.add(
+      EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0),
+    );
   }
 
   return EpubBookData(
@@ -464,9 +557,16 @@ EpubBookData _parseFb2Sync(Uint8List bytes, String fileName) {
   );
 }
 
-EpubChapterData? _convertFb2SectionToChapter(String secXml, int index, Map<String, Uint8List> images) {
+EpubChapterData? _convertFb2SectionToChapter(
+  String secXml,
+  int index,
+  Map<String, Uint8List> images,
+) {
   String title = 'Chapter ${index + 1}';
-  final titleMatch = RegExp(r'<title>([\s\S]*?)<\/title>', caseSensitive: false).firstMatch(secXml);
+  final titleMatch = RegExp(
+    r'<title>([\s\S]*?)<\/title>',
+    caseSensitive: false,
+  ).firstMatch(secXml);
   String bodyXml = secXml;
 
   if (titleMatch != null) {
@@ -496,16 +596,31 @@ EpubChapterData? _convertFb2SectionToChapter(String secXml, int index, Map<Strin
 
 String _cleanFb2XmlToHtml(String xml) {
   var s = xml;
-  s = s.replaceAllMapped(RegExp(r'<image[^>]+(?:l:href|xlink:href|href)="([^"]+)"[^>]*\/?>', caseSensitive: false), (m) {
-    final href = m.group(1)!;
-    return '<p align="center"><img src="$href" /></p>';
-  });
+  s = s.replaceAllMapped(
+    RegExp(
+      r'<image[^>]+(?:l:href|xlink:href|href)="([^"]+)"[^>]*\/?>',
+      caseSensitive: false,
+    ),
+    (m) {
+      final href = m.group(1)!;
+      return '<p align="center"><img src="$href" /></p>';
+    },
+  );
 
-  s = s.replaceAll(RegExp(r'<empty-line\s*\/?>', caseSensitive: false), '<br/><br/>');
+  s = s.replaceAll(
+    RegExp(r'<empty-line\s*\/?>', caseSensitive: false),
+    '<br/><br/>',
+  );
   s = s.replaceAll(RegExp(r'<subtitle>', caseSensitive: false), '<h3>');
   s = s.replaceAll(RegExp(r'<\/subtitle>', caseSensitive: false), '</h3>');
-  s = s.replaceAll(RegExp(r'<(?:epigraph|cite)>', caseSensitive: false), '<blockquote>');
-  s = s.replaceAll(RegExp(r'<\/(?:epigraph|cite)>', caseSensitive: false), '</blockquote>');
+  s = s.replaceAll(
+    RegExp(r'<(?:epigraph|cite)>', caseSensitive: false),
+    '<blockquote>',
+  );
+  s = s.replaceAll(
+    RegExp(r'<\/(?:epigraph|cite)>', caseSensitive: false),
+    '</blockquote>',
+  );
   s = s.replaceAll(RegExp(r'<\/?(?:poem|stanza)>', caseSensitive: false), '');
   s = s.replaceAll(RegExp(r'<v>', caseSensitive: false), '<p>');
   s = s.replaceAll(RegExp(r'<\/v>', caseSensitive: false), '</p>');
@@ -714,7 +829,9 @@ class _HuffCdicReader {
 }
 
 EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
-  String title = p.basenameWithoutExtension(fileName).replaceAll(RegExp(r'[_\-]+'), ' ');
+  String title = p
+      .basenameWithoutExtension(fileName)
+      .replaceAll(RegExp(r'[_\-]+'), ' ');
   String author = 'Kindle Author';
   final images = <String, Uint8List>{};
   Uint8List? coverBytes;
@@ -750,7 +867,12 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
     final titleOffset = _readUint32(r0, 84);
     final titleLen = _readUint32(r0, 88);
     if (titleOffset + titleLen <= r0.length && titleLen > 0) {
-      title = utf8.decode(r0.sublist(titleOffset, titleOffset + titleLen), allowMalformed: true).trim();
+      title = utf8
+          .decode(
+            r0.sublist(titleOffset, titleOffset + titleLen),
+            allowMalformed: true,
+          )
+          .trim();
     }
   }
 
@@ -770,7 +892,9 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
     int imgCounter = 1;
     for (int rIdx = firstImageIndex; rIdx < numRecords; rIdx++) {
       final start = recordOffsets[rIdx];
-      final end = (rIdx + 1 < recordOffsets.length) ? recordOffsets[rIdx + 1] : bytes.length;
+      final end = (rIdx + 1 < recordOffsets.length)
+          ? recordOffsets[rIdx + 1]
+          : bytes.length;
       final recData = bytes.sublist(start, end);
 
       if (recData.length > 4) {
@@ -800,19 +924,36 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
 
   final fullTextBuilder = BytesBuilder();
 
-  if (compression == 17480 && huffIndex > 0 && huffCount > 1 && huffIndex + huffCount <= recordOffsets.length) {
+  if (compression == 17480 &&
+      huffIndex > 0 &&
+      huffCount > 1 &&
+      huffIndex + huffCount <= recordOffsets.length) {
     try {
-      final huffRec = bytes.sublist(recordOffsets[huffIndex], (huffIndex + 1 < recordOffsets.length) ? recordOffsets[huffIndex + 1] : bytes.length);
+      final huffRec = bytes.sublist(
+        recordOffsets[huffIndex],
+        (huffIndex + 1 < recordOffsets.length)
+            ? recordOffsets[huffIndex + 1]
+            : bytes.length,
+      );
       final cdicRecs = <Uint8List>[];
       for (int c = 1; c < huffCount; c++) {
         final cIdx = huffIndex + c;
-        cdicRecs.add(bytes.sublist(recordOffsets[cIdx], (cIdx + 1 < recordOffsets.length) ? recordOffsets[cIdx + 1] : bytes.length));
+        cdicRecs.add(
+          bytes.sublist(
+            recordOffsets[cIdx],
+            (cIdx + 1 < recordOffsets.length)
+                ? recordOffsets[cIdx + 1]
+                : bytes.length,
+          ),
+        );
       }
 
       final huffReader = _HuffCdicReader(huffRec, cdicRecs);
       for (int i = 1; i <= textRecordCount && i < recordOffsets.length; i++) {
         final start = recordOffsets[i];
-        final end = (i + 1 < recordOffsets.length) ? recordOffsets[i + 1] : bytes.length;
+        final end = (i + 1 < recordOffsets.length)
+            ? recordOffsets[i + 1]
+            : bytes.length;
         final rec = bytes.sublist(start, end);
         final decompressed = huffReader.decompress(rec, extraFlags);
         fullTextBuilder.add(decompressed);
@@ -821,7 +962,9 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
   } else {
     for (int i = 1; i <= textRecordCount && i < recordOffsets.length; i++) {
       final start = recordOffsets[i];
-      final end = (i + 1 < recordOffsets.length) ? recordOffsets[i + 1] : bytes.length;
+      final end = (i + 1 < recordOffsets.length)
+          ? recordOffsets[i + 1]
+          : bytes.length;
       final rec = bytes.sublist(start, end);
 
       if (compression == 1) {
@@ -842,8 +985,12 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
   final chapters = <EpubChapterData>[];
   final toc = <EpubTocItem>[];
 
-  final rawChapters = fullHtml
-      .split(RegExp(r'<mbp:pagebreak\s*\/?>|<div[^>]+class="[^"]*chapter[^"]*"[^>]*>', caseSensitive: false));
+  final rawChapters = fullHtml.split(
+    RegExp(
+      r'<mbp:pagebreak\s*\/?>|<div[^>]+class="[^"]*chapter[^"]*"[^>]*>',
+      caseSensitive: false,
+    ),
+  );
 
   if (rawChapters.length > 1) {
     for (int idx = 0; idx < rawChapters.length; idx++) {
@@ -852,39 +999,55 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
 
       final doc = html_parser.parse(chHtml);
       final h1 = doc.querySelector('h1, h2, h3, title, b');
-      final chTitle = (h1 != null && h1.text.trim().isNotEmpty && h1.text.trim().length < 80)
+      final chTitle =
+          (h1 != null &&
+              h1.text.trim().isNotEmpty &&
+              h1.text.trim().length < 80)
           ? h1.text.trim()
           : 'Chapter ${chapters.length + 1}';
 
       final text = doc.body?.text.trim() ?? '';
-      chapters.add(EpubChapterData(
-        id: 'ch_${chapters.length}',
-        title: chTitle,
-        href: 'ch_${chapters.length}.html',
-        htmlContent: chHtml,
-        textPreview: text.length > 200 ? '${text.substring(0, 200)}...' : text,
-        orderIndex: chapters.length,
-        wordCount: text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
-      ));
-      toc.add(EpubTocItem(
-        title: chTitle,
-        contentSrc: 'ch_${chapters.length - 1}.html',
-        chapterIndex: chapters.length - 1,
-      ));
+      chapters.add(
+        EpubChapterData(
+          id: 'ch_${chapters.length}',
+          title: chTitle,
+          href: 'ch_${chapters.length}.html',
+          htmlContent: chHtml,
+          textPreview: text.length > 200
+              ? '${text.substring(0, 200)}...'
+              : text,
+          orderIndex: chapters.length,
+          wordCount: text
+              .split(RegExp(r'\s+'))
+              .where((w) => w.isNotEmpty)
+              .length,
+        ),
+      );
+      toc.add(
+        EpubTocItem(
+          title: chTitle,
+          contentSrc: 'ch_${chapters.length - 1}.html',
+          chapterIndex: chapters.length - 1,
+        ),
+      );
     }
   } else {
     final doc = html_parser.parse(fullHtml);
     final text = doc.body?.text.trim() ?? '';
-    chapters.add(EpubChapterData(
-      id: 'ch_0',
-      title: title,
-      href: 'ch_0.html',
-      htmlContent: fullHtml,
-      textPreview: text.length > 200 ? '${text.substring(0, 200)}...' : text,
-      orderIndex: 0,
-      wordCount: text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
-    ));
-    toc.add(EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0));
+    chapters.add(
+      EpubChapterData(
+        id: 'ch_0',
+        title: title,
+        href: 'ch_0.html',
+        htmlContent: fullHtml,
+        textPreview: text.length > 200 ? '${text.substring(0, 200)}...' : text,
+        orderIndex: 0,
+        wordCount: text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
+      ),
+    );
+    toc.add(
+      EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0),
+    );
   }
 
   return EpubBookData(
@@ -903,9 +1066,15 @@ EpubBookData _parseMobiSync(Uint8List bytes, String fileName) {
 
 EpubBookData _parseTxtSync(Uint8List bytes, String fileName) {
   final text = utf8.decode(bytes, allowMalformed: true);
-  final title = p.basenameWithoutExtension(fileName).replaceAll(RegExp(r'[_\-]+'), ' ');
+  final title = p
+      .basenameWithoutExtension(fileName)
+      .replaceAll(RegExp(r'[_\-]+'), ' ');
 
-  final chapterRegex = RegExp(r'^(?:Chapter|Section|Book|Part)\s+[0-9IVXLCDM]+', caseSensitive: false, multiLine: true);
+  final chapterRegex = RegExp(
+    r'^(?:Chapter|Section|Book|Part)\s+[0-9IVXLCDM]+',
+    caseSensitive: false,
+    multiLine: true,
+  );
   final matches = chapterRegex.allMatches(text).toList();
 
   final chapters = <EpubChapterData>[];
@@ -920,33 +1089,52 @@ EpubBookData _parseTxtSync(Uint8List bytes, String fileName) {
       final lines = chunk.split('\n');
       final chTitle = lines.first.trim();
       final bodyText = lines.skip(1).join('\n\n');
-      final paragraphs = bodyText.split(RegExp(r'\n\s*\n')).map((p) => '<p>${htmlEscape.convert(p.trim())}</p>').join('\n');
+      final paragraphs = bodyText
+          .split(RegExp(r'\n\s*\n'))
+          .map((p) => '<p>${htmlEscape.convert(p.trim())}</p>')
+          .join('\n');
       final html = '<h2>${htmlEscape.convert(chTitle)}</h2>\n$paragraphs';
 
-      chapters.add(EpubChapterData(
-        id: 'ch_$i',
-        title: chTitle,
-        href: 'ch_$i.html',
-        htmlContent: html,
-        textPreview: chunk.length > 200 ? '${chunk.substring(0, 200)}...' : chunk,
-        orderIndex: i,
-        wordCount: chunk.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
-      ));
-      toc.add(EpubTocItem(title: chTitle, contentSrc: 'ch_$i.html', chapterIndex: i));
+      chapters.add(
+        EpubChapterData(
+          id: 'ch_$i',
+          title: chTitle,
+          href: 'ch_$i.html',
+          htmlContent: html,
+          textPreview: chunk.length > 200
+              ? '${chunk.substring(0, 200)}...'
+              : chunk,
+          orderIndex: i,
+          wordCount: chunk
+              .split(RegExp(r'\s+'))
+              .where((w) => w.isNotEmpty)
+              .length,
+        ),
+      );
+      toc.add(
+        EpubTocItem(title: chTitle, contentSrc: 'ch_$i.html', chapterIndex: i),
+      );
     }
   } else {
-    final paragraphs = text.split(RegExp(r'\n\s*\n')).map((p) => '<p>${htmlEscape.convert(p.trim())}</p>').join('\n');
+    final paragraphs = text
+        .split(RegExp(r'\n\s*\n'))
+        .map((p) => '<p>${htmlEscape.convert(p.trim())}</p>')
+        .join('\n');
     final html = '<h1>${htmlEscape.convert(title)}</h1>\n$paragraphs';
-    chapters.add(EpubChapterData(
-      id: 'ch_0',
-      title: title,
-      href: 'ch_0.html',
-      htmlContent: html,
-      textPreview: text.length > 200 ? '${text.substring(0, 200)}...' : text,
-      orderIndex: 0,
-      wordCount: text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
-    ));
-    toc.add(EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0));
+    chapters.add(
+      EpubChapterData(
+        id: 'ch_0',
+        title: title,
+        href: 'ch_0.html',
+        htmlContent: html,
+        textPreview: text.length > 200 ? '${text.substring(0, 200)}...' : text,
+        orderIndex: 0,
+        wordCount: text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
+      ),
+    );
+    toc.add(
+      EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0),
+    );
   }
 
   return EpubBookData(
@@ -982,11 +1170,17 @@ List<Uint8List> _extractRawComicImages(Uint8List bytes) {
         j++;
       }
       if (j >= bytes.length - 1) i += 2;
-    } else if (bytes[i] == 0x89 && bytes[i + 1] == 0x50 && bytes[i + 2] == 0x4E && bytes[i + 3] == 0x47) {
+    } else if (bytes[i] == 0x89 &&
+        bytes[i + 1] == 0x50 &&
+        bytes[i + 2] == 0x4E &&
+        bytes[i + 3] == 0x47) {
       final start = i;
       int j = start + 8;
       while (j < bytes.length - 8) {
-        if (bytes[j] == 0x49 && bytes[j + 1] == 0x45 && bytes[j + 2] == 0x4E && bytes[j + 3] == 0x44) {
+        if (bytes[j] == 0x49 &&
+            bytes[j + 1] == 0x45 &&
+            bytes[j + 2] == 0x4E &&
+            bytes[j + 3] == 0x44) {
           final end = j + 8;
           final imgLen = end - start;
           if (imgLen >= 1024) {
@@ -1006,7 +1200,9 @@ List<Uint8List> _extractRawComicImages(Uint8List bytes) {
 }
 
 EpubBookData _parseComicSync(Uint8List bytes, String fileName) {
-  final title = p.basenameWithoutExtension(fileName).replaceAll(RegExp(r'[_\-]+'), ' ');
+  final title = p
+      .basenameWithoutExtension(fileName)
+      .replaceAll(RegExp(r'[_\-]+'), ' ');
   final images = <String, Uint8List>{};
   final chapters = <EpubChapterData>[];
   final toc = <EpubTocItem>[];
@@ -1020,7 +1216,10 @@ EpubBookData _parseComicSync(Uint8List bytes, String fileName) {
       final archive = ZipDecoder().decodeBytes(bytes, verify: false);
       final imageFiles = archive.files.where((f) {
         final lower = f.name.toLowerCase();
-        return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp');
+        return lower.endsWith('.jpg') ||
+            lower.endsWith('.jpeg') ||
+            lower.endsWith('.png') ||
+            lower.endsWith('.webp');
       }).toList();
       imageFiles.sort((a, b) => a.name.compareTo(b.name));
       for (final file in imageFiles) {
@@ -1030,7 +1229,11 @@ EpubBookData _parseComicSync(Uint8List bytes, String fileName) {
   }
 
   // 2. Try RAR decoding (CBR)
-  if (rawPages.isEmpty && bytes.length > 7 && bytes[0] == 0x52 && bytes[1] == 0x61 && bytes[2] == 0x72) {
+  if (rawPages.isEmpty &&
+      bytes.length > 7 &&
+      bytes[0] == 0x52 &&
+      bytes[1] == 0x61 &&
+      bytes[2] == 0x72) {
     try {
       int pos = 7;
       final rarFiles = <String, Uint8List>{};
@@ -1046,12 +1249,21 @@ EpubBookData _parseComicSync(Uint8List bytes, String fileName) {
           final nameSize = _readUint16(bytes, pos + 26);
           int nameOffset = pos + 32;
           if (nameOffset + nameSize <= pos + headSize) {
-            final filename = utf8.decode(bytes.sublist(nameOffset, nameOffset + nameSize), allowMalformed: true);
+            final filename = utf8.decode(
+              bytes.sublist(nameOffset, nameOffset + nameSize),
+              allowMalformed: true,
+            );
             final dataOffset = pos + headSize;
             if (dataOffset + packSize <= bytes.length && packSize > 0) {
-              final fileBytes = bytes.sublist(dataOffset, dataOffset + packSize);
+              final fileBytes = bytes.sublist(
+                dataOffset,
+                dataOffset + packSize,
+              );
               final lower = filename.toLowerCase();
-              if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp')) {
+              if (lower.endsWith('.jpg') ||
+                  lower.endsWith('.jpeg') ||
+                  lower.endsWith('.png') ||
+                  lower.endsWith('.webp')) {
                 rarFiles[filename] = fileBytes;
               }
             }
@@ -1083,33 +1295,43 @@ EpubBookData _parseComicSync(Uint8List bytes, String fileName) {
     images[key] = imgBytes;
     if (i == 0) coverBytes = imgBytes;
 
-    final html = '<div align="center"><img src="$key" style="max-width: 100%; border-radius: 8px;" /></div>';
+    final html =
+        '<div align="center"><img src="$key" style="max-width: 100%; border-radius: 8px;" /></div>';
     final pageTitle = 'Page ${i + 1}';
 
-    chapters.add(EpubChapterData(
-      id: 'page_$i',
-      title: pageTitle,
-      href: '$key.html',
-      htmlContent: html,
-      textPreview: pageTitle,
-      orderIndex: i,
-      wordCount: 0,
-    ));
-    toc.add(EpubTocItem(title: pageTitle, contentSrc: '$key.html', chapterIndex: i));
+    chapters.add(
+      EpubChapterData(
+        id: 'page_$i',
+        title: pageTitle,
+        href: '$key.html',
+        htmlContent: html,
+        textPreview: pageTitle,
+        orderIndex: i,
+        wordCount: 0,
+      ),
+    );
+    toc.add(
+      EpubTocItem(title: pageTitle, contentSrc: '$key.html', chapterIndex: i),
+    );
   }
 
   if (chapters.isEmpty) {
-    final html = '<div align="center"><h2>$title</h2><p>No comic pages found in this archive.</p></div>';
-    chapters.add(EpubChapterData(
-      id: 'page_0',
-      title: title,
-      href: 'page_0.html',
-      htmlContent: html,
-      textPreview: title,
-      orderIndex: 0,
-      wordCount: 0,
-    ));
-    toc.add(EpubTocItem(title: title, contentSrc: 'page_0.html', chapterIndex: 0));
+    final html =
+        '<div align="center"><h2>$title</h2><p>No comic pages found in this archive.</p></div>';
+    chapters.add(
+      EpubChapterData(
+        id: 'page_0',
+        title: title,
+        href: 'page_0.html',
+        htmlContent: html,
+        textPreview: title,
+        orderIndex: 0,
+        wordCount: 0,
+      ),
+    );
+    toc.add(
+      EpubTocItem(title: title, contentSrc: 'page_0.html', chapterIndex: 0),
+    );
   }
 
   return EpubBookData(
@@ -1144,12 +1366,20 @@ bool _isLegitimateTextLine(String line) {
   int weirdSymbols = 0;
   for (int i = 0; i < trimmed.length; i++) {
     final code = trimmed.codeUnitAt(i);
-    final isGood = (code >= 65 && code <= 90) ||
+    final isGood =
+        (code >= 65 && code <= 90) ||
         (code >= 97 && code <= 122) ||
         (code >= 48 && code <= 57) ||
         code == 32 ||
-        code == 44 || code == 46 || code == 33 || code == 63 ||
-        code == 39 || code == 34 || code == 45 || code == 58 || code == 59;
+        code == 44 ||
+        code == 46 ||
+        code == 33 ||
+        code == 63 ||
+        code == 39 ||
+        code == 34 ||
+        code == 45 ||
+        code == 58 ||
+        code == 59;
     if (!isGood) {
       weirdSymbols++;
     }
@@ -1159,7 +1389,10 @@ bool _isLegitimateTextLine(String line) {
     return false;
   }
 
-  final words = trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  final words = trimmed
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
   if (words.length < 3) return false;
 
   int realWords = 0;
@@ -1173,8 +1406,14 @@ bool _isLegitimateTextLine(String line) {
   return (realWords / words.length) >= 0.7;
 }
 
-EpubBookData _parseLegacyFallbackSync(Uint8List bytes, String fileName, String fmt) {
-  final title = p.basenameWithoutExtension(fileName).replaceAll(RegExp(r'[_\-]+'), ' ');
+EpubBookData _parseLegacyFallbackSync(
+  Uint8List bytes,
+  String fileName,
+  String fmt,
+) {
+  final title = p
+      .basenameWithoutExtension(fileName)
+      .replaceAll(RegExp(r'[_\-]+'), ' ');
 
   // Extract readable text chunks
   final chunks = <String>[];
@@ -1207,11 +1446,14 @@ EpubBookData _parseLegacyFallbackSync(Uint8List bytes, String fileName, String f
 
   String html;
   if (validParagraphs.length >= 5) {
-    final pTags = validParagraphs.map((p) => '<p>${htmlEscape.convert(p)}</p>').join('\n');
+    final pTags = validParagraphs
+        .map((p) => '<p>${htmlEscape.convert(p)}</p>')
+        .join('\n');
     html = '<h1>${htmlEscape.convert(title)}</h1>\n$pTags';
   } else {
     // Legacy format notice
-    html = '''
+    html =
+        '''
 <div align="center" style="padding: 32px 16px;">
   <h2>${htmlEscape.convert(title)}</h2>
   <br/>
@@ -1233,14 +1475,16 @@ EpubBookData _parseLegacyFallbackSync(Uint8List bytes, String fileName, String f
       textPreview: title,
       orderIndex: 0,
       wordCount: validParagraphs.length * 15,
-    )
+    ),
   ];
 
   return EpubBookData(
     title: title,
     author: 'Unknown Author',
     chapters: chapters,
-    tableOfContents: [EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0)],
+    tableOfContents: [
+      EpubTocItem(title: title, contentSrc: 'ch_0.html', chapterIndex: 0),
+    ],
     images: const {},
   );
 }

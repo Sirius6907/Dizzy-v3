@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/ai/mood_quiz_policy.dart';
 import '../../services/ai/mood_quiz_service.dart';
 import '../../services/calendar/reminder_schedule.dart';
@@ -17,7 +18,7 @@ import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/notify.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/movie/movie_card.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 import '../music/music_page.dart';
 import 'mood_quiz_sheet.dart';
 import 'reminders_sheet.dart';
@@ -49,6 +50,10 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
 
   bool _loading = true;
   String? _error;
+
+  bool get _isLight => AppThemeService.currentPalette.value.isLight;
+  Color get _ink => _isLight ? PrismLight.ink : DizzyVoid.bone;
+  Color get _inkSoft => _isLight ? PrismLight.inkSoft : DizzyVoid.ash;
 
   @override
   void initState() {
@@ -103,13 +108,15 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
       try {
         final entries = await service.getEpisodesForDay(day);
         for (final e in entries) {
-          airings.add(CalendarAiring(
-            showTitle: e.showTitle,
-            season: e.seasonNumber,
-            episode: e.episodeNumber,
-            episodeTitle: e.episodeTitle,
-            airsAt: e.airDateTimeLocal,
-          ));
+          airings.add(
+            CalendarAiring(
+              showTitle: e.showTitle,
+              season: e.seasonNumber,
+              episode: e.episodeNumber,
+              episodeTitle: e.episodeTitle,
+              airsAt: e.airDateTimeLocal,
+            ),
+          );
         }
       } catch (e) {
         // A calendar miss must never break Discover: the alert simply has no
@@ -167,20 +174,20 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
     final sections = _discover.sections.value;
 
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           DiscoverCopy.title,
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: DizzyType.title,
-            color: DizzyVoid.bone,
+            color: _ink,
           ),
         ),
       ),
@@ -188,21 +195,21 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
         onRefresh: _refresh,
         child: _loading
             ? ListView(
-                children: const [
-                  SizedBox(height: 120),
+                children: [
+                  const SizedBox(height: 120),
                   Center(
                     child: Column(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 26,
                           height: 26,
                           child: CircularProgressIndicator(strokeWidth: 3),
                         ),
-                        SizedBox(height: DizzySpace.sm),
+                        const SizedBox(height: DizzySpace.sm),
                         Text(
                           DiscoverCopy.loading,
                           style: TextStyle(
-                            color: DizzyVoid.ash,
+                            color: _inkSoft,
                             fontSize: DizzyType.body,
                           ),
                         ),
@@ -218,7 +225,7 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
                 children: [
                   _header(),
                   if (_error != null) _errorCard(),
-                  for (final s in sections) _section(s, palette.primaryColor),
+                  for (final s in sections) _section(s),
                   _quizCard(),
                   _reminderCard(),
                   Padding(
@@ -243,8 +250,8 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
   }
 
   Widget _header() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         DizzySpace.md,
         DizzySpace.md,
         DizzySpace.md,
@@ -252,10 +259,7 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
       ),
       child: Text(
         DiscoverCopy.tagline,
-        style: TextStyle(
-          color: DizzyVoid.ash,
-          fontSize: DizzyType.body,
-        ),
+        style: TextStyle(color: _inkSoft, fontSize: DizzyType.body),
       ),
     );
   }
@@ -270,17 +274,14 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
         DizzySpace.md,
         DizzySpace.sm,
       ),
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.all(DizzySpace.md),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 line,
-                style: const TextStyle(
-                  color: DizzyVoid.ash,
-                  fontSize: DizzyType.body,
-                ),
+                style: TextStyle(color: _inkSoft, fontSize: DizzyType.body),
               ),
             ),
             const SizedBox(width: DizzySpace.xs),
@@ -294,11 +295,11 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
     );
   }
 
-  Widget _section(DiscoverSection s, Color primary) {
+  Widget _section(DiscoverSection s) {
     final sizing = MovieCardSizing.fromWidth(MediaQuery.sizeOf(context).width);
 
     if (s.isMusic) {
-      return _musicStrip(s, primary, sizing);
+      return _musicStrip(s, sizing);
     }
 
     return Column(
@@ -324,7 +325,7 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
     );
   }
 
-  Widget _musicStrip(DiscoverSection s, Color primary, MovieCardSizing sizing) {
+  Widget _musicStrip(DiscoverSection s, MovieCardSizing sizing) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -340,11 +341,7 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
             separatorBuilder: (_, __) => const SizedBox(width: DizzySpace.sm),
             itemBuilder: (_, i) {
               final mix = s.mixes[i];
-              return _MixCard(
-                mix: mix,
-                primary: primary,
-                onTap: () => _openMix(mix),
-              );
+              return _MixCard(mix: mix, onTap: () => _openMix(mix));
             },
           ),
         ),
@@ -359,9 +356,9 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
     }
     // The mix is generated and played by the music page, which is the only
     // place in the app that knows how to start a track.
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const MusicPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const MusicPage()));
   }
 
   void _toast(String line) {
@@ -381,11 +378,9 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
         DizzySpace.md,
         0,
       ),
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.all(DizzySpace.md),
-        borderColor: profile != null
-            ? palette.primaryColor.withValues(alpha: 0.35)
-            : DizzyEdge.hairline.color,
+        glowColor: profile != null ? palette.primaryColor : null,
         onTap: _takeQuiz,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,8 +389,8 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
               profile != null
                   ? MoodQuizPolicy.resultTitle(profile)
                   : DiscoverCopy.quizRailTitle,
-              style: const TextStyle(
-                color: DizzyVoid.bone,
+              style: TextStyle(
+                color: _ink,
                 fontSize: DizzyType.subtitle,
                 fontWeight: FontWeight.w900,
               ),
@@ -405,16 +400,13 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
               profile != null
                   ? MoodQuizPolicy.resultLine(profile)
                   : MoodQuizPolicy.progressLine(answers),
-              style: const TextStyle(
-                color: DizzyVoid.ash,
-                fontSize: DizzyType.body,
-              ),
+              style: TextStyle(color: _inkSoft, fontSize: DizzyType.body),
             ),
             const SizedBox(height: DizzySpace.sm),
             Text(
               profile != null ? 'Change my picks' : DiscoverCopy.quizAction,
               style: TextStyle(
-                color: palette.primaryColor,
+                color: PrismAccent.text(palette.isLight),
                 fontSize: DizzyType.body,
                 fontWeight: FontWeight.w800,
               ),
@@ -437,7 +429,7 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
         DizzySpace.md,
         0,
       ),
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.all(DizzySpace.md),
         onTap: () => RemindersSheet.show(context),
         child: Column(
@@ -445,11 +437,11 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     ReminderCopy.title,
                     style: TextStyle(
-                      color: DizzyVoid.bone,
+                      color: _ink,
                       fontSize: DizzyType.subtitle,
                       fontWeight: FontWeight.w900,
                     ),
@@ -460,24 +452,21 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
                       ? Icons.notifications_off_outlined
                       : Icons.notifications_active_outlined,
                   size: 18,
-                  color: follows.isEmpty ? DizzyVoid.ash : palette.primaryColor,
+                  color: follows.isEmpty ? _inkSoft : palette.primaryColor,
                 ),
               ],
             ),
             const SizedBox(height: DizzySpace.xxs),
             Text(
               ReminderCopy.nextLine(next),
-              style: const TextStyle(
-                color: DizzyVoid.ash,
-                fontSize: DizzyType.body,
-              ),
+              style: TextStyle(color: _inkSoft, fontSize: DizzyType.body),
             ),
             if (follows.isEmpty) ...[
               const SizedBox(height: DizzySpace.xxs),
               Text(
                 DiscoverCopy.remindersAction,
                 style: TextStyle(
-                  color: palette.primaryColor,
+                  color: PrismAccent.text(palette.isLight),
                   fontSize: DizzyType.caption,
                   fontWeight: FontWeight.w800,
                 ),
@@ -492,20 +481,19 @@ class _DiscoverDailyPageState extends State<DiscoverDailyPage> {
 
 class _MixCard extends StatelessWidget {
   final DiscoverMix mix;
-  final Color primary;
   final VoidCallback onTap;
 
-  const _MixCard({
-    required this.mix,
-    required this.primary,
-    required this.onTap,
-  });
+  const _MixCard({required this.mix, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+
     return SizedBox(
       width: 190,
-      child: DizzyTactileCard(
+      child: PrismCard(
         padding: const EdgeInsets.all(DizzySpace.sm),
         onTap: onTap,
         child: Column(
@@ -514,12 +502,16 @@ class _MixCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.graphic_eq_rounded, color: primary, size: 18),
+                Icon(
+                  Icons.graphic_eq_rounded,
+                  color: PrismAccent.text(isLight),
+                  size: 18,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   '${mix.trackCount}',
                   style: TextStyle(
-                    color: primary,
+                    color: PrismAccent.text(isLight),
                     fontSize: DizzyType.caption,
                     fontWeight: FontWeight.w800,
                   ),
@@ -531,8 +523,8 @@ class _MixCard extends StatelessWidget {
               mix.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: DizzyVoid.bone,
+              style: TextStyle(
+                color: ink,
                 fontSize: DizzyType.body,
                 fontWeight: FontWeight.w800,
               ),
@@ -541,10 +533,7 @@ class _MixCard extends StatelessWidget {
               mix.subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: DizzyVoid.ash,
-                fontSize: DizzyType.caption,
-              ),
+              style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
             ),
           ],
         ),
@@ -566,19 +555,27 @@ class _TonightSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+
     return SafeArea(
       top: false,
       child: Container(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.7,
         ),
-        // Not const: DizzyEdge.hairline is a theme-aware getter.
+        // Not const: PrismLight.borderSubtle/DizzyEdge.hairline are
+        // theme-aware getters.
         decoration: BoxDecoration(
-          color: DizzyVoid.voidA,
+          color: palette.cardBackgroundColor,
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(DizzyRadius.xl),
           ),
-          border: Border(top: DizzyEdge.hairline),
+          border: isLight
+              ? const Border(top: BorderSide(color: PrismLight.borderSubtle))
+              : Border(top: DizzyEdge.hairline),
         ),
         child: ListView(
           shrinkWrap: true,
@@ -586,8 +583,8 @@ class _TonightSheet extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                color: DizzyVoid.bone,
+              style: TextStyle(
+                color: ink,
                 fontSize: DizzyType.title,
                 fontWeight: FontWeight.w900,
               ),
@@ -595,21 +592,18 @@ class _TonightSheet extends StatelessWidget {
             const SizedBox(height: DizzySpace.xxs),
             Text(
               subtitle,
-              style: const TextStyle(
-                color: DizzyVoid.ash,
-                fontSize: DizzyType.body,
-              ),
+              style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
             ),
             const SizedBox(height: DizzySpace.md),
             for (final line in lines)
               Padding(
                 padding: const EdgeInsets.only(bottom: DizzySpace.xs),
-                child: DizzyTactileCard(
+                child: PrismCard(
                   padding: const EdgeInsets.all(DizzySpace.sm),
                   child: Text(
                     line,
-                    style: const TextStyle(
-                      color: DizzyVoid.bone,
+                    style: TextStyle(
+                      color: ink,
                       fontSize: DizzyType.body,
                       fontWeight: FontWeight.w700,
                     ),

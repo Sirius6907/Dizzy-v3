@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 
+import '../../design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../services/theme/glass_settings.dart';
@@ -10,7 +11,7 @@ import '../../services/iptv/iptv_settings.dart';
 import '../../services/discord/discord_rpc_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/animated_ambient_background.dart';
-import '../../widgets/common/app_liquid_dock.dart';
+import '../../widgets/prism/prism_dock.dart';
 import '../../widgets/common/custom_scroll_track.dart';
 import '../../widgets/iptv/iptv_hero_carousel.dart';
 import '../../widgets/iptv/iptv_slider_section.dart';
@@ -19,7 +20,6 @@ import 'iptv_channel_sheet.dart';
 import 'iptv_player_page.dart';
 import 'iptv_portals_modal.dart';
 import 'iptv_search_page.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class IptvPage extends StatefulWidget {
   const IptvPage({super.key});
@@ -237,7 +237,8 @@ class _IptvPageState extends State<IptvPage> {
 
           // 2. Curated Slider Sections (driven by user-customized category visibility and order)
           for (final catName in visibleCategories)
-            if (categoryMap.containsKey(catName) && categoryMap[catName]!.$2.isNotEmpty)
+            if (categoryMap.containsKey(catName) &&
+                categoryMap[catName]!.$2.isNotEmpty)
               IptvSliderSection(
                 title: catName,
                 subtitle: categoryMap[catName]!.$1,
@@ -245,17 +246,14 @@ class _IptvPageState extends State<IptvPage> {
                 onChannelTap: _openChannel,
               ),
 
-          const SizedBox(height: 90),
+          SizedBox(height: PrismLayout.dockClearance(context)),
         ],
       ),
     );
 
     final backgroundContent = IptvSettings.enableAmbientLights.value
         ? AnimatedAmbientBackground(child: listContent)
-        : Container(
-            color: palette.scaffoldBackgroundColor,
-            child: listContent,
-          );
+        : Container(color: palette.scaffoldBackgroundColor, child: listContent);
 
     final overlayChildren = <Widget>[
       // Floating Glass App Bar (Home & Anime Page Style)
@@ -285,7 +283,7 @@ class _IptvPageState extends State<IptvPage> {
         left: 0,
         right: 0,
         child: Center(
-          child: AppLiquidDock(
+          child: PrismDock(
             currentDestination: DockItemKey.liveTv,
             onSettingsTap: () => _navigateToSettings(null),
             onSearchTap: () => _navigateToSearch(null),
@@ -294,38 +292,34 @@ class _IptvPageState extends State<IptvPage> {
       ),
     ];
 
-    return GuideTrigger(
-      guideKey: 'iptv',
-      steps: AppGuides.iptv,
-      child: Scaffold(
-        backgroundColor: palette.scaffoldBackgroundColor,
-        body: ValueListenableBuilder<bool>(
-          valueListenable: GlassSettings.enabled,
-          builder: (context, enabled, _) {
-            final overlays = Stack(children: overlayChildren);
-            if (enabled) {
-              return LiquidGlassView(
-                realTimeCapture: true,
-                useSync: true,
-                pixelRatio: 0.85,
-                refreshRate: LiquidGlassRefreshRate.deviceRefreshRate,
-                regionCapture: true,
-                backgroundWidget: backgroundContent,
-                child: overlays,
-              );
-            }
-
-            return Container(
-              color: palette.scaffoldBackgroundColor,
-              child: Stack(
-                children: [
-                  RepaintBoundary(child: backgroundContent),
-                  ...overlayChildren,
-                ],
-              ),
+    return Scaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      body: ValueListenableBuilder<bool>(
+        valueListenable: GlassSettings.enabled,
+        builder: (context, enabled, _) {
+          final overlays = Stack(children: overlayChildren);
+          if (enabled) {
+            return LiquidGlassView(
+              realTimeCapture: true,
+              useSync: true,
+              pixelRatio: 0.85,
+              refreshRate: LiquidGlassRefreshRate.deviceRefreshRate,
+              regionCapture: true,
+              backgroundWidget: backgroundContent,
+              child: overlays,
             );
-          },
-        ),
+          }
+
+          return Container(
+            color: palette.scaffoldBackgroundColor,
+            child: Stack(
+              children: [
+                RepaintBoundary(child: backgroundContent),
+                ...overlayChildren,
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -347,13 +341,20 @@ class _IptvGlassAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     // P6 narrow compact: 360px pe do info pills + teen glass buttons ek line
     // me nahi samate. Compact mode: "60+ CHANNELS" info pill chhupata hai,
     // padding aur button gap tight hote hain.
     final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(narrow ? 12 : 28, topPadding + 14, narrow ? 12 : 28, 14),
+      padding: EdgeInsets.fromLTRB(
+        narrow ? 12 : 28,
+        topPadding + 14,
+        narrow ? 12 : 28,
+        14,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -373,7 +374,10 @@ class _IptvGlassAppBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [palette.primaryColor, palette.accentColor],
@@ -406,16 +410,24 @@ class _IptvGlassAppBar extends StatelessWidget {
               if (!narrow) const SizedBox(width: 10),
               if (!narrow)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
                   ),
-                  child: const Text(
+                  decoration: BoxDecoration(
+                    color: isLight
+                        ? PrismLight.raisedTop
+                        : Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: isLight
+                        ? Border.all(color: PrismLight.borderSubtle)
+                        : null,
+                  ),
+                  child: Text(
                     '60+ CHANNELS',
                     style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 10.5,
+                      color: inkSoft,
+                      fontSize: PrismType.micro,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
                     ),
@@ -478,6 +490,15 @@ class _GlassActionButtonState extends State<_GlassActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final accent = palette.primaryColor;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final base = isLight
+        ? PrismLight.raisedTop
+        : Colors.white.withValues(alpha: 0.08);
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -493,33 +514,31 @@ class _GlassActionButtonState extends State<_GlassActionButton> {
             }
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: 40,
-            height: 40,
+            duration: PrismMotion.micro,
+            width: PrismSpace.giant,
+            height: PrismSpace.giant,
             decoration: BoxDecoration(
               color: _hovered
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+                  ? accent.withValues(alpha: isLight ? 0.10 : 0.16)
+                  : base,
+              borderRadius: BorderRadius.circular(PrismRadius.md),
               border: Border.all(
                 color: _hovered
-                    ? const Color(0xFF7C5CFF).withValues(alpha: 0.6)
-                    : Colors.white.withValues(alpha: 0.12),
+                    ? accent.withValues(alpha: 0.6)
+                    : (isLight
+                          ? PrismLight.borderSubtle
+                          : Colors.white.withValues(alpha: 0.12)),
               ),
               boxShadow: _hovered
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF7C5CFF).withValues(alpha: 0.25),
+                        color: accent.withValues(alpha: 0.25),
                         blurRadius: 10,
-                      )
+                      ),
                     ]
                   : null,
             ),
-            child: Icon(
-              widget.icon,
-              color: _hovered ? Colors.white : Colors.white70,
-              size: 20,
-            ),
+            child: Icon(widget.icon, color: _hovered ? ink : inkSoft, size: 20),
           ),
         ),
       ),

@@ -114,7 +114,8 @@ class _VisualizerPainter extends CustomPainter {
     if (heights.isEmpty) return;
 
     final barWidth = (size.width / heights.length) * 0.65;
-    final spacing = (size.width - (barWidth * heights.length)) / (heights.length + 1);
+    final spacing =
+        (size.width - (barWidth * heights.length)) / (heights.length + 1);
 
     final paint = Paint()..style = PaintingStyle.fill;
 
@@ -129,7 +130,9 @@ class _VisualizerPainter extends CustomPainter {
       );
 
       if (gradient != null) {
-        paint.shader = gradient!.createShader(Rect.fromLTWH(x, y, barWidth, barH));
+        paint.shader = gradient!.createShader(
+          Rect.fromLTWH(x, y, barWidth, barH),
+        );
       } else {
         paint.color = color;
       }

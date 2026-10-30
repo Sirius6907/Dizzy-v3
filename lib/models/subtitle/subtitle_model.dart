@@ -4,7 +4,8 @@ class SubtitleVariant {
   final String title;
   final String downloadUrl;
   final String format; // 'srt', 'vtt', 'zip'
-  final Map<String, dynamic> extraData; // For provider specific tokens if needed
+  final Map<String, dynamic>
+  extraData; // For provider specific tokens if needed
 
   SubtitleVariant({
     required this.providerName,
@@ -20,10 +21,7 @@ class SubtitleLanguageGroup {
   final String language;
   final List<SubtitleVariant> variants;
 
-  SubtitleLanguageGroup({
-    required this.language,
-    required this.variants,
-  });
+  SubtitleLanguageGroup({required this.language, required this.variants});
 }
 
 class PlayerEmbeddedSubtitle {

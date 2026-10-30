@@ -6,6 +6,7 @@ import '../../utils/search/relevance_scorer.dart';
 import '../cloud/remote_config_service.dart';
 import 'audiobookbay_scraper.dart';
 import '../net/dizzy_net.dart';
+import '../config/env_service.dart';
 
 class AudiobookScraperService {
   AudiobookScraperService._();
@@ -287,8 +288,24 @@ class AudiobookScraperService {
   static String? _audionestIdToken;
   static DateTime? _audionestIdTokenExpiry;
 
+  /// Firebase web key + search bearer are rotated service credentials —
+  /// injected via `--dart-define` / `.env`, never compiled into source.
+  static const _compileFirebaseKey = String.fromEnvironment(
+    'AUDIONEST_FIREBASE_KEY',
+  );
+  static String get _audionestFirebaseKey => _compileFirebaseKey.isNotEmpty
+      ? _compileFirebaseKey
+      : EnvService.get('AUDIONEST_FIREBASE_KEY');
+  static const _compileSearchBearer = String.fromEnvironment(
+    'AUDIONEST_SEARCH_BEARER',
+  );
+  static String get _audionestSearchBearer => _compileSearchBearer.isNotEmpty
+      ? _compileSearchBearer
+      : EnvService.get('AUDIONEST_SEARCH_BEARER');
+
   static Future<String?> _audionestEnsureToken({bool force = false}) async {
-    const apiKey = 'AIzaSyAG-z_yl0_55NEYTEKGoVJyixtHG-FhnfA';
+    final apiKey = _audionestFirebaseKey;
+    if (apiKey.isEmpty) return null;
     if (!force &&
         _audionestIdToken != null &&
         _audionestIdTokenExpiry != null &&
@@ -320,11 +337,13 @@ class AudiobookScraperService {
   }
 
   static Future<List<Audiobook>> _searchAudionest(String query) async {
+    final bearer = _audionestSearchBearer;
+    if (bearer.isEmpty) return [];
     try {
       final res = await DizzyNet.instance.post(
         Uri.parse('https://search.audionestapp.com/indexes/trackfiles/search'),
         headers: {
-          'Authorization': 'Bearer MWJiNWM0MjA2N2ZkM2RiMDNhNWFmNGNk',
+          'Authorization': 'Bearer $bearer',
           'Content-Type': 'application/json',
         },
         body: json.encode({'q': query, 'limit': 30}),

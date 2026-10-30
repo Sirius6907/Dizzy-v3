@@ -6,11 +6,7 @@ class MediaSkipSegment {
   final int? startMs;
   final int? endMs;
 
-  const MediaSkipSegment({
-    required this.type,
-    this.startMs,
-    this.endMs,
-  });
+  const MediaSkipSegment({required this.type, this.startMs, this.endMs});
 
   /// The start duration of this segment (defaults to 0 if null).
   Duration get start => Duration(milliseconds: startMs ?? 0);
@@ -54,7 +50,8 @@ class MediaSkipSegment {
   bool contains(Duration position, [Duration? totalDuration]) {
     final posMs = position.inMilliseconds;
     final sMs = startMs ?? 0;
-    final effectiveEndMs = endMs ?? totalDuration?.inMilliseconds ?? (sMs + 600000);
+    final effectiveEndMs =
+        endMs ?? totalDuration?.inMilliseconds ?? (sMs + 600000);
 
     return posMs >= sMs && posMs < effectiveEndMs;
   }
@@ -75,11 +72,7 @@ class MediaSkipSegment {
       eMs = ((json['end_sec'] as num) * 1000).toInt();
     }
 
-    return MediaSkipSegment(
-      type: type,
-      startMs: sMs,
-      endMs: eMs,
-    );
+    return MediaSkipSegment(type: type, startMs: sMs, endMs: eMs);
   }
 }
 
@@ -109,7 +102,12 @@ class MediaSkipData {
           if (item is Map<String, dynamic>) {
             list.add(MediaSkipSegment.fromJson(typeKey, item));
           } else if (item is Map) {
-            list.add(MediaSkipSegment.fromJson(typeKey, Map<String, dynamic>.from(item)));
+            list.add(
+              MediaSkipSegment.fromJson(
+                typeKey,
+                Map<String, dynamic>.from(item),
+              ),
+            );
           }
         }
       }

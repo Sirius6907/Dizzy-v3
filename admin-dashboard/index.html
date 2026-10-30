@@ -338,6 +338,41 @@
             </div>
           </div>
         </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="card-h"><div class="card-t"><h3>Device push <span class="opt">FCM</span></h3><p class="sub">Phones only · 20 h gap, 1/day, 4/week per user · quiet hours honoured</p></div>
+            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadPushLog()">↻ Refresh log</button></div>
+          </div>
+          <div class="grid2">
+            <div>
+              <label class="fl" for="rpKind">Channel</label>
+              <select id="rpKind">
+                <option value="releases" selected>New releases</option>
+                <option value="updates">App updates</option>
+                <option value="downloads">Downloads</option>
+                <option value="social">Friends &amp; messages</option>
+                <option value="announcements">News from Dizzy</option>
+              </select>
+              <label class="fl" for="rpTitle">Title <span class="opt">≤120</span></label>
+              <input type="text" id="rpTitle" maxlength="120" placeholder="New on Dizzy: …">
+              <label class="fl" for="rpBody">Body <span class="opt">≤240</span></label>
+              <textarea id="rpBody" rows="2" maxlength="240" placeholder="One short line for the lock screen…"></textarea>
+              <label class="fl" for="rpDry" style="display:flex;gap:8px;align-items:center;margin-top:12px">
+                <input type="checkbox" id="rpDry" style="width:auto"> <span>Dry run (count tokens, send nothing)</span>
+              </label>
+              <div class="rowbtns" style="margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="sendPush('test')">📱 Send to me</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendPush('broadcast')">📣 Broadcast</button>
+                <button class="btn btn-ghost btn-sm" onclick="runBrain()">🧠 Preview brain</button>
+              </div>
+              <pre id="rpOut" style="display:none"></pre>
+            </div>
+            <div>
+              <div class="card-t"><h3>Recent sends</h3><p class="sub">Newest 40 · failed rows stay out of the cadence</p></div>
+              <div id="rpLog">loading…</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ── CONFIG ── -->
@@ -407,7 +442,7 @@
           <div class="card-h">
             <div class="card-t"><h3>Audit log</h3><p class="sub">Every admin write, newest first</p></div>
             <div class="card-a">
-              <label class="switch" title="Auto-refresh every 15s"><input type="checkbox" id="auditLive" onchange="toggleAuditLive()"><span class="track"></span><span class="sw-l">Live</span></label>
+              <label class="switch" title="Push updates as they happen"><input type="checkbox" id="auditLive" checked onchange="toggleAuditLive()"><span class="track"></span><span class="sw-l">Live</span></label>
               <button class="btn btn-ghost btn-sm" onclick="loadAudit()">↻ Refresh</button>
             </div>
           </div>
@@ -435,7 +470,7 @@
           <div class="card-h">
             <div class="card-t"><h3>Device logs</h3><p class="sub">Enum codes only — no titles, no URLs, no stack traces</p></div>
             <div class="card-a">
-              <label class="switch" title="Auto-refresh every 10s"><input type="checkbox" id="dlLive" onchange="toggleDeviceLogsLive()"><span class="track"></span><span class="sw-l">Live</span></label>
+              <label class="switch" title="Push updates as they happen"><input type="checkbox" id="dlLive" checked onchange="toggleDeviceLogsLive()"><span class="track"></span><span class="sw-l">Live</span></label>
               <button class="btn btn-ghost btn-sm" onclick="loadDeviceLogs()">↻ Refresh</button>
             </div>
           </div>

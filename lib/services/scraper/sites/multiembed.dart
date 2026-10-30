@@ -31,8 +31,15 @@ class MultiEmbedScraper extends StreamScraper {
   }) async {
     final sources = <StreamSource>[];
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
-    final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    AppLog.d('[MultiEmbedScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    final tmdbId = await TmdbHelper.resolveTmdbId(
+      imdbId: imdbId,
+      title: title,
+      type: mediaType,
+      year: year,
+    );
+    AppLog.d(
+      '[MultiEmbedScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)',
+    );
     if (tmdbId == null) return sources;
 
     try {
@@ -42,9 +49,13 @@ class MultiEmbedScraper extends StreamScraper {
 
       final embedPath = isTv
           ? '/embedtv/$tmdbId&s=$s&e=$e'
-          : ((imdbId != null && imdbId.startsWith('tt')) ? '/embed/$imdbId' : '/embed/$tmdbId');
+          : ((imdbId != null && imdbId.startsWith('tt'))
+                ? '/embed/$imdbId'
+                : '/embed/$tmdbId');
 
-      final embedRes = await http.get(Uri.parse('$_embedBase$embedPath'), headers: _headers).timeout(const Duration(seconds: 10));
+      final embedRes = await http
+          .get(Uri.parse('$_embedBase$embedPath'), headers: _headers)
+          .timeout(const Duration(seconds: 10));
       if (embedRes.statusCode != 200) return sources;
 
       final html = embedRes.body;
@@ -65,7 +76,9 @@ class MultiEmbedScraper extends StreamScraper {
       final datasrcMatch = RegExp(r'data-src="([^"]+)"').firstMatch(html);
       if (datasrcMatch != null) {
         final dUrl = datasrcMatch.group(1);
-        if (dUrl != null && dUrl.startsWith('http') && !serverUrls.contains(dUrl)) {
+        if (dUrl != null &&
+            dUrl.startsWith('http') &&
+            !serverUrls.contains(dUrl)) {
           serverUrls.insert(0, dUrl);
         }
       }
@@ -83,14 +96,21 @@ class MultiEmbedScraper extends StreamScraper {
               : 'https://play.xpass.top/e/movie/$pImdb?autostart=true';
 
           try {
-            final xpsRes = await http.get(Uri.parse(xpsPageUrl), headers: {
-              'User-Agent': _ua,
-              'Referer': 'https://streamsrcs.2embed.cc/',
-            }).timeout(const Duration(seconds: 8));
+            final xpsRes = await http
+                .get(
+                  Uri.parse(xpsPageUrl),
+                  headers: {
+                    'User-Agent': _ua,
+                    'Referer': 'https://streamsrcs.2embed.cc/',
+                  },
+                )
+                .timeout(const Duration(seconds: 8));
 
             if (xpsRes.statusCode == 200) {
               final xpsHtml = xpsRes.body;
-              final dataMatch = RegExp(r'var data\s*=\s*(\{.*?\});').firstMatch(xpsHtml);
+              final dataMatch = RegExp(
+                r'var data\s*=\s*(\{.*?\});',
+              ).firstMatch(xpsHtml);
               String? playlistPath;
 
               if (dataMatch != null) {
@@ -100,19 +120,26 @@ class MultiEmbedScraper extends StreamScraper {
                 } catch (_) {}
               }
 
-              playlistPath ??= RegExp(r'"playlist"\s*:\s*"([^"]+)"').firstMatch(xpsHtml)?.group(1);
+              playlistPath ??= RegExp(
+                r'"playlist"\s*:\s*"([^"]+)"',
+              ).firstMatch(xpsHtml)?.group(1);
 
               if (playlistPath != null && playlistPath.isNotEmpty) {
                 final playlistUrl = playlistPath.startsWith('http')
                     ? playlistPath
                     : 'https://play.xpass.top${playlistPath.startsWith('/') ? '' : '/'}$playlistPath';
 
-                final plRes = await http.get(Uri.parse(playlistUrl), headers: {
-                  'User-Agent': _ua,
-                  'Referer': xpsPageUrl,
-                  'Origin': 'https://play.xpass.top',
-                  'Accept': 'application/json,*/*',
-                }).timeout(const Duration(seconds: 8));
+                final plRes = await http
+                    .get(
+                      Uri.parse(playlistUrl),
+                      headers: {
+                        'User-Agent': _ua,
+                        'Referer': xpsPageUrl,
+                        'Origin': 'https://play.xpass.top',
+                        'Accept': 'application/json,*/*',
+                      },
+                    )
+                    .timeout(const Duration(seconds: 8));
 
                 if (plRes.statusCode == 200) {
                   final plJson = jsonDecode(plRes.body);
@@ -127,19 +154,23 @@ class MultiEmbedScraper extends StreamScraper {
                               file.startsWith('http') &&
                               !file.contains('/error') &&
                               !file.contains('.txt') &&
-                              (file.contains('.m3u8') || file.contains('.mp4') || file.contains('/playlist/'))) {
+                              (file.contains('.m3u8') ||
+                                  file.contains('.mp4') ||
+                                  file.contains('/playlist/'))) {
                             final label = src['label']?.toString() ?? 'Auto';
-                            sources.add(StreamSource(
-                              name: 'MultiEmbed',
-                              addonName: 'multiembed',
-                              title: '2embed XPS · $label',
-                              description: '2embed Multi-CDN Stream',
-                              url: file,
-                              headers: {
-                                'User-Agent': _ua,
-                                'Referer': 'https://play.xpass.top/',
-                              },
-                            ));
+                            sources.add(
+                              StreamSource(
+                                name: 'MultiEmbed',
+                                addonName: 'multiembed',
+                                title: '2embed XPS · $label',
+                                description: '2embed Multi-CDN Stream',
+                                url: file,
+                                headers: {
+                                  'User-Agent': _ua,
+                                  'Referer': 'https://play.xpass.top/',
+                                },
+                              ),
+                            );
                           }
                         }
                       }

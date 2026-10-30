@@ -31,8 +31,7 @@ class WatchPartyService {
   static final ValueNotifier<bool> adultUnlocked = ValueNotifier<bool>(false);
 
   /// True when the active profile is a kids profile (zero 18+ everywhere).
-  static bool get isKidsProfile =>
-      DizzyProfileService.active?.isKids ?? false;
+  static bool get isKidsProfile => DizzyProfileService.active?.isKids ?? false;
 
   static Future<void> loadPrefs() async {
     try {
@@ -64,8 +63,14 @@ class WatchPartyService {
     if (genreIds.any(blockedGenreIds.contains)) return true;
     final t = title.toLowerCase();
     const keywords = [
-      'xxx', 'porn', 'erotic', 'uncensored', 'hentai',
-      'blue film', 'adults only', 'pornographic',
+      'xxx',
+      'porn',
+      'erotic',
+      'uncensored',
+      'hentai',
+      'blue film',
+      'adults only',
+      'pornographic',
     ];
     return keywords.any(t.contains);
   }
@@ -84,12 +89,13 @@ class WatchPartyService {
   static String hashPass(String pass) =>
       sha256.convert(utf8.encode(pass.trim())).toString();
 
-  static bool validPass(String pass) => RegExp(r'^\d{6}$').hasMatch(pass.trim());
+  static bool validPass(String pass) =>
+      RegExp(r'^\d{6}$').hasMatch(pass.trim());
 
   /// 6-char room code from the unambiguous alphabet (no 0/O/1/I/L).
-  static bool validRoomId(String id) =>
-      RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$')
-          .hasMatch(id.trim().toUpperCase());
+  static bool validRoomId(String id) => RegExp(
+    r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$',
+  ).hasMatch(id.trim().toUpperCase());
 
   /// v1.2.0-P1: persistent rooms — name + pass only. No media needed.
   /// The host's current title is tracked via [updateCurrentMedia] as events.
@@ -103,20 +109,27 @@ class WatchPartyService {
     try {
       final uid = CloudClient.db.auth.currentUser!.id;
       final id = generateRoomId();
-      final row = await CloudClient.db.from('rooms').insert({
-        'room_id': id,
-        'host_user_id': uid,
-        'title': title.trim().isEmpty ? 'Watch Party' : title.trim(),
-        'visibility': isPrivate ? 'private' : 'public',
-        'pass_hash': isPrivate ? hashPass(pass!) : null,
-        'is_adult': isAdult || isAdultContent(title: title),
-        'status': 'lobby',
-      }).select().single();
+      final row = await CloudClient.db
+          .from('rooms')
+          .insert({
+            'room_id': id,
+            'host_user_id': uid,
+            'title': title.trim().isEmpty ? 'Watch Party' : title.trim(),
+            'visibility': isPrivate ? 'private' : 'public',
+            'pass_hash': isPrivate ? hashPass(pass!) : null,
+            'is_adult': isAdult || isAdultContent(title: title),
+            'status': 'lobby',
+          })
+          .select()
+          .single();
       // Host also becomes a member through secure RPC (pass hash valid).
-      await CloudClient.db.rpc('join_watch_room', params: {
-        'p_room_id': id,
-        'p_pass_hash': isPrivate ? hashPass(pass!) : null,
-      });
+      await CloudClient.db.rpc(
+        'join_watch_room',
+        params: {
+          'p_room_id': id,
+          'p_pass_hash': isPrivate ? hashPass(pass!) : null,
+        },
+      );
       final room = WatchPartyRoom.fromJson(Map<String, dynamic>.from(row));
       await connect(room);
       // WP-P5: opportunistic GC — one cheap call keeps the lobby rot-free.
@@ -139,11 +152,14 @@ class WatchPartyService {
   }) async {
     if (!isAvailable) return;
     try {
-      await CloudClient.db.from('rooms').update({
-        'current_media_ref': ref,
-        'current_title': title,
-        'media_ref': ref,
-      }).eq('room_id', roomId.trim().toUpperCase());
+      await CloudClient.db
+          .from('rooms')
+          .update({
+            'current_media_ref': ref,
+            'current_title': title,
+            'media_ref': ref,
+          })
+          .eq('room_id', roomId.trim().toUpperCase());
     } catch (e) {
       AppLog.d('[WatchParty] current media update failed (soft): $e');
     }
@@ -157,12 +173,19 @@ class WatchPartyService {
     final id = roomId.trim().toUpperCase();
     if (!validRoomId(id)) return null;
     try {
-      final ok = await CloudClient.db.rpc('join_watch_room', params: {
-        'p_room_id': id,
-        'p_pass_hash': (pass?.isNotEmpty ?? false) ? hashPass(pass!) : null,
-      });
+      final ok = await CloudClient.db.rpc(
+        'join_watch_room',
+        params: {
+          'p_room_id': id,
+          'p_pass_hash': (pass?.isNotEmpty ?? false) ? hashPass(pass!) : null,
+        },
+      );
       if (ok != true) return null;
-      final row = await CloudClient.db.from('rooms').select().eq('room_id', id).single();
+      final row = await CloudClient.db
+          .from('rooms')
+          .select()
+          .eq('room_id', id)
+          .single();
       final room = WatchPartyRoom.fromJson(Map<String, dynamic>.from(row));
       await connect(room);
       // WP-P5: opportunistic GC — one cheap call keeps the lobby rot-free.
@@ -191,7 +214,9 @@ class WatchPartyService {
           .order('member_count', ascending: false)
           .limit(limit.clamp(1, 50));
       return (rows as List)
-          .map((r) => WatchPartyRoom.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map(
+            (r) => WatchPartyRoom.fromJson(Map<String, dynamic>.from(r as Map)),
+          )
           .where((r) => r.roomId.isNotEmpty)
           .toList();
     } catch (e) {
@@ -229,9 +254,10 @@ class WatchPartyService {
   static Future<void> touchMembership(String roomId) async {
     if (!isAvailable) return;
     try {
-      await CloudClient.db.rpc('touch_membership', params: {
-        'p_room_id': roomId.trim().toUpperCase(),
-      });
+      await CloudClient.db.rpc(
+        'touch_membership',
+        params: {'p_room_id': roomId.trim().toUpperCase()},
+      );
     } catch (e) {
       AppLog.d('[WatchParty] touch failed (soft): $e');
     }
@@ -244,7 +270,8 @@ class WatchPartyService {
     _channel!
         .onBroadcast(
           event: 'control',
-          callback: (payload) => _events?.add(WatchPartyEvent.fromJson(payload)),
+          callback: (payload) =>
+              _events?.add(WatchPartyEvent.fromJson(payload)),
         )
         .subscribe();
   }
@@ -273,16 +300,17 @@ class WatchPartyService {
       if (isAvailable) {
         // v1.2.0-P5: server promotes oldest member if host leaves,
         // closes the room when the last one walks out.
-        await CloudClient.db.rpc('leave_watch_room', params: {
-          'p_room_id': roomId.trim().toUpperCase(),
-        });
+        await CloudClient.db.rpc(
+          'leave_watch_room',
+          params: {'p_room_id': roomId.trim().toUpperCase()},
+        );
       }
     } catch (_) {
       try {
         if (isAvailable) {
           await CloudClient.db.from('room_members').delete().match({
             'room_id': roomId,
-            'user_id': CloudClient.db.auth.currentUser!.id
+            'user_id': CloudClient.db.auth.currentUser!.id,
           });
         }
       } catch (_) {}
@@ -367,16 +395,16 @@ class WatchPartyRoom {
   }
 
   factory WatchPartyRoom.fromJson(Map<String, dynamic> json) => WatchPartyRoom(
-        roomId: json['room_id']?.toString() ?? '',
-        title: json['title']?.toString() ?? 'Watch Party',
-        mediaRef: json['media_ref']?.toString(),
-        currentMediaRef: json['current_media_ref']?.toString(),
-        currentTitle: json['current_title']?.toString(),
-        isPrivate: json['visibility']?.toString() == 'private',
-        status: json['status']?.toString() ?? 'lobby',
-        memberCount: int.tryParse(json['member_count']?.toString() ?? '') ?? 0,
-        isAdult: json['is_adult'] == true,
-      );
+    roomId: json['room_id']?.toString() ?? '',
+    title: json['title']?.toString() ?? 'Watch Party',
+    mediaRef: json['media_ref']?.toString(),
+    currentMediaRef: json['current_media_ref']?.toString(),
+    currentTitle: json['current_title']?.toString(),
+    isPrivate: json['visibility']?.toString() == 'private',
+    status: json['status']?.toString() ?? 'lobby',
+    memberCount: int.tryParse(json['member_count']?.toString() ?? '') ?? 0,
+    isAdult: json['is_adult'] == true,
+  );
 }
 
 class WatchPartyEvent {
@@ -393,18 +421,21 @@ class WatchPartyEvent {
   });
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'position_ms': positionMs,
-        'text': text,
-        'sent_at': sentAt.toUtc().toIso8601String(),
-      };
+    'type': type,
+    'position_ms': positionMs,
+    'text': text,
+    'sent_at': sentAt.toUtc().toIso8601String(),
+  };
 
-  factory WatchPartyEvent.fromJson(Map<String, dynamic> json) => WatchPartyEvent(
+  factory WatchPartyEvent.fromJson(Map<String, dynamic> json) =>
+      WatchPartyEvent(
         type: json['type']?.toString() ?? 'unknown',
         positionMs: json['position_ms'] is int
             ? json['position_ms'] as int
             : int.tryParse(json['position_ms']?.toString() ?? ''),
         text: json['text']?.toString(),
-        sentAt: DateTime.tryParse(json['sent_at']?.toString() ?? '') ?? DateTime.now(),
+        sentAt:
+            DateTime.tryParse(json['sent_at']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }

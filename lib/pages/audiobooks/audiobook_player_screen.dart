@@ -43,7 +43,8 @@ class AudiobookPlayerScreen extends StatefulWidget {
   State<AudiobookPlayerScreen> createState() => _AudiobookPlayerScreenState();
 }
 
-class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with SingleTickerProviderStateMixin {
+class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen>
+    with SingleTickerProviderStateMixin {
   Player? _player;
   final List<StreamSubscription> _playerSubscriptions = [];
   late int _currentChapterIndex;
@@ -112,9 +113,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
         onSeekAbsolute: (positionMs) async {
           if (_player != null && _duration > Duration.zero) {
             final target = Duration(milliseconds: positionMs);
-            _player!.seek(target < Duration.zero
-                ? Duration.zero
-                : (target > _duration ? _duration : target));
+            _player!.seek(
+              target < Duration.zero
+                  ? Duration.zero
+                  : (target > _duration ? _duration : target),
+            );
           }
         },
         onStop: () async => _togglePlayPause(),
@@ -135,7 +138,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     if (_player == null && !force) {
       return;
     }
-    final chapter = (widget.chapters.isNotEmpty &&
+    final chapter =
+        (widget.chapters.isNotEmpty &&
             _currentChapterIndex < widget.chapters.length)
         ? widget.chapters[_currentChapterIndex].title
         : null;
@@ -144,8 +148,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
       MediaSessionBridge.publish(
         MediaSessionState(
           title: widget.audiobook.title,
-          subtitle: chapter ??
-              ((author ?? '').isNotEmpty ? author : null),
+          subtitle: chapter ?? ((author ?? '').isNotEmpty ? author : null),
           playing: _isPlaying,
           positionMs: _position.inMilliseconds,
           durationMs: _duration.inMilliseconds,
@@ -161,7 +164,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
   }
 
   void _updateDiscordRpc({bool? isPaused}) {
-    final chapter = (widget.chapters.isNotEmpty && _currentChapterIndex < widget.chapters.length)
+    final chapter =
+        (widget.chapters.isNotEmpty &&
+            _currentChapterIndex < widget.chapters.length)
         ? widget.chapters[_currentChapterIndex]
         : null;
     DiscordRpcService.instance.setListeningAudiobook(
@@ -240,7 +245,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
         if (useDebrid) {
           final activeService = await DebridService().getSelectedService();
           if (!mounted) return;
-          setState(() => _statusMessage = 'Resolving audio via $activeService cloud...');
+          setState(
+            () =>
+                _statusMessage = 'Resolving audio via $activeService cloud...',
+          );
 
           final debridFiles = await DebridService().resolveMagnet(
             magnet: chapter.url,
@@ -254,7 +262,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
           streamUrl = debridFiles.first.downloadUrl;
         } else {
-          setState(() => _statusMessage = 'Fetching torrent metadata & peers...');
+          setState(
+            () => _statusMessage = 'Fetching torrent metadata & peers...',
+          );
           streamUrl = await TorrentStreamService().streamTorrent(
             chapter.url,
             fileIdx: chapter.torrentFileIndex,
@@ -268,7 +278,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
         throw Exception('Audio stream URL could not be resolved.');
       }
 
-      final isLocal = !streamUrl.startsWith('http://') && !streamUrl.startsWith('https://');
+      final isLocal =
+          !streamUrl.startsWith('http://') && !streamUrl.startsWith('https://');
       final player = Player();
 
       final Media media;
@@ -319,7 +330,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
         }),
         player.stream.completed.listen((completed) {
           if (completed && mounted) {
-            if (_autoplayNext && _currentChapterIndex < widget.chapters.length - 1) {
+            if (_autoplayNext &&
+                _currentChapterIndex < widget.chapters.length - 1) {
               _initChapter(_currentChapterIndex + 1);
             }
           }
@@ -427,7 +439,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.tune_rounded, color: palette.primaryColor, size: 20),
+                      Icon(
+                        Icons.tune_rounded,
+                        color: palette.primaryColor,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       const Text(
                         'Audio Player Style & Studio',
@@ -439,7 +455,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white54,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -448,7 +468,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                   Divider(color: Colors.white.withValues(alpha: 0.08)),
                   const SizedBox(height: 12),
 
-                  const Text('Select Player Design Preset', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text(
+                    'Select Player Design Preset',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ValueListenableBuilder<AudiobookPlayerPreset>(
                     valueListenable: AudiobookSettings.selectedPlayerPreset,
@@ -461,18 +488,28 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                           return ChoiceChip(
                             label: Text(p.label),
                             selected: isSelected,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
+                            selectedColor: palette.primaryColor.withValues(
+                              alpha: 0.25,
+                            ),
                             backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
-                              color: isSelected ? palette.primaryColor : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected
+                                  ? palette.primaryColor
+                                  : Colors.white70,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             side: BorderSide(
-                              color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                              color: isSelected
+                                  ? palette.primaryColor.withValues(alpha: 0.6)
+                                  : Colors.white.withValues(alpha: 0.08),
                             ),
                             onSelected: (selected) {
-                              if (selected) AudiobookSettings.setSelectedPlayerPreset(p);
+                              if (selected) {
+                                AudiobookSettings.setSelectedPlayerPreset(p);
+                              }
                             },
                           );
                         }).toList(),
@@ -482,7 +519,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
                   const SizedBox(height: 14),
 
-                  const Text('Seek Bar Scrubber Style', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text(
+                    'Seek Bar Scrubber Style',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ValueListenableBuilder<AudiobookSeekbarStyle>(
                     valueListenable: AudiobookSettings.customSeekbarStyle,
@@ -495,18 +539,28 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                           return ChoiceChip(
                             label: Text(s.label),
                             selected: isSelected,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
+                            selectedColor: palette.primaryColor.withValues(
+                              alpha: 0.25,
+                            ),
                             backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
-                              color: isSelected ? palette.primaryColor : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected
+                                  ? palette.primaryColor
+                                  : Colors.white70,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             side: BorderSide(
-                              color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                              color: isSelected
+                                  ? palette.primaryColor.withValues(alpha: 0.6)
+                                  : Colors.white.withValues(alpha: 0.08),
                             ),
                             onSelected: (selected) {
-                              if (selected) AudiobookSettings.setCustomSeekbarStyle(s);
+                              if (selected) {
+                                AudiobookSettings.setCustomSeekbarStyle(s);
+                              }
                             },
                           );
                         }).toList(),
@@ -516,7 +570,14 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
                   const SizedBox(height: 14),
 
-                  const Text('Play / Pause Button Style', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text(
+                    'Play / Pause Button Style',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ValueListenableBuilder<AudiobookPlayButtonStyle>(
                     valueListenable: AudiobookSettings.customPlayButtonStyle,
@@ -529,18 +590,28 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                           return ChoiceChip(
                             label: Text(b.label),
                             selected: isSelected,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
+                            selectedColor: palette.primaryColor.withValues(
+                              alpha: 0.25,
+                            ),
                             backgroundColor: DizzyVoid.voidB,
                             labelStyle: TextStyle(
-                              color: isSelected ? palette.primaryColor : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected
+                                  ? palette.primaryColor
+                                  : Colors.white70,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             side: BorderSide(
-                              color: isSelected ? palette.primaryColor.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+                              color: isSelected
+                                  ? palette.primaryColor.withValues(alpha: 0.6)
+                                  : Colors.white.withValues(alpha: 0.08),
                             ),
                             onSelected: (selected) {
-                              if (selected) AudiobookSettings.setCustomPlayButtonStyle(b);
+                              if (selected) {
+                                AudiobookSettings.setCustomPlayButtonStyle(b);
+                              }
                             },
                           );
                         }).toList(),
@@ -556,19 +627,36 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: palette.primaryColor.withValues(alpha: 0.15),
+                        backgroundColor: palette.primaryColor.withValues(
+                          alpha: 0.15,
+                        ),
                         foregroundColor: palette.primaryColor,
-                        side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.4)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: palette.primaryColor.withValues(alpha: 0.4),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      icon: const Icon(Icons.dashboard_customize_rounded, size: 18),
-                      label: const Text('Open Drag & Drop Player Studio', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      icon: const Icon(
+                        Icons.dashboard_customize_rounded,
+                        size: 18,
+                      ),
+                      label: const Text(
+                        'Open Drag & Drop Player Studio',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const AudiobookPlayerStudioPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const AudiobookPlayerStudioPage(),
+                          ),
                         );
                       },
                     ),
@@ -585,7 +673,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
   @override
   Widget build(BuildContext context) {
     final hasCover = widget.audiobook.coverImage.isNotEmpty;
-    final currentChapter = widget.chapters.isNotEmpty && _currentChapterIndex < widget.chapters.length
+    final currentChapter =
+        widget.chapters.isNotEmpty &&
+            _currentChapterIndex < widget.chapters.length
         ? widget.chapters[_currentChapterIndex]
         : null;
 
@@ -623,7 +713,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                   decoration: BoxDecoration(
                     color: DizzyVoid.voidB,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.2),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.75),
@@ -638,7 +731,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                     child: Stack(
                       children: [
                         // Background ambient cover blur & atmosphere
-                        if (hasCover && widget.audiobook.coverImage.trim().isNotEmpty)
+                        if (hasCover &&
+                            widget.audiobook.coverImage.trim().isNotEmpty)
                           Positioned.fill(
                             child: Opacity(
                               opacity: 0.22,
@@ -653,14 +747,17 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                                 memCacheWidth: ImageCaps.kBackdrop,
                                 maxWidthDiskCache: ImageCaps.kBackdrop,
                                 placeholder: (_, __) => const SizedBox.shrink(),
-                                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                                errorWidget: (_, __, ___) =>
+                                    const SizedBox.shrink(),
                               ),
                             ),
                           ),
                         Positioned.fill(
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
-                            child: Container(color: Colors.black.withValues(alpha: 0.68)),
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.68),
+                            ),
                           ),
                         ),
 
@@ -672,7 +769,13 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
                             // Main Content Rendered by Selected Player Preset
                             Expanded(
-                              child: _buildPlayerContentByPreset(preset, false, hasCover, currentChapter, palette),
+                              child: _buildPlayerContentByPreset(
+                                preset,
+                                false,
+                                hasCover,
+                                currentChapter,
+                                palette,
+                              ),
                             ),
                           ],
                         ),
@@ -694,7 +797,8 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     }
 
     return Scaffold(
-      backgroundColor: AppThemeService.currentPalette.value.scaffoldBackgroundColor,
+      backgroundColor:
+          AppThemeService.currentPalette.value.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background ambient cover blur & atmosphere
@@ -737,7 +841,13 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
                     // Main Content Rendered by Selected Player Preset
                     Expanded(
-                      child: _buildPlayerContentByPreset(preset, isWide, hasCover, currentChapter, palette),
+                      child: _buildPlayerContentByPreset(
+                        preset,
+                        isWide,
+                        hasCover,
+                        currentChapter,
+                        palette,
+                      ),
                     ),
                   ],
                 );
@@ -747,25 +857,32 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
           // Sliding Premade Chapters Drawer Overlay
           if (_showChaptersDrawer)
-            Positioned.fill(
-              child: _buildPremadeChaptersDrawer(palette),
-            ),
+            Positioned.fill(child: _buildPremadeChaptersDrawer(palette)),
         ],
       ),
     );
   }
 
   // ── Top Header Bar ──
-  Widget _buildTopAppBar(BuildContext context, AppThemePalette palette, {bool isDesktop = false}) {
+  Widget _buildTopAppBar(
+    BuildContext context,
+    AppThemePalette palette, {
+    bool isDesktop = false,
+  }) {
     final screenW = MediaQuery.sizeOf(context).width;
     final isMobile = screenW < 560;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 20,
+        vertical: 8,
+      ),
       child: Row(
         children: [
           _PlayerIconButton(
-            icon: isDesktop ? Icons.close_rounded : Icons.arrow_back_ios_new_rounded,
+            icon: isDesktop
+                ? Icons.close_rounded
+                : Icons.arrow_back_ios_new_rounded,
             palette: palette,
             size: isMobile ? 20 : 24,
             onTap: () => Navigator.pop(context),
@@ -788,19 +905,29 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 ),
                 Builder(
                   builder: (context) {
-                    final isTorrent = widget.audiobook.source.toLowerCase().contains('audiobookbay');
+                    final isTorrent = widget.audiobook.source
+                        .toLowerCase()
+                        .contains('audiobookbay');
                     return Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (isTorrent) ...[
-                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFB74D), size: 11),
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Color(0xFFFFB74D),
+                            size: 11,
+                          ),
                           const SizedBox(width: 3),
                         ],
                         Flexible(
                           child: Text(
-                            isTorrent ? 'AUDIOBOOKBAY (TORRENT)' : widget.audiobook.source.toUpperCase(),
+                            isTorrent
+                                ? 'AUDIOBOOKBAY (TORRENT)'
+                                : widget.audiobook.source.toUpperCase(),
                             style: TextStyle(
-                              color: isTorrent ? const Color(0xFFFFB74D) : palette.primaryColor,
+                              color: isTorrent
+                                  ? const Color(0xFFFFB74D)
+                                  : palette.primaryColor,
                               fontSize: isMobile ? 9.5 : 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -818,7 +945,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
           SizedBox(width: isMobile ? 6 : 10),
           // Autoplay Switch
           Container(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 6 : 10, vertical: 2),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 6 : 10,
+              vertical: 2,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(20),
@@ -905,7 +1035,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.redAccent,
+                size: 40,
+              ),
               const SizedBox(height: 12),
               Text(
                 _errorMessage!,
@@ -916,8 +1050,13 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
               ElevatedButton.icon(
                 onPressed: () => _initChapter(_currentChapterIndex),
                 icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                label: const Text('Retry Chapter', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: palette.primaryColor),
+                label: const Text(
+                  'Retry Chapter',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: palette.primaryColor,
+                ),
               ),
             ],
           ),
@@ -929,13 +1068,28 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
       return _buildVinylStudioPlayer(isWide, hasCover, currentChapter, palette);
     }
     if (preset == AudiobookPlayerPreset.minimalCapsule) {
-      return _buildMinimalCapsulePlayer(isWide, hasCover, currentChapter, palette);
+      return _buildMinimalCapsulePlayer(
+        isWide,
+        hasCover,
+        currentChapter,
+        palette,
+      );
     }
     if (preset == AudiobookPlayerPreset.immersiveCanvas) {
-      return _buildImmersiveCanvasPlayer(isWide, hasCover, currentChapter, palette);
+      return _buildImmersiveCanvasPlayer(
+        isWide,
+        hasCover,
+        currentChapter,
+        palette,
+      );
     }
     if (preset == AudiobookPlayerPreset.customStudio) {
-      return _buildCustomStudioPlayer(isWide, hasCover, currentChapter, palette);
+      return _buildCustomStudioPlayer(
+        isWide,
+        hasCover,
+        currentChapter,
+        palette,
+      );
     }
     // Default: Modern Glass Island
     return _buildModernGlassPlayer(isWide, hasCover, currentChapter, palette);
@@ -968,11 +1122,16 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
               // Glass Control Island
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: DizzyVoid.surface1.withValues(alpha: 0.88),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: palette.primaryColor.withValues(alpha: 0.22),
@@ -1023,7 +1182,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Spinning Vinyl Disc
-              _buildVinylDiscWidget(hasCover, palette, size: isWide ? 240 : 190),
+              _buildVinylDiscWidget(
+                hasCover,
+                palette,
+                size: isWide ? 240 : 190,
+              ),
               const SizedBox(height: 18),
               _buildTitleSection(currentChapter),
               const SizedBox(height: 18),
@@ -1069,7 +1232,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
             decoration: BoxDecoration(
               color: DizzyVoid.voidB.withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.5),
+              border: Border.all(
+                color: palette.primaryColor.withValues(alpha: 0.4),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: palette.primaryColor.withValues(alpha: 0.3),
@@ -1094,7 +1260,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                               memCacheWidth: ImageCaps.kThumb,
                               maxWidthDiskCache: ImageCaps.kThumb,
                             )
-                          : Container(width: 48, height: 48, color: Colors.white12),
+                          : Container(
+                              width: 48,
+                              height: 48,
+                              color: Colors.white12,
+                            ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -1102,16 +1272,24 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currentChapter?.title ?? 'Chapter ${_currentChapterIndex + 1}',
+                            currentChapter?.title ??
+                                'Chapter ${_currentChapterIndex + 1}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.5,
+                            ),
                           ),
                           Text(
                             widget.audiobook.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -1195,16 +1373,26 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
             children: order.map((key) {
               switch (key) {
                 case 'artwork':
-                  if (artStyle == AudiobookArtworkStyle.hidden) return const SizedBox.shrink();
+                  if (artStyle == AudiobookArtworkStyle.hidden) {
+                    return const SizedBox.shrink();
+                  }
                   if (artStyle == AudiobookArtworkStyle.vinylDisc) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
-                      child: _buildVinylDiscWidget(hasCover, palette, size: isWide ? 220 : 170),
+                      child: _buildVinylDiscWidget(
+                        hasCover,
+                        palette,
+                        size: isWide ? 220 : 170,
+                      ),
                     );
                   }
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildCoverArtCard(hasCover, palette, size: isWide ? 210 : 160),
+                    child: _buildCoverArtCard(
+                      hasCover,
+                      palette,
+                      size: isWide ? 210 : 160,
+                    ),
                   );
                 case 'title':
                   return Padding(
@@ -1250,13 +1438,31 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: OutlinedButton.icon(
-                      onPressed: () => setState(() => _showChaptersDrawer = true),
-                      icon: Icon(Icons.format_list_bulleted_rounded, color: palette.primaryColor, size: 18),
-                      label: const Text('Open Chapters Panel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      onPressed: () =>
+                          setState(() => _showChaptersDrawer = true),
+                      icon: Icon(
+                        Icons.format_list_bulleted_rounded,
+                        color: palette.primaryColor,
+                        size: 18,
+                      ),
+                      label: const Text(
+                        'Open Chapters Panel',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.5)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        side: BorderSide(
+                          color: palette.primaryColor.withValues(alpha: 0.5),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   );
@@ -1271,7 +1477,11 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
   }
 
   // ── Cover Art Card ──
-  Widget _buildCoverArtCard(bool hasCover, AppThemePalette palette, {double size = 200}) {
+  Widget _buildCoverArtCard(
+    bool hasCover,
+    AppThemePalette palette, {
+    double size = 200,
+  }) {
     return Container(
       width: size,
       height: size,
@@ -1279,7 +1489,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: palette.primaryColor.withValues(alpha: _isPlaying ? 0.45 : 0.25),
+            color: palette.primaryColor.withValues(
+              alpha: _isPlaying ? 0.45 : 0.25,
+            ),
             blurRadius: _isPlaying ? 32 : 18,
             spreadRadius: _isPlaying ? 3 : 0,
             offset: const Offset(0, 8),
@@ -1298,19 +1510,31 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 placeholder: (_, __) => Container(color: DizzyVoid.surface1),
                 errorWidget: (_, __, ___) => Container(
                   color: DizzyVoid.surface1,
-                  child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
+                  child: const Icon(
+                    Icons.headphones_rounded,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
                 ),
               )
             : Container(
                 color: DizzyVoid.surface1,
-                child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
+                child: const Icon(
+                  Icons.headphones_rounded,
+                  size: 64,
+                  color: Colors.white54,
+                ),
               ),
       ),
     );
   }
 
   // ── Spinning Vinyl Disc Widget ──
-  Widget _buildVinylDiscWidget(bool hasCover, AppThemePalette palette, {double size = 220}) {
+  Widget _buildVinylDiscWidget(
+    bool hasCover,
+    AppThemePalette palette, {
+    double size = 220,
+  }) {
     return AnimatedBuilder(
       animation: _discAnimController,
       builder: (context, child) {
@@ -1326,7 +1550,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: palette.primaryColor.withValues(alpha: _isPlaying ? 0.45 : 0.2),
+              color: palette.primaryColor.withValues(
+                alpha: _isPlaying ? 0.45 : 0.2,
+              ),
               blurRadius: _isPlaying ? 32 : 16,
               spreadRadius: _isPlaying ? 4 : 1,
             ),
@@ -1348,13 +1574,21 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                   maxWidthDiskCache: ImageCaps.kCardW,
                   errorWidget: (_, __, ___) => Container(
                     color: DizzyVoid.surface1,
-                    child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
+                    child: const Icon(
+                      Icons.headphones_rounded,
+                      size: 64,
+                      color: Colors.white54,
+                    ),
                   ),
                 )
               else
                 Container(
                   color: DizzyVoid.surface1,
-                  child: const Icon(Icons.headphones_rounded, size: 64, color: Colors.white54),
+                  child: const Icon(
+                    Icons.headphones_rounded,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
                 ),
               // Center Vinyl Ring Hole
               Container(
@@ -1363,7 +1597,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 decoration: BoxDecoration(
                   color: DizzyVoid.voidA,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 3),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 3,
+                  ),
                 ),
               ),
             ],
@@ -1440,7 +1677,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
           size: isNarrow ? 24 : 28,
           palette: palette,
           tooltip: 'Previous Chapter',
-          onTap: _currentChapterIndex > 0 ? () => _initChapter(_currentChapterIndex - 1) : null,
+          onTap: _currentChapterIndex > 0
+              ? () => _initChapter(_currentChapterIndex - 1)
+              : null,
         );
 
         final rewBtn = _PlayerIconButton(
@@ -1492,13 +1731,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
               // Primary 5 Playback Controls
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  prevBtn,
-                  rewBtn,
-                  playButton,
-                  fwdBtn,
-                  nextBtn,
-                ],
+                children: [prevBtn, rewBtn, playButton, fwdBtn, nextBtn],
               ),
               const SizedBox(height: 12),
               // Secondary Utility Row: Speed and Volume
@@ -1506,10 +1739,7 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    speedPill,
-                    volumeBtn,
-                  ],
+                  children: [speedPill, volumeBtn],
                 ),
               ),
             ],
@@ -1555,7 +1785,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
     );
   }
 
-  Widget _buildPlayButtonByStyle(AudiobookPlayButtonStyle style, AppThemePalette palette) {
+  Widget _buildPlayButtonByStyle(
+    AudiobookPlayButtonStyle style,
+    AppThemePalette palette,
+  ) {
     final icon = _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded;
     final hoverEffect = AudiobookSettings.customHoverEffect.value;
 
@@ -1650,7 +1883,12 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
             const SizedBox(width: 6),
             Text(
               _isPlaying ? 'PAUSE' : 'PLAY',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.8),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                letterSpacing: 0.8,
+              ),
             ),
           ],
         ),
@@ -1700,15 +1938,21 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
           child: GestureDetector(
             onTap: () {}, // Catch taps inside drawer
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.72,
                   decoration: BoxDecoration(
                     color: DizzyVoid.voidB.withValues(alpha: 0.92),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -1724,13 +1968,20 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                       ),
                       // Header
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.format_list_bulleted_rounded, color: palette.primaryColor, size: 20),
+                                Icon(
+                                  Icons.format_list_bulleted_rounded,
+                                  color: palette.primaryColor,
+                                  size: 20,
+                                ),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'Audiobook Chapters',
@@ -1743,19 +1994,33 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                               ],
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
-                                color: palette.primaryColor.withValues(alpha: 0.2),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.2,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 '${widget.chapters.length} CHAPTERS',
-                                style: TextStyle(color: palette.primaryColor, fontSize: 10.5, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: palette.primaryColor,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
-                              onPressed: () => setState(() => _showChaptersDrawer = false),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.white54,
+                                size: 20,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _showChaptersDrawer = false),
                             ),
                           ],
                         ),
@@ -1763,23 +2028,42 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
 
                       // Chapter Search Bar
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 6,
+                        ),
                         child: Container(
                           height: 40,
                           decoration: BoxDecoration(
                             color: DizzyVoid.surface1,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
                           ),
                           child: TextField(
-                            onChanged: (val) => setState(() => _chapterSearchQuery = val),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            onChanged: (val) =>
+                                setState(() => _chapterSearchQuery = val),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
                             decoration: InputDecoration(
                               hintText: 'Filter chapters by name...',
-                              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
-                              prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor, size: 16),
+                              hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                fontSize: 13,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: palette.primaryColor,
+                                size: 16,
+                              ),
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                             ),
                           ),
                         ),
@@ -1788,12 +2072,18 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen> with Sing
                       // Chapters List
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           itemCount: filteredChapters.length,
                           itemBuilder: (context, index) {
                             final chapter = filteredChapters[index];
-                            final originalIndex = widget.chapters.indexOf(chapter);
-                            final isSelected = originalIndex == _currentChapterIndex;
+                            final originalIndex = widget.chapters.indexOf(
+                              chapter,
+                            );
+                            final isSelected =
+                                originalIndex == _currentChapterIndex;
 
                             return _ChapterListItemTile(
                               chapter: chapter,

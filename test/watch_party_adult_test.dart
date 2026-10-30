@@ -12,37 +12,48 @@ void main() {
     test('title keywords mark adult, clean titles pass', () {
       expect(WatchPartyService.isAdultContent(title: 'XXX Nights'), isTrue);
       expect(
-          WatchPartyService.isAdultContent(title: 'Hot Porn Parody'), isTrue);
-      expect(WatchPartyService.isAdultContent(title: 'UNCENSORED cut'),
-          isTrue);
+        WatchPartyService.isAdultContent(title: 'Hot Porn Parody'),
+        isTrue,
+      );
+      expect(WatchPartyService.isAdultContent(title: 'UNCENSORED cut'), isTrue);
       expect(
-          WatchPartyService.isAdultContent(title: 'Blue Film Classics'),
-          isTrue);
-      expect(WatchPartyService.isAdultContent(title: 'Thor: Ragnarok'),
-          isFalse);
-      expect(WatchPartyService.isAdultContent(title: 'Dune: Part Two'),
-          isFalse);
+        WatchPartyService.isAdultContent(title: 'Blue Film Classics'),
+        isTrue,
+      );
+      expect(
+        WatchPartyService.isAdultContent(title: 'Thor: Ragnarok'),
+        isFalse,
+      );
+      expect(
+        WatchPartyService.isAdultContent(title: 'Dune: Part Two'),
+        isFalse,
+      );
     });
 
     test('blocked genre ids mark adult', () {
       expect(
         WatchPartyService.isAdultContent(
-            genreIds: [27, 99], blockedGenreIds: [99]),
+          genreIds: [27, 99],
+          blockedGenreIds: [99],
+        ),
         isTrue,
       );
       expect(
         WatchPartyService.isAdultContent(
-            genreIds: [28, 12], blockedGenreIds: [99]),
+          genreIds: [28, 12],
+          blockedGenreIds: [99],
+        ),
         isFalse,
       );
     });
 
     test('fromJson carries is_adult, defaults false', () {
-      final adult = WatchPartyRoom.fromJson(
-          {'room_id': 'K7Q2M9', 'is_adult': true});
+      final adult = WatchPartyRoom.fromJson({
+        'room_id': 'K7Q2M9',
+        'is_adult': true,
+      });
       expect(adult.isAdult, isTrue);
-      final clean =
-          WatchPartyRoom.fromJson({'room_id': 'K7Q2M9'});
+      final clean = WatchPartyRoom.fromJson({'room_id': 'K7Q2M9'});
       expect(clean.isAdult, isFalse);
     });
   });

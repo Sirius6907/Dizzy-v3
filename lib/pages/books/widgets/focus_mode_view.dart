@@ -103,7 +103,9 @@ class _FocusModeViewState extends State<FocusModeView> {
     final doc = html_parser.parse(widget.chapter.htmlContent);
     final extracted = <String>[];
 
-    final nodes = doc.querySelectorAll('h1, h2, h3, h4, p, blockquote, div, section, article');
+    final nodes = doc.querySelectorAll(
+      'h1, h2, h3, h4, p, blockquote, div, section, article',
+    );
     if (nodes.isNotEmpty) {
       for (final node in nodes) {
         final text = node.text.trim();
@@ -129,7 +131,9 @@ class _FocusModeViewState extends State<FocusModeView> {
   }
 
   void _computeLines(double maxWidth) {
-    if (_paragraphs.isEmpty || (maxWidth - _lastCalculatedWidth).abs() < 1.0) return;
+    if (_paragraphs.isEmpty || (maxWidth - _lastCalculatedWidth).abs() < 1.0) {
+      return;
+    }
     _lastCalculatedWidth = maxWidth;
 
     final computed = <FocusLineData>[];
@@ -156,24 +160,31 @@ class _FocusModeViewState extends State<FocusModeView> {
       if (lineMetrics.isEmpty) {
         final lineIndex = computed.length;
         _lineKeys[lineIndex] = GlobalKey();
-        computed.add(FocusLineData(
-          index: lineIndex,
-          paragraphIndex: pIdx,
-          isFirstInParagraph: true,
-          isLastInParagraph: true,
-          text: pText,
-        ));
+        computed.add(
+          FocusLineData(
+            index: lineIndex,
+            paragraphIndex: pIdx,
+            isFirstInParagraph: true,
+            isLastInParagraph: true,
+            text: pText,
+          ),
+        );
       } else {
         int charOffset = 0;
         for (int mIdx = 0; mIdx < lineMetrics.length; mIdx++) {
           final isLast = mIdx == lineMetrics.length - 1;
           final metric = lineMetrics[mIdx];
-          
+
           final lineEndOffset = isLast
               ? pText.length
-              : painter.getPositionForOffset(Offset(maxWidth, metric.baseline)).offset;
+              : painter
+                    .getPositionForOffset(Offset(maxWidth, metric.baseline))
+                    .offset;
 
-          final lineText = (charOffset < pText.length && lineEndOffset <= pText.length && lineEndOffset > charOffset)
+          final lineText =
+              (charOffset < pText.length &&
+                  lineEndOffset <= pText.length &&
+                  lineEndOffset > charOffset)
               ? pText.substring(charOffset, lineEndOffset).trim()
               : pText.substring(charOffset).trim();
           charOffset = lineEndOffset;
@@ -181,13 +192,15 @@ class _FocusModeViewState extends State<FocusModeView> {
           if (lineText.isNotEmpty) {
             final lineIndex = computed.length;
             _lineKeys[lineIndex] = GlobalKey();
-            computed.add(FocusLineData(
-              index: lineIndex,
-              paragraphIndex: pIdx,
-              isFirstInParagraph: mIdx == 0,
-              isLastInParagraph: isLast,
-              text: lineText,
-            ));
+            computed.add(
+              FocusLineData(
+                index: lineIndex,
+                paragraphIndex: pIdx,
+                isFirstInParagraph: mIdx == 0,
+                isLastInParagraph: isLast,
+                text: lineText,
+              ),
+            );
           }
         }
       }
@@ -301,11 +314,7 @@ class _FocusModeViewState extends State<FocusModeView> {
             return Stack(
               children: [
                 // ── Pure AMOLED Background ──
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black,
-                  ),
-                ),
+                Positioned.fill(child: Container(color: Colors.black)),
 
                 // ── Direct Line-by-Line Content ──
                 Positioned.fill(
@@ -313,7 +322,8 @@ class _FocusModeViewState extends State<FocusModeView> {
                     onPointerSignal: _handlePointerSignal,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTapUp: (details) => _handleScreenTap(details, constraints.maxHeight),
+                      onTapUp: (details) =>
+                          _handleScreenTap(details, constraints.maxHeight),
                       child: SingleChildScrollView(
                         controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
@@ -341,9 +351,14 @@ class _FocusModeViewState extends State<FocusModeView> {
                                     onTap: () => _goToLine(line.index),
                                     borderRadius: ReaderTokens.rounded12,
                                     child: AnimatedContainer(
-                                      duration: reduceMotion ? Duration.zero : ReaderTokens.motionFocusLine,
+                                      duration: reduceMotion
+                                          ? Duration.zero
+                                          : ReaderTokens.motionFocusLine,
                                       curve: ReaderTokens.curveFocusLine,
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 7,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: isActive
                                             ? DizzyVoid.surface1
@@ -351,14 +366,17 @@ class _FocusModeViewState extends State<FocusModeView> {
                                         borderRadius: ReaderTokens.rounded12,
                                         border: Border.all(
                                           color: isActive
-                                              ? DizzyGlow.violet.withValues(alpha: 0.65)
+                                              ? DizzyGlow.violet.withValues(
+                                                  alpha: 0.65,
+                                                )
                                               : Colors.transparent,
                                           width: 1.4,
                                         ),
                                         boxShadow: isActive
                                             ? [
                                                 BoxShadow(
-                                                  color: DizzyGlow.violet.withValues(alpha: 0.28),
+                                                  color: DizzyGlow.violet
+                                                      .withValues(alpha: 0.28),
                                                   blurRadius: 20,
                                                   spreadRadius: 0,
                                                   offset: Offset.zero,
@@ -367,17 +385,25 @@ class _FocusModeViewState extends State<FocusModeView> {
                                             : null,
                                       ),
                                       child: AnimatedDefaultTextStyle(
-                                        duration: reduceMotion ? Duration.zero : ReaderTokens.motionFocusOpacity,
+                                        duration: reduceMotion
+                                            ? Duration.zero
+                                            : ReaderTokens.motionFocusOpacity,
                                         curve: ReaderTokens.curveFocusOpacity,
                                         style: TextStyle(
-                                          fontFamily: widget.settings.fontFamily,
+                                          fontFamily:
+                                              widget.settings.fontFamily,
                                           fontSize: widget.settings.fontSize,
                                           height: widget.settings.lineSpacing,
-                                          letterSpacing: widget.settings.letterSpacing,
-                                          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                                          letterSpacing:
+                                              widget.settings.letterSpacing,
+                                          fontWeight: isActive
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
                                           color: isActive
                                               ? Colors.white
-                                              : Colors.white.withValues(alpha: 0.22),
+                                              : Colors.white.withValues(
+                                                  alpha: 0.22,
+                                                ),
                                         ),
                                         child: Text(
                                           line.text,
@@ -428,13 +454,19 @@ class _FocusModeViewState extends State<FocusModeView> {
                           decoration: BoxDecoration(
                             color: DizzyVoid.obsidian.withValues(alpha: 0.90),
                             borderRadius: ReaderTokens.rounded24,
-                            border: Border.all(color: DizzyGlow.violet.withValues(alpha: 0.40)),
+                            border: Border.all(
+                              color: DizzyGlow.violet.withValues(alpha: 0.40),
+                            ),
                             boxShadow: DizzyShadow.card,
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.center_focus_strong_rounded, color: Color(0xFFA78BFA), size: 16),
+                              Icon(
+                                Icons.center_focus_strong_rounded,
+                                color: Color(0xFFA78BFA),
+                                size: 16,
+                              ),
                               SizedBox(width: ReaderTokens.space8),
                               Text(
                                 'Focus Mode Active',
@@ -464,13 +496,19 @@ class _FocusModeViewState extends State<FocusModeView> {
                               decoration: BoxDecoration(
                                 color: DizzyVoid.voidB.withValues(alpha: 0.95),
                                 borderRadius: ReaderTokens.rounded24,
-                                border: Border.all(color: DizzyEdge.hairline.color),
+                                border: Border.all(
+                                  color: DizzyEdge.hairline.color,
+                                ),
                                 boxShadow: DizzyShadow.card,
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                                  Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                   SizedBox(width: ReaderTokens.space4),
                                   Text(
                                     'Exit (Esc)',
@@ -509,13 +547,19 @@ class _FocusModeViewState extends State<FocusModeView> {
                           decoration: BoxDecoration(
                             color: DizzyVoid.voidB.withValues(alpha: 0.95),
                             borderRadius: ReaderTokens.rounded24,
-                            border: Border.all(color: DizzyGlow.violet.withValues(alpha: 0.40)),
+                            border: Border.all(
+                              color: DizzyGlow.violet.withValues(alpha: 0.40),
+                            ),
                             boxShadow: const [ReaderTokens.shadowMd],
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.touch_app_rounded, color: Color(0xFFA78BFA), size: 16),
+                              Icon(
+                                Icons.touch_app_rounded,
+                                color: Color(0xFFA78BFA),
+                                size: 16,
+                              ),
                               SizedBox(width: ReaderTokens.space8),
                               Text(
                                 'Tap above/below to move · ↑ ↓ keys to navigate',
@@ -548,13 +592,19 @@ class _FocusModeViewState extends State<FocusModeView> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_up_rounded,
+                            color: Colors.white,
+                          ),
                           tooltip: 'Previous Line (Up Arrow)',
                           onPressed: () => _goToLine(_activeLineIndex - 1),
                         ),
                         Container(height: 1, width: 24, color: Colors.white12),
                         IconButton(
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white,
+                          ),
                           tooltip: 'Next Line (Down Arrow / Space)',
                           onPressed: () => _goToLine(_activeLineIndex + 1),
                         ),
@@ -571,10 +621,14 @@ class _FocusModeViewState extends State<FocusModeView> {
                   child: Opacity(
                     opacity: 0.50,
                     child: LinearProgressIndicator(
-                      value: _lines.isNotEmpty ? (_activeLineIndex + 1) / _lines.length : 0.0,
+                      value: _lines.isNotEmpty
+                          ? (_activeLineIndex + 1) / _lines.length
+                          : 0.0,
                       minHeight: 2.0,
                       backgroundColor: Colors.transparent,
-                      valueColor: const AlwaysStoppedAnimation<Color>(DizzyGlow.violet),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        DizzyGlow.violet,
+                      ),
                     ),
                   ),
                 ),

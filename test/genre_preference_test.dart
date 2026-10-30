@@ -15,8 +15,7 @@ void main() {
         };
       }
 
-      final ranked =
-          GenrePreferenceService.rankByGenreOverlap(cands, genresOf);
+      final ranked = GenrePreferenceService.rankByGenreOverlap(cands, genresOf);
       expect(ranked.first, 'B'); // action 0.9 wins
       expect(ranked, hasLength(3));
     });
@@ -24,8 +23,10 @@ void main() {
     test('empty scores keep original order', () {
       GenrePreferenceService.scores.value = {};
       final cands = ['X', 'Y'];
-      final ranked =
-          GenrePreferenceService.rankByGenreOverlap(cands, (_) => ['Action']);
+      final ranked = GenrePreferenceService.rankByGenreOverlap(
+        cands,
+        (_) => ['Action'],
+      );
       expect(ranked, ['X', 'Y']);
     });
 

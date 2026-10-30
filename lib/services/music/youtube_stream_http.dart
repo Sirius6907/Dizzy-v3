@@ -99,11 +99,7 @@ class YoutubeStreamHttp {
     try {
       final req = http.Request('GET', uri)
         ..headers.addAll(
-          streamHeaders(
-            url,
-            userAgent: userAgent,
-            range: 'bytes=0-1023',
-          ),
+          streamHeaders(url, userAgent: userAgent, range: 'bytes=0-1023'),
         );
       final streamed = await client.send(req).timeout(timeout);
       final code = streamed.statusCode;

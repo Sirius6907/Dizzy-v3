@@ -20,9 +20,28 @@ class BcineScraper extends StreamScraper {
 
   static const _vParam = '_v=34403446';
   static const _nD = '4860ac8bfddb';
-  static const _aD = '224eff10e662e9635c9f671cf46351dcd69af42b1edd56f5e5fa21751f44b9c8';
-  static const _ls = [17, 91, 203, 44, 8, 177, 62, 239, 119, 3, 154, 81, 28, 210, 101, 7];
-  static const _wa = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  static const _aD =
+      '224eff10e662e9635c9f671cf46351dcd69af42b1edd56f5e5fa21751f44b9c8';
+  static const _ls = [
+    17,
+    91,
+    203,
+    44,
+    8,
+    177,
+    62,
+    239,
+    119,
+    3,
+    154,
+    81,
+    28,
+    210,
+    101,
+    7,
+  ];
+  static const _wa =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
   static const _servers = [
     {'id': 'NIGHT', 'endpoint': '/server/night', 'name': 'Night'},
@@ -46,7 +65,10 @@ class BcineScraper extends StreamScraper {
     var a = 2166136261;
     for (var s = 0; s < r; s++) {
       a ^= t[s % t.length];
-      a = _ab((a + _ls[s % _ls.length] + ((2654435761 * s) & 0xFFFFFFFF)) & 0xFFFFFFFF);
+      a = _ab(
+        (a + _ls[s % _ls.length] + ((2654435761 * s) & 0xFFFFFFFF)) &
+            0xFFFFFFFF,
+      );
       n[s] = a & 255;
     }
     return n;
@@ -81,7 +103,9 @@ class BcineScraper extends StreamScraper {
     i[1] = (a.length >> 8) & 255;
     var o = (2654435769 ^ a.length) & 0xFFFFFFFF;
     for (var l = 0; l < a.length; l++) {
-      o = _ab((o + sArr[l % sArr.length] + _ls[l % _ls.length] + l) & 0xFFFFFFFF);
+      o = _ab(
+        (o + sArr[l % sArr.length] + _ls[l % _ls.length] + l) & 0xFFFFFFFF,
+      );
       i[l + 2] = (a[l] ^ (255 & o)) ^ sArr[(7 * l + 3) % sArr.length];
     }
 
@@ -90,14 +114,16 @@ class BcineScraper extends StreamScraper {
 
   Future<String?> _fetchInternalToken(http.Client client) async {
     try {
-      final res = await client.get(
-        Uri.parse('https://1embed.cc/api/token'),
-        headers: {
-          'User-Agent': _ua,
-          'Referer': 'https://1embed.cc/',
-          'Accept': 'application/json, text/plain, */*',
-        },
-      ).timeout(const Duration(seconds: 4));
+      final res = await client
+          .get(
+            Uri.parse('https://1embed.cc/api/token'),
+            headers: {
+              'User-Agent': _ua,
+              'Referer': 'https://1embed.cc/',
+              'Accept': 'application/json, text/plain, */*',
+            },
+          )
+          .timeout(const Duration(seconds: 4));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
@@ -130,12 +156,15 @@ class BcineScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[BcineScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[BcineScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
       // 1. Direct Cryptographic HLS Master Stream
-      final directHls = '${_generateDirectHlsUrl(tmdbId, season, episode)}?$_vParam';
+      final directHls =
+          '${_generateDirectHlsUrl(tmdbId, season, episode)}?$_vParam';
       final directHeaders = {
         'User-Agent': _ua,
         'Referer': 'https://bcine.ru/',
@@ -151,9 +180,7 @@ class BcineScraper extends StreamScraper {
         headers: directHeaders,
         behaviorHints: {
           'notWebReady': false,
-          'proxyHeaders': {
-            'request': directHeaders,
-          },
+          'proxyHeaders': {'request': directHeaders},
         },
       );
 
@@ -171,15 +198,17 @@ class BcineScraper extends StreamScraper {
               final endpoint = srv['endpoint']!;
               final srvName = srv['name']!;
 
-              final res = await client.get(
-                Uri.parse('https://1embed.cc$endpoint?$query'),
-                headers: {
-                  'User-Agent': _ua,
-                  'Referer': 'https://1embed.cc/',
-                  'Authorization': 'Bearer $token',
-                  'Accept': 'application/json, text/plain, */*',
-                },
-              ).timeout(const Duration(seconds: 6));
+              final res = await client
+                  .get(
+                    Uri.parse('https://1embed.cc$endpoint?$query'),
+                    headers: {
+                      'User-Agent': _ua,
+                      'Referer': 'https://1embed.cc/',
+                      'Authorization': 'Bearer $token',
+                      'Accept': 'application/json, text/plain, */*',
+                    },
+                  )
+                  .timeout(const Duration(seconds: 6));
 
               if (res.statusCode == 200) {
                 final data = jsonDecode(res.body);
@@ -200,9 +229,7 @@ class BcineScraper extends StreamScraper {
                       headers: reqHeaders,
                       behaviorHints: {
                         'notWebReady': false,
-                        'proxyHeaders': {
-                          'request': reqHeaders,
-                        },
+                        'proxyHeaders': {'request': reqHeaders},
                       },
                     );
                   }

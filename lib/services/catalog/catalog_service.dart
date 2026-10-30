@@ -16,6 +16,11 @@ class CatalogCard {
   final String year;
   final double rating;
   final String mediaType;
+  final String lang;
+
+  /// Why this card was recommended (`genre:Action`, `lang:hi`). Empty for
+  /// plain catalog feeds.
+  final String reason;
 
   const CatalogCard({
     required this.id,
@@ -25,6 +30,8 @@ class CatalogCard {
     this.year = '',
     this.rating = 0,
     this.mediaType = 'movie',
+    this.lang = '',
+    this.reason = '',
   });
 
   /// Lenient parse — a single bad card never kills the feed.
@@ -41,6 +48,8 @@ class CatalogCard {
         year: (j['year'] ?? '').toString(),
         rating: double.tryParse('${j['rating'] ?? 0}') ?? 0,
         mediaType: (j['media_type'] ?? 'movie').toString(),
+        lang: (j['lang'] ?? '').toString(),
+        reason: (j['reason_code'] ?? '').toString(),
       );
     } catch (_) {
       return null;
@@ -56,15 +65,29 @@ class CatalogCard {
 class CatalogService {
   const CatalogService._();
 
-  static String _snapKey(String feed, String type, int page) =>
-      'catalog_snap:$feed:$type:$page';
+  static String _snapKey(
+    String feed,
+    String type,
+    int page,
+    String region,
+    String language,
+    String providers,
+  ) =>
+      'catalog_snap:$feed:$type:$page:$region:$language:$providers';
 
+  /// [region] is the audience's country (the catalog is India-first by
+  /// default, matching the app's audience), [language] is a comma list of
+  /// ISO 639-1 codes, [providers] a comma list of TMDB watch-provider ids
+  /// used only by `feed=discover`.
   static Future<List<CatalogCard>?> fetchFeed({
     String feed = 'trending',
     String type = 'all',
     int page = 1,
+    String region = 'IN',
+    String language = '',
+    String providers = '',
   }) async {
-    final key = _snapKey(feed, type, page);
+    final key = _snapKey(feed, type, page, region, language, providers);
     SharedPreferences? prefs;
     try {
       prefs = await SharedPreferences.getInstance();
@@ -87,11 +110,16 @@ class CatalogService {
       try {
         final base = CloudClient.functionUrl('catalog');
         if (base.isNotEmpty) {
-          final uri = Uri.parse(base).replace(queryParameters: {
-            'feed': feed,
-            'type': type,
-            'page': '$page',
-          });
+          final uri = Uri.parse(base).replace(
+            queryParameters: {
+              'feed': feed,
+              'type': type,
+              'page': '$page',
+              'region': region,
+              if (language.isNotEmpty) 'language': language,
+              if (providers.isNotEmpty) 'providers': providers,
+            },
+          );
           // P3: shared client. A timeout now returns a synthetic 504
           // instead of throwing, so this falls through to the snapshot
           // the same way a 500 always did.

@@ -9,6 +9,8 @@ import '../../utils/navigation/route_transitions.dart';
 import '../common/poster_skeleton.dart';
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_shadows.dart';
+import '../../design/prism_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Card sizing — responsive breakpoints that mimic Stremio poster sizes.
@@ -81,11 +83,7 @@ class MovieCard extends StatefulWidget {
   final Movie movie;
   final VoidCallback? onTap;
 
-  const MovieCard({
-    super.key,
-    required this.movie,
-    this.onTap,
-  });
+  const MovieCard({super.key, required this.movie, this.onTap});
 
   @override
   State<MovieCard> createState() => _MovieCardState();
@@ -98,6 +96,16 @@ class _MovieCardState extends State<MovieCard> {
   @override
   Widget build(BuildContext context) {
     final movie = widget.movie;
+    final repoIsLight = AppThemeService.currentPalette.value.isLight;
+    final metaPrimary = repoIsLight
+        ? PrismLight.ink
+        : Colors.white.withOpacity(0.52);
+    final metaDot = repoIsLight
+        ? PrismLight.inkFaint
+        : Colors.white.withOpacity(0.26);
+    final metaSecondary = repoIsLight
+        ? PrismLight.inkSoft
+        : Colors.white.withOpacity(0.42);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -128,20 +136,24 @@ class _MovieCardState extends State<MovieCard> {
             _pressed = false;
           });
         },
-        onTap: widget.onTap ??
+        onTap:
+            widget.onTap ??
             () {
               Navigator.push(
                 context,
                 LiquidRevealRoute(
                   page: DetailsPage(movie: movie),
-                  tapPosition: null, // Let it center if tapPosition not easily available
+                  tapPosition:
+                      null, // Let it center if tapPosition not easily available
                 ),
               );
             },
         child: AnimatedScale(
           duration: const Duration(milliseconds: 170),
           curve: Curves.easeOutCubic,
-          scale: _pressed ? 0.97 : (_hovered ? HomePageSettings.cardHoverZoom.value : 1.0),
+          scale: _pressed
+              ? 0.97
+              : (_hovered ? HomePageSettings.cardHoverZoom.value : 1.0),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 170),
             curve: Curves.easeOutCubic,
@@ -182,7 +194,7 @@ class _MovieCardState extends State<MovieCard> {
                         movie.year!,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withOpacity(0.52),
+                          color: metaPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -193,16 +205,18 @@ class _MovieCardState extends State<MovieCard> {
                           width: 4,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.26),
+                            color: metaDot,
                             shape: BoxShape.circle,
                           ),
                         ),
                       ),
                     Text(
-                      movie.type == 'series' ? 'Series' : (movie.type == 'anime' ? 'Anime' : 'Movie'),
+                      movie.type == 'series'
+                          ? 'Series'
+                          : (movie.type == 'anime' ? 'Anime' : 'Movie'),
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.42),
+                        color: metaSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -238,27 +252,19 @@ class _PosterFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasPoster = posterUrl != null && posterUrl!.isNotEmpty;
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 170),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DizzyRadius.xl),
-        boxShadow: hovered
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.60),
-                  blurRadius: 32,
-                  offset: const Offset(0, 18),
-                ),
-                BoxShadow(
-                  color: palette.primaryColor.withValues(alpha: 0.35),
-                  blurRadius: 34,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : DizzyShadow.card,
+        boxShadow: PrismFrame.poster(
+          isLight: palette.isLight,
+          hovered: hovered,
+          glow: palette.primaryColor,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(DizzyRadius.xl),
@@ -266,9 +272,7 @@ class _PosterFrame extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Background fill
-            const ColoredBox(
-              color: DizzyVoid.surface1,
-            ),
+            ColoredBox(color: well),
 
             // Poster image (cached) — P15: own raster boundary so row
             // scrolls / hover animations never re-raster the bitmap.
@@ -334,7 +338,10 @@ class _PosterFrame extends StatelessWidget {
                 opacity: hovered ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 170),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: (contentType == 'series' || contentType == 'anime')
                         ? palette.accentColor.withValues(alpha: 0.90)
@@ -348,9 +355,11 @@ class _PosterFrame extends StatelessWidget {
                     ],
                   ),
                   child: Text(
-                    contentType == 'series' ? 'SERIES' : (contentType == 'anime' ? 'ANIME' : 'MOVIE'),
+                    contentType == 'series'
+                        ? 'SERIES'
+                        : (contentType == 'anime' ? 'ANIME' : 'MOVIE'),
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.6,
                       color: Colors.white,
@@ -367,12 +376,19 @@ class _PosterFrame extends StatelessWidget {
                 builder: (context, showRating, _) {
                   if (!showRating) return const SizedBox.shrink();
                   final parsed = double.tryParse(imdbRating!);
-                  final displayRating = parsed != null ? (parsed % 1 == 0 ? parsed.toInt().toString() : parsed.toStringAsFixed(1)) : imdbRating!;
+                  final displayRating = parsed != null
+                      ? (parsed % 1 == 0
+                            ? parsed.toInt().toString()
+                            : parsed.toStringAsFixed(1))
+                      : imdbRating!;
                   return Positioned(
                     right: 9,
                     top: 9,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3.5,
+                      ),
                       decoration: BoxDecoration(
                         color: DizzyVoid.obsidian.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(DizzyRadius.sm),
@@ -381,12 +397,16 @@ class _PosterFrame extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, color: DizzyGlow.gold, size: 12),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: DizzyGlow.gold,
+                            size: 12,
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             displayRating,
                             style: const TextStyle(
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: DizzyVoid.bone,
                             ),

@@ -49,7 +49,9 @@ class VidZeeScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidZeeScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidZeeScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -61,10 +63,9 @@ class VidZeeScraper extends StreamScraper {
               : '$_baseUrl/streams/movie/$tmdbId?s=$service';
 
           try {
-            final res = await client.get(
-              Uri.parse(directEndpoint),
-              headers: _headers,
-            ).timeout(const Duration(seconds: 6));
+            final res = await client
+                .get(Uri.parse(directEndpoint), headers: _headers)
+                .timeout(const Duration(seconds: 6));
 
             if (res.statusCode == 200) {
               final data = jsonDecode(res.body);
@@ -93,7 +94,8 @@ class VidZeeScraper extends StreamScraper {
           final language = (r['language'] as String?) ?? '';
           final isHls = r['isHls'] as bool;
 
-          final hasValidLang = language.isNotEmpty && language.toLowerCase() != 'auto';
+          final hasValidLang =
+              language.isNotEmpty && language.toLowerCase() != 'auto';
           final titleParts = [
             'VidZee',
             service,
@@ -118,9 +120,7 @@ class VidZeeScraper extends StreamScraper {
             headers: reqHeaders,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': reqHeaders,
-              },
+              'proxyHeaders': {'request': reqHeaders},
             },
           );
         }

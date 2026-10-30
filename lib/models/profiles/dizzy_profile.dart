@@ -26,40 +26,41 @@ class DizzyProfile {
     bool? isKids,
     String? pinHash,
     DateTime? updatedAt,
-  }) =>
-      DizzyProfile(
-        id: id,
-        name: name ?? this.name,
-        avatar: avatar ?? this.avatar,
-        isKids: isKids ?? this.isKids,
-        pinHash: pinHash ?? this.pinHash,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  }) => DizzyProfile(
+    id: id,
+    name: name ?? this.name,
+    avatar: avatar ?? this.avatar,
+    isKids: isKids ?? this.isKids,
+    pinHash: pinHash ?? this.pinHash,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'avatar': avatar,
-        'isKids': isKids,
-        'pinHash': pinHash,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'avatar': avatar,
+    'isKids': isKids,
+    'pinHash': pinHash,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   Map<String, dynamic> toCloudJson() => {
-        'profile_id': id,
-        'name': name,
-        'avatar': avatar,
-        'is_kids': isKids,
-        'pin_hash': pinHash,
-        'created_at': createdAt.toUtc().toIso8601String(),
-        'updated_at': updatedAt.toUtc().toIso8601String(),
-      };
+    'profile_id': id,
+    'name': name,
+    'avatar': avatar,
+    'is_kids': isKids,
+    'pin_hash': pinHash,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+  };
 
   factory DizzyProfile.fromJson(Map<String, dynamic> json) {
-    final created = DateTime.tryParse(
-            (json['createdAt'] ?? json['created_at'])?.toString() ?? '') ??
+    final created =
+        DateTime.tryParse(
+          (json['createdAt'] ?? json['created_at'])?.toString() ?? '',
+        ) ??
         DateTime.now();
     return DizzyProfile(
       // Cloud rows carry profile_id, local rows carry id.
@@ -69,8 +70,10 @@ class DizzyProfile {
       isKids: json['isKids'] == true || json['is_kids'] == true,
       pinHash: (json['pinHash'] ?? json['pin_hash'])?.toString(),
       createdAt: created,
-      updatedAt: DateTime.tryParse(
-              (json['updatedAt'] ?? json['updated_at'])?.toString() ?? '') ??
+      updatedAt:
+          DateTime.tryParse(
+            (json['updatedAt'] ?? json['updated_at'])?.toString() ?? '',
+          ) ??
           created,
     );
   }

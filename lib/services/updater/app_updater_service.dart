@@ -72,7 +72,20 @@ class AppUpdaterService {
     } catch (_) {}
   }
 
-  Future<UpdateInfo?> checkForUpdates({bool ignoreDismissed = false}) async {
+  /// Boot + resume can both call this at once; they share one round-trip.
+  static Future<UpdateInfo?>? _inflight;
+
+  Future<UpdateInfo?> checkForUpdates({bool ignoreDismissed = false}) {
+    final pending = _inflight;
+    if (pending != null) return pending;
+    final fut = _checkForUpdates(
+      ignoreDismissed: ignoreDismissed,
+    ).whenComplete(() => _inflight = null);
+    _inflight = fut;
+    return fut;
+  }
+
+  Future<UpdateInfo?> _checkForUpdates({bool ignoreDismissed = false}) async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;

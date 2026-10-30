@@ -74,19 +74,22 @@ class TrashEntry {
       storageSweepUndoRemaining(trashedAt: trashedAt, now: now);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'taskId': taskId,
-        'originalPath': originalPath,
-        'trashPath': trashPath,
-        'trashedAt': trashedAt.millisecondsSinceEpoch,
-        'bytes': bytes,
-      };
+    'taskId': taskId,
+    'originalPath': originalPath,
+    'trashPath': trashPath,
+    'trashedAt': trashedAt.millisecondsSinceEpoch,
+    'bytes': bytes,
+  };
 
   static TrashEntry? fromJson(Map<String, dynamic> json) {
     final id = json['taskId'];
     final original = json['originalPath'];
     final trashed = json['trashPath'];
     final at = json['trashedAt'];
-    if (id is! String || original is! String || trashed is! String || at is! int) {
+    if (id is! String ||
+        original is! String ||
+        trashed is! String ||
+        at is! int) {
       return null;
     }
     return TrashEntry(
@@ -135,7 +138,10 @@ abstract final class DownloadTrash {
   static Future<void> _persist() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefsKey, jsonEncode(_entries.map((e) => e.toJson()).toList()));
+      await prefs.setString(
+        _prefsKey,
+        jsonEncode(_entries.map((e) => e.toJson()).toList()),
+      );
     } catch (_) {}
   }
 
@@ -204,7 +210,16 @@ abstract final class DownloadTrash {
     );
     _entries = <TrashEntry>[entry, ..._entries];
     if (_entries.length > maxEntries) {
+      final dropped = _entries.sublist(maxEntries);
       _entries = _entries.sublist(0, maxEntries);
+      // Dropping a row without the file would orphan the bytes forever: no
+      // purge would ever find them again. Best-effort delete.
+      for (final old in dropped) {
+        try {
+          final f = File(old.trashPath);
+          if (await f.exists()) await f.delete();
+        } catch (_) {}
+      }
     }
     await _persist();
 

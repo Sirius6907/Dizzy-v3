@@ -27,4 +27,7 @@ paths = [
   '''^lib\/services\/scraper\/sites\/xpass\.dart$''',
   '''^lib\/services\/scraper\/sites\/zxcstream\.dart$''',
   '''^lib\/services\/subtitles\/providers\/wyzie_provider\.dart$''',
+  # Firebase Android client config: compile-time public config (API key is
+  # restricted by package + signing cert in GCP), required for FCM in CI builds.
+  '''^android\/app\/google-services\.json$''',
 ]

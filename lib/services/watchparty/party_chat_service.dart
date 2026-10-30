@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import '../cloud/cloud_client.dart';
@@ -42,8 +41,11 @@ class PartyChatService {
     return out;
   }
 
-  static Future<bool> sendMessage(String roomId, String body,
-      {String? replyToId}) async {
+  static Future<bool> sendMessage(
+    String roomId,
+    String body, {
+    String? replyToId,
+  }) async {
     if (!CloudClient.isReady || !validBody(body)) return false;
     try {
       final params = <String, dynamic>{
@@ -53,13 +55,17 @@ class PartyChatService {
       if (replyToId != null && replyToId.isNotEmpty) {
         params['p_reply_to_id'] = replyToId;
       }
-      final ok =
-          await CloudClient.db.rpc('send_room_message', params: params);
+      final ok = await CloudClient.db.rpc('send_room_message', params: params);
       return ok == true;
     } catch (e) {
       AppLog.d('[Chat] send failed (soft): $e');
-      unawaited(AppErrorLog.log(
-          code: 'room_chat_send', screen: 'party', detail: 'rpc_failed'));
+      unawaited(
+        AppErrorLog.log(
+          code: 'room_chat_send',
+          screen: 'party',
+          detail: 'rpc_failed',
+        ),
+      );
       return false;
     }
   }
@@ -68,10 +74,10 @@ class PartyChatService {
   static Future<bool> toggleReaction(String messageId, String emoji) async {
     if (!CloudClient.isReady || !allowedEmoji.contains(emoji)) return false;
     try {
-      final ok = await CloudClient.db.rpc('react_to_message', params: {
-        'p_msg_id': messageId,
-        'p_emoji': emoji,
-      });
+      final ok = await CloudClient.db.rpc(
+        'react_to_message',
+        params: {'p_msg_id': messageId, 'p_emoji': emoji},
+      );
       return ok == true;
     } catch (e) {
       AppLog.d('[Chat] react failed (soft): $e');
@@ -83,10 +89,13 @@ class PartyChatService {
   static Future<bool> setPinned(String roomId, String? messageId) async {
     if (!CloudClient.isReady) return false;
     try {
-      final ok = await CloudClient.db.rpc('pin_room_message', params: {
-        'p_room_id': roomId.trim().toUpperCase(),
-        'p_msg_id': messageId,
-      });
+      final ok = await CloudClient.db.rpc(
+        'pin_room_message',
+        params: {
+          'p_room_id': roomId.trim().toUpperCase(),
+          'p_msg_id': messageId,
+        },
+      );
       return ok == true;
     } catch (e) {
       AppLog.d('[Chat] pin failed (soft): $e');
@@ -102,11 +111,10 @@ class PartyChatService {
         .stream(primaryKey: ['room_id'])
         .eq('room_id', roomId.trim().toUpperCase())
         .map((rows) {
-      if (rows.isEmpty) return null;
-      final t =
-          (rows.first as Map)['pinned_text']?.toString().trim() ?? '';
-      return t.isEmpty ? null : t;
-    });
+          if (rows.isEmpty) return null;
+          final t = (rows.first as Map)['pinned_text']?.toString().trim() ?? '';
+          return t.isEmpty ? null : t;
+        });
   }
 
   /// Pure: hide messages older than the TTL. Unit tested.
@@ -123,11 +131,16 @@ class PartyChatService {
         .stream(primaryKey: ['id'])
         .eq('room_id', roomId.trim().toUpperCase())
         .order('created_at', ascending: true)
-        .map((rows) => rows
-            .map((r) => PartyChatMessage.fromJson(
-                Map<String, dynamic>.from(r as Map)))
-            .where((m) => !isExpired(m.createdAt))
-            .toList());
+        .map(
+          (rows) => rows
+              .map(
+                (r) => PartyChatMessage.fromJson(
+                  Map<String, dynamic>.from(r as Map),
+                ),
+              )
+              .where((m) => !isExpired(m.createdAt))
+              .toList(),
+        );
   }
 
   /// Members with display codes (device code when the install row exists).
@@ -168,8 +181,10 @@ class PartyChatService {
   static Future<bool> setLocked(String roomId, bool locked) async {
     if (!CloudClient.isReady) return false;
     try {
-      await CloudClient.db.from('rooms').update({'locked': locked}).eq(
-          'room_id', roomId.trim().toUpperCase());
+      await CloudClient.db
+          .from('rooms')
+          .update({'locked': locked})
+          .eq('room_id', roomId.trim().toUpperCase());
       return true;
     } catch (e) {
       AppLog.d('[Chat] lock failed (soft): $e');
@@ -182,17 +197,18 @@ class PartyChatService {
     if (!CloudClient.isReady || !PartyVoiceService.amHost) return false;
     final code = roomId.trim().toUpperCase();
     try {
-      await CloudClient.db.functions.invoke('party-voice-admin', body: {
-        'room_code': code,
-        'action': 'kick',
-        'target_identity': userId,
-      });
+      await CloudClient.db.functions.invoke(
+        'party-voice-admin',
+        body: {'room_code': code, 'action': 'kick', 'target_identity': userId},
+      );
     } catch (e) {
       AppLog.d('[Chat] voice kick failed (soft): $e');
     }
     try {
-      await CloudClient.db.from('room_members').delete().match(
-          {'room_id': code, 'user_id': userId});
+      await CloudClient.db.from('room_members').delete().match({
+        'room_id': code,
+        'user_id': userId,
+      });
       return true;
     } catch (e) {
       AppLog.d('[Chat] kick failed (soft): $e');
@@ -234,7 +250,8 @@ class PartyChatMessage {
         senderId: json['sender_id']?.toString() ?? '',
         senderCode: json['sender_code']?.toString(),
         body: json['body']?.toString() ?? '',
-        createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+        createdAt:
+            DateTime.tryParse(json['created_at']?.toString() ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         replyToId: json['reply_to_id']?.toString(),
         replyPreview: json['reply_preview']?.toString(),
@@ -248,10 +265,9 @@ class PartyChatMessage {
       : 'Guest';
 
   /// Quote header for a reply ("DIZ-4820193" or "Guest").
-  String get replyName =>
-      replyToCode != null && replyToCode!.isNotEmpty
-          ? 'DIZ-$replyToCode'
-          : 'Guest';
+  String get replyName => replyToCode != null && replyToCode!.isNotEmpty
+      ? 'DIZ-$replyToCode'
+      : 'Guest';
 }
 
 class PartyMember {

@@ -38,7 +38,9 @@ Extracted from zip!
 ''';
       final archive = Archive();
       final srtBytes = utf8.encode(srtText);
-      archive.addFile(ArchiveFile('subtitles/movie.srt', srtBytes.length, srtBytes));
+      archive.addFile(
+        ArchiveFile('subtitles/movie.srt', srtBytes.length, srtBytes),
+      );
       archive.addFile(ArchiveFile('__MACOSX/._movie.srt', 20, [1, 2, 3]));
 
       final zipData = ZipEncoder().encode(archive);

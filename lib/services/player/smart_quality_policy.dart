@@ -55,11 +55,11 @@ abstract final class SmartQualityPolicy {
 
   /// Convenience read of the live app state (player hot path).
   static DeviceCapability liveCapability() => capability(
-        lowEndDeviceMode: PerformanceMode.lowEndDeviceMode.value,
-        deviceTier: PerformanceMode.deviceTier.value,
-        lowRamDevice: PerformanceMode.isLowRamDevice,
-        resourceLevel: ResourceGovernor.instance.level.value,
-      );
+    lowEndDeviceMode: PerformanceMode.lowEndDeviceMode.value,
+    deviceTier: PerformanceMode.deviceTier.value,
+    lowRamDevice: PerformanceMode.isLowRamDevice,
+    resourceLevel: ResourceGovernor.instance.level.value,
+  );
 
   /// Whether AV1 files should be passed over when picking a rendition.
   static bool shouldAvoidAv1(DeviceCapability cap) =>

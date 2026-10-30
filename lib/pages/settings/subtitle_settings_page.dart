@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../services/player/player_settings.dart';
-import '../../widgets/guide/guide_card.dart';
+import '../../services/theme/app_theme_service.dart';
 
 /// v1.2.0-T2.4: Subtitle appearance settings page.
 ///
@@ -22,32 +22,37 @@ class SubtitleSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // v1.2.0-T2.6: first-time subtitles guide (skipable, never nags).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      GuideCard.maybeShow(context, 'subtitles', AppGuides.subtitles);
-    });
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidA,
+        backgroundColor: palette.appBarBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_rounded, color: ink, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Words on screen',
           style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: ink,
+          ),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          const Text(
+          Text(
             'Pick how the words look while you watch.',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: inkSoft, fontSize: 14),
           ),
           const SizedBox(height: 16),
           // ── Live preview ──
@@ -55,20 +60,26 @@ class SubtitleSettingsPage extends StatelessWidget {
             valueListenable: PlayerSettings.changeNotifier,
             builder: (context, _, __) {
               final size =
-                  (PlayerSettings.subFontSize.value * PlayerSettings.subScale.value)
+                  (PlayerSettings.subFontSize.value *
+                          PlayerSettings.subScale.value)
                       .clamp(14.0, 80.0);
               return Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 28),
+                  horizontal: 16,
+                  vertical: 28,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   image: const DecorationImage(
                     image: NetworkImage(
-                        'https://image.tmdb.org/t/p/w780/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg'),
+                      'https://image.tmdb.org/t/p/w780/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
+                    ),
                     fit: BoxFit.cover,
-                    colorFilter:
-                        ColorFilter.mode(Colors.black54, BlendMode.darken),
+                    colorFilter: ColorFilter.mode(
+                      Colors.black54,
+                      BlendMode.darken,
+                    ),
                   ),
                 ),
                 child: Center(
@@ -84,17 +95,20 @@ class SubtitleSettingsPage extends StatelessWidget {
                           ? FontStyle.italic
                           : FontStyle.normal,
                       color: _parseHex(PlayerSettings.subColor.value),
-                      backgroundColor:
-                          _parseHex(PlayerSettings.subBackColor.value),
+                      backgroundColor: _parseHex(
+                        PlayerSettings.subBackColor.value,
+                      ),
                       shadows: PlayerSettings.subShadowOffset.value > 0
                           ? [
                               Shadow(
                                 offset: Offset(
-                                    PlayerSettings.subShadowOffset.value,
-                                    PlayerSettings.subShadowOffset.value),
+                                  PlayerSettings.subShadowOffset.value,
+                                  PlayerSettings.subShadowOffset.value,
+                                ),
                                 blurRadius: 4,
                                 color: _parseHex(
-                                    PlayerSettings.subShadowColor.value),
+                                  PlayerSettings.subShadowColor.value,
+                                ),
                               ),
                             ]
                           : null,
@@ -118,20 +132,22 @@ class SubtitleSettingsPage extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () =>
-                          PlayerSettings.setSubStylePreset(preset),
+                      onTap: () => PlayerSettings.setSubStylePreset(preset),
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: selected
-                              ? const Color(0xFF7C5CFF)
-                                  .withValues(alpha: 0.18)
-                              : Colors.white.withValues(alpha: 0.05),
+                              ? const Color(0xFF7C5CFF).withValues(alpha: 0.18)
+                              : (isLight
+                                    ? PrismLight.raisedTop
+                                    : PrismDark.raised),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: selected
                                 ? const Color(0xFF7C5CFF)
-                                : Colors.white.withValues(alpha: 0.1),
+                                : (isLight
+                                      ? PrismLight.borderSubtle
+                                      : Colors.white.withValues(alpha: 0.1)),
                             width: selected ? 1.5 : 1,
                           ),
                         ),
@@ -144,7 +160,11 @@ class SubtitleSettingsPage extends StatelessWidget {
                                 color: _parseHex(preset.textColor),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                    color: Colors.white24, width: 2),
+                                  color: isLight
+                                      ? PrismLight.borderSubtle
+                                      : Colors.white24,
+                                  width: 2,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: _parseHex(preset.borderColor),
@@ -160,7 +180,8 @@ class SubtitleSettingsPage extends StatelessWidget {
                                     fontWeight: preset.bold
                                         ? FontWeight.bold
                                         : FontWeight.normal,
-                                    color: _parseHex(preset.backColor) ==
+                                    color:
+                                        _parseHex(preset.backColor) ==
                                             Colors.transparent
                                         ? Colors.black
                                         : Colors.white,
@@ -171,30 +192,33 @@ class SubtitleSettingsPage extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     preset.label,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700),
+                                    style: TextStyle(
+                                      color: ink,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     preset.description,
                                     style: TextStyle(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.5),
-                                        fontSize: 12),
+                                      color: inkSoft,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             if (selected)
-                              const Icon(Icons.check_circle_rounded,
-                                  color: Color(0xFF7C5CFF), size: 22),
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Color(0xFF7C5CFF),
+                                size: 22,
+                              ),
                           ],
                         ),
                       ),
@@ -215,18 +239,17 @@ class SubtitleSettingsPage extends StatelessWidget {
                 icon: Icons.format_size_rounded,
                 title: 'Word size',
                 subtitle: 'Bigger = easier to read.',
-                trailing: Text('$size',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700)),
+                trailing: Text(
+                  '$size',
+                  style: TextStyle(color: ink, fontWeight: FontWeight.w700),
+                ),
                 child: Slider(
                   value: size.toDouble().clamp(14.0, 80.0),
                   min: 14,
                   max: 80,
                   divisions: 33,
                   activeColor: const Color(0xFF7C5CFF),
-                  onChanged: (v) =>
-                      PlayerSettings.setSubFontSize(v.round()),
+                  onChanged: (v) => PlayerSettings.setSubFontSize(v.round()),
                 ),
               );
             },
@@ -270,15 +293,20 @@ class SubtitleSettingsPage extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => PlayerSettings.setSubStylePreset(
-                  SubtitleStylePreset.classicWhite),
+                SubtitleStylePreset.classicWhite,
+              ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Back to normal'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
+                foregroundColor: inkSoft,
                 side: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.18)),
+                  color: isLight
+                      ? PrismLight.borderSubtle
+                      : Colors.white.withValues(alpha: 0.18),
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -295,13 +323,18 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
     return Text(
       text,
-      style: const TextStyle(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w800,
-          color: Colors.white38,
-          letterSpacing: 1.1),
+      style: TextStyle(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w800,
+        color: isLight
+            ? PrismLight.inkFaint
+            : Colors.white.withValues(alpha: 0.35),
+        letterSpacing: 1.1,
+      ),
     );
   }
 }
@@ -323,12 +356,22 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.55);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.voidB.withValues(alpha: 0.9),
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.07),
+        ),
       ),
       child: Column(
         children: [
@@ -341,35 +384,37 @@ class _Tile extends StatelessWidget {
                   color: const Color(0xFF7C5CFF).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(icon,
-                    size: 20, color: const Color(0xFF7C5CFF)),
+                child: Icon(icon, size: 20, color: const Color(0xFF7C5CFF)),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: ink,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(subtitle,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.5),
-                            height: 1.3)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: inkSoft,
+                        height: 1.3,
+                      ),
+                    ),
                   ],
                 ),
               ),
               trailing,
             ],
           ),
-          if (child != null) ...[
-            const SizedBox(height: 8),
-            child!,
-          ],
+          if (child != null) ...[const SizedBox(height: 8), child!],
         ],
       ),
     );

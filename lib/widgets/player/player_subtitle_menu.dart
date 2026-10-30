@@ -63,9 +63,18 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
 
   static String cleanMediaTitle(String raw) {
     var name = raw;
-    name = name.replaceAll(RegExp(r'\.(mkv|mp4|avi|webm|ts|mov|m4v|srt|vtt)$', caseSensitive: false), '');
+    name = name.replaceAll(
+      RegExp(r'\.(mkv|mp4|avi|webm|ts|mov|m4v|srt|vtt)$', caseSensitive: false),
+      '',
+    );
     name = name.replaceAll(RegExp(r'[._]'), ' ');
-    name = name.replaceAll(RegExp(r'\b(2160p|1080p|720p|480p|4k|uhd|ds4k|webrip|web-dl|bluray|brrip|h264|x264|h265|x265|hevc|10bit|ddp5\.1|dd5\.1|atmos|aac|ac3|dts|flac|remux|hdr|dv|proper|repack|hdtv)\b', caseSensitive: false), ' ');
+    name = name.replaceAll(
+      RegExp(
+        r'\b(2160p|1080p|720p|480p|4k|uhd|ds4k|webrip|web-dl|bluray|brrip|h264|x264|h265|x265|hevc|10bit|ddp5\.1|dd5\.1|atmos|aac|ac3|dts|flac|remux|hdr|dv|proper|repack|hdtv)\b',
+        caseSensitive: false,
+      ),
+      ' ',
+    );
     name = name.replaceAll(RegExp(r'-[a-zA-Z0-9]+$'), '');
     return name.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
@@ -118,7 +127,9 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
           ? _searchQuery!
           : cleanMediaTitle(rawTitle);
 
-      AppLog.d('[PlayerSubtitleMenu] Searching subtitles online for: "$query" (year: $year, imdb: ${widget.imdbId})');
+      AppLog.d(
+        '[PlayerSubtitleMenu] Searching subtitles online for: "$query" (year: $year, imdb: ${widget.imdbId})',
+      );
       final results = await SubtitleService().fetchAllSubtitles(
         query,
         imdbId: widget.imdbId,
@@ -126,7 +137,9 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         episode: widget.episode,
         year: year,
       );
-      AppLog.d('[PlayerSubtitleMenu] Found ${results.length} subtitle language groups');
+      AppLog.d(
+        '[PlayerSubtitleMenu] Found ${results.length} subtitle language groups',
+      );
       if (mounted) {
         setState(() {
           _dynamicGroups = results;
@@ -173,7 +186,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
     }
 
     return all.where((v) {
-      if (_filterHI && !(v.title.contains('[CC]') || v.title.contains('SDH') || v.title.contains('HI'))) {
+      if (_filterHI &&
+          !(v.title.contains('[CC]') ||
+              v.title.contains('SDH') ||
+              v.title.contains('HI'))) {
         return false;
       }
       if (_filterForced && !v.title.toLowerCase().contains('forced')) {
@@ -185,14 +201,21 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final totalVariantsCount = _dynamicGroups.fold<int>(0, (sum, g) => sum + g.variants.length);
-    final isOff = !widget.isSubtitleEnabled || (widget.selectedVariant == null && widget.selectedEmbeddedIndex == null);
+    final totalVariantsCount = _dynamicGroups.fold<int>(
+      0,
+      (sum, g) => sum + g.variants.length,
+    );
+    final isOff =
+        !widget.isSubtitleEnabled ||
+        (widget.selectedVariant == null &&
+            widget.selectedEmbeddedIndex == null);
     final filteredVariants = _getFilteredVariants();
     final screen = MediaQuery.sizeOf(context);
 
     // Responsive Breakpoints
     final isCompact = screen.width < 560; // Mobile portrait or narrow screen
-    final isLandscapeMobile = screen.height < 450 && screen.width >= 560; // Mobile landscape
+    final isLandscapeMobile =
+        screen.height < 450 && screen.width >= 560; // Mobile landscape
 
     // Compute responsive dimensions
     final double cardWidth;
@@ -225,7 +248,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         children: [
           // 1. Header Bar
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 14, vertical: headerPaddingV),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: headerPaddingV,
+            ),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: PlayerTheme.edgeSoft)),
             ),
@@ -248,7 +274,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                       if (totalVariantsCount > 0) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: PlayerTheme.raised,
                             borderRadius: BorderRadius.circular(999),
@@ -351,8 +380,19 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
           // 2. Responsive Content Body
           Expanded(
             child: isCompact
-                ? _buildCompactLayout(context, isOff, filteredVariants, totalVariantsCount)
-                : _buildDesktopLayout(context, isOff, filteredVariants, totalVariantsCount, isLandscapeMobile),
+                ? _buildCompactLayout(
+                    context,
+                    isOff,
+                    filteredVariants,
+                    totalVariantsCount,
+                  )
+                : _buildDesktopLayout(
+                    context,
+                    isOff,
+                    filteredVariants,
+                    totalVariantsCount,
+                    isLandscapeMobile,
+                  ),
           ),
         ],
       ),
@@ -375,7 +415,8 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         _buildHorizontalLanguageBar(isOff, totalVariantsCount),
 
         // Filter Chips Toolbar
-        if (_selectedLanguage != '__embedded__') _buildFilterToolbar(compact: true),
+        if (_selectedLanguage != '__embedded__')
+          _buildFilterToolbar(compact: true),
 
         // Subtitles List / Embedded List
         Expanded(
@@ -385,7 +426,8 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         ),
 
         // Bottom Search Trigger
-        if (_selectedLanguage != '__embedded__') _buildBottomSearchBar(compact: true),
+        if (_selectedLanguage != '__embedded__')
+          _buildBottomSearchBar(compact: true),
       ],
     );
   }
@@ -478,7 +520,9 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: isSelected ? PlayerTheme.accent.withValues(alpha: 0.35) : PlayerTheme.raised,
+            color: isSelected
+                ? PlayerTheme.accent.withValues(alpha: 0.35)
+                : PlayerTheme.raised,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected ? PlayerTheme.accent : PlayerTheme.edgeSoft,
@@ -506,9 +550,14 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
               if (count != null) ...[
                 const SizedBox(width: 5),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? PlayerTheme.accent : PlayerTheme.surfaceHover,
+                    color: isSelected
+                        ? PlayerTheme.accent
+                        : PlayerTheme.surfaceHover,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -565,7 +614,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                     widget.onClose();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: isOff ? PlayerTheme.raised : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
@@ -580,12 +632,18 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                           width: 15,
                           height: 15,
                           decoration: BoxDecoration(
-                            color: isOff ? PlayerTheme.accent : PlayerTheme.raised,
+                            color: isOff
+                                ? PlayerTheme.accent
+                                : PlayerTheme.raised,
                             shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
                           child: isOff
-                              ? const Icon(Icons.check_rounded, size: 9.5, color: Colors.white)
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  size: 9.5,
+                                  color: Colors.white,
+                                )
                               : null,
                         ),
                         const SizedBox(width: 7),
@@ -621,15 +679,23 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    onTap: () => setState(() => _selectedLanguage = '__embedded__'),
+                    onTap: () =>
+                        setState(() => _selectedLanguage = '__embedded__'),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 6.5,
+                      ),
                       margin: const EdgeInsets.only(bottom: 2),
                       decoration: BoxDecoration(
-                        color: _selectedLanguage == '__embedded__' ? PlayerTheme.raised : Colors.transparent,
+                        color: _selectedLanguage == '__embedded__'
+                            ? PlayerTheme.raised
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _selectedLanguage == '__embedded__' ? PlayerTheme.edge : Colors.transparent,
+                          color: _selectedLanguage == '__embedded__'
+                              ? PlayerTheme.edge
+                              : Colors.transparent,
                           width: 1,
                         ),
                       ),
@@ -650,7 +716,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: PlayerTheme.accent.withValues(alpha: 0.35),
                               borderRadius: BorderRadius.circular(999),
@@ -692,13 +761,20 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                     borderRadius: BorderRadius.circular(8),
                     onTap: () => setState(() => _selectedLanguage = '__all__'),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 6.5,
+                      ),
                       margin: const EdgeInsets.only(bottom: 2),
                       decoration: BoxDecoration(
-                        color: _selectedLanguage == '__all__' ? PlayerTheme.raised : Colors.transparent,
+                        color: _selectedLanguage == '__all__'
+                            ? PlayerTheme.raised
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _selectedLanguage == '__all__' ? PlayerTheme.edge : Colors.transparent,
+                          color: _selectedLanguage == '__all__'
+                              ? PlayerTheme.edge
+                              : Colors.transparent,
                           width: 1,
                         ),
                       ),
@@ -738,29 +814,44 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => setState(() => _selectedLanguage = g.language),
+                      onTap: () =>
+                          setState(() => _selectedLanguage = g.language),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 6.5,
+                        ),
                         margin: const EdgeInsets.only(bottom: 2),
                         decoration: BoxDecoration(
-                          color: isSelected ? PlayerTheme.raised : Colors.transparent,
+                          color: isSelected
+                              ? PlayerTheme.raised
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isSelected ? PlayerTheme.edge : Colors.transparent,
+                            color: isSelected
+                                ? PlayerTheme.edge
+                                : Colors.transparent,
                             width: 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            Text(_getLanguageEmoji(g.language), style: const TextStyle(fontSize: 11.5)),
+                            Text(
+                              _getLanguageEmoji(g.language),
+                              style: const TextStyle(fontSize: 11.5),
+                            ),
                             const SizedBox(width: 7),
                             Expanded(
                               child: Text(
                                 g.language,
                                 style: TextStyle(
-                                  color: isSelected ? PlayerTheme.ink : PlayerTheme.inkMuted,
+                                  color: isSelected
+                                      ? PlayerTheme.ink
+                                      : PlayerTheme.inkMuted,
                                   fontSize: 11.5,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -791,7 +882,12 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
               : Column(
                   children: [
                     _buildFilterToolbar(compact: false),
-                    Expanded(child: _buildVariantList(filteredVariants, compact: false)),
+                    Expanded(
+                      child: _buildVariantList(
+                        filteredVariants,
+                        compact: false,
+                      ),
+                    ),
                     _buildBottomSearchBar(compact: false),
                   ],
                 ),
@@ -835,7 +931,11 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
               onTap: _searchOnline,
               child: const Row(
                 children: [
-                  Icon(Icons.search_rounded, size: 13, color: PlayerTheme.accent),
+                  Icon(
+                    Icons.search_rounded,
+                    size: 13,
+                    color: PlayerTheme.accent,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'Search Online',
@@ -864,7 +964,9 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
       itemCount: widget.embeddedSubtitles.length,
       itemBuilder: (context, i) {
         final track = widget.embeddedSubtitles[i];
-        final isSelected = widget.isSubtitleEnabled && widget.selectedEmbeddedIndex == track.index;
+        final isSelected =
+            widget.isSubtitleEnabled &&
+            widget.selectedEmbeddedIndex == track.index;
 
         return Material(
           color: Colors.transparent,
@@ -891,12 +993,18 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                     width: 16,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: isSelected ? PlayerTheme.accent : PlayerTheme.raised,
+                      color: isSelected
+                          ? PlayerTheme.accent
+                          : PlayerTheme.raised,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
                     child: isSelected
-                        ? const Icon(Icons.check_rounded, size: 10.5, color: Colors.white)
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 10.5,
+                            color: Colors.white,
+                          )
                         : null,
                   ),
                   const SizedBox(width: 9),
@@ -906,7 +1014,8 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                       children: [
                         Row(
                           children: [
-                            if (track.language != null && track.language!.isNotEmpty) ...[
+                            if (track.language != null &&
+                                track.language!.isNotEmpty) ...[
                               Text(
                                 _getLanguageEmoji(track.language!),
                                 style: const TextStyle(fontSize: 12),
@@ -917,9 +1026,13 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                               child: Text(
                                 track.title,
                                 style: TextStyle(
-                                  color: isSelected ? PlayerTheme.ink : PlayerTheme.inkMuted,
+                                  color: isSelected
+                                      ? PlayerTheme.ink
+                                      : PlayerTheme.inkMuted,
                                   fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -931,9 +1044,14 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
                               decoration: BoxDecoration(
-                                color: PlayerTheme.accent.withValues(alpha: 0.18),
+                                color: PlayerTheme.accent.withValues(
+                                  alpha: 0.18,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
@@ -945,7 +1063,8 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                                 ),
                               ),
                             ),
-                            if (track.language != null && track.language!.isNotEmpty) ...[
+                            if (track.language != null &&
+                                track.language!.isNotEmpty) ...[
                               const SizedBox(width: 5),
                               Text(
                                 track.language!.toUpperCase(),
@@ -956,7 +1075,8 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                                 ),
                               ),
                             ],
-                            if (track.codec != null && track.codec!.isNotEmpty) ...[
+                            if (track.codec != null &&
+                                track.codec!.isNotEmpty) ...[
                               const SizedBox(width: 5),
                               Text(
                                 track.codec!.toUpperCase(),
@@ -992,7 +1112,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
   // External Subtitle Variants List
   // ───────────────────────────────────────────────────────────────────────────
 
-  Widget _buildVariantList(List<SubtitleVariant> filteredVariants, {required bool compact}) {
+  Widget _buildVariantList(
+    List<SubtitleVariant> filteredVariants, {
+    required bool compact,
+  }) {
     if (_isLoadingSearch) {
       return const Center(
         child: Column(
@@ -1027,23 +1150,26 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
               const SizedBox(height: 8),
               const Text(
                 'No subtitles available.',
-                style: TextStyle(
-                  color: PlayerTheme.inkMuted,
-                  fontSize: 12.5,
-                ),
+                style: TextStyle(color: PlayerTheme.inkMuted, fontSize: 12.5),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PlayerTheme.accent,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 icon: const Icon(Icons.search_rounded, size: 15),
-                label: const Text('Search Online Providers', style: TextStyle(fontSize: 11.5)),
+                label: const Text(
+                  'Search Online Providers',
+                  style: TextStyle(fontSize: 11.5),
+                ),
                 onPressed: _searchOnline,
               ),
             ],
@@ -1058,9 +1184,14 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
       itemCount: filteredVariants.length,
       itemBuilder: (context, i) {
         final variant = filteredVariants[i];
-        final isSelected = widget.isSubtitleEnabled && widget.selectedVariant?.downloadUrl == variant.downloadUrl;
+        final isSelected =
+            widget.isSubtitleEnabled &&
+            widget.selectedVariant?.downloadUrl == variant.downloadUrl;
 
-        final isHI = variant.title.contains('[CC]') || variant.title.contains('SDH') || variant.title.contains('HI');
+        final isHI =
+            variant.title.contains('[CC]') ||
+            variant.title.contains('SDH') ||
+            variant.title.contains('HI');
         final isForced = variant.title.toLowerCase().contains('forced');
 
         return Material(
@@ -1072,7 +1203,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
               widget.onClose();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7.5),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 7.5,
+              ),
               margin: const EdgeInsets.only(bottom: 4),
               decoration: BoxDecoration(
                 color: isSelected ? PlayerTheme.raised : Colors.transparent,
@@ -1089,12 +1223,18 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                     width: 16,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: isSelected ? PlayerTheme.accent : PlayerTheme.raised,
+                      color: isSelected
+                          ? PlayerTheme.accent
+                          : PlayerTheme.raised,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
                     child: isSelected
-                        ? const Icon(Icons.check_rounded, size: 10.5, color: Colors.white)
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 10.5,
+                            color: Colors.white,
+                          )
                         : null,
                   ),
                   const SizedBox(width: 9),
@@ -1115,9 +1255,13 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                               child: Text(
                                 variant.title,
                                 style: TextStyle(
-                                  color: isSelected ? PlayerTheme.ink : PlayerTheme.inkMuted,
+                                  color: isSelected
+                                      ? PlayerTheme.ink
+                                      : PlayerTheme.inkMuted,
                                   fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -1132,7 +1276,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
                               decoration: BoxDecoration(
                                 color: PlayerTheme.raised,
                                 borderRadius: BorderRadius.circular(4),
@@ -1148,7 +1295,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                             ),
                             if (variant.format.isNotEmpty)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0x15FFFFFF),
                                   borderRadius: BorderRadius.circular(3),
@@ -1163,7 +1313,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                               ),
                             if (isHI)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0x2210B981),
                                   borderRadius: BorderRadius.circular(3),
@@ -1179,7 +1332,10 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
                               ),
                             if (isForced)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0x22F59E0B),
                                   borderRadius: BorderRadius.circular(3),
@@ -1226,7 +1382,11 @@ class _PlayerSubtitleMenuState extends State<PlayerSubtitleMenu> {
               cursor: SystemMouseCursors.click,
               child: Row(
                 children: [
-                  Icon(Icons.search_rounded, size: 13, color: PlayerTheme.accent),
+                  Icon(
+                    Icons.search_rounded,
+                    size: 13,
+                    color: PlayerTheme.accent,
+                  ),
                   SizedBox(width: 5),
                   Text(
                     'Find more subtitles',

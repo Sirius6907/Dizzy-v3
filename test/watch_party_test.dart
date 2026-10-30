@@ -6,7 +6,10 @@ void main() {
     test('Room IDs are six safe uppercase characters', () {
       final id = WatchPartyService.generateRoomId();
       expect(id, hasLength(6));
-      expect(RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$').hasMatch(id), isTrue);
+      expect(
+        RegExp(r'^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$').hasMatch(id),
+        isTrue,
+      );
     });
 
     test('only exact six-digit private passes are valid', () {

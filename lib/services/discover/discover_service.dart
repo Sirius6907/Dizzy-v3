@@ -115,12 +115,14 @@ class DiscoverService {
 
       final mixes = await _musicMixes();
       if (mixes.isNotEmpty) {
-        out.add(DiscoverSection(
-          id: musicSectionId,
-          title: DiscoverCopy.musicRailTitle,
-          subtitle: DiscoverCopy.musicRailSubtitle,
-          mixes: mixes,
-        ));
+        out.add(
+          DiscoverSection(
+            id: musicSectionId,
+            title: DiscoverCopy.musicRailTitle,
+            subtitle: DiscoverCopy.musicRailSubtitle,
+            mixes: mixes,
+          ),
+        );
       }
 
       sections.value = out;
@@ -149,12 +151,14 @@ class DiscoverService {
         if (m != null) movies.add(m);
       }
       if (movies.isEmpty) continue;
-      out.add(DiscoverSection(
-        id: rail.id,
-        title: rail.title,
-        subtitle: rail.subtitle,
-        movies: movies,
-      ));
+      out.add(
+        DiscoverSection(
+          id: rail.id,
+          title: rail.title,
+          subtitle: rail.subtitle,
+          movies: movies,
+        ),
+      );
     }
     return out;
   }
@@ -164,9 +168,7 @@ class DiscoverService {
   /// `ContinueWatchingItem` has no genres, so genre overlap comes from the
   /// local taste map instead — one number per genre, no raw titles, which is
   /// also what keeps this anonymous-first.
-  static List<WatchSignal> historySignals({
-    List<ContinueWatchingItem>? items,
-  }) {
+  static List<WatchSignal> historySignals({List<ContinueWatchingItem>? items}) {
     final src = items ?? ContinueWatchingService.activeItems.value;
     final genres = <String, double>{};
     for (final g in GenrePreferenceService.scores.value.entries) {
@@ -175,14 +177,16 @@ class DiscoverService {
 
     return src
         .where((i) => i.id.trim().isNotEmpty && i.title.trim().isNotEmpty)
-        .map((i) => WatchSignal(
-              mediaId: i.id,
-              title: i.title,
-              type: i.type,
-              genres: const [],
-              watchedAt: i.lastWatchedAt,
-              progress: i.progressPercent,
-            ))
+        .map(
+          (i) => WatchSignal(
+            mediaId: i.id,
+            title: i.title,
+            type: i.type,
+            genres: const [],
+            watchedAt: i.lastWatchedAt,
+            progress: i.progressPercent,
+          ),
+        )
         .toList();
   }
 
@@ -206,16 +210,18 @@ class DiscoverService {
         if (m.id.trim().isEmpty) continue;
         if (!seen.add(m.id)) continue;
         movies.add(m);
-        candidates.add(RailCandidate(
-          id: m.id,
-          title: m.name,
-          type: m.type,
-          genres: genres,
-          rating: double.tryParse(m.imdbRating ?? ''),
-          // Sections have no id of their own; catalog id + type identifies
-          // where a card came from without inventing a second key space.
-          origin: '${s.contentType}:${s.catalog.id}',
-        ));
+        candidates.add(
+          RailCandidate(
+            id: m.id,
+            title: m.name,
+            type: m.type,
+            genres: genres,
+            rating: double.tryParse(m.imdbRating ?? ''),
+            // Sections have no id of their own; catalog id + type identifies
+            // where a card came from without inventing a second key space.
+            origin: '${s.contentType}:${s.catalog.id}',
+          ),
+        );
       }
       if (candidates.length >= HistoryRailPolicy.maxCandidates) break;
     }
@@ -235,12 +241,14 @@ class DiscoverService {
       final mixes = await MusicSmartMixService.instance.getOrGenerateMixes();
       return mixes
           .where((m) => m.tracks.isNotEmpty)
-          .map((m) => DiscoverMix(
-                id: m.id,
-                title: m.title,
-                subtitle: m.description,
-                trackCount: m.tracks.length,
-              ))
+          .map(
+            (m) => DiscoverMix(
+              id: m.id,
+              title: m.title,
+              subtitle: m.description,
+              trackCount: m.tracks.length,
+            ),
+          )
           .toList();
     } catch (e) {
       debugPrint('[DiscoverService] mixes unavailable: $e');

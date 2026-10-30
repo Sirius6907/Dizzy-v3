@@ -45,11 +45,11 @@ class PurstreamScraper extends StreamScraper {
     try {
       final client = http.Client();
       try {
-        final searchUrl = '$_apiBase/search-bar/search/${Uri.encodeComponent(title)}';
-        final searchRes = await client.get(
-          Uri.parse(searchUrl),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final searchUrl =
+            '$_apiBase/search-bar/search/${Uri.encodeComponent(title)}';
+        final searchRes = await client
+            .get(Uri.parse(searchUrl), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (searchRes.statusCode != 200) return;
         final searchData = jsonDecode(searchRes.body);
@@ -68,7 +68,9 @@ class PurstreamScraper extends StreamScraper {
           final releaseDate = item['release_date']?.toString();
 
           if (itemType == mediaType && itemTitle == lowerTitle) {
-            if (year == null || (releaseDate != null && releaseDate.startsWith(year.toString()))) {
+            if (year == null ||
+                (releaseDate != null &&
+                    releaseDate.startsWith(year.toString()))) {
               match = item;
               break;
             }
@@ -87,10 +89,9 @@ class PurstreamScraper extends StreamScraper {
             ? '$_apiBase/stream/$matchId/episode?season=${season ?? 1}&episode=${episode ?? 1}'
             : '$_apiBase/stream/$matchId';
 
-        final streamRes = await client.get(
-          Uri.parse(streamUrl),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final streamRes = await client
+            .get(Uri.parse(streamUrl), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (streamRes.statusCode != 200) return;
         final sJson = jsonDecode(streamRes.body);
@@ -110,15 +111,13 @@ class PurstreamScraper extends StreamScraper {
               .replaceAll(RegExp(r'\s*\|\s*'), ' · ')
               .trim();
           final sQuality = src['quality']?.toString() ?? 'Auto';
-          final titleQuality = (sQuality != 'Auto' && !cleanName.contains(sQuality))
+          final titleQuality =
+              (sQuality != 'Auto' && !cleanName.contains(sQuality))
               ? ' · $sQuality'
               : '';
           final streamTitle = 'Purstream · $cleanName$titleQuality';
 
-          final reqHeaders = {
-            'User-Agent': _ua,
-            'Referer': '$_domain/',
-          };
+          final reqHeaders = {'User-Agent': _ua, 'Referer': '$_domain/'};
 
           yield StreamSource(
             name: 'PurStream',
@@ -129,9 +128,7 @@ class PurstreamScraper extends StreamScraper {
             headers: reqHeaders,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': reqHeaders,
-              },
+              'proxyHeaders': {'request': reqHeaders},
             },
           );
         }

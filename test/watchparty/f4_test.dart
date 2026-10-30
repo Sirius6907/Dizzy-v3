@@ -10,14 +10,19 @@ import 'package:dizzy/services/watchparty/watch_sync_engine.dart';
 void main() {
   group('queue voting — add / move / remove', () {
     List<QueueEntry> seed() => QueueVotePolicy.applyAll(const [], [
-          const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u1', seq: 1),
-          const QueueOp(type: QueueOpType.add, itemId: 'b', voterId: 'u2', seq: 2),
-        ]);
+      const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u1', seq: 1),
+      const QueueOp(type: QueueOpType.add, itemId: 'b', voterId: 'u2', seq: 2),
+    ]);
 
     test('adding a title queues it with the tapper as first voter', () {
       final q = QueueVotePolicy.apply(
         const [],
-        const QueueOp(type: QueueOpType.add, itemId: 'tt1', voterId: 'u1', seq: 1),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'tt1',
+          voterId: 'u1',
+          seq: 1,
+        ),
       );
       expect(q.length, 1);
       expect(q.first.itemId, 'tt1');
@@ -27,7 +32,12 @@ void main() {
     test('adding the same title again is a vote, not a duplicate', () {
       final q = QueueVotePolicy.apply(
         seed(),
-        const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u2', seq: 3),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'a',
+          voterId: 'u2',
+          seq: 3,
+        ),
       );
       expect(q.where((e) => e.itemId == 'a').length, 1);
       expect(q.firstWhere((e) => e.itemId == 'a').votes, 2);
@@ -36,7 +46,12 @@ void main() {
     test('one person cannot vote twice for the same title', () {
       final once = QueueVotePolicy.apply(
         seed(),
-        const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u1', seq: 3),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'a',
+          voterId: 'u1',
+          seq: 3,
+        ),
       );
       expect(once.firstWhere((e) => e.itemId == 'a').votes, 1);
     });
@@ -44,7 +59,12 @@ void main() {
     test('the most-wanted title is next', () {
       final q = QueueVotePolicy.apply(
         seed(),
-        const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u3', seq: 3),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'a',
+          voterId: 'u3',
+          seq: 3,
+        ),
       );
       expect(QueueVotePolicy.next(q)?.itemId, 'a');
       expect(QueueVotePolicy.tally(q)['a'], 2);
@@ -55,8 +75,18 @@ void main() {
       expect(QueueVotePolicy.next(q)?.itemId, 'a');
       // Reversing the input order lands on the same answer.
       final reversed = QueueVotePolicy.applyAll(const [], [
-        const QueueOp(type: QueueOpType.add, itemId: 'b', voterId: 'u2', seq: 2),
-        const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u1', seq: 1),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'b',
+          voterId: 'u2',
+          seq: 2,
+        ),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'a',
+          voterId: 'u1',
+          seq: 1,
+        ),
       ]);
       expect(QueueVotePolicy.next(reversed)?.itemId, 'a');
     });
@@ -103,27 +133,57 @@ void main() {
     test('remove drops the title; removing a stranger is harmless', () {
       final gone = QueueVotePolicy.apply(
         seed(),
-        const QueueOp(type: QueueOpType.remove, itemId: 'a', voterId: 'u1', seq: 7),
+        const QueueOp(
+          type: QueueOpType.remove,
+          itemId: 'a',
+          voterId: 'u1',
+          seq: 7,
+        ),
       );
       expect(gone.map((e) => e.itemId), ['b']);
 
       final noop = QueueVotePolicy.apply(
         gone,
-        const QueueOp(type: QueueOpType.remove, itemId: 'zzz', voterId: 'u1', seq: 8),
+        const QueueOp(
+          type: QueueOpType.remove,
+          itemId: 'zzz',
+          voterId: 'u1',
+          seq: 8,
+        ),
       );
       expect(noop.map((e) => e.itemId), ['b']);
     });
 
     test('the op-log is order-independent by seq', () {
       final ops = [
-        const QueueOp(type: QueueOpType.add, itemId: 'c', voterId: 'u3', seq: 3),
-        const QueueOp(type: QueueOpType.add, itemId: 'a', voterId: 'u1', seq: 1),
-        const QueueOp(type: QueueOpType.add, itemId: 'b', voterId: 'u2', seq: 2),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'c',
+          voterId: 'u3',
+          seq: 3,
+        ),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'a',
+          voterId: 'u1',
+          seq: 1,
+        ),
+        const QueueOp(
+          type: QueueOpType.add,
+          itemId: 'b',
+          voterId: 'u2',
+          seq: 2,
+        ),
       ];
       final forward = QueueVotePolicy.applyAll(const [], ops);
-      final backward = QueueVotePolicy.applyAll(const [], ops.reversed.toList());
-      expect(forward.map((e) => e.itemId).toList(),
-          backward.map((e) => e.itemId).toList());
+      final backward = QueueVotePolicy.applyAll(
+        const [],
+        ops.reversed.toList(),
+      );
+      expect(
+        forward.map((e) => e.itemId).toList(),
+        backward.map((e) => e.itemId).toList(),
+      );
     });
 
     test('an invalid op is refused, not half-applied', () {
@@ -169,11 +229,21 @@ void main() {
       expect(op!.itemId, 'tt9');
       expect(op.toJson()['type'], 'add');
 
-      expect(QueueOp.fromJson(const {'type': 'nope', 'itemId': 'a', 'voterId': 'u'}), isNull);
-      expect(QueueOp.fromJson(const {'type': 'add', 'itemId': '', 'voterId': 'u'}), isNull);
+      expect(
+        QueueOp.fromJson(const {'type': 'nope', 'itemId': 'a', 'voterId': 'u'}),
+        isNull,
+      );
+      expect(
+        QueueOp.fromJson(const {'type': 'add', 'itemId': '', 'voterId': 'u'}),
+        isNull,
+      );
 
       final entries = QueueVotePolicy.decodeList([
-        {'itemId': 'ok', 'title': 'Fine', 'voters': ['u1', '', 'u1']},
+        {
+          'itemId': 'ok',
+          'title': 'Fine',
+          'voters': ['u1', '', 'u1'],
+        },
         {'title': 'No id'},
         'garbage',
       ]);
@@ -182,9 +252,14 @@ void main() {
     });
 
     test('the summary line uses real numbers and Easy English', () {
-      expect(QueueVotePolicy.summaryLine(const []), 'Nobody picked anything yet.');
-      expect(QueueVotePolicy.summaryLine(seed()),
-          '2 titles are waiting. Most wanted plays next.');
+      expect(
+        QueueVotePolicy.summaryLine(const []),
+        'Nobody picked anything yet.',
+      );
+      expect(
+        QueueVotePolicy.summaryLine(seed()),
+        '2 titles are waiting. Most wanted plays next.',
+      );
     });
   });
 
@@ -194,18 +269,20 @@ void main() {
       int sentAt = 1000,
       bool playing = true,
       String title = 'Dune',
-    }) =>
-        WatchSyncMessage(
-          version: 2,
-          mediaRef: 'imdb:tt1160419',
-          mediaTitle: title,
-          positionMs: positionMs,
-          hostSentAtMs: sentAt,
-          playing: playing,
-        );
+    }) => WatchSyncMessage(
+      version: 2,
+      mediaRef: 'imdb:tt1160419',
+      mediaTitle: title,
+      positionMs: positionMs,
+      hostSentAtMs: sentAt,
+      playing: playing,
+    );
 
     test('a guest who is behind seeks to the host position', () {
-      final plan = LateJoinPolicy.planFor(msg(positionMs: 600000, sentAt: 1000), nowMs: 1000);
+      final plan = LateJoinPolicy.planFor(
+        msg(positionMs: 600000, sentAt: 1000),
+        nowMs: 1000,
+      );
       expect(plan.seekMs, 600000);
       expect(plan.alreadyInSync, isFalse);
     });
@@ -278,7 +355,11 @@ void main() {
     });
 
     test('arrival copy is Easy English — no codes or tech words', () {
-      final plan = LateJoinPolicy.planFor(msg(), guestPositionMs: 0, nowMs: 1000);
+      final plan = LateJoinPolicy.planFor(
+        msg(),
+        guestPositionMs: 0,
+        nowMs: 1000,
+      );
       final line = LateJoinPolicy.arrivalLine(plan, memberCount: 4);
       for (final banned in ['Exception', 'null', 'E_', 'stack']) {
         expect(line.contains(banned), isFalse, reason: 'leaked "$banned"');
@@ -287,9 +368,17 @@ void main() {
   });
 
   group('DM media card — tap to join in sync', () {
-    const movie = MediaCardRef(mediaId: 'tt1160419', title: 'Dune', mediaType: 'movie');
+    const movie = MediaCardRef(
+      mediaId: 'tt1160419',
+      title: 'Dune',
+      mediaType: 'movie',
+    );
     const song = MediaCardRef(mediaId: '42', title: 'Blue', mediaType: 'music');
-    const novel = MediaCardRef(mediaId: '99', title: 'Piranesi', mediaType: 'book');
+    const novel = MediaCardRef(
+      mediaId: '99',
+      title: 'Piranesi',
+      mediaType: 'book',
+    );
     const ep = MediaCardRef(
       mediaId: '1396',
       title: 'Breaking Bad',
@@ -306,7 +395,11 @@ void main() {
     });
 
     test('an unknown media type falls back to watch', () {
-      const odd = MediaCardRef(mediaId: '1', title: 'X', mediaType: 'something-else');
+      const odd = MediaCardRef(
+        mediaId: '1',
+        title: 'X',
+        mediaType: 'something-else',
+      );
       expect(odd.mode, SyncMode.watch);
     });
 
@@ -314,8 +407,14 @@ void main() {
       final intent = MediaCardIntent.of(song);
       expect(intent.mode, SyncMode.listen);
       expect(intent.actionLineFor(intent.mode), 'Listen with them');
-      expect(MediaCardIntent.of(movie).actionLineFor(SyncMode.watch), 'Watch with them');
-      expect(MediaCardIntent.of(novel).actionLineFor(SyncMode.read), 'Read with them');
+      expect(
+        MediaCardIntent.of(movie).actionLineFor(SyncMode.watch),
+        'Watch with them',
+      );
+      expect(
+        MediaCardIntent.of(novel).actionLineFor(SyncMode.read),
+        'Read with them',
+      );
     });
 
     test('the media ref matches what the party engine already speaks', () {
@@ -358,7 +457,10 @@ void main() {
     });
 
     test('a pass is included only when the room has one', () {
-      expect(const RoomInvite(roomCode: 'ABC123').message.contains('Pass'), isFalse);
+      expect(
+        const RoomInvite(roomCode: 'ABC123').message.contains('Pass'),
+        isFalse,
+      );
       expect(
         const RoomInvite(roomCode: 'ABC123', pass: '123456').message,
         contains('Pass: 123456'),
@@ -375,34 +477,52 @@ void main() {
         expect(line.isNotEmpty, isTrue);
         expect(line.contains('Exception'), isFalse);
       }
-      expect(RoomInviteService.resultLine(ShareResult.failed),
-          'Code is on screen. Read it out loud.');
+      expect(
+        RoomInviteService.resultLine(ShareResult.failed),
+        'Code is on screen. Read it out loud.',
+      );
     });
   });
 
   group('guest auto-open — a code is the only tap', () {
     test('an open room opens straight away', () {
-      final d = GuestAutoOpenPolicy.decide(roomCode: 'K3MQ7X', pass: null, hasMedia: true);
+      final d = GuestAutoOpenPolicy.decide(
+        roomCode: 'K3MQ7X',
+        pass: null,
+        hasMedia: true,
+      );
       expect(d.openNow, isTrue);
       expect(d.prewarm, isTrue);
     });
 
     test('a locked room asks for the pass first', () {
-      final d = GuestAutoOpenPolicy.decide(roomCode: 'K3MQ7X', pass: '123456', hasMedia: true);
+      final d = GuestAutoOpenPolicy.decide(
+        roomCode: 'K3MQ7X',
+        pass: '123456',
+        hasMedia: true,
+      );
       expect(d.openNow, isFalse);
       expect(d.prewarm, isFalse);
       expect(d.line, contains('pass'));
     });
 
     test('an empty room opens without pretending something is playing', () {
-      final d = GuestAutoOpenPolicy.decide(roomCode: 'K3MQ7X', pass: null, hasMedia: false);
+      final d = GuestAutoOpenPolicy.decide(
+        roomCode: 'K3MQ7X',
+        pass: null,
+        hasMedia: false,
+      );
       expect(d.openNow, isTrue);
       expect(d.prewarm, isFalse);
       expect(d.line, isNull);
     });
 
     test('a bad code is refused with a line, not a silent failure', () {
-      final d = GuestAutoOpenPolicy.decide(roomCode: '  ', pass: null, hasMedia: true);
+      final d = GuestAutoOpenPolicy.decide(
+        roomCode: '  ',
+        pass: null,
+        hasMedia: true,
+      );
       expect(d.openNow, isFalse);
       expect(d.line, isNotNull);
       expect(d.line, isNotEmpty);
@@ -416,8 +536,14 @@ void main() {
         hostSentAtMs: 0,
         playing: true,
       );
-      expect(GuestAutoOpenPolicy.shouldAnnounce(m, alreadyInRoom: true), isFalse);
-      expect(GuestAutoOpenPolicy.shouldAnnounce(m, alreadyInRoom: false), isTrue);
+      expect(
+        GuestAutoOpenPolicy.shouldAnnounce(m, alreadyInRoom: true),
+        isFalse,
+      );
+      expect(
+        GuestAutoOpenPolicy.shouldAnnounce(m, alreadyInRoom: false),
+        isTrue,
+      );
     });
   });
 }

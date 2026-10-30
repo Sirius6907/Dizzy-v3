@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/manga/manga.dart';
 import '../../models/manga/manga_chapter.dart';
@@ -11,14 +11,13 @@ import '../../services/theme/dock_settings.dart';
 import '../../services/manga/manga_service.dart';
 import '../../services/manga/manga_settings.dart';
 import '../../widgets/common/animated_ambient_background.dart';
-import '../../widgets/common/app_liquid_dock.dart';
+import '../../widgets/prism/prism_dock.dart';
 import '../../widgets/common/custom_scroll_track.dart';
 import '../../widgets/common/slider_arrow.dart';
 import '../../widgets/manga/manga_card.dart';
 import '../../widgets/manga/manga_category_dropdown.dart';
 import '../settings/appearance/manga_settings_page.dart';
 import 'manga_reader_page.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class MangaPage extends StatefulWidget {
   const MangaPage({super.key});
@@ -39,26 +38,28 @@ class _MangaPageState extends State<MangaPage> {
   final MangaService _mangaService = MangaService();
   late final ScrollController _scrollController;
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<Manga> _mangaList = [];
   List<Map<String, dynamic>> _readingHistory = [];
-  
+
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _currentPage = 1;
   String _searchQuery = '';
   String _selectedGenre = 'All';
-  
+
   // Track grid layout dimensions
   late double _screenWidth;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController(initialScrollOffset: _cachedScrollOffset);
+    _scrollController = ScrollController(
+      initialScrollOffset: _cachedScrollOffset,
+    );
     _searchController.text = _cachedSearchQuery;
     _selectedGenre = _cachedSelectedGenre;
-    
+
     MangaSettings.changeNotifier.addListener(_onSettingsChanged);
     AppThemeService.currentPalette.addListener(_onSettingsChanged);
 
@@ -81,7 +82,7 @@ class _MangaPageState extends State<MangaPage> {
       _isLoading = true;
       _loadInitialData();
     }
-    
+
     MangaService.readingHistoryRevision.addListener(_loadHistory);
     _scrollController.addListener(_onScroll);
   }
@@ -106,9 +107,10 @@ class _MangaPageState extends State<MangaPage> {
       _cachedScrollOffset = _scrollController.offset;
     }
     if (_isLoading || _isLoadingMore) return;
-    
+
     // If we're within 800 pixels of the bottom, load more
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 800) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 800) {
       _loadMore();
     }
   }
@@ -128,10 +130,13 @@ class _MangaPageState extends State<MangaPage> {
       _currentPage = 1;
       _mangaList.clear();
     });
-    
+
     final results = await Future.wait([
-      _searchQuery.isEmpty 
-          ? _mangaService.getManga(page: _currentPage, tag: _selectedGenre == 'All' ? null : _selectedGenre)
+      _searchQuery.isEmpty
+          ? _mangaService.getManga(
+              page: _currentPage,
+              tag: _selectedGenre == 'All' ? null : _selectedGenre,
+            )
           : _mangaService.searchManga(_searchQuery, page: _currentPage),
       _mangaService.getReadingHistory(),
     ]);
@@ -141,7 +146,7 @@ class _MangaPageState extends State<MangaPage> {
         _mangaList = results[0] as List<Manga>;
         _readingHistory = results[1] as List<Map<String, dynamic>>;
         _isLoading = false;
-        
+
         _cachedMangaList = _mangaList;
         _cachedReadingHistory = _readingHistory;
         _cachedCurrentPage = _currentPage;
@@ -153,23 +158,26 @@ class _MangaPageState extends State<MangaPage> {
 
   Future<void> _loadMore() async {
     setState(() => _isLoadingMore = true);
-    
+
     _currentPage++;
-    final newManga = _searchQuery.isEmpty 
-        ? await _mangaService.getManga(page: _currentPage, tag: _selectedGenre == 'All' ? null : _selectedGenre)
+    final newManga = _searchQuery.isEmpty
+        ? await _mangaService.getManga(
+            page: _currentPage,
+            tag: _selectedGenre == 'All' ? null : _selectedGenre,
+          )
         : await _mangaService.searchManga(_searchQuery, page: _currentPage);
-        
+
     if (mounted) {
       setState(() {
         _mangaList.addAll(newManga);
         _isLoadingMore = false;
-        
+
         _cachedMangaList = _mangaList;
         _cachedCurrentPage = _currentPage;
       });
     }
   }
-  
+
   void _onSearchChanged(String query) {
     if (_searchQuery == query) return;
     _searchQuery = query;
@@ -193,16 +201,19 @@ class _MangaPageState extends State<MangaPage> {
     final manga = Manga.fromJson(mangaJson);
     final chapterIndex = historyEntry['chapterIndex'] as int;
     final pageIndex = historyEntry['pageIndex'] as int;
-    final chaptersList = (historyEntry['chapters'] as List).map((c) => MangaChapter.fromJson(c)).toList();
+    final chaptersList = (historyEntry['chapters'] as List)
+        .map((c) => MangaChapter.fromJson(c))
+        .toList();
 
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => MangaReaderPage(
-          manga: manga,
-          chapters: chaptersList,
-          currentChapterIndex: chapterIndex,
-          resumePageIndex: pageIndex,
-        ),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            MangaReaderPage(
+              manga: manga,
+              chapters: chaptersList,
+              currentChapterIndex: chapterIndex,
+              resumePageIndex: pageIndex,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -218,15 +229,22 @@ class _MangaPageState extends State<MangaPage> {
 
   void _showMangaCustomizer(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
 
     showDialog(
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: DizzyVoid.surface1,
+          backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+            side: BorderSide(
+              color: isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.12),
+            ),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
@@ -238,30 +256,47 @@ class _MangaPageState extends State<MangaPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.tune_rounded, color: palette.primaryColor, size: 20),
+                      Icon(
+                        Icons.tune_rounded,
+                        color: palette.primaryColor,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'Customize Manga Section',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ink,
                           fontSize: 16.5,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                        tooltip: 'Close',
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: inkSoft,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
+                  Divider(
+                    color: isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
                   const SizedBox(height: 12),
 
-                  const Text(
+                  Text(
                     'Poster Card Density',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ValueListenableBuilder<MangaCardDensity>(
@@ -275,17 +310,29 @@ class _MangaPageState extends State<MangaPage> {
                           return ChoiceChip(
                             label: Text(d.label),
                             selected: isSelected,
-                            selectedColor: palette.primaryColor.withValues(alpha: 0.25),
-                            backgroundColor: DizzyVoid.voidB,
+                            selectedColor: palette.primaryColor.withValues(
+                              alpha: 0.25,
+                            ),
+                            backgroundColor: isLight
+                                ? PrismLight.raised
+                                : PrismDark.raised,
                             labelStyle: TextStyle(
-                              color: isSelected ? palette.primaryColor : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected
+                                  ? (isLight
+                                        ? PrismAccent.text(true)
+                                        : palette.primaryColor)
+                                  : inkSoft,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             side: BorderSide(
                               color: isSelected
                                   ? palette.primaryColor.withValues(alpha: 0.6)
-                                  : Colors.white.withValues(alpha: 0.08),
+                                  : (isLight
+                                        ? PrismLight.borderSubtle
+                                        : Colors.white.withValues(alpha: 0.08)),
                             ),
                             onSelected: (selected) {
                               if (selected) MangaSettings.setCardDensity(d);
@@ -303,10 +350,14 @@ class _MangaPageState extends State<MangaPage> {
                     builder: (context, enabled, _) {
                       return SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Moving Ambient Background Glow', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                        title: Text(
+                          'Moving Ambient Background Glow',
+                          style: TextStyle(color: ink, fontSize: 13.5),
+                        ),
                         value: enabled,
                         activeColor: palette.primaryColor,
-                        onChanged: (val) => MangaSettings.setEnableAmbientLights(val),
+                        onChanged: (val) =>
+                            MangaSettings.setEnableAmbientLights(val),
                       );
                     },
                   ),
@@ -316,10 +367,14 @@ class _MangaPageState extends State<MangaPage> {
                     builder: (context, show, _) {
                       return SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Show "Continue Reading" Slider', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                        title: Text(
+                          'Show "Continue Reading" Slider',
+                          style: TextStyle(color: ink, fontSize: 13.5),
+                        ),
                         value: show,
                         activeColor: palette.primaryColor,
-                        onChanged: (val) => MangaSettings.setShowContinueReading(val),
+                        onChanged: (val) =>
+                            MangaSettings.setShowContinueReading(val),
                       );
                     },
                   ),
@@ -329,35 +384,59 @@ class _MangaPageState extends State<MangaPage> {
                     builder: (context, show, _) {
                       return SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Show Content Type Badge on Posters', style: TextStyle(color: Colors.white, fontSize: 13.5)),
+                        title: Text(
+                          'Show Content Type Badge on Posters',
+                          style: TextStyle(color: ink, fontSize: 13.5),
+                        ),
                         value: show,
                         activeColor: palette.primaryColor,
-                        onChanged: (val) => MangaSettings.setShowContentTypeBadge(val),
+                        onChanged: (val) =>
+                            MangaSettings.setShowContentTypeBadge(val),
                       );
                     },
                   ),
 
                   const SizedBox(height: 12),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
+                  Divider(
+                    color: isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
                   const SizedBox(height: 12),
 
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: palette.primaryColor.withValues(alpha: 0.15),
-                        foregroundColor: palette.primaryColor,
-                        side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.4)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: palette.primaryColor.withValues(
+                          alpha: 0.15,
+                        ),
+                        foregroundColor: isLight
+                            ? PrismAccent.text(true)
+                            : palette.primaryColor,
+                        side: BorderSide(
+                          color: palette.primaryColor.withValues(alpha: 0.4),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       icon: const Icon(Icons.settings_rounded, size: 18),
-                      label: const Text('More Appearance & Reader Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      label: const Text(
+                        'More Appearance & Reader Settings',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const MangaSettingsPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const MangaSettingsPage(),
+                          ),
                         );
                       },
                     ),
@@ -378,64 +457,62 @@ class _MangaPageState extends State<MangaPage> {
     final ambientEnabled = MangaSettings.enableAmbientLights.value;
     final showScrollTrack = MangaSettings.showScrollTrack.value;
 
-    return GuideTrigger(
-      guideKey: 'manga',
-      steps: AppGuides.manga,
-      child: Scaffold(
-        backgroundColor: DizzyVoid.voidA,
-        body: Stack(
-          children: [
-            // ── Moving Ambient Background ──
-            if (ambientEnabled)
-              const Positioned.fill(child: AnimatedAmbientBackground())
-            else
-              Positioned.fill(
-                child: Container(color: palette.scaffoldBackgroundColor),
-              ),
-
-            LiquidGlassView(
-              pixelRatio: 0.25,
-              refreshRate: LiquidGlassRefreshRate.low,
-              backgroundWidget: _buildScrollableContent(),
-              child: Stack(
-                children: [
-                  // Top App Bar / Search / Customize
-                  _buildAppBar(),
-                
-                  // Custom Scroll Track (Desktop only)
-                  if (_screenWidth > 800 && showScrollTrack)
-                    Positioned(
-                      right: 24,
-                      bottom: 40,
-                      child: CustomScrollTrack(controller: _scrollController),
-                    ),
-
-                  // ── Bottom Liquid Dock Navbar ──
-                  Positioned(
-                    bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
-                    left: 0,
-                    right: 0,
-                    child: const Center(
-                      child: AppLiquidDock(currentDestination: DockItemKey.manga),
-                    ),
-                  ),
-                ],
-              ),
+    return Scaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // ── Moving Ambient Background ──
+          if (ambientEnabled)
+            const Positioned.fill(child: AnimatedAmbientBackground())
+          else
+            Positioned.fill(
+              child: Container(color: palette.scaffoldBackgroundColor),
             ),
-          ],
-        ),
+
+          LiquidGlassView(
+            pixelRatio: 0.25,
+            refreshRate: LiquidGlassRefreshRate.low,
+            backgroundWidget: _buildScrollableContent(),
+            child: Stack(
+              children: [
+                // Top App Bar / Search / Customize
+                _buildAppBar(),
+
+                // Custom Scroll Track (Desktop only)
+                if (_screenWidth > 800 && showScrollTrack)
+                  Positioned(
+                    right: 24,
+                    bottom: 40,
+                    child: CustomScrollTrack(controller: _scrollController),
+                  ),
+
+                // ── Bottom Liquid Dock Navbar ──
+                Positioned(
+                  bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
+                  left: 0,
+                  right: 0,
+                  child: const Center(
+                    child: PrismDock(currentDestination: DockItemKey.manga),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildScrollableContent() {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     final density = MangaSettings.cardDensity.value;
     final sizing = MangaCardSizing.fromWidth(_screenWidth, density: density);
     final showContinue = MangaSettings.showContinueReading.value;
     final isMobile = _screenWidth < 600;
     final topInset = MediaQuery.paddingOf(context).top;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return CustomScrollView(
       controller: _scrollController,
@@ -444,9 +521,11 @@ class _MangaPageState extends State<MangaPage> {
         SliverToBoxAdapter(
           child: SizedBox(height: 76.0 + topInset), // Spacer for top app bar
         ),
-        
+
         // ── Continue Reading ──
-        if (showContinue && _readingHistory.isNotEmpty && _searchQuery.isEmpty) ...[
+        if (showContinue &&
+            _readingHistory.isNotEmpty &&
+            _searchQuery.isEmpty) ...[
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -456,7 +535,7 @@ class _MangaPageState extends State<MangaPage> {
               child: Text(
                 'Continue Reading',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: ink,
                   fontSize: isMobile ? 22 : 28,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
@@ -473,9 +552,7 @@ class _MangaPageState extends State<MangaPage> {
               isMobile: isMobile,
             ),
           ),
-          SliverToBoxAdapter(
-            child: SizedBox(height: isMobile ? 24 : 40),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: isMobile ? 24 : 40)),
         ],
 
         // ── Discovery / Search Results & Category Dropdown ──
@@ -492,9 +569,11 @@ class _MangaPageState extends State<MangaPage> {
                       Text(
                         _searchQuery.isNotEmpty
                             ? 'Search Results'
-                            : (_selectedGenre == 'All' ? 'Discover Manga' : '$_selectedGenre Manga'),
-                        style: const TextStyle(
-                          color: Colors.white,
+                            : (_selectedGenre == 'All'
+                                  ? 'Discover Manga'
+                                  : '$_selectedGenre Manga'),
+                        style: TextStyle(
+                          color: ink,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
@@ -515,23 +594,34 @@ class _MangaPageState extends State<MangaPage> {
                                 onTap: () => _onGenreSelected('All'),
                                 borderRadius: BorderRadius.circular(12),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.06),
+                                    color: isLight
+                                        ? PrismLight.raisedTop
+                                        : Colors.white.withValues(alpha: 0.06),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.1),
+                                      color: isLight
+                                          ? PrismLight.borderSubtle
+                                          : Colors.white.withValues(alpha: 0.1),
                                     ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.close_rounded, size: 14, color: Colors.white70),
+                                      Icon(
+                                        Icons.close_rounded,
+                                        size: 14,
+                                        color: inkSoft,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Clear',
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.8),
+                                          color: ink,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -556,9 +646,11 @@ class _MangaPageState extends State<MangaPage> {
                           Text(
                             _searchQuery.isNotEmpty
                                 ? 'Search Results'
-                                : (_selectedGenre == 'All' ? 'Discover Manga' : '$_selectedGenre Manga'),
-                            style: const TextStyle(
-                              color: Colors.white,
+                                : (_selectedGenre == 'All'
+                                      ? 'Discover Manga'
+                                      : '$_selectedGenre Manga'),
+                            style: TextStyle(
+                              color: ink,
                               fontSize: 28,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.5,
@@ -570,7 +662,7 @@ class _MangaPageState extends State<MangaPage> {
                               child: Text(
                                 'Filtered by category • $_selectedGenre',
                                 style: TextStyle(
-                                  color: palette.primaryColor,
+                                  color: PrismAccent.text(isLight),
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -596,16 +688,24 @@ class _MangaPageState extends State<MangaPage> {
                                   child: Container(
                                     padding: const EdgeInsets.all(9),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.06),
+                                      color: isLight
+                                          ? PrismLight.raisedTop
+                                          : Colors.white.withValues(
+                                              alpha: 0.06,
+                                            ),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.1),
+                                        color: isLight
+                                            ? PrismLight.borderSubtle
+                                            : Colors.white.withValues(
+                                                alpha: 0.1,
+                                              ),
                                       ),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.refresh_rounded,
                                       size: 18,
-                                      color: Colors.white70,
+                                      color: inkSoft,
                                     ),
                                   ),
                                 ),
@@ -617,27 +717,30 @@ class _MangaPageState extends State<MangaPage> {
                   ),
           ),
         ),
-        
+
         if (_isLoading && _mangaList.isEmpty)
-          const SliverFillRemaining(
+          SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
+              child: CircularProgressIndicator(color: palette.primaryColor),
             ),
           )
         else if (_mangaList.isEmpty)
-          const SliverFillRemaining(
+          SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
               child: Text(
                 'No manga found',
-                style: TextStyle(color: Colors.white70, fontSize: 18),
+                style: TextStyle(color: inkSoft, fontSize: 18),
               ),
             ),
           )
         else
           SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: sizing.sidePadding, vertical: 8.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: sizing.sidePadding,
+              vertical: 8.0,
+            ),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: sizing.cardWidth + sizing.spacing * 2,
@@ -645,25 +748,25 @@ class _MangaPageState extends State<MangaPage> {
                 crossAxisSpacing: sizing.spacing,
                 mainAxisExtent: sizing.totalHeight,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return MangaCard(manga: _mangaList[index]);
-                },
-                childCount: _mangaList.length,
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return MangaCard(manga: _mangaList[index]);
+              }, childCount: _mangaList.length),
+            ),
+          ),
+
+        if (_isLoadingMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Center(
+                child: CircularProgressIndicator(color: palette.primaryColor),
               ),
             ),
           ),
-          
-        if (_isLoadingMore)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Center(child: CircularProgressIndicator(color: Colors.white)),
-            ),
-          ),
-        
+
         SliverToBoxAdapter(
-          child: SizedBox(height: 110.0 + bottomInset), // Bottom padding for dock
+          // Bottom clearance for the floating dock.
+          child: SizedBox(height: PrismLayout.dockClearance(context)),
         ),
       ],
     );
@@ -673,6 +776,18 @@ class _MangaPageState extends State<MangaPage> {
     final topInset = MediaQuery.paddingOf(context).top;
     final isMobile = _screenWidth < 600;
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight
+        ? PrismLight.inkFaint
+        : Colors.white.withValues(alpha: 0.4);
+    final glassFill = isLight
+        ? PrismLight.raisedTop.withValues(alpha: 0.75)
+        : Colors.white.withValues(alpha: 0.05);
+    final glassBorder = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.1);
 
     return Positioned(
       top: 12.0 + topInset,
@@ -687,15 +802,13 @@ class _MangaPageState extends State<MangaPage> {
               filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1.5,
-                  ),
+                  color: glassFill,
+                  border: Border.all(color: glassBorder, width: 1.5),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  tooltip: 'Back',
+                  icon: Icon(Icons.arrow_back_rounded, color: ink),
                   onPressed: () => Navigator.of(context).pop(),
                   splashRadius: 20,
                 ),
@@ -703,7 +816,7 @@ class _MangaPageState extends State<MangaPage> {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Search Bar
           Expanded(
             child: ClipRRect(
@@ -713,9 +826,11 @@ class _MangaPageState extends State<MangaPage> {
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: glassFill,
                     border: Border.all(
-                      color: _searchQuery.isNotEmpty ? palette.primaryColor : Colors.white.withValues(alpha: 0.1),
+                      color: _searchQuery.isNotEmpty
+                          ? palette.primaryColor
+                          : glassBorder,
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(24),
@@ -723,16 +838,23 @@ class _MangaPageState extends State<MangaPage> {
                   child: TextField(
                     controller: _searchController,
                     onSubmitted: _onSearchChanged,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: ink, fontSize: 16),
                     decoration: InputDecoration(
                       hintText: 'Search Manga, Manhwa, Manhua...',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                      prefixIcon: Icon(Icons.search_rounded, color: palette.primaryColor),
+                      hintStyle: TextStyle(color: inkFaint),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: PrismAccent.text(isLight),
+                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                              tooltip: 'Clear search',
+                              icon: Icon(Icons.close_rounded, color: inkSoft),
                               onPressed: () {
                                 _searchController.clear();
                                 _onSearchChanged('');
@@ -755,15 +877,12 @@ class _MangaPageState extends State<MangaPage> {
               filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1.5,
-                  ),
+                  color: glassFill,
+                  border: Border.all(color: glassBorder, width: 1.5),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.tune_rounded, color: Colors.white70),
+                  icon: Icon(Icons.tune_rounded, color: inkSoft),
                   tooltip: 'Customize Manga Section',
                   onPressed: () => _showMangaCustomizer(context),
                   splashRadius: 20,
@@ -771,7 +890,7 @@ class _MangaPageState extends State<MangaPage> {
               ),
             ),
           ),
-          
+
           // Spacer so search bar doesn't touch the right edge on wide desktop screens
           if (_screenWidth > 800) const SizedBox(width: 80),
         ],
@@ -825,7 +944,8 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
   void _updateScrollButtons() {
     if (!_scrollController.hasClients) return;
     final canLeft = _scrollController.position.pixels > 10;
-    final canRight = _scrollController.position.pixels <
+    final canRight =
+        _scrollController.position.pixels <
         _scrollController.position.maxScrollExtent - 10;
     if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
       setState(() {
@@ -919,11 +1039,14 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
     final mangaJson = entry['manga'];
     final mangaId = (mangaJson['id'] ?? '').toString();
     final title = mangaJson['title'] ?? 'Unknown';
-    final coverUrl = mangaJson['cover_normal'] ?? mangaJson['cover_small'] ?? '';
+    final coverUrl =
+        mangaJson['cover_normal'] ?? mangaJson['cover_small'] ?? '';
     final chapterIndex = entry['chapterIndex'] as int;
     final chaptersList = entry['chapters'] as List;
-    final chapterTitle = chaptersList.isNotEmpty && chapterIndex < chaptersList.length
-        ? chaptersList[chapterIndex]['name'] ?? 'Chapter ${chaptersList[chapterIndex]['number']}'
+    final chapterTitle =
+        chaptersList.isNotEmpty && chapterIndex < chaptersList.length
+        ? chaptersList[chapterIndex]['name'] ??
+              'Chapter ${chaptersList[chapterIndex]['number']}'
         : 'Resume';
 
     return GestureDetector(
@@ -931,7 +1054,9 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Container(
-          width: widget.isMobile ? math.min(320.0, widget.screenWidth * 0.82) : 380,
+          width: widget.isMobile
+              ? math.min(320.0, widget.screenWidth * 0.82)
+              : 380,
           margin: const EdgeInsets.symmetric(horizontal: 8.0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
@@ -961,10 +1086,7 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Color(0xCC000000),
-                      ],
+                      colors: [Colors.transparent, Color(0xCC000000)],
                     ),
                   ),
                 ),
@@ -981,7 +1103,9 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
                         padding: const EdgeInsets.all(12.0),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.1),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -1001,7 +1125,11 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.menu_book_rounded, color: palette.primaryColor, size: 16),
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  color: palette.primaryColor,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -1009,7 +1137,9 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.8),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       fontSize: 14,
                                     ),
                                   ),
@@ -1075,7 +1205,11 @@ class _ContinueReadingSliderState extends State<_ContinueReadingSlider> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ],

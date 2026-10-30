@@ -31,9 +31,14 @@ class Video {
     final rawStreams = json['streams'] as List<dynamic>?;
     final parsedStreams = rawStreams != null
         ? rawStreams
-            .whereType<Map>()
-            .map((s) => StreamSource.fromJson(Map<String, dynamic>.from(s), 'TorBox'))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (s) => StreamSource.fromJson(
+                  Map<String, dynamic>.from(s),
+                  'TorBox',
+                ),
+              )
+              .toList()
         : const <StreamSource>[];
 
     return Video(

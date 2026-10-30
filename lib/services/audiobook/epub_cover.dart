@@ -22,7 +22,9 @@ class EpubCover {
       Directory? targetDir;
       try {
         final appDocDir = await getApplicationDocumentsDirectory();
-        targetDir = Directory(p.join(appDocDir.path, 'Dizzy', 'AudiobookCovers'));
+        targetDir = Directory(
+          p.join(appDocDir.path, 'Dizzy', 'AudiobookCovers'),
+        );
       } catch (_) {
         final temp = await getTemporaryDirectory();
         targetDir = Directory(p.join(temp.path, 'Dizzy', 'AudiobookCovers'));

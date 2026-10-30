@@ -75,11 +75,11 @@ abstract final class LateJoinPolicy {
   /// choosing — no seek, no "catching up", just an honest "they are
   /// picking now".
   static LateJoinPlan planForIdleRoom() => const LateJoinPlan(
-        seekMs: 0,
-        play: false,
-        showCatchingUp: false,
-        title: null,
-      );
+    seekMs: 0,
+    play: false,
+    showCatchingUp: false,
+    title: null,
+  );
 
   /// The one line the guest sees. Easy English, never a number, never a
   /// code, never a word about packets.

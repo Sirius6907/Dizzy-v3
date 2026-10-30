@@ -70,7 +70,9 @@ class MusicSleepTimerService {
     // Smooth fade out over last 20 seconds
     if (secondsLeft <= 20 && secondsLeft > 0) {
       final fraction = secondsLeft / 20.0;
-      MusicPlayerController.instance.setVolume((_savedVolume * fraction).clamp(0.02, 1.0));
+      MusicPlayerController.instance.setVolume(
+        (_savedVolume * fraction).clamp(0.02, 1.0),
+      );
     }
   }
 

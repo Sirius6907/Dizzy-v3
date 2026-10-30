@@ -1,0 +1,5 @@
+# Landing page. Deploy from this directory:
+#   netlify deploy --prod --dir=. --site 1dd79969-ea19-40bb-a512-9e025f484103
+# Headers/CSP live in _headers next to this file.
+[build]
+  publish = "."

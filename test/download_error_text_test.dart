@@ -22,39 +22,62 @@ DownloadTask _task(String id, DownloadStatus status, {bool netPaused = false}) {
 void main() {
   group('DownloadErrorText.classify', () {
     test('timeout/socket → E_NET_TIMEOUT', () {
-      expect(DownloadErrorText.classify('SocketException: connection reset'),
-          equals('E_NET_TIMEOUT'));
       expect(
-          DownloadErrorText.classify(
-              'ClientException: connection timed out after 20s'),
-          equals('E_NET_TIMEOUT'));
+        DownloadErrorText.classify('SocketException: connection reset'),
+        equals('E_NET_TIMEOUT'),
+      );
+      expect(
+        DownloadErrorText.classify(
+          'ClientException: connection timed out after 20s',
+        ),
+        equals('E_NET_TIMEOUT'),
+      );
     });
     test('http codes map correctly', () {
-      expect(DownloadErrorText.classify('Server returned HTTP 403: Forbidden'),
-          equals('E_HTTP_401_403'));
-      expect(DownloadErrorText.classify('Server returned HTTP 404: Not Found'),
-          equals('E_HTTP_404_410'));
-      expect(DownloadErrorText.classify('Server returned HTTP 503: busy'),
-          equals('E_HTTP_5XX'));
-      expect(DownloadErrorText.classify('range_not_satisfiable'),
-          equals('E_HTTP_416_RANGE'));
+      expect(
+        DownloadErrorText.classify('Server returned HTTP 403: Forbidden'),
+        equals('E_HTTP_401_403'),
+      );
+      expect(
+        DownloadErrorText.classify('Server returned HTTP 404: Not Found'),
+        equals('E_HTTP_404_410'),
+      );
+      expect(
+        DownloadErrorText.classify('Server returned HTTP 503: busy'),
+        equals('E_HTTP_5XX'),
+      );
+      expect(
+        DownloadErrorText.classify('range_not_satisfiable'),
+        equals('E_HTTP_416_RANGE'),
+      );
     });
     test('space / file / engines', () {
       expect(
-          DownloadErrorText.classify('Insufficient free disk space'),
-          equals('E_SPACE_FULL'));
-      expect(DownloadErrorText.classify('Empty download URL'),
-          equals('E_FILE_GONE'));
-      expect(DownloadErrorText.classify('TorrServer could not resolve'),
-          equals('E_P2P_ENGINE'));
-      expect(DownloadErrorText.classify('Debrid cloud returned no links'),
-          equals('E_DEBRID_RESOLVE'));
-      expect(DownloadErrorText.classify('m3u8 playlist parse failed'),
-          equals('E_HLS_PARSE'));
+        DownloadErrorText.classify('Insufficient free disk space'),
+        equals('E_SPACE_FULL'),
+      );
+      expect(
+        DownloadErrorText.classify('Empty download URL'),
+        equals('E_FILE_GONE'),
+      );
+      expect(
+        DownloadErrorText.classify('TorrServer could not resolve'),
+        equals('E_P2P_ENGINE'),
+      );
+      expect(
+        DownloadErrorText.classify('Debrid cloud returned no links'),
+        equals('E_DEBRID_RESOLVE'),
+      );
+      expect(
+        DownloadErrorText.classify('m3u8 playlist parse failed'),
+        equals('E_HLS_PARSE'),
+      );
     });
     test('unknown falls back to E_UNKNOWN', () {
-      expect(DownloadErrorText.classify('weird gibberish xyz'),
-          equals('E_UNKNOWN'));
+      expect(
+        DownloadErrorText.classify('weird gibberish xyz'),
+        equals('E_UNKNOWN'),
+      );
     });
   });
 
@@ -72,7 +95,7 @@ void main() {
       '401',
       '404',
       '416',
-      'url'
+      'url',
     ];
     test('all codes produce easy lines without banned words', () {
       const codes = [
@@ -138,16 +161,22 @@ void main() {
     test('same code+screen within 24h throttles', () {
       const now = 1000000000000;
       expect(
-          AppErrorLog.shouldThrottle(
-              now - const Duration(hours: 1).inMilliseconds, now),
-          isTrue);
+        AppErrorLog.shouldThrottle(
+          now - const Duration(hours: 1).inMilliseconds,
+          now,
+        ),
+        isTrue,
+      );
     });
     test('after 24h it sends again', () {
       const now = 1000000000000;
       expect(
-          AppErrorLog.shouldThrottle(
-              now - const Duration(hours: 25).inMilliseconds, now),
-          isFalse);
+        AppErrorLog.shouldThrottle(
+          now - const Duration(hours: 25).inMilliseconds,
+          now,
+        ),
+        isFalse,
+      );
     });
   });
 }

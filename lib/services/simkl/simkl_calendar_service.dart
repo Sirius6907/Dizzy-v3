@@ -75,13 +75,13 @@ class SimklCalendarService {
   Future<List<TraktCalendarEntry>> _loadEntries() async {
     final cache = _cache;
     final at = _cachedAt;
-    if (cache != null &&
-        at != null &&
-        DateTime.now().difference(at) < _ttl) {
+    if (cache != null && at != null && DateTime.now().difference(at) < _ttl) {
       return cache;
     }
     final inFlight = _inFlight;
-    if (inFlight != null) return (await inFlight) ?? const <TraktCalendarEntry>[];
+    if (inFlight != null) {
+      return (await inFlight) ?? const <TraktCalendarEntry>[];
+    }
 
     final gen = _generation;
     final future = _fetchAndIntersect();
@@ -107,7 +107,9 @@ class SimklCalendarService {
   Future<List<TraktCalendarEntry>?> _fetchAndIntersect() async {
     try {
       final libraryImdbIds = await _fetchLibraryShowImdbIds();
-      if (libraryImdbIds == null) return null; // library fetch failed / unauthed
+      if (libraryImdbIds == null) {
+        return null; // library fetch failed / unauthed
+      }
       // Genuinely no shows in the library ⇒ nothing to intersect (authoritative
       // empty — safe to cache).
       if (libraryImdbIds.isEmpty) return const <TraktCalendarEntry>[];
@@ -115,7 +117,9 @@ class SimklCalendarService {
       final decoded = await SimklService.instance.fetchPublicOrNull(
         kSimklCalendarTvUrl,
       );
-      if (decoded is! List) return null; // CDN fetch failed (expected a JSON array)
+      if (decoded is! List) {
+        return null; // CDN fetch failed (expected a JSON array)
+      }
 
       final out = <TraktCalendarEntry>[];
       final seen = <String>{};

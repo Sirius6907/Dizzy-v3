@@ -63,15 +63,17 @@ class ReCloudExtractor {
       final cat = category.toLowerCase() == 'dub' ? 'dub' : 'sub';
       final embedUrl = '$baseUrl/embed/ani/$anilistId/$episodeNumber/$cat?k=1';
 
-      final embedRes = await _client.get(
-        Uri.parse(embedUrl),
-        headers: {
-          'User-Agent': _userAgent,
-          'Accept':
-              'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Referer': 'https://google.com/',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final embedRes = await _client
+          .get(
+            Uri.parse(embedUrl),
+            headers: {
+              'User-Agent': _userAgent,
+              'Accept':
+                  'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Referer': 'https://google.com/',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (embedRes.statusCode != 200) {
         if (kDebugMode) {
@@ -81,7 +83,9 @@ class ReCloudExtractor {
       }
 
       final html = embedRes.body;
-      final match = RegExp(r'''var\s+sourcesUrl\s*=\s*['"]([^'"]+)['"]''').firstMatch(html);
+      final match = RegExp(
+        r'''var\s+sourcesUrl\s*=\s*['"]([^'"]+)['"]''',
+      ).firstMatch(html);
       if (match == null) {
         if (kDebugMode) {
           debugPrint('[ReCloud] sourcesUrl not found in HTML');
@@ -94,18 +98,22 @@ class ReCloudExtractor {
           ? sourcesPath
           : '$baseUrl$sourcesPath';
 
-      final sourcesRes = await _client.get(
-        Uri.parse(sourcesUrl),
-        headers: {
-          'User-Agent': _userAgent,
-          'Referer': embedUrl,
-          'Accept': 'application/json, text/plain, */*',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final sourcesRes = await _client
+          .get(
+            Uri.parse(sourcesUrl),
+            headers: {
+              'User-Agent': _userAgent,
+              'Referer': embedUrl,
+              'Accept': 'application/json, text/plain, */*',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (sourcesRes.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('[ReCloud] Sources request failed: ${sourcesRes.statusCode}');
+          debugPrint(
+            '[ReCloud] Sources request failed: ${sourcesRes.statusCode}',
+          );
         }
         return null;
       }
@@ -122,7 +130,9 @@ class ReCloudExtractor {
         return null;
       }
 
-      final streamUrl = filePath.startsWith('http') ? filePath : '$baseUrl$filePath';
+      final streamUrl = filePath.startsWith('http')
+          ? filePath
+          : '$baseUrl$filePath';
 
       // Parse subtitle tracks
       final tracks = <ReCloudTrack>[];
@@ -134,12 +144,14 @@ class ReCloudExtractor {
                 ? trackFile
                 : (trackFile.isNotEmpty ? '$baseUrl$trackFile' : '');
             if (fullTrackFile.isNotEmpty) {
-              tracks.add(ReCloudTrack(
-                file: fullTrackFile,
-                label: item['label']?.toString() ?? 'Subtitles',
-                kind: item['kind']?.toString() ?? 'subtitles',
-                isDefault: item['default'] == true,
-              ));
+              tracks.add(
+                ReCloudTrack(
+                  file: fullTrackFile,
+                  label: item['label']?.toString() ?? 'Subtitles',
+                  kind: item['kind']?.toString() ?? 'subtitles',
+                  isDefault: item['default'] == true,
+                ),
+              );
             }
           }
         }

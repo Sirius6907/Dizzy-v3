@@ -62,8 +62,10 @@ void main() {
       );
       await c.start();
       c.dispose();
-      expect(out.expand((b) => b).map((s) => s.addonName),
-          contains('english-only'));
+      expect(
+        out.expand((b) => b).map((s) => s.addonName),
+        contains('english-only'),
+      );
       expect(noticed, isTrue);
     } finally {
       DubModeService.mode.value = AudioDubMode.english;

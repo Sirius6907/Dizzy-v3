@@ -18,12 +18,12 @@ import '../net/dizzy_net.dart';
 
 class BSAutocompleteHit {
   final int id;
-  final String slug;          // "145-sinister"
-  final String label;         // "Sinister (2012)"
-  final String title;         // "Sinister"
+  final String slug; // "145-sinister"
+  final String label; // "Sinister (2012)"
+  final String title; // "Sinister"
   final int? year;
-  final bool isTv;            // serial == "1"
-  final String url;           // "/movies/145-sinister"
+  final bool isTv; // serial == "1"
+  final String url; // "/movies/145-sinister"
 
   const BSAutocompleteHit({
     required this.id,
@@ -41,9 +41,9 @@ class BSItem {
   final String slug;
   final String title;
   final int? year;
-  final double? rating;       // 0..10
-  final String? voteCount;    // "67K"
-  final String thumbUrl;      // bestsimilar absolute URL
+  final double? rating; // 0..10
+  final String? voteCount; // "67K"
+  final String thumbUrl; // bestsimilar absolute URL
   final int? similarityPercent;
   final String? genre;
   final String? country;
@@ -59,13 +59,22 @@ class BSItem {
   String? tmdbPosterUrl;
   String? tmdbBackdropUrl;
   int? tmdbId;
-  String? tmdbMediaType;      // 'movie' | 'tv'
+  String? tmdbMediaType; // 'movie' | 'tv'
 
   bool get isTv {
     if (tmdbMediaType == 'tv') return true;
-    if (slug.contains('serial') || slug.contains('tv-series') || slug.contains('series')) return true;
+    if (slug.contains('serial') ||
+        slug.contains('tv-series') ||
+        slug.contains('series')) {
+      return true;
+    }
     final dur = (duration ?? '').toLowerCase();
-    if (dur.contains('eps') || dur.contains('episode') || dur.contains('serial') || dur.contains('season')) return true;
+    if (dur.contains('eps') ||
+        dur.contains('episode') ||
+        dur.contains('serial') ||
+        dur.contains('season')) {
+      return true;
+    }
     return false;
   }
 
@@ -89,8 +98,7 @@ class BSItem {
     required this.placeTags,
   });
 
-  String get displayTitle =>
-      year != null ? '$title ($year)' : title;
+  String get displayTitle => year != null ? '$title ($year)' : title;
 }
 
 class BSDetails {
@@ -110,7 +118,7 @@ class BSDetails {
   final List<String> audienceTags;
   final List<String> timeTags;
   final List<String> placeTags;
-  final String? blurb;        // "If you like X you are looking for ..."
+  final String? blurb; // "If you like X you are looking for ..."
   final List<BSItem> similar;
 
   const BSDetails({
@@ -153,14 +161,20 @@ class BestSimilarScraper {
     if (cached != null) return cached;
 
     final uri = Uri.parse(
-        '$baseUrl/site/autocomplete?term=${Uri.encodeQueryComponent(q)}');
+      '$baseUrl/site/autocomplete?term=${Uri.encodeQueryComponent(q)}',
+    );
     try {
-      final res = await DizzyNet.instance.get(uri, headers: {
-        'User-Agent': _ua,
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': '$baseUrl/',
-      }).timeout(const Duration(seconds: 8));
+      final res = await DizzyNet.instance
+          .get(
+            uri,
+            headers: {
+              'User-Agent': _ua,
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Referer': '$baseUrl/',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return const [];
       final data = jsonDecode(res.body);
       if (data is! Map) return const [];
@@ -176,18 +190,22 @@ class BestSimilarScraper {
         if (id == null || url.isEmpty || label.isEmpty) continue;
         final isTv = '${m['serial']}' == '1';
         final yearMatch = RegExp(r'\((\d{4})\)\s*$').firstMatch(label);
-        final year = yearMatch != null ? int.tryParse(yearMatch.group(1)!) : null;
+        final year = yearMatch != null
+            ? int.tryParse(yearMatch.group(1)!)
+            : null;
         final title = label.replaceAll(RegExp(r'\s*\(\d{4}\)\s*$'), '').trim();
         final slug = url.replaceFirst('/movies/', '');
-        out.add(BSAutocompleteHit(
-          id: id,
-          slug: slug,
-          label: label,
-          title: title,
-          year: year,
-          isTv: isTv,
-          url: url,
-        ));
+        out.add(
+          BSAutocompleteHit(
+            id: id,
+            slug: slug,
+            label: label,
+            title: title,
+            year: year,
+            isTv: isTv,
+            url: url,
+          ),
+        );
       }
       _autocompleteCache[q.toLowerCase()] = out;
       if (_autocompleteCache.length > 80) {
@@ -224,14 +242,31 @@ class BestSimilarScraper {
       }
     }
 
-    // Try each query and collect all hits
+    // Query variants: at most 2 in flight, and the first variant that comes
+    // back with hits ends the fan-out (the rest cannot change the answer).
     final allHits = <int, BSAutocompleteHit>{};
-    for (final term in terms) {
-      final hits = await autocomplete(term);
-      for (final h in hits) {
-        allHits[h.id] = h;
+    final pendingTerms = List<String>.from(terms);
+    var done = false;
+
+    Future<void> worker() async {
+      while (!done && pendingTerms.isNotEmpty) {
+        final term = pendingTerms.removeAt(0);
+        final hits = await autocomplete(term);
+        if (hits.isEmpty) continue;
+        for (final h in hits) {
+          allHits[h.id] = h;
+        }
+        done = true;
       }
     }
+
+    const maxConcurrentTerms = 2;
+    await Future.wait(
+      List.generate(
+        terms.length < maxConcurrentTerms ? terms.length : maxConcurrentTerms,
+        (_) => worker(),
+      ),
+    );
 
     if (allHits.isEmpty) return null;
 
@@ -240,17 +275,24 @@ class BestSimilarScraper {
     var bestScore = -999.0;
 
     final normTarget = _normalizeTitle(title);
-    final targetWords = normTarget.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toSet();
+    final targetWords = normTarget
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toSet();
 
     for (final h in allHits.values) {
       var score = 0.0;
       final normHit = _normalizeTitle(h.title);
-      final hitWords = normHit.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toSet();
+      final hitWords = normHit
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .toSet();
 
       // 1. Title match
       if (normHit == normTarget) {
         score += 8.0;
-      } else if (normTarget.startsWith(normHit) || normHit.startsWith(normTarget)) {
+      } else if (normTarget.startsWith(normHit) ||
+          normHit.startsWith(normTarget)) {
         score += 4.0;
       } else {
         // Word overlap
@@ -313,20 +355,24 @@ class BestSimilarScraper {
     if (cached != null) return cached;
     final uri = Uri.parse('$baseUrl/movies/$slug');
     try {
-      final res = await DizzyNet.instance.get(uri, headers: {
-        'User-Agent': _ua,
-        'Accept': 'text/html,application/xhtml+xml',
-        'Referer': '$baseUrl/',
-      }).timeout(const Duration(seconds: 15));
+      final res = await DizzyNet.instance
+          .get(
+            uri,
+            headers: {
+              'User-Agent': _ua,
+              'Accept': 'text/html,application/xhtml+xml',
+              'Referer': '$baseUrl/',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
       if (res.statusCode != 200) {
         debugPrint('[BestSimilar] details HTTP ${res.statusCode} for $slug');
         return null;
       }
-      final parsed = await compute(_parseDetailsHtml, _ParseInput(
-        id: id,
-        slug: slug,
-        html: res.body,
-      ));
+      final parsed = await compute(
+        _parseDetailsHtml,
+        _ParseInput(id: id, slug: slug, html: res.body),
+      );
       if (parsed != null) _detailsCache[id] = parsed;
       if (_detailsCache.length > 30) {
         _detailsCache.remove(_detailsCache.keys.first);
@@ -355,9 +401,10 @@ BSDetails? _parseDetailsHtml(_ParseInput input) {
     int? year;
     if (h1 != null) {
       final raw = h1.text.trim();
-      final m = RegExp(r'^Movies?\s+(?:Like|Similar to)\s+(.+)$',
-              caseSensitive: false)
-          .firstMatch(raw);
+      final m = RegExp(
+        r'^Movies?\s+(?:Like|Similar to)\s+(.+)$',
+        caseSensitive: false,
+      ).firstMatch(raw);
       title = (m?.group(1) ?? raw).trim();
     }
     // Try to grab the year from page <title>.
@@ -366,8 +413,7 @@ BSDetails? _parseDetailsHtml(_ParseInput input) {
     if (ym != null) year = int.tryParse(ym.group(1)!);
 
     // Hero info block — body of "Discover more" before the items.
-    final infoBlock =
-        doc.querySelector('.h-desc')?.text.trim();
+    final infoBlock = doc.querySelector('.h-desc')?.text.trim();
 
     // Hero attrs (Genre/Country/Duration/Story/Style/...) appear inside the
     // sidebar / top "lb-row" before the recommendation list. Easier:
@@ -398,11 +444,11 @@ BSDetails? _parseDetailsHtml(_ParseInput input) {
     final heroImg = doc
         .querySelectorAll('img')
         .firstWhere(
-            (e) =>
-                (e.attributes['src'] ?? '')
-                    .contains('/img/movie/thumb/') &&
-                (e.attributes['src'] ?? '').contains('${input.id}.jpg'),
-            orElse: () => doc.createElement('img'));
+          (e) =>
+              (e.attributes['src'] ?? '').contains('/img/movie/thumb/') &&
+              (e.attributes['src'] ?? '').contains('${input.id}.jpg'),
+          orElse: () => doc.createElement('img'),
+        );
     final heroSrc = heroImg.attributes['src'] ?? '';
     final heroThumb = heroSrc.startsWith('http')
         ? heroSrc
@@ -435,7 +481,9 @@ BSDetails? _parseDetailsHtml(_ParseInput input) {
         final label = nameAnchor.text.trim();
         final ymItem = RegExp(r'\((\d{4})\)\s*$').firstMatch(label);
         final itemYear = ymItem != null ? int.tryParse(ymItem.group(1)!) : null;
-        final itemTitle = label.replaceAll(RegExp(r'\s*\(\d{4}\)\s*$'), '').trim();
+        final itemTitle = label
+            .replaceAll(RegExp(r'\s*\(\d{4}\)\s*$'), '')
+            .trim();
 
         final ratingTxt = node.querySelector('.rat-rating')?.text ?? '';
         final voteTxt = node.querySelector('.rat-vote')?.text ?? '';
@@ -464,27 +512,30 @@ BSDetails? _parseDetailsHtml(_ParseInput input) {
           }
         }
 
-        items.add(BSItem(
-          id: dataId,
-          slug: slug,
-          title: itemTitle,
-          year: itemYear,
-          rating: double.tryParse(_textNumber(ratingTxt)),
-          voteCount: voteTxt.trim().replaceAll(RegExp(r'[^A-Z0-9.,]'), '').isEmpty
-              ? null
-              : voteTxt.trim().replaceAll(RegExp(r'[^A-Z0-9.,]'), ''),
-          thumbUrl: thumb,
-          similarityPercent: simPct,
-          genre: attrMap['genre'],
-          country: attrMap['country'],
-          duration: attrMap['duration'],
-          story: attrMap['story'],
-          styleTags: tagMap['style'] ?? const [],
-          plotTags: tagMap['plot'] ?? const [],
-          audienceTags: tagMap['audience'] ?? const [],
-          timeTags: tagMap['time'] ?? const [],
-          placeTags: tagMap['place'] ?? const [],
-        ));
+        items.add(
+          BSItem(
+            id: dataId,
+            slug: slug,
+            title: itemTitle,
+            year: itemYear,
+            rating: double.tryParse(_textNumber(ratingTxt)),
+            voteCount:
+                voteTxt.trim().replaceAll(RegExp(r'[^A-Z0-9.,]'), '').isEmpty
+                ? null
+                : voteTxt.trim().replaceAll(RegExp(r'[^A-Z0-9.,]'), ''),
+            thumbUrl: thumb,
+            similarityPercent: simPct,
+            genre: attrMap['genre'],
+            country: attrMap['country'],
+            duration: attrMap['duration'],
+            story: attrMap['story'],
+            styleTags: tagMap['style'] ?? const [],
+            plotTags: tagMap['plot'] ?? const [],
+            audienceTags: tagMap['audience'] ?? const [],
+            timeTags: tagMap['time'] ?? const [],
+            placeTags: tagMap['place'] ?? const [],
+          ),
+        );
       }
     }
 

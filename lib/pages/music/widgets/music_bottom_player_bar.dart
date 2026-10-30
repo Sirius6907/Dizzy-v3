@@ -47,7 +47,12 @@ class MusicBottomPlayerBar extends StatelessWidget {
     );
   }
 
-  Widget _buildPresetContainer(MusicMiniPlayerPreset preset, AppThemePalette palette, bool isMobile, MusicTrack track) {
+  Widget _buildPresetContainer(
+    MusicMiniPlayerPreset preset,
+    AppThemePalette palette,
+    bool isMobile,
+    MusicTrack track,
+  ) {
     if (preset == MusicMiniPlayerPreset.compactPill) {
       return Container(
         height: 56,
@@ -55,7 +60,10 @@ class MusicBottomPlayerBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: DizzyVoid.surface1.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.2),
+          border: Border.all(
+            color: palette.primaryColor.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: palette.primaryColor.withValues(alpha: 0.25),
@@ -89,7 +97,10 @@ class MusicBottomPlayerBar extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: palette.primaryColor.withValues(alpha: 0.5), width: 1.2),
+          border: Border.all(
+            color: palette.primaryColor.withValues(alpha: 0.5),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: palette.primaryColor.withValues(alpha: 0.3),
@@ -122,7 +133,9 @@ class MusicBottomPlayerBar extends StatelessWidget {
           children: [
             _buildArtwork(track, size: 34, radius: 6),
             const SizedBox(width: 10),
-            Expanded(child: _buildTrackInfo(track, isMobile, palette, compact: true)),
+            Expanded(
+              child: _buildTrackInfo(track, isMobile, palette, compact: true),
+            ),
             _buildControls(isMobile, palette, mini: true),
           ],
         ),
@@ -137,7 +150,10 @@ class MusicBottomPlayerBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: DizzyVoid.surface1.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: palette.primaryColor.withValues(alpha: 0.4), width: 1.2),
+          border: Border.all(
+            color: palette.primaryColor.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: palette.primaryColor.withValues(alpha: 0.25),
@@ -158,7 +174,9 @@ class MusicBottomPlayerBar extends StatelessWidget {
                   ],
                 );
               case 'trackInfo':
-                return Expanded(child: _buildTrackInfo(track, isMobile, palette));
+                return Expanded(
+                  child: _buildTrackInfo(track, isMobile, palette),
+                );
               case 'mainControls':
                 return _buildControls(isMobile, palette);
               case 'extraActions':
@@ -168,8 +186,12 @@ class MusicBottomPlayerBar extends StatelessWidget {
                         children: [
                           IconButton(
                             icon: Icon(
-                              isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                              color: isSaved ? const Color(0xFFFF4B72) : Colors.white60,
+                              isSaved
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: isSaved
+                                  ? const Color(0xFFFF4B72)
+                                  : Colors.white60,
                               size: 20,
                             ),
                             onPressed: onToggleSave,
@@ -192,7 +214,10 @@ class MusicBottomPlayerBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: DizzyVoid.surface1.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.primaryColor.withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(
+          color: palette.primaryColor.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.6),
@@ -216,7 +241,11 @@ class MusicBottomPlayerBar extends StatelessWidget {
     );
   }
 
-  Widget _buildArtwork(MusicTrack track, {required double size, required double radius}) {
+  Widget _buildArtwork(
+    MusicTrack track, {
+    required double size,
+    required double radius,
+  }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: CachedNetworkImage(
@@ -231,13 +260,22 @@ class MusicBottomPlayerBar extends StatelessWidget {
           width: size,
           height: size,
           color: DizzyVoid.surface2,
-          child: const Icon(Icons.music_note_rounded, color: Colors.white54, size: 20),
+          child: const Icon(
+            Icons.music_note_rounded,
+            color: Colors.white54,
+            size: 20,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTrackInfo(MusicTrack track, bool isMobile, AppThemePalette palette, {bool compact = false}) {
+  Widget _buildTrackInfo(
+    MusicTrack track,
+    bool isMobile,
+    AppThemePalette palette, {
+    bool compact = false,
+  }) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +314,11 @@ class MusicBottomPlayerBar extends StatelessWidget {
     );
   }
 
-  Widget _buildControls(bool isMobile, AppThemePalette palette, {bool mini = false}) {
+  Widget _buildControls(
+    bool isMobile,
+    AppThemePalette palette, {
+    bool mini = false,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -290,7 +332,11 @@ class MusicBottomPlayerBar extends StatelessWidget {
             onPressed: onToggleSave,
           ),
           IconButton(
-            icon: const Icon(Icons.format_quote_rounded, color: Colors.white60, size: 20),
+            icon: const Icon(
+              Icons.format_quote_rounded,
+              color: Colors.white60,
+              size: 20,
+            ),
             onPressed: onLyricsTap,
           ),
           IconButton(
@@ -305,7 +351,11 @@ class MusicBottomPlayerBar extends StatelessWidget {
         ),
         if (!isMobile)
           IconButton(
-            icon: const Icon(Icons.queue_music_rounded, color: Colors.white60, size: 20),
+            icon: const Icon(
+              Icons.queue_music_rounded,
+              color: Colors.white60,
+              size: 20,
+            ),
             onPressed: onQueueTap,
           ),
       ],
@@ -334,7 +384,11 @@ class MusicBottomPlayerBar extends StatelessWidget {
     );
   }
 
-  Widget _buildPlayButtonIcon(MusicPlayButtonStyle style, AppThemePalette palette, bool mini) {
+  Widget _buildPlayButtonIcon(
+    MusicPlayButtonStyle style,
+    AppThemePalette palette,
+    bool mini,
+  ) {
     final isPlaying = playerController.isPlaying;
     final icon = isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded;
     final size = mini ? 32.0 : 40.0;
@@ -347,7 +401,10 @@ class MusicBottomPlayerBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: palette.primaryColor.withValues(alpha: 0.25),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.2),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: palette.primaryColor.withValues(alpha: 0.4),
@@ -365,9 +422,14 @@ class MusicBottomPlayerBar extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(mini ? 8 : 12),
-          gradient: LinearGradient(colors: [palette.primaryColor, palette.accentColor]),
+          gradient: LinearGradient(
+            colors: [palette.primaryColor, palette.accentColor],
+          ),
           boxShadow: [
-            BoxShadow(color: palette.primaryColor.withValues(alpha: 0.5), blurRadius: 12),
+            BoxShadow(
+              color: palette.primaryColor.withValues(alpha: 0.5),
+              blurRadius: 12,
+            ),
           ],
         ),
         child: Icon(icon, color: Colors.white, size: iconSize),
@@ -380,13 +442,17 @@ class MusicBottomPlayerBar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [palette.primaryColor, palette.accentColor]),
+        gradient: LinearGradient(
+          colors: [palette.primaryColor, palette.accentColor],
+        ),
         boxShadow: [
-          BoxShadow(color: palette.primaryColor.withValues(alpha: 0.55), blurRadius: 14),
+          BoxShadow(
+            color: palette.primaryColor.withValues(alpha: 0.55),
+            blurRadius: 14,
+          ),
         ],
       ),
       child: Icon(icon, color: Colors.white, size: iconSize),
     );
   }
 }
-

@@ -6,6 +6,7 @@ import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
 import '../../errors/app_log.dart';
+import '../../config/env_service.dart';
 
 /// Pure-Dart XPass Stream Scraper.
 ///
@@ -19,12 +20,18 @@ class XPassScraper extends StreamScraper {
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-  static const _headers = {
+  /// Rotating service cookie — supplied at build time / `.env` only.
+  static const _compileAuthToken = String.fromEnvironment('XPASS_AUTH_TOKEN');
+  static String get _authToken => _compileAuthToken.isNotEmpty
+      ? _compileAuthToken
+      : EnvService.get('XPASS_AUTH_TOKEN');
+
+  static Map<String, String> get _headers => {
     'Accept': '*/*',
     'User-Agent': _ua,
     'Origin': _base,
     'Referer': '$_base/',
-    'Cookie': 'auth_token=de21073d24bca9b50f189b402ac870734cf945f2085cb7e1a4fc453fcfe4f57e',
+    if (_authToken.isNotEmpty) 'Cookie': 'auth_token=$_authToken',
   };
 
   @override
@@ -36,6 +43,8 @@ class XPassScraper extends StreamScraper {
     int? episode,
     String? imdbId,
   }) async* {
+    // Upstream 403s anonymous requests; without the cookie this is dead weight.
+    if (_authToken.isEmpty) return;
     final isTv = (type == 'tv' || type == 'series');
     final mediaType = isTv ? 'tv' : 'movie';
 
@@ -48,28 +57,29 @@ class XPassScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[XPassScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[XPassScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
       final client = http.Client();
       try {
-        final refererUrl = '$_base/e/${isTv ? 'tv' : 'movie'}/$tmdbId?autostart=true';
-        final reqHeaders = {
-          ..._headers,
-          'Referer': refererUrl,
-        };
+        final refererUrl =
+            '$_base/e/${isTv ? 'tv' : 'movie'}/$tmdbId?autostart=true';
+        final reqHeaders = {..._headers, 'Referer': refererUrl};
 
         dynamic sources;
 
         if (!isTv) {
-          final res = await client.get(
-            Uri.parse(refererUrl),
-            headers: reqHeaders,
-          ).timeout(const Duration(seconds: 8));
+          final res = await client
+              .get(Uri.parse(refererUrl), headers: reqHeaders)
+              .timeout(const Duration(seconds: 8));
 
           if (res.statusCode == 200) {
-            final match = RegExp(r'''var backups=(\[[\s\S]*?\])''').firstMatch(res.body);
+            final match = RegExp(
+              r'''var backups=(\[[\s\S]*?\])''',
+            ).firstMatch(res.body);
             if (match != null && match.group(1) != null) {
               try {
                 sources = jsonDecode(match.group(1)!);
@@ -77,10 +87,14 @@ class XPassScraper extends StreamScraper {
             }
           }
         } else {
-          final res = await client.get(
-            Uri.parse('$_base/data/tv/$tmdbId/${season ?? 1}/${episode ?? 1}?autostart=true&force=true'),
-            headers: reqHeaders,
-          ).timeout(const Duration(seconds: 8));
+          final res = await client
+              .get(
+                Uri.parse(
+                  '$_base/data/tv/$tmdbId/${season ?? 1}/${episode ?? 1}?autostart=true&force=true',
+                ),
+                headers: reqHeaders,
+              )
+              .timeout(const Duration(seconds: 8));
 
           if (res.statusCode == 200) {
             try {
@@ -97,14 +111,15 @@ class XPassScraper extends StreamScraper {
           final sName = src['name']?.toString() ?? 'Server';
 
           try {
-            final mRes = await client.get(
-              Uri.parse('$_base$sUrl'),
-              headers: reqHeaders,
-            ).timeout(const Duration(seconds: 6));
+            final mRes = await client
+                .get(Uri.parse('$_base$sUrl'), headers: reqHeaders)
+                .timeout(const Duration(seconds: 6));
 
             if (mRes.statusCode == 200) {
               final mdata = jsonDecode(mRes.body);
-              if (mdata is Map && mdata['playlist'] is List && (mdata['playlist'] as List).isNotEmpty) {
+              if (mdata is Map &&
+                  mdata['playlist'] is List &&
+                  (mdata['playlist'] as List).isNotEmpty) {
                 final pl0 = mdata['playlist'][0];
                 if (pl0 is Map && pl0['sources'] is List) {
                   final list = pl0['sources'] as List;
@@ -115,11 +130,16 @@ class XPassScraper extends StreamScraper {
                       break;
                     }
                   }
-                  target ??= list.firstWhere((item) => item is Map, orElse: () => null);
+                  target ??= list.firstWhere(
+                    (item) => item is Map,
+                    orElse: () => null,
+                  );
 
                   if (target != null && target['file'] != null) {
                     final streamUrl = target['file'].toString();
-                    final isHls = (target['type'] == 'hls' || streamUrl.contains('.m3u8'));
+                    final isHls =
+                        (target['type'] == 'hls' ||
+                        streamUrl.contains('.m3u8'));
 
                     yield StreamSource(
                       name: 'XPass',

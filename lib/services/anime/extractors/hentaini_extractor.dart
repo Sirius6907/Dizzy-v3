@@ -8,7 +8,11 @@ class HentainiResult {
   final String url;
   final String referer;
   final String origin;
-  HentainiResult({required this.url, required this.referer, required this.origin});
+  HentainiResult({
+    required this.url,
+    required this.referer,
+    required this.origin,
+  });
 }
 
 class _HSeries {
@@ -27,21 +31,72 @@ class HentainiExtractor {
       '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
   static const _stopwords = <String>{
-    'a', 'an', 'the', 'of', 'and', 'or', 'to', 'in', 'on', 'at',
-    'for', 'with', 'by', 'from', 'is', 'it',
-    'no', 'wa', 'ga', 'ni', 'o', 'wo', 'de', 'mo', 'ka', 'ya',
-    'na', 'e', 'he', 'te', 'ne',
-    'animation', 'anime', 'motion', 'ova', 'ona', 'tv', 'special',
-    'version', 'edition', 'dubbed', 'subbed', 'sub', 'dub',
-    'uncensored', 'censored', 'episode', 'ep', 'season',
-    'side', 'part', 'arc', 'chapter', 'vol', 'volume',
+    'a',
+    'an',
+    'the',
+    'of',
+    'and',
+    'or',
+    'to',
+    'in',
+    'on',
+    'at',
+    'for',
+    'with',
+    'by',
+    'from',
+    'is',
+    'it',
+    'no',
+    'wa',
+    'ga',
+    'ni',
+    'o',
+    'wo',
+    'de',
+    'mo',
+    'ka',
+    'ya',
+    'na',
+    'e',
+    'he',
+    'te',
+    'ne',
+    'animation',
+    'anime',
+    'motion',
+    'ova',
+    'ona',
+    'tv',
+    'special',
+    'version',
+    'edition',
+    'dubbed',
+    'subbed',
+    'sub',
+    'dub',
+    'uncensored',
+    'censored',
+    'episode',
+    'ep',
+    'season',
+    'side',
+    'part',
+    'arc',
+    'chapter',
+    'vol',
+    'volume',
   };
 
   final HttpClient _http = HttpClient()
     ..userAgent = _ua
     ..connectionTimeout = const Duration(seconds: 15);
 
-  void _setHeaders(HttpClientRequest req, {String? referer, bool json = false}) {
+  void _setHeaders(
+    HttpClientRequest req, {
+    String? referer,
+    bool json = false,
+  }) {
     req.headers.set('User-Agent', _ua);
     req.headers.set('Accept', json ? 'application/json' : '*/*');
     req.headers.set('Accept-Language', 'en-US,en;q=0.9');
@@ -176,13 +231,16 @@ class HentainiExtractor {
       final data = (doc['data'] as Map?) ?? const {};
       final attr = (data['attributes'] as Map?) ?? data;
       final epContainer = attr['episodes'];
-      final epList = (epContainer is Map ? epContainer['data'] : epContainer) as List? ?? const [];
+      final epList =
+          (epContainer is Map ? epContainer['data'] : epContainer) as List? ??
+          const [];
 
       Map<String, dynamic>? targetEp;
       for (final ep in epList) {
         if (ep is! Map) continue;
         final epAttr = (ep['attributes'] as Map?) ?? ep;
-        final epNum = (epAttr['episode_number'] as num?)?.toInt() ??
+        final epNum =
+            (epAttr['episode_number'] as num?)?.toInt() ??
             int.tryParse(epAttr['episode_number']?.toString() ?? '');
         if (epNum == episodeNumber) {
           targetEp = epAttr.cast<String, dynamic>();
@@ -190,7 +248,9 @@ class HentainiExtractor {
         }
       }
 
-      if (targetEp == null && epList.isNotEmpty && episodeNumber <= epList.length) {
+      if (targetEp == null &&
+          epList.isNotEmpty &&
+          episodeNumber <= epList.length) {
         final ep = epList[episodeNumber - 1];
         if (ep is Map) {
           targetEp = ((ep['attributes'] as Map?) ?? ep).cast<String, dynamic>();
@@ -226,11 +286,7 @@ class HentainiExtractor {
       final streamUrl = hlsUrl ?? mp4Url;
       if (streamUrl == null || streamUrl.isEmpty) return null;
 
-      return HentainiResult(
-        url: streamUrl,
-        referer: '$_site/',
-        origin: _site,
-      );
+      return HentainiResult(url: streamUrl, referer: '$_site/', origin: _site);
     } catch (e) {
       if (kDebugMode) debugPrint('[Hentaini] extract failed: $e');
       return null;

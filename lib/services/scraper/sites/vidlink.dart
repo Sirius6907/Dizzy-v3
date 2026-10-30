@@ -48,30 +48,37 @@ class VidLinkScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidLinkScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidLinkScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
       final client = http.Client();
       try {
-        final encRes = await client.get(
-          Uri.parse('$_encApi?text=$tmdbId'),
-          headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-        ).timeout(const Duration(seconds: 6));
+        final encRes = await client
+            .get(
+              Uri.parse('$_encApi?text=$tmdbId'),
+              headers: {'User-Agent': _ua, 'Accept': 'application/json'},
+            )
+            .timeout(const Duration(seconds: 6));
 
         if (encRes.statusCode != 200) return;
         final encData = jsonDecode(encRes.body);
-        if (encData is! Map || encData['status'] != 200 || encData['result'] == null) return;
+        if (encData is! Map ||
+            encData['status'] != 200 ||
+            encData['result'] == null) {
+          return;
+        }
         final encKey = encData['result'].toString();
 
         final endpoint = isTv
             ? '$_base/api/b/tv/$encKey/${season ?? 1}/${episode ?? 1}'
             : '$_base/api/b/movie/$encKey';
 
-        final res = await client.get(
-          Uri.parse(endpoint),
-          headers: _headers,
-        ).timeout(const Duration(seconds: 8));
+        final res = await client
+            .get(Uri.parse(endpoint), headers: _headers)
+            .timeout(const Duration(seconds: 8));
 
         if (res.statusCode != 200) return;
         final data = jsonDecode(res.body);
@@ -91,9 +98,7 @@ class VidLinkScraper extends StreamScraper {
               headers: _headers,
               behaviorHints: {
                 'notWebReady': false,
-                'proxyHeaders': {
-                  'request': _headers,
-                },
+                'proxyHeaders': {'request': _headers},
               },
             );
           }
@@ -113,9 +118,7 @@ class VidLinkScraper extends StreamScraper {
                 headers: _headers,
                 behaviorHints: {
                   'notWebReady': false,
-                  'proxyHeaders': {
-                    'request': _headers,
-                  },
+                  'proxyHeaders': {'request': _headers},
                 },
               );
               break;

@@ -1,4 +1,3 @@
-
 import '../../models/continue_watching/continue_watching_item.dart';
 import '../continue_watching/continue_watching_service.dart';
 import 'cloud_client.dart';
@@ -26,7 +25,8 @@ class CloudSyncService {
   static Future<void> syncNow({bool force = false}) async {
     if (!isLoggedIn || _syncing) return;
     final now = DateTime.now();
-    if (!force && _lastSyncAt != null &&
+    if (!force &&
+        _lastSyncAt != null &&
         now.difference(_lastSyncAt!) < _minimumInterval) {
       return;
     }
@@ -34,7 +34,8 @@ class CloudSyncService {
     try {
       final uid = CloudClient.db.auth.currentUser!.id;
       final local = List<ContinueWatchingItem>.from(
-          ContinueWatchingService.activeItems.value);
+        ContinueWatchingService.activeItems.value,
+      );
 
       // Upload only safe metadata + progress. Source credentials stay device-only.
       for (final item in local) {
@@ -77,7 +78,9 @@ class CloudSyncService {
 
   /// Pure merge: newest timestamp wins; cap matches local CW cap.
   static List<ContinueWatchingItem> mergeNewestWins(
-      List<ContinueWatchingItem> local, List<ContinueWatchingItem> remote) {
+    List<ContinueWatchingItem> local,
+    List<ContinueWatchingItem> remote,
+  ) {
     final byId = <String, ContinueWatchingItem>{};
     for (final item in [...local, ...remote]) {
       final old = byId[item.sessionKey];
@@ -91,9 +94,8 @@ class CloudSyncService {
   }
 
   static ContinueWatchingItem _fromSafeJson(Map<String, dynamic> json) {
-    int asInt(dynamic value) => value is int
-        ? value
-        : int.tryParse(value?.toString() ?? '') ?? 0;
+    int asInt(dynamic value) =>
+        value is int ? value : int.tryParse(value?.toString() ?? '') ?? 0;
     return ContinueWatchingItem(
       id: json['media_id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
@@ -107,7 +109,8 @@ class CloudSyncService {
       positionSeconds: asInt(json['position_seconds']),
       totalDurationSeconds: asInt(json['total_duration_seconds']),
       lastWatchedAt:
-          DateTime.tryParse(json['updated_at']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ??
+          DateTime.now(),
       isTorrent: false,
       // Remote source details intentionally absent: user picks a source locally.
     );

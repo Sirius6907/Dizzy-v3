@@ -3,6 +3,9 @@ import '../widgets/music_album_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../models/music/music_track.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
@@ -28,6 +31,8 @@ class MusicArtistDetailModal extends StatelessWidget {
     final artist = details.artist;
     final size = MediaQuery.sizeOf(context);
     final isMobile = size.width < 700;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = PrismInk.primary(isLight);
 
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
@@ -38,9 +43,9 @@ class MusicArtistDetailModal extends StatelessWidget {
             width: isMobile ? size.width - 24 : 720,
             height: isMobile ? size.height * 0.85 : 640,
             decoration: BoxDecoration(
-              color: DizzyVoid.surface1,
+              gradient: PrismShadows.surfaceGradient(isLight),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              boxShadow: PrismShadows.floating(isLight: isLight),
             ),
             child: Column(
               children: [
@@ -57,7 +62,7 @@ class MusicArtistDetailModal extends StatelessWidget {
                         maxWidthDiskCache: ImageCaps.kCardW,
                       ),
                     ),
-                    const Positioned.fill(
+                    Positioned.fill(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -65,7 +70,9 @@ class MusicArtistDetailModal extends StatelessWidget {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              DizzyVoid.surface1,
+                              isLight
+                                  ? PrismLight.raisedTop
+                                  : DizzyVoid.surface1,
                             ],
                           ),
                         ),
@@ -74,9 +81,19 @@ class MusicArtistDetailModal extends StatelessWidget {
                     Positioned(
                       top: 12,
                       right: 12,
-                      child: IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
-                        onPressed: onClose,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: onClose,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -86,8 +103,8 @@ class MusicArtistDetailModal extends StatelessWidget {
                         children: [
                           Text(
                             artist.name,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: ink,
                               fontSize: 28,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.6,
@@ -102,9 +119,18 @@ class MusicArtistDetailModal extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
-                              onPressed: () => onPlayTrack(details.topTracks.first, details.topTracks),
-                              icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                              label: const Text('Play All', style: TextStyle(color: Colors.white)),
+                              onPressed: () => onPlayTrack(
+                                details.topTracks.first,
+                                details.topTracks,
+                              ),
+                              icon: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                              ),
+                              label: const Text(
+                                'Play All',
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
                         ],
                       ),
@@ -113,13 +139,16 @@ class MusicArtistDetailModal extends StatelessWidget {
                 ),
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     children: [
                       if (details.topTracks.isNotEmpty) ...[
-                        const Text(
+                        Text(
                           'Top Songs',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -129,14 +158,16 @@ class MusicArtistDetailModal extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: details.topTracks.length.clamp(0, 10),
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final track = details.topTracks[index];
                             return MusicTrackRow(
                               track: track,
                               isPlaying: false,
                               isCurrent: false,
-                              onTap: () => onPlayTrack(track, details.topTracks),
+                              onTap: () =>
+                                  onPlayTrack(track, details.topTracks),
                               onMoreTap: () => onAddToPlaylist(track),
                             );
                           },
@@ -144,10 +175,10 @@ class MusicArtistDetailModal extends StatelessWidget {
                         const SizedBox(height: 24),
                       ],
                       if (details.albums.isNotEmpty) ...[
-                        const Text(
+                        Text(
                           'Albums & Discography',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -158,10 +189,14 @@ class MusicArtistDetailModal extends StatelessWidget {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: details.albums.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 14),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 14),
                             itemBuilder: (context, index) {
                               final album = details.albums[index];
-                              return MusicAlbumCard(album: album, onTap: () => onOpenAlbum(album.id));
+                              return MusicAlbumCard(
+                                album: album,
+                                onTap: () => onOpenAlbum(album.id),
+                              );
                             },
                           ),
                         ),
@@ -177,4 +212,3 @@ class MusicArtistDetailModal extends StatelessWidget {
     );
   }
 }
-

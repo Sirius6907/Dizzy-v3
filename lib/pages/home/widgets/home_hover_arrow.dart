@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../design/prism_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 
 class HomeHoverArrow extends StatefulWidget {
@@ -17,7 +18,8 @@ class HomeHoverArrowState extends State<HomeHoverArrow> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = AppThemeService.currentPalette.value.primaryColor;
+    final palette = AppThemeService.currentPalette.value;
+    final primaryColor = palette.primaryColor;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
@@ -30,14 +32,23 @@ class HomeHoverArrowState extends State<HomeHoverArrow> {
           height: 38,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _isHovering
-                ? Colors.white.withOpacity(0.15)
-                : Colors.white.withOpacity(0.05),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            color: palette.isLight
+                ? PrismLight.raisedTop.withValues(
+                    alpha: _isHovering ? 1.0 : 0.7,
+                  )
+                : Colors.white.withValues(alpha: _isHovering ? 0.15 : 0.05),
+            border: Border.all(
+              color: palette.isLight
+                  ? PrismLight.borderSubtle
+                  : Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
           ),
           child: Icon(
             widget.icon,
-            color: _isHovering ? primaryColor : Colors.white70,
+            color: palette.isLight
+                ? (_isHovering ? PrismLight.ink : PrismLight.inkSoft)
+                : (_isHovering ? primaryColor : Colors.white70),
             size: 22,
           ),
         ),
@@ -45,9 +56,3 @@ class HomeHoverArrowState extends State<HomeHoverArrow> {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Home loading skeleton (Polish P2) — cold open pe khaali spinner ki jagah
-// hero + rows ka shimmer shape. Fail-soft: data aate hi real list replace.
-// ─────────────────────────────────────────────────────────────────────────────
-

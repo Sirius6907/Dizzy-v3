@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
@@ -72,7 +72,10 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
     // Each line is roughly 52px on average
     const estimatedItemHeight = 52.0;
     final target = (index * estimatedItemHeight) - 140.0;
-    final clamped = target.clamp(0.0, _scrollController.position.maxScrollExtent);
+    final clamped = target.clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
     _scrollController.animateTo(
       clamped,
@@ -104,21 +107,14 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
       child: Container(
         width: isMobile ? MediaQuery.sizeOf(context).width : 380,
         decoration: BoxDecoration(
-          color: DizzyVoid.surface1.withValues(alpha: 0.96),
+          gradient: PrismShadows.surfaceGradient(false),
           borderRadius: isMobile
               ? const BorderRadius.vertical(top: Radius.circular(28))
               : const BorderRadius.only(
                   topLeft: Radius.circular(28),
                   bottomLeft: Radius.circular(28),
                 ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.6),
-              blurRadius: 36,
-              offset: const Offset(-8, 0),
-            ),
-          ],
+          boxShadow: PrismShadows.floating(isLight: false),
         ),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         child: Column(
@@ -155,7 +151,11 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
                     scaleFactor: 1.08,
                     child: IconButton(
                       tooltip: 'Generate Lyric Card',
-                      icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF00D2EF), size: 20),
+                      icon: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Color(0xFF00D2EF),
+                        size: 20,
+                      ),
                       onPressed: () {
                         MusicLyricShareDialog.show(
                           context,
@@ -167,7 +167,11 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
                   onPressed: widget.onClose,
                 ),
               ],
@@ -197,7 +201,11 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.music_off_rounded, color: Colors.white24, size: 40),
+                      Icon(
+                        Icons.music_off_rounded,
+                        color: Colors.white24,
+                        size: 40,
+                      ),
                       SizedBox(height: 10),
                       Text(
                         'No lyrics found for this track.',
@@ -236,11 +244,16 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10.0,
+                            horizontal: 8.0,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color: isActive
-                                ? const Color(0xFF7C5CFF).withValues(alpha: 0.18)
+                                ? const Color(
+                                    0xFF7C5CFF,
+                                  ).withValues(alpha: 0.18)
                                 : Colors.transparent,
                           ),
                           child: AnimatedDefaultTextStyle(
@@ -251,7 +264,9 @@ class _MusicLyricsDrawerState extends State<MusicLyricsDrawer> {
                                   ? Colors.white
                                   : Colors.white.withValues(alpha: 0.40),
                               fontSize: isActive ? 18.5 : 15.0,
-                              fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
+                              fontWeight: isActive
+                                  ? FontWeight.w900
+                                  : FontWeight.w600,
                               letterSpacing: isActive ? -0.2 : 0.0,
                               height: 1.35,
                               shadows: isActive

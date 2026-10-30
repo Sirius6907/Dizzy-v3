@@ -82,8 +82,9 @@ class ScraperManager {
   bool isBuiltinHttpSource(String addonName) {
     final key = addonName.trim().toLowerCase();
     if (key.isEmpty) return false;
-    return _scrapers
-        .any((s) => !s.isTorrentScraper && s.name.toLowerCase() == key);
+    return _scrapers.any(
+      (s) => !s.isTorrentScraper && s.name.toLowerCase() == key,
+    );
   }
 
   Stream<StreamSource> scrapeAll({
@@ -95,6 +96,19 @@ class ScraperManager {
     String? imdbId,
   }) {
     final controller = StreamController<StreamSource>();
+    var cancelled = false;
+    final subs = <StreamSubscription<StreamSource>>[];
+
+    // Downstream cancelled (user left the sheet): stop pulling from running
+    // scrapers and launch nothing further.
+    controller.onCancel = () {
+      cancelled = true;
+      final pending = List<StreamSubscription<StreamSource>>.from(subs);
+      subs.clear();
+      for (final sub in pending) {
+        sub.cancel();
+      }
+    };
 
     // v1.1.9 (Task 19): snapshot per scrape — mid-scrape P2P toggles apply
     // on the NEXT scrape by design (consistent source set per run).
@@ -120,7 +134,9 @@ class ScraperManager {
       return controller.stream;
     }
 
-    AppLog.d('[ScraperManager] Scraping across ${activeScrapers.length} active scrapers (${activeScrapers.map((s) => s.runtimeType).join(", ")}) for "$title" (P2P enabled: $p2pAllowed)...');
+    AppLog.d(
+      '[ScraperManager] Scraping across ${activeScrapers.length} active scrapers (${activeScrapers.map((s) => s.runtimeType).join(", ")}) for "$title" (P2P enabled: $p2pAllowed)...',
+    );
 
     // P4 (improved): bounded scraper pool. 40+ scrapers firing at once =
     // 40+ parallel HTTP sessions + parse isolates on a phone radio — the
@@ -137,6 +153,7 @@ class ScraperManager {
     var shed = 0;
 
     void checkClose() {
+      if (cancelled) return;
       if (pendingScrapers == 0 && !controller.isClosed) {
         controller.close();
       }
@@ -144,7 +161,7 @@ class ScraperManager {
 
     void pump() {
       while (running < maxParallelScrapers && queue.isNotEmpty) {
-        if (controller.isClosed) return;
+        if (cancelled || controller.isClosed) return;
         final scraper = queue.removeAt(0);
         running++;
         _runScraper(
@@ -159,6 +176,8 @@ class ScraperManager {
           controller: controller,
           seenHashes: seenHashes,
           seenUrls: seenUrls,
+          subs: subs,
+          isCancelled: () => cancelled,
           onDone: () {
             running--;
             pendingScrapers--;
@@ -205,69 +224,77 @@ class ScraperManager {
     required StreamController<StreamSource> controller,
     required Set<String> seenHashes,
     required Set<String> seenUrls,
+    required List<StreamSubscription<StreamSource>> subs,
+    required bool Function() isCancelled,
     required void Function() onDone,
   }) {
+    if (isCancelled()) return;
     var yielded = 0;
-    scraper
+    late final StreamSubscription<StreamSource> sub;
+    sub = scraper
         .scrapeStream(
-      type: type,
-      title: title,
-      year: year,
-      season: season,
-      episode: episode,
-      imdbId: imdbId,
-    )
+          type: type,
+          title: title,
+          year: year,
+          season: season,
+          episode: episode,
+          imdbId: imdbId,
+        )
         .listen(
-      (source) {
-          if (controller.isClosed) return;
-          yielded++;
+          (source) {
+            if (isCancelled() || controller.isClosed) return;
+            yielded++;
 
-          // v1.2.0-ADMIN: first success auto-heals local quarantine.
-          if (yielded == 1) ScraperQuarantineService.markSuccess(scraper.name);
+            // v1.2.0-ADMIN: first success auto-heals local quarantine.
+            if (yielded == 1) {
+              ScraperQuarantineService.markSuccess(scraper.name);
+            }
 
-          // If P2P is disabled, strictly discard any torrent source
-          if (!p2pAllowed &&
-              (source.addonName == 'Dizzy' ||
-                  (source.infoHash != null && source.infoHash!.isNotEmpty))) {
-            return;
-          }
+            // If P2P is disabled, strictly discard any torrent source
+            if (!p2pAllowed &&
+                (source.addonName == 'Dizzy' ||
+                    (source.infoHash != null && source.infoHash!.isNotEmpty))) {
+              return;
+            }
 
-          // Torrent sources pass directly with deduplication
-          if (source.infoHash != null && source.infoHash!.isNotEmpty) {
-            final hashLower = source.infoHash!.toLowerCase();
-            if (seenHashes.contains(hashLower)) return;
-            seenHashes.add(hashLower);
-            controller.add(source);
-            return;
-          }
+            // Torrent sources pass directly with deduplication
+            if (source.infoHash != null && source.infoHash!.isNotEmpty) {
+              final hashLower = source.infoHash!.toLowerCase();
+              if (seenHashes.contains(hashLower)) return;
+              seenHashes.add(hashLower);
+              controller.add(source);
+              return;
+            }
 
-          final rawUrl = source.url ?? source.externalUrl;
-          if (rawUrl != null && rawUrl.startsWith('http')) {
-            if (seenUrls.contains(rawUrl)) return;
-            seenUrls.add(rawUrl);
-            controller.add(source);
-          } else {
-            controller.add(source);
-          }
-        },
-        onError: (_) {
-          // v1.2.0-ADMIN: error vote (throttled 24h server+client).
-          // ignore: unawaited_futures
-          ScraperReporter.reportError(scraper.name);
-          // v1.2.0-P1 (T1.3): a throw = persistent failure signal → reset the
-          // 7-day retry clock. Note: zero-yield (empty) does NOT quarantine —
-          // a healthy scraper may simply have no sources for a niche title.
-          // Empty results only send a throttled crowd vote via reportEmpty.
-          ScraperQuarantineService.markFailed(scraper.name);
-        },
-        onDone: () {
-          if (yielded == 0) {
-            // v1.2.0-ADMIN: empty vote (throttled 24h server+client).
+            final rawUrl = source.url ?? source.externalUrl;
+            if (rawUrl != null && rawUrl.startsWith('http')) {
+              if (seenUrls.contains(rawUrl)) return;
+              seenUrls.add(rawUrl);
+              controller.add(source);
+            } else {
+              controller.add(source);
+            }
+          },
+          onError: (_) {
+            // v1.2.0-ADMIN: error vote (throttled 24h server+client).
             // ignore: unawaited_futures
-            ScraperReporter.reportEmpty(scraper.name);
-          }
-          onDone();
-        },
-      );
+            ScraperReporter.reportError(scraper.name);
+            // v1.2.0-P1 (T1.3): a throw = persistent failure signal → reset the
+            // 7-day retry clock. Note: zero-yield (empty) does NOT quarantine —
+            // a healthy scraper may simply have no sources for a niche title.
+            // Empty results only send a throttled crowd vote via reportEmpty.
+            ScraperQuarantineService.markFailed(scraper.name);
+          },
+          onDone: () {
+            if (yielded == 0) {
+              // v1.2.0-ADMIN: empty vote (throttled 24h server+client).
+              // ignore: unawaited_futures
+              ScraperReporter.reportEmpty(scraper.name);
+            }
+            subs.remove(sub);
+            onDone();
+          },
+        );
+    subs.add(sub);
   }
 }

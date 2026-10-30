@@ -2,15 +2,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/my_list/my_list_item.dart';
 import '../../services/my_list/my_list_service.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../details/details_page.dart';
 import '../../models/movie/movie.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class MyListPage extends StatefulWidget {
   const MyListPage({super.key});
@@ -35,7 +35,11 @@ class _MyListPageState extends State<MyListPage> {
     var filtered = allItems.where((item) {
       // 1. Filter by media type
       if (_filterType == 'movie' && item.type != 'movie') return false;
-      if (_filterType == 'series' && item.type != 'series' && item.type != 'anime') return false;
+      if (_filterType == 'series' &&
+          item.type != 'series' &&
+          item.type != 'anime') {
+        return false;
+      }
 
       // 2. Filter by search query
       if (_searchQuery.trim().isNotEmpty) {
@@ -52,7 +56,9 @@ class _MyListPageState extends State<MyListPage> {
         filtered.sort((a, b) => b.addedAt.compareTo(a.addedAt));
         break;
       case 'title':
-        filtered.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        filtered.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
         break;
       case 'year':
         filtered.sort((a, b) => (b.year ?? 0).compareTo(a.year ?? 0));
@@ -70,7 +76,8 @@ class _MyListPageState extends State<MyListPage> {
   }
 
   void _navigateToDetail(MyListItem item) {
-    final effectiveId = item.imdbId ??
+    final effectiveId =
+        item.imdbId ??
         (item.tmdbId != null ? 'tmdb:${item.tmdbId}' : null) ??
         item.traktId?.toString() ??
         '';
@@ -86,38 +93,47 @@ class _MyListPageState extends State<MyListPage> {
 
     Navigator.push(
       context,
-      LiquidRevealRoute(
-        page: DetailsPage(movie: movie),
-        tapPosition: null,
-      ),
+      LiquidRevealRoute(page: DetailsPage(movie: movie), tapPosition: null),
     );
   }
 
   Future<void> _confirmRemove(MyListItem item) async {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Remove from My List?',
-            style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
+        title: Text(
+          'Remove from My List?',
+          style: TextStyle(fontWeight: FontWeight.w800, color: ink),
+        ),
         content: Text(
           'Remove "${item.title}" from your list?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+          style: TextStyle(color: inkSoft),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            child: Text('Cancel', style: TextStyle(color: inkSoft)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: DizzyGlow.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              backgroundColor: PrismAccent.accent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Remove', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Remove',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -132,14 +148,14 @@ class _MyListPageState extends State<MyListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return GuideTrigger(
-      guideKey: 'my_list',
-      steps: AppGuides.myList,
-      child: OfflineAwareScaffold(
-        backgroundColor: DizzyVoid.obsidian,
-        body: Stack(
-          children: [
-            // ── Ambient Background Glows ──
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    return OfflineAwareScaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // ── Ambient Background Glows (dark only — they muddy clay) ──
+          if (!isLight) ...[
             Positioned(
               top: -100,
               left: -100,
@@ -176,85 +192,104 @@ class _MyListPageState extends State<MyListPage> {
                 ),
               ),
             ),
-
-            // ── Main Content ──
-            SafeArea(
-              child: ValueListenableBuilder<List<MyListItem>>(
-                valueListenable: MyListService.items,
-                builder: (context, allItems, _) {
-                  final movieCount = allItems.where((i) => i.type == 'movie').length;
-                  final seriesCount = allItems.where((i) => i.type == 'series' || i.type == 'anime').length;
-                  final displayedItems = _getFilteredAndSortedItems(allItems);
-
-                  return Column(
-                    children: [
-                      // ── Header Bar ──
-                      _buildHeader(context, allItems.length),
-
-                      // ── Filter Pills & Search Bar ──
-                      _buildFilterToolbar(allItems.length, movieCount, seriesCount),
-
-                      const SizedBox(height: 12),
-
-                      // ── Grid of Items ──
-                      Expanded(
-                        child: displayedItems.isEmpty
-                            ? _buildEmptyState(allItems.isEmpty)
-                            : GridView.builder(
-                                padding: EdgeInsets.fromLTRB(
-                                  16,
-                                  12,
-                                  16,
-                                  24 + MediaQuery.paddingOf(context).bottom,
-                                ),
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: _getCrossAxisCount(context),
-                                  childAspectRatio: 0.65,
-                                  crossAxisSpacing: 14,
-                                  mainAxisSpacing: 16,
-                                ),
-                                itemCount: displayedItems.length,
-                                itemBuilder: (context, index) {
-                                  final item = displayedItems[index];
-                                  return _MyListCard(
-                                    item: item,
-                                    onTap: () => _navigateToDetail(item),
-                                    onRemove: () => _confirmRemove(item),
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
           ],
-        ),
+
+          // ── Main Content ──
+          SafeArea(
+            child: ValueListenableBuilder<List<MyListItem>>(
+              valueListenable: MyListService.items,
+              builder: (context, allItems, _) {
+                final movieCount = allItems
+                    .where((i) => i.type == 'movie')
+                    .length;
+                final seriesCount = allItems
+                    .where((i) => i.type == 'series' || i.type == 'anime')
+                    .length;
+                final displayedItems = _getFilteredAndSortedItems(allItems);
+
+                return Column(
+                  children: [
+                    // ── Header Bar ──
+                    _buildHeader(context, allItems.length),
+
+                    // ── Filter Pills & Search Bar ──
+                    _buildFilterToolbar(
+                      allItems.length,
+                      movieCount,
+                      seriesCount,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Grid of Items ──
+                    Expanded(
+                      child: displayedItems.isEmpty
+                          ? _buildEmptyState(allItems.isEmpty)
+                          : GridView.builder(
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                24 + MediaQuery.paddingOf(context).bottom,
+                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: _getCrossAxisCount(context),
+                                    childAspectRatio: 0.65,
+                                    crossAxisSpacing: 14,
+                                    mainAxisSpacing: 16,
+                                  ),
+                              itemCount: displayedItems.length,
+                              itemBuilder: (context, index) {
+                                final item = displayedItems[index];
+                                return _MyListCard(
+                                  item: item,
+                                  onTap: () => _navigateToDetail(item),
+                                  onRemove: () => _confirmRemove(item),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context, int totalCount) {
     final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.06);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 20,
+        vertical: 10,
+      ),
       decoration: BoxDecoration(
-        color: DizzyVoid.voidB.withValues(alpha: 0.8),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
-          ),
-        ),
+        color: panel,
+        border: Border(bottom: BorderSide(color: hairline)),
       ),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 18),
+            icon: Icon(Icons.arrow_back_ios_rounded, color: ink, size: 18),
+            tooltip: 'Back',
             style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.06),
+              backgroundColor: isLight
+                  ? PrismLight.raisedBottom
+                  : Colors.white.withValues(alpha: 0.06),
               padding: const EdgeInsets.all(8),
             ),
           ),
@@ -263,10 +298,10 @@ class _MyListPageState extends State<MyListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'My List',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ink,
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
@@ -274,10 +309,7 @@ class _MyListPageState extends State<MyListPage> {
                 ),
                 Text(
                   '$totalCount saved ${totalCount == 1 ? 'title' : 'titles'}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: inkSoft, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -291,33 +323,42 @@ class _MyListPageState extends State<MyListPage> {
             valueListenable: MyListService.isSyncing,
             builder: (context, isSyncing, _) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7C5CFF).withValues(alpha: 0.15),
+                  color: palette.primaryColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFF7C5CFF).withValues(alpha: 0.3),
+                    color: palette.primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isSyncing)
-                      const SizedBox(
+                      SizedBox(
                         width: 14,
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7C5CFF)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            PrismAccent.text(isLight),
+                          ),
                         ),
                       )
                     else
-                      const Icon(Icons.cloud_done_rounded, color: Color(0xFF7C5CFF), size: 15),
+                      Icon(
+                        Icons.cloud_done_rounded,
+                        color: PrismAccent.text(isLight),
+                        size: 15,
+                      ),
                     const SizedBox(width: 6),
                     Text(
                       isSyncing ? 'Syncing...' : 'Cloud Synced',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: ink,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -326,12 +367,15 @@ class _MyListPageState extends State<MyListPage> {
                     IconButton(
                       constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
+                      tooltip: 'Sync now',
                       icon: Icon(
                         Icons.refresh_rounded,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: inkSoft,
                         size: 14,
                       ),
-                      onPressed: isSyncing ? null : () => MyListService.syncAll(),
+                      onPressed: isSyncing
+                          ? null
+                          : () => MyListService.syncAll(),
                     ),
                   ],
                 ),
@@ -344,6 +388,16 @@ class _MyListPageState extends State<MyListPage> {
   }
 
   Widget _buildFilterToolbar(int totalCount, int movieCount, int seriesCount) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Column(
@@ -363,22 +417,42 @@ class _MyListPageState extends State<MyListPage> {
 
                 // Sort Dropdown
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: well,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(color: hairline),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _sortBy,
-                      dropdownColor: DizzyVoid.surface1,
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                      icon: const Icon(Icons.sort_rounded, color: Color(0xFF7C5CFF), size: 16),
+                      dropdownColor: panel,
+                      style: TextStyle(
+                        color: ink,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      icon: Icon(
+                        Icons.sort_rounded,
+                        color: PrismAccent.text(isLight),
+                        size: 16,
+                      ),
                       items: const [
-                        DropdownMenuItem(value: 'recent', child: Text('Recently Added')),
-                        DropdownMenuItem(value: 'title', child: Text('Alphabetical')),
-                        DropdownMenuItem(value: 'year', child: Text('Release Year')),
+                        DropdownMenuItem(
+                          value: 'recent',
+                          child: Text('Recently Added'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'title',
+                          child: Text('Alphabetical'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'year',
+                          child: Text('Release Year'),
+                        ),
                       ],
                       onChanged: (v) => setState(() => _sortBy = v!),
                     ),
@@ -393,21 +467,30 @@ class _MyListPageState extends State<MyListPage> {
           Container(
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: well,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: hairline),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (v) => setState(() => _searchQuery = v),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: ink, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Search saved titles...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
-                prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.4), size: 18),
+                hintStyle: TextStyle(color: inkSoft, fontSize: 13),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: inkSoft,
+                  size: 18,
+                ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+                        tooltip: 'Clear search',
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: inkSoft,
+                          size: 16,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
@@ -426,6 +509,14 @@ class _MyListPageState extends State<MyListPage> {
 
   Widget _buildFilterPill(String type, String label, int count) {
     final isSelected = _filterType == type;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.1);
 
     return GestureDetector(
       onTap: () => setState(() => _filterType = type),
@@ -433,18 +524,18 @@ class _MyListPageState extends State<MyListPage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF7C5CFF) : Colors.white.withValues(alpha: 0.05),
+          color: isSelected ? palette.primaryColor : well,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF7C5CFF) : Colors.white.withValues(alpha: 0.1),
+            color: isSelected ? palette.primaryColor : hairline,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF7C5CFF).withValues(alpha: 0.4),
+                    color: palette.primaryColor.withValues(alpha: 0.4),
                     blurRadius: 10,
                     spreadRadius: 1,
-                  )
+                  ),
                 ]
               : null,
         ),
@@ -454,7 +545,7 @@ class _MyListPageState extends State<MyListPage> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+                color: isSelected ? Colors.white : ink,
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
               ),
@@ -463,14 +554,18 @@ class _MyListPageState extends State<MyListPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.black.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.1),
+                color: isSelected
+                    ? Colors.black.withValues(alpha: 0.25)
+                    : (isLight
+                          ? PrismLight.raisedTop
+                          : Colors.white.withValues(alpha: 0.1)),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$count',
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.6),
-                  fontSize: 10,
+                  color: isSelected ? Colors.white : inkSoft,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -482,6 +577,11 @@ class _MyListPageState extends State<MyListPage> {
   }
 
   Widget _buildEmptyState(bool isListEmpty) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -490,19 +590,27 @@ class _MyListPageState extends State<MyListPage> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF7C5CFF).withValues(alpha: 0.08),
-              border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.2)),
+              color: palette.primaryColor.withValues(alpha: 0.08),
+              border: Border.all(
+                color: palette.primaryColor.withValues(alpha: 0.2),
+              ),
             ),
             child: Icon(
-              isListEmpty ? Icons.bookmark_border_rounded : Icons.search_off_rounded,
+              isListEmpty
+                  ? Icons.bookmark_border_rounded
+                  : Icons.search_off_rounded,
               size: 54,
-              color: const Color(0xFF7C5CFF),
+              color: PrismAccent.text(isLight),
             ),
           ),
           const SizedBox(height: 18),
           Text(
             isListEmpty ? 'Your list is empty' : 'No titles found',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: ink,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -510,7 +618,7 @@ class _MyListPageState extends State<MyListPage> {
                 ? 'Save your favorite movies and TV shows to watch anytime'
                 : 'Try adjusting your search query or filter settings',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 13),
+            style: TextStyle(color: inkSoft, fontSize: 13),
           ),
           if (!isListEmpty) ...[
             const SizedBox(height: 16),
@@ -525,9 +633,11 @@ class _MyListPageState extends State<MyListPage> {
               icon: const Icon(Icons.filter_alt_off_rounded, size: 16),
               label: const Text('Reset Filters'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C5CFF),
+                backgroundColor: palette.primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -563,6 +673,11 @@ class _MyListCardState extends State<_MyListCard> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final isMovie = item.type == 'movie';
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -580,24 +695,26 @@ class _MyListCardState extends State<_MyListCard> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isHovered
-                    ? const Color(0xFF7C5CFF).withValues(alpha: 0.8)
-                    : Colors.white.withValues(alpha: 0.08),
+                    ? palette.primaryColor.withValues(alpha: 0.8)
+                    : hairline,
                 width: _isHovered ? 1.8 : 1.0,
               ),
               boxShadow: _isHovered
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF7C5CFF).withValues(alpha: 0.4),
+                        color: palette.primaryColor.withValues(alpha: 0.4),
                         blurRadius: 18,
                         spreadRadius: 2,
-                      )
+                      ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Colors.black.withValues(
+                          alpha: isLight ? 0.08 : 0.3,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
-                      )
+                      ),
                     ],
             ),
             child: ClipRRect(
@@ -614,7 +731,8 @@ class _MyListCardState extends State<_MyListCard> {
                       memCacheWidth: ImageCaps.kCardW,
                       memCacheHeight: ImageCaps.kCardH,
                       maxWidthDiskCache: ImageCaps.kCardW,
-                      errorWidget: (context, url, error) => _buildFallbackPoster(),
+                      errorWidget: (context, url, error) =>
+                          _buildFallbackPoster(),
                     )
                   else
                     _buildFallbackPoster(),
@@ -629,7 +747,9 @@ class _MyListCardState extends State<_MyListCard> {
                           stops: const [0.0, 0.5, 1.0],
                           colors: [
                             Colors.transparent,
-                            Colors.black.withValues(alpha: _isHovered ? 0.4 : 0.2),
+                            Colors.black.withValues(
+                              alpha: _isHovered ? 0.4 : 0.2,
+                            ),
                             Colors.black.withValues(alpha: 0.92),
                           ],
                         ),
@@ -647,18 +767,23 @@ class _MyListCardState extends State<_MyListCard> {
                       children: [
                         // Media Type Badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: isMovie
-                                ? const Color(0xFF7C5CFF).withValues(alpha: 0.85)
-                                : const Color(0xFF00E5FF).withValues(alpha: 0.85),
+                                ? palette.primaryColor.withValues(alpha: 0.85)
+                                : const Color(
+                                    0xFF00E5FF,
+                                  ).withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             isMovie ? 'MOVIE' : 'SERIES',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
                             ),
@@ -672,9 +797,17 @@ class _MyListCardState extends State<_MyListCard> {
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.6),
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFED1C24).withValues(alpha: 0.5)),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFFED1C24,
+                                ).withValues(alpha: 0.5),
+                              ),
                             ),
-                            child: const Icon(Icons.cloud_done_rounded, color: Color(0xFFED1C24), size: 11),
+                            child: const Icon(
+                              Icons.cloud_done_rounded,
+                              color: Color(0xFFED1C24),
+                              size: 11,
+                            ),
                           )
                         else if (item.source == MyListSource.simkl)
                           Container(
@@ -682,9 +815,17 @@ class _MyListCardState extends State<_MyListCard> {
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.6),
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF00ADFF).withValues(alpha: 0.5)),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFF00ADFF,
+                                ).withValues(alpha: 0.5),
+                              ),
                             ),
-                            child: const Icon(Icons.cloud_done_rounded, color: Color(0xFF00ADFF), size: 11),
+                            child: const Icon(
+                              Icons.cloud_done_rounded,
+                              color: Color(0xFF00ADFF),
+                              size: 11,
+                            ),
                           ),
                       ],
                     ),
@@ -736,11 +877,15 @@ class _MyListCardState extends State<_MyListCard> {
                               Container(
                                 width: 38,
                                 height: 38,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Color(0xFF7C5CFF),
+                                  color: palette.primaryColor,
                                 ),
-                                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                                child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                               ),
                               const SizedBox(width: 12),
 
@@ -752,9 +897,15 @@ class _MyListCardState extends State<_MyListCard> {
                                   height: 38,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: DizzyGlow.red.withValues(alpha: 0.9),
+                                    color: PrismAccent.accent.withValues(
+                                      alpha: 0.9,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                                  child: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ],
@@ -772,12 +923,13 @@ class _MyListCardState extends State<_MyListCard> {
   }
 
   Widget _buildFallbackPoster() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Container(
-      color: DizzyVoid.surface1,
+      color: isLight ? PrismLight.raised : PrismDark.raised,
       child: Center(
         child: Icon(
           widget.item.type == 'movie' ? Icons.movie_rounded : Icons.tv_rounded,
-          color: Colors.white24,
+          color: isLight ? PrismLight.inkFaint : Colors.white24,
           size: 38,
         ),
       ),

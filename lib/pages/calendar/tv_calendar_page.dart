@@ -3,14 +3,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/movie/movie.dart';
 import '../../services/calendar/tv_calendar_service.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/animated_ambient_background.dart';
 import '../details/details_page.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
 class TvCalendarPage extends StatefulWidget {
   const TvCalendarPage({super.key});
@@ -34,10 +33,60 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
   String _searchQuery = '';
   String _selectedNetwork = 'All';
 
-  static const _weekdaysShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  static const _weekdaysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  static const _monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  static const _monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  static const _weekdaysShort = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
+  static const _weekdaysFull = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  static const _monthsShort = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  static const _monthsFull = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  bool get _isLight => AppThemeService.currentPalette.value.isLight;
+  Color get _ink => _isLight ? PrismLight.ink : Colors.white;
+  Color get _inkSoft => _isLight ? PrismLight.inkSoft : Colors.white70;
+  Color get _inkFaint => _isLight ? PrismLight.inkFaint : Colors.white38;
+  Color get _panel => _isLight ? PrismLight.raisedTop : PrismDark.raised;
+  Color get _hairline =>
+      _isLight ? PrismLight.borderSubtle : Colors.white.withValues(alpha: 0.08);
 
   @override
   void initState() {
@@ -194,52 +243,56 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
     final isMobile = screenWidth < 650;
     final topInset = MediaQuery.paddingOf(context).top;
 
-    return GuideTrigger(
-      guideKey: 'calendar',
-      steps: AppGuides.calendar,
-      child: Scaffold(
-        backgroundColor: palette.scaffoldBackgroundColor,
-        body: Stack(
-          children: [
-            // ── Ambient Background ──
-            const Positioned.fill(child: AnimatedAmbientBackground()),
+    return Scaffold(
+      backgroundColor: palette.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // ── Ambient Background ──
+          const Positioned.fill(child: AnimatedAmbientBackground()),
 
-            Column(
-              children: [
-                // Spacer for top notch
-                SizedBox(height: topInset),
+          Column(
+            children: [
+              // Spacer for top notch
+              SizedBox(height: topInset),
 
-                // ── Top Glass App Bar ──
-                _buildTopBar(palette, isMobile),
+              // ── Top Glass App Bar ──
+              _buildTopBar(palette, isMobile),
 
-                // ── Day Timeline Selector with Left/Right Arrows ──
-                if (!_isLoadingDays && _availableDays.isNotEmpty)
-                  _buildDayTimeline(palette, isMobile),
+              // ── Day Timeline Selector with Left/Right Arrows ──
+              if (!_isLoadingDays && _availableDays.isNotEmpty)
+                _buildDayTimeline(palette, isMobile),
 
-                // ── Network Filter Bar (Netflix, HBO, Apple TV+, etc.) ──
-                if (!_isLoadingEpisodes && _allDayEpisodes.isNotEmpty)
-                  _buildNetworkFilterBar(palette, isMobile),
+              // ── Network Filter Bar (Netflix, HBO, Apple TV+, etc.) ──
+              if (!_isLoadingEpisodes && _allDayEpisodes.isNotEmpty)
+                _buildNetworkFilterBar(palette, isMobile),
 
-                // ── Main Episodes Feed ──
-                Expanded(
-                  child: RefreshIndicator(
-                    color: palette.primaryColor,
-                    backgroundColor: DizzyVoid.surface1,
-                    onRefresh: () => _loadEpisodesForSelectedDay(forceRefresh: true),
-                    child: _buildEpisodesContent(palette, screenWidth, isMobile),
-                  ),
+              // ── Main Episodes Feed ──
+              Expanded(
+                child: RefreshIndicator(
+                  color: palette.primaryColor,
+                  backgroundColor: _isLight
+                      ? PrismLight.raisedTop
+                      : PrismDark.raised,
+                  onRefresh: () =>
+                      _loadEpisodesForSelectedDay(forceRefresh: true),
+                  child: _buildEpisodesContent(palette, screenWidth, isMobile),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTopBar(AppThemePalette palette, bool isMobile) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(isMobile ? 12 : 24, 12, isMobile ? 12 : 24, 6),
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 12 : 24,
+        12,
+        isMobile ? 12 : 24,
+        6,
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
         child: BackdropFilter(
@@ -247,18 +300,17 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: _isLight
+                  ? PrismLight.glass
+                  : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-                width: 1.2,
-              ),
+              border: Border.all(color: _hairline, width: 1.2),
             ),
             child: Row(
               children: [
                 // Back Button
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+                  icon: Icon(Icons.arrow_back_rounded, color: _ink, size: 22),
                   onPressed: () => Navigator.of(context).pop(),
                   tooltip: 'Back',
                   splashRadius: 20,
@@ -285,12 +337,12 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         'TV Shows Airing Calendar',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: _ink,
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.3,
@@ -302,7 +354,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: _inkSoft,
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
                           ),
@@ -318,27 +370,29 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                   width: isMobile ? 110 : 180,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: _isLight
+                        ? PrismLight.raisedBottom
+                        : Colors.white.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    border: Border.all(color: _hairline),
                   ),
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: TextStyle(color: _ink, fontSize: 13),
                     decoration: InputDecoration(
                       hintText: 'Filter shows...',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        fontSize: 12,
-                      ),
+                      hintStyle: TextStyle(color: _inkSoft, fontSize: 12),
                       prefixIcon: Icon(
                         Icons.search_rounded,
                         size: 16,
                         color: palette.primaryColor.withValues(alpha: 0.8),
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                     ),
                   ),
                 ),
@@ -356,10 +410,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
 
     return Container(
       height: 78,
-      margin: EdgeInsets.symmetric(
-        horizontal: isMobile ? 8 : 20,
-        vertical: 4,
-      ),
+      margin: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 20, vertical: 4),
       child: Row(
         children: [
           // Left Scroll Arrow
@@ -386,8 +437,8 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                 final weekdayStr = isToday
                     ? 'TODAY'
                     : (_isSameDay(day, today.add(const Duration(days: 1)))
-                        ? 'TOMORROW'
-                        : _formatWeekdayShort(day).toUpperCase());
+                          ? 'TOMORROW'
+                          : _formatWeekdayShort(day).toUpperCase());
                 final dayNumStr = day.day.toString();
                 final monthStr = _formatMonthShort(day);
 
@@ -398,26 +449,35 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                     width: isToday ? 90 : 76,
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? palette.primaryColor.withValues(alpha: 0.28)
                           : (isToday
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.white.withValues(alpha: 0.04)),
+                                ? (_isLight
+                                      ? PrismLight.raisedBottom
+                                      : Colors.white.withValues(alpha: 0.08))
+                                : (_isLight
+                                      ? PrismLight.raised
+                                      : Colors.white.withValues(alpha: 0.04))),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
                             ? palette.primaryColor.withValues(alpha: 0.85)
                             : (isToday
-                                ? palette.primaryColor.withValues(alpha: 0.4)
-                                : Colors.white.withValues(alpha: 0.08)),
+                                  ? palette.primaryColor.withValues(alpha: 0.4)
+                                  : _hairline),
                         width: isSelected ? 1.6 : 1.0,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: palette.primaryColor.withValues(alpha: 0.3),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 12,
                                 offset: const Offset(0, 3),
                               ),
@@ -432,8 +492,8 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                           style: TextStyle(
                             color: isSelected
                                 ? palette.primaryColor
-                                : (isToday ? Colors.white : Colors.white54),
-                            fontSize: 10.5,
+                                : (isToday ? _ink : _inkSoft),
+                            fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.2,
                           ),
@@ -445,16 +505,18 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                             Text(
                               dayNumStr,
                               style: TextStyle(
-                                color: Colors.white,
+                                color: _ink,
                                 fontSize: 17,
-                                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                fontWeight: isSelected
+                                    ? FontWeight.w900
+                                    : FontWeight.w700,
                               ),
                             ),
                             const SizedBox(width: 3),
                             Text(
                               monthStr,
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: _inkSoft,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -487,10 +549,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
 
     return Container(
       height: 38,
-      margin: EdgeInsets.symmetric(
-        horizontal: isMobile ? 8 : 20,
-        vertical: 4,
-      ),
+      margin: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 20, vertical: 4),
       child: Row(
         children: [
           // Filter label icon
@@ -498,7 +557,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             margin: const EdgeInsets.only(right: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: _panel,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -511,10 +570,10 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                 ),
                 if (!isMobile) ...[
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'Network:',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: _inkSoft,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -549,22 +608,27 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                   borderRadius: BorderRadius.circular(12),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? palette.primaryColor.withValues(alpha: 0.26)
-                          : Colors.white.withValues(alpha: 0.05),
+                          : _panel,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
                             ? palette.primaryColor.withValues(alpha: 0.8)
-                            : Colors.white.withValues(alpha: 0.08),
+                            : _hairline,
                         width: isSelected ? 1.4 : 1.0,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: palette.primaryColor.withValues(alpha: 0.25),
+                                color: palette.primaryColor.withValues(
+                                  alpha: 0.25,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -578,37 +642,46 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                           Icon(
                             Icons.all_inclusive_rounded,
                             size: 13,
-                            color: isSelected ? palette.primaryColor : Colors.white70,
+                            color: isSelected ? palette.primaryColor : _inkSoft,
                           )
                         else
                           Icon(
                             _getNetworkIcon(net),
                             size: 13,
-                            color: isSelected ? palette.primaryColor : Colors.white70,
+                            color: isSelected ? palette.primaryColor : _inkSoft,
                           ),
                         const SizedBox(width: 5),
                         Text(
                           net,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
+                            color: isSelected ? _ink : _inkSoft,
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight: isSelected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
                           ),
                         ),
                         const SizedBox(width: 5),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? palette.primaryColor.withValues(alpha: 0.35)
-                                : Colors.white.withValues(alpha: 0.08),
+                                : _hairline,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '$count',
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white54,
-                              fontSize: 10,
+                              color: isSelected
+                                  ? _ink
+                                  : (_isLight
+                                        ? PrismLight.inkSoft
+                                        : Colors.white54),
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -634,10 +707,20 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
 
   IconData _getNetworkIcon(String network) {
     final n = network.toLowerCase();
-    if (n.contains('netflix') || n.contains('hbo') || n.contains('apple') || n.contains('disney') || n.contains('amazon') || n.contains('prime') || n.contains('hulu') || n.contains('paramount') || n.contains('peacock')) {
+    if (n.contains('netflix') ||
+        n.contains('hbo') ||
+        n.contains('apple') ||
+        n.contains('disney') ||
+        n.contains('amazon') ||
+        n.contains('prime') ||
+        n.contains('hulu') ||
+        n.contains('paramount') ||
+        n.contains('peacock')) {
       return Icons.play_circle_fill_rounded;
     }
-    if (n.contains('crunchyroll') || n.contains('anime') || n.contains('tokyo')) {
+    if (n.contains('crunchyroll') ||
+        n.contains('anime') ||
+        n.contains('tokyo')) {
       return Icons.animation_rounded;
     }
     return Icons.tv_rounded;
@@ -655,20 +738,13 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
         width: 32,
         height: 74,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: _isLight
+              ? PrismLight.raised
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
-            width: 1.0,
-          ),
+          border: Border.all(color: _hairline, width: 1.0),
         ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white70,
-            size: 22,
-          ),
-        ),
+        child: Center(child: Icon(icon, color: _inkSoft, size: 22)),
       ),
     );
   }
@@ -684,28 +760,25 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
         width: 24,
         height: 32,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: _isLight
+              ? PrismLight.raised
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1.0,
-          ),
+          border: Border.all(color: _hairline, width: 1.0),
         ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white70,
-            size: 16,
-          ),
-        ),
+        child: Center(child: Icon(icon, color: _inkSoft, size: 16)),
       ),
     );
   }
 
-  Widget _buildEpisodesContent(AppThemePalette palette, double screenWidth, bool isMobile) {
+  Widget _buildEpisodesContent(
+    AppThemePalette palette,
+    double screenWidth,
+    bool isMobile,
+  ) {
     if (_isLoadingEpisodes && _allDayEpisodes.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Center(
+        child: CircularProgressIndicator(color: palette.primaryColor),
       );
     }
 
@@ -718,9 +791,11 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              isNetworkFiltered ? Icons.filter_alt_off_rounded : Icons.tv_off_rounded,
+              isNetworkFiltered
+                  ? Icons.filter_alt_off_rounded
+                  : Icons.tv_off_rounded,
               size: 48,
-              color: Colors.white.withValues(alpha: 0.25),
+              color: _inkFaint,
             ),
             const SizedBox(height: 12),
             Text(
@@ -728,7 +803,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                   ? 'No episodes on $_selectedNetwork for this day'
                   : 'No episodes found for this day',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: _ink,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -738,10 +813,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
               isNetworkFiltered
                   ? 'Try selecting "All" or a different network above'
                   : 'Select another day from the timeline above',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 13,
-              ),
+              style: TextStyle(color: _inkSoft, fontSize: 13),
             ),
             if (isNetworkFiltered) ...[
               const SizedBox(height: 12),
@@ -750,9 +822,13 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                 icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Show All Networks'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: palette.primaryColor,
-                  side: BorderSide(color: palette.primaryColor.withValues(alpha: 0.4)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  foregroundColor: PrismAccent.text(palette.isLight),
+                  side: BorderSide(
+                    color: palette.primaryColor.withValues(alpha: 0.4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -783,7 +859,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: _ink,
                       fontSize: isMobile ? 15 : 19,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.2,
@@ -792,7 +868,10 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: palette.primaryColor.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(12),
@@ -805,7 +884,7 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
                         ? '${episodes.length} Episodes Airing'
                         : '${episodes.length} on $_selectedNetwork',
                     style: TextStyle(
-                      color: palette.primaryColor,
+                      color: PrismAccent.text(palette.isLight),
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -829,23 +908,18 @@ class _TvCalendarPageState extends State<TvCalendarPage> {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final entry = episodes[index];
-                return _EpisodeCalendarCard(
-                  entry: entry,
-                  palette: palette,
-                  onTap: () => _openShowDetails(entry),
-                );
-              },
-              childCount: episodes.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final entry = episodes[index];
+              return _EpisodeCalendarCard(
+                entry: entry,
+                palette: palette,
+                onTap: () => _openShowDetails(entry),
+              );
+            }, childCount: episodes.length),
           ),
         ),
 
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 48),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 48)),
       ],
     );
   }
@@ -869,6 +943,13 @@ class _EpisodeCalendarCard extends StatefulWidget {
 class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
   bool _isHovered = false;
 
+  bool get _isLight => widget.palette.isLight;
+  Color get _ink => _isLight ? PrismLight.ink : Colors.white;
+  Color get _inkSoft => _isLight ? PrismLight.inkSoft : Colors.white70;
+  Color get _inkFaint => _isLight ? PrismLight.inkFaint : Colors.white38;
+  Color get _hairline =>
+      _isLight ? PrismLight.borderSubtle : Colors.white.withValues(alpha: 0.08);
+
   @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
@@ -887,13 +968,17 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: _isHovered
-                ? const Color(0xFF161B29).withValues(alpha: 0.95)
-                : DizzyVoid.surface1.withValues(alpha: 0.85),
+                ? (_isLight
+                      ? PrismLight.raisedTop
+                      : const Color(0xFF161B29).withValues(alpha: 0.95))
+                : (_isLight
+                      ? PrismLight.raised
+                      : PrismDark.raised.withValues(alpha: 0.85)),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: _isHovered
                   ? widget.palette.primaryColor.withValues(alpha: 0.6)
-                  : Colors.white.withValues(alpha: 0.08),
+                  : _hairline,
               width: _isHovered ? 1.4 : 1.0,
             ),
             boxShadow: [
@@ -914,7 +999,9 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
             children: [
               // Poster Thumbnail
               ClipRRect(
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(18),
+                ),
                 child: SizedBox(
                   width: 95,
                   height: double.infinity,
@@ -927,22 +1014,40 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                           memCacheHeight: ImageCaps.kCardH,
                           maxWidthDiskCache: ImageCaps.kCardW,
                           placeholder: (_, __) => Container(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            child: const Center(
-                              child: Icon(Icons.tv_rounded, color: Colors.white24, size: 28),
+                            color: _isLight
+                                ? PrismLight.raisedBottom
+                                : Colors.white.withValues(alpha: 0.05),
+                            child: Center(
+                              child: Icon(
+                                Icons.tv_rounded,
+                                color: _inkFaint,
+                                size: 28,
+                              ),
                             ),
                           ),
                           errorWidget: (_, __, ___) => Container(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            child: const Center(
-                              child: Icon(Icons.tv_rounded, color: Colors.white24, size: 28),
+                            color: _isLight
+                                ? PrismLight.raisedBottom
+                                : Colors.white.withValues(alpha: 0.05),
+                            child: Center(
+                              child: Icon(
+                                Icons.tv_rounded,
+                                color: _inkFaint,
+                                size: 28,
+                              ),
                             ),
                           ),
                         )
                       : Container(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          child: const Center(
-                            child: Icon(Icons.tv_rounded, color: Colors.white24, size: 28),
+                          color: _isLight
+                              ? PrismLight.raisedBottom
+                              : Colors.white.withValues(alpha: 0.05),
+                          child: Center(
+                            child: Icon(
+                              Icons.tv_rounded,
+                              color: _inkFaint,
+                              size: 28,
+                            ),
                           ),
                         ),
                 ),
@@ -951,7 +1056,10 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
               // Info Column
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -963,35 +1071,46 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2.5,
+                            ),
                             decoration: BoxDecoration(
-                              color: widget.palette.primaryColor.withValues(alpha: 0.22),
+                              color: widget.palette.primaryColor.withValues(
+                                alpha: 0.22,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               epCode,
                               style: TextStyle(
-                                color: widget.palette.primaryColor,
+                                color: PrismAccent.text(_isLight),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                          if (entry.network != null && entry.network!.isNotEmpty)
+                          if (entry.network != null &&
+                              entry.network!.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               constraints: const BoxConstraints(maxWidth: 100),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: _isLight
+                                    ? PrismLight.raisedTop
+                                    : Colors.white.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 entry.network!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10.5,
+                                style: TextStyle(
+                                  color: _inkSoft,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1003,13 +1122,13 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                                 Icon(
                                   Icons.access_time_rounded,
                                   size: 12,
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: _inkSoft,
                                 ),
                                 const SizedBox(width: 3),
                                 Text(
                                   airTimeStr,
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
+                                    color: _inkSoft,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1025,8 +1144,8 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                         entry.showTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _ink,
                           fontSize: 14.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
@@ -1040,21 +1159,19 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: _inkSoft,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (entry.overview != null && entry.overview!.isNotEmpty) ...[
+                      if (entry.overview != null &&
+                          entry.overview!.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
                           entry.overview!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: _inkSoft, fontSize: 11),
                         ),
                       ],
                     ],
@@ -1067,7 +1184,7 @@ class _EpisodeCalendarCardState extends State<_EpisodeCalendarCard> {
                 padding: const EdgeInsets.only(right: 12),
                 child: Icon(
                   Icons.chevron_right_rounded,
-                  color: _isHovered ? widget.palette.primaryColor : Colors.white24,
+                  color: _isHovered ? widget.palette.primaryColor : _inkFaint,
                   size: 22,
                 ),
               ),

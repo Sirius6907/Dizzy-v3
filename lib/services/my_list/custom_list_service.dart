@@ -93,11 +93,7 @@ class CustomListService {
   }
 
   static Future<bool> rename(String listId, String name) async {
-    final next = CustomListPolicy.rename(
-      lists.value,
-      id: listId,
-      name: name,
-    );
+    final next = CustomListPolicy.rename(lists.value, id: listId, name: name);
     if (next == null) return false;
     await _write(next);
     return true;
@@ -170,8 +166,9 @@ class CustomListService {
             itemKeys: keys.length > CustomListPolicy.maxItemsPerList
                 ? keys.take(CustomListPolicy.maxItemsPerList).toList()
                 : keys,
-            updatedAt:
-                r.updatedAt.isAfter(mine.updatedAt) ? r.updatedAt : mine.updatedAt,
+            updatedAt: r.updatedAt.isAfter(mine.updatedAt)
+                ? r.updatedAt
+                : mine.updatedAt,
           );
         }
       }

@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 
 import '../../models/anime/anime_media.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/anime/anilist_service.dart';
 import '../../services/anime/anime_library_service.dart';
 import '../../services/anime/extractors/anidb_extractor.dart';
@@ -25,20 +25,50 @@ class _Space {
 }
 
 class _Palette {
-  static Color get bg => AppThemeService.currentPalette.value.scaffoldBackgroundColor;
-  static Color get surface => AppThemeService.currentPalette.value.cardBackgroundColor;
+  static Color get bg =>
+      AppThemeService.currentPalette.value.scaffoldBackgroundColor;
+  static Color get surface =>
+      AppThemeService.currentPalette.value.cardBackgroundColor;
   static Color get accent => AppThemeService.currentPalette.value.primaryColor;
-  static Color get accentDim => AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.7);
+  static Color get accentDim =>
+      AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.7);
   static const gold = DizzyGlow.gold;
+
+  static bool get isLight => AppThemeService.currentPalette.value.isLight;
+
+  /// Content sits on an opaque clay sheet, so readable text is ink in light
+  /// mode (white stays for dark clay).
+  static Color get ink => isLight ? PrismLight.ink : Colors.white;
+  static Color get inkSoft => isLight ? PrismLight.inkSoft : Colors.white70;
+  static Color get muted => isLight ? PrismLight.inkSoft : Colors.white54;
+  static Color get faint => isLight ? PrismLight.inkFaint : Colors.white38;
+
+  /// Raised tile / chip fill (genre chips, episode tiles).
+  static Color get panel => isLight ? PrismLight.raisedTop : PrismDark.raised;
+  static Color get border =>
+      isLight ? PrismLight.borderSubtle : PrismDark.borderSubtle;
+
+  /// Carved input / segmented-control fill.
+  static Color get field => isLight ? PrismLight.raisedTop : PrismDark.sunken;
+
+  static Color get star => isLight ? PrismAccent.starTextLight : gold;
+
+  static Color get watchGreen =>
+      isLight ? PrismAccent.successTextLight : const Color(0xFF00D294);
+
+  /// Accent for *text* on clay; the raw accent red is below AA at 13px.
+  static Color get accentText => PrismAccent.text(isLight);
+
+  /// Selected-tile wash (episode grid). Kept faint in light so accent text
+  /// on top still clears 4.5:1.
+  static Color get accentTint =>
+      accent.withValues(alpha: isLight ? 0.12 : 0.35);
 }
 
 class AnimeDetailsPage extends StatefulWidget {
   final AnimeMedia anime;
 
-  const AnimeDetailsPage({
-    super.key,
-    required this.anime,
-  });
+  const AnimeDetailsPage({super.key, required this.anime});
 
   @override
   State<AnimeDetailsPage> createState() => _AnimeDetailsPageState();
@@ -93,13 +123,10 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       curve: Curves.easeOut,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
 
     _animController.forward();
     _loadDetails();
@@ -171,7 +198,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
   void _updateCastScrollButtons() {
     if (!_castScrollController.hasClients) return;
     final canLeft = _castScrollController.position.pixels > 0;
-    final canRight = _castScrollController.position.pixels <
+    final canRight =
+        _castScrollController.position.pixels <
         _castScrollController.position.maxScrollExtent;
     if (_canScrollCastLeft != canLeft || _canScrollCastRight != canRight) {
       setState(() {
@@ -184,7 +212,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
   void _updateRelationsScrollButtons() {
     if (!_relationsScrollController.hasClients) return;
     final canLeft = _relationsScrollController.position.pixels > 0;
-    final canRight = _relationsScrollController.position.pixels <
+    final canRight =
+        _relationsScrollController.position.pixels <
         _relationsScrollController.position.maxScrollExtent;
     if (_canScrollRelationsLeft != canLeft ||
         _canScrollRelationsRight != canRight) {
@@ -198,7 +227,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
   void _updateRecsScrollButtons() {
     if (!_recsScrollController.hasClients) return;
     final canLeft = _recsScrollController.position.pixels > 0;
-    final canRight = _recsScrollController.position.pixels <
+    final canRight =
+        _recsScrollController.position.pixels <
         _recsScrollController.position.maxScrollExtent;
     if (_canScrollRecsLeft != canLeft || _canScrollRecsRight != canRight) {
       setState(() {
@@ -212,8 +242,10 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
     if (!controller.hasClients) return;
     final viewportWidth = controller.position.viewportDimension;
     final scrollAmount = viewportWidth * 0.7 * directionMultiplier;
-    final target = (controller.position.pixels + scrollAmount)
-        .clamp(0.0, controller.position.maxScrollExtent);
+    final target = (controller.position.pixels + scrollAmount).clamp(
+      0.0,
+      controller.position.maxScrollExtent,
+    );
     controller.animateTo(
       target,
       duration: const Duration(milliseconds: 450),
@@ -254,18 +286,14 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
   void _navigateToAnime(AnimeMedia target) {
     Navigator.push(
       context,
-      CinematicSlideRoute(
-        page: AnimeDetailsPage(anime: target),
-      ),
+      CinematicSlideRoute(page: AnimeDetailsPage(anime: target)),
     );
   }
 
-  bool _isDesktop() {
-    if (kIsWeb) return true;
-    return defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.macOS ||
-        defaultTargetPlatform == TargetPlatform.linux;
-  }
+  /// Width decides the layout, not the OS. A narrow Windows window is a
+  /// phone-shaped viewport: the 280px poster column squeezes the title into
+  /// one letter per line.
+  bool _isDesktop() => MediaQuery.sizeOf(context).width >= 860;
 
   @override
   Widget build(BuildContext context) {
@@ -274,8 +302,10 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
     final isDesktop = _isDesktop();
     final screenSize = MediaQuery.sizeOf(context);
 
-    final heroHeight =
-        (screenSize.height * (isDesktop ? 0.46 : 0.4)).clamp(320.0, 520.0);
+    final heroHeight = (screenSize.height * (isDesktop ? 0.46 : 0.4)).clamp(
+      320.0,
+      520.0,
+    );
     final contentMaxWidth = isDesktop ? 1440.0 : double.infinity;
     final overlap = isDesktop ? 120.0 : 70.0;
 
@@ -284,54 +314,83 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       body: AnimatedAmbientBackground(
         child: Stack(
           children: [
-            if (bgUrl.isNotEmpty) _buildBackdrop(bgUrl, screenSize),
+            if (bgUrl.isNotEmpty) _buildBackdrop(bgUrl, heroHeight),
 
-          Positioned.fill(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isDesktop ? _Space.xxl : _Space.lg,
-                        ),
+            Positioned.fill(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             SizedBox(height: heroHeight - overlap),
-                            isDesktop
-                                ? _buildDesktopLayout(posterUrl)
-                                : _buildMobileLayout(posterUrl),
-                            const SizedBox(height: _Space.xl),
+                            // Opaque clay sheet: text below the hero never
+                            // sits on the artwork, so ink stays legible.
+                            Container(
+                              constraints: BoxConstraints(
+                                minHeight:
+                                    screenSize.height - (heroHeight - overlap),
+                              ),
+                              padding: EdgeInsets.fromLTRB(
+                                isDesktop ? _Space.xxl : _Space.lg,
+                                _Space.lg,
+                                isDesktop ? _Space.xxl : _Space.lg,
+                                MediaQuery.paddingOf(context).bottom +
+                                    _Space.xxl,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _Palette.bg,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(PrismRadius.xl),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.28),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, -10),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  isDesktop
+                                      ? _buildDesktopLayout(posterUrl)
+                                      : _buildMobileLayout(posterUrl),
+                                  const SizedBox(height: _Space.xl),
 
-                            // Characters & Voice Cast Row
-                            if (_anime.characters.isNotEmpty) ...[
-                              _buildCharactersRow(),
-                              const SizedBox(height: _Space.xl),
-                            ],
+                                  // Characters & Voice Cast Row
+                                  if (_anime.characters.isNotEmpty) ...[
+                                    _buildCharactersRow(),
+                                    const SizedBox(height: _Space.xl),
+                                  ],
 
-                            // Episodes Section with 50-Chunking & Jump Input
-                            _buildEpisodesSection(),
-                            const SizedBox(height: _Space.xl),
+                                  // Episodes Section with 50-Chunking & Jump Input
+                                  _buildEpisodesSection(),
+                                  const SizedBox(height: _Space.xl),
 
-                            // Franchise & Relations Row
-                            if (_anime.relations.isNotEmpty) ...[
-                              _buildRelationsRow(),
-                              const SizedBox(height: _Space.xl),
-                            ],
+                                  // Franchise & Relations Row
+                                  if (_anime.relations.isNotEmpty) ...[
+                                    _buildRelationsRow(),
+                                    const SizedBox(height: _Space.xl),
+                                  ],
 
-                            // You May Also Like / Recommendations Row
-                            if (_anime.recommendations.isNotEmpty) ...[
-                              _buildRecommendationsRow(),
-                              const SizedBox(height: _Space.xl),
-                            ],
+                                  // You May Also Like / Recommendations Row
+                                  if (_anime.recommendations.isNotEmpty) ...[
+                                    _buildRecommendationsRow(),
+                                    const SizedBox(height: _Space.xl),
+                                  ],
 
-                            const SizedBox(height: _Space.xxl),
+                                  const SizedBox(height: _Space.xxl),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -340,46 +399,46 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 ),
               ),
             ),
-          ),
 
-          // Floating Frosted Back Button (Top Left)
-          Positioned(
-            top: _Space.lg,
-            left: isDesktop ? _Space.xxl : _Space.md,
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.1),
-                    padding: const EdgeInsets.all(12),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.14),
+            // Floating Frosted Back Button (Top Left)
+            Positioned(
+              top: _Space.lg,
+              left: isDesktop ? _Space.xxl : _Space.md,
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    tooltip: 'Back',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      padding: const EdgeInsets.all(12),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.14),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
   // ─── Persistent Cinematic Backdrop ─────────────────────────────
-  Widget _buildBackdrop(String bgUrl, Size screenSize) {
+  Widget _buildBackdrop(String bgUrl, double heroHeight) {
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
-      height: screenSize.height,
+      height: heroHeight,
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: Stack(
@@ -399,7 +458,11 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [_Palette.bg, const Color(0x991A1D26), Colors.transparent],
+                  colors: [
+                    _Palette.bg,
+                    const Color(0x991A1D26),
+                    Colors.transparent,
+                  ],
                   stops: const [0.0, 0.42, 0.82],
                 ),
               ),
@@ -410,8 +473,12 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, const Color(0x661A1D26), _Palette.bg],
-                  stops: const [0.0, 0.62, 0.94],
+                  colors: [
+                    Colors.transparent,
+                    const Color(0x661A1D26),
+                    _Palette.bg,
+                  ],
+                  stops: const [0.0, 0.62, 1.0],
                 ),
               ),
             ),
@@ -577,14 +644,16 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
             fontWeight: FontWeight.w900,
             height: 1.12,
             letterSpacing: -0.8,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.7),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            color: _Palette.ink,
+            shadows: _Palette.isLight
+                ? null
+                : [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
           ),
         ),
         if (_anime.titleNative.isNotEmpty &&
@@ -594,7 +663,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
             child: Text(
               _anime.titleNative,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: _Palette.inkSoft,
                 fontSize: isDesktop ? 14 : 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -611,8 +680,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       items.add(
         Text(
           '${_anime.seasonYear}',
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _Palette.ink,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -624,7 +693,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       items.add(
         Text(
           _anime.formattedFormat,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: _Palette.inkSoft, fontSize: 14),
         ),
       );
     }
@@ -634,7 +703,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       items.add(
         Text(
           '$totalEps Ep${totalEps > 1 ? "s" : ""}',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: _Palette.inkSoft, fontSize: 14),
         ),
       );
     }
@@ -644,19 +713,25 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+            color: _Palette.isLight
+                ? PrismLight.raisedTop
+                : Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+            border: Border.all(
+              color: _Palette.isLight
+                  ? _Palette.border
+                  : Colors.white.withValues(alpha: 0.25),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.star_rounded, color: _Palette.gold, size: 14),
+              Icon(Icons.star_rounded, color: _Palette.star, size: 14),
               const SizedBox(width: 4),
               Text(
                 _anime.formattedScore,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _Palette.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -671,7 +746,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       items.add(
         Text(
           _anime.studioName,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: _Palette.inkSoft, fontSize: 14),
         ),
       );
     }
@@ -681,9 +756,12 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       spaced.add(items[i]);
       if (i < items.length - 1) {
         spaced.add(
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: _Space.sm),
-            child: Text('•', style: TextStyle(color: Colors.white30, fontSize: 16)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: _Space.sm),
+            child: Text(
+              '•',
+              style: TextStyle(color: _Palette.faint, fontSize: 16),
+            ),
           ),
         );
       }
@@ -751,27 +829,27 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
         library.setWatchlistStatus(_anime, status);
         setState(() {});
       },
-      color: DizzyVoid.surface1,
+      color: _Palette.panel,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        side: BorderSide(color: _Palette.border),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: AnimeWatchStatus.watching,
-          child: Text('Watching', style: TextStyle(color: Colors.white)),
+          child: Text('Watching', style: TextStyle(color: _Palette.ink)),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: AnimeWatchStatus.planToWatch,
-          child: Text('Plan to Watch', style: TextStyle(color: Colors.white)),
+          child: Text('Plan to Watch', style: TextStyle(color: _Palette.ink)),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: AnimeWatchStatus.completed,
-          child: Text('Completed', style: TextStyle(color: Colors.white)),
+          child: Text('Completed', style: TextStyle(color: _Palette.ink)),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: AnimeWatchStatus.dropped,
-          child: Text('Dropped', style: TextStyle(color: Colors.white54)),
+          child: Text('Dropped', style: TextStyle(color: _Palette.inkSoft)),
         ),
       ],
       child: _HoverScale(
@@ -779,12 +857,10 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
           width: fullWidth ? double.infinity : null,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: _Palette.panel,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: watchItem != null
-                  ? const Color(0xFF00D294)
-                  : Colors.white.withValues(alpha: 0.15),
+              color: watchItem != null ? _Palette.watchGreen : _Palette.border,
             ),
           ),
           child: Row(
@@ -796,8 +872,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     ? Icons.check_circle_rounded
                     : Icons.bookmark_outline_rounded,
                 color: watchItem != null
-                    ? const Color(0xFF00D294)
-                    : Colors.white70,
+                    ? _Palette.watchGreen
+                    : _Palette.inkSoft,
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -806,18 +882,16 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     ? watchItem.status.name.toUpperCase()
                     : 'ADD TO LIST',
                 style: TextStyle(
-                  color: watchItem != null
-                      ? const Color(0xFF00D294)
-                      : Colors.white70,
+                  color: watchItem != null ? _Palette.watchGreen : _Palette.ink,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.3,
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(
+              Icon(
                 Icons.arrow_drop_down_rounded,
-                color: Colors.white54,
+                color: _Palette.muted,
                 size: 18,
               ),
             ],
@@ -836,16 +910,16 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
           description,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: _Palette.inkSoft,
             fontSize: 14.5,
             height: 1.55,
           ),
         ),
         secondChild: Text(
           description,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: _Palette.inkSoft,
             fontSize: 14.5,
             height: 1.55,
           ),
@@ -866,14 +940,14 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
             (g) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
+                color: _Palette.panel,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                border: Border.all(color: _Palette.border),
               ),
               child: Text(
                 g,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: _Palette.inkSoft,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -929,9 +1003,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                   width: 100,
                                   height: 110,
                                   color: _Palette.surface,
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.person_rounded,
-                                    color: Colors.white24,
+                                    color: _Palette.faint,
                                   ),
                                 ),
                               ),
@@ -940,8 +1014,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                           const SizedBox(height: 6),
                           Text(
                             char.nameFull,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: _Palette.ink,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -950,9 +1024,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                           ),
                           Text(
                             char.role,
-                            style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 10,
+                            style: TextStyle(
+                              color: _Palette.inkSoft,
+                              fontSize: PrismType.micro,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1025,7 +1099,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 const SizedBox(width: 8),
                 Text(
                   '($totalEps total)',
-                  style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  style: TextStyle(color: _Palette.muted, fontSize: 14),
                 ),
               ],
             ),
@@ -1033,54 +1107,70 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // SUB / DUB Switcher
+                // SUB / DUB Switcher (44px segments + 2px shell = 48dp)
                 Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: DizzyVoid.surface1,
+                    color: _Palette.field,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: _Palette.border),
                   ),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => setState(() => _isDub = false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: !_isDub ? _Palette.accent : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'SUB',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
+                      Semantics(
+                        button: true,
+                        selected: !_isDub,
+                        label: 'Subtitles',
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isDub = false),
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: !_isDub
+                                  ? _Palette.accent
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'SUB',
+                              style: TextStyle(
+                                color: !_isDub
+                                    ? PrismAccent.onAccent
+                                    : _Palette.inkSoft,
+                                fontSize: PrismType.micro,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => setState(() => _isDub = true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _isDub ? _Palette.accent : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'DUB',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
+                      Semantics(
+                        button: true,
+                        selected: _isDub,
+                        label: 'Dubbed',
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isDub = true),
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _isDub
+                                  ? _Palette.accent
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'DUB',
+                              style: TextStyle(
+                                color: _isDub
+                                    ? PrismAccent.onAccent
+                                    : _Palette.inkSoft,
+                                fontSize: PrismType.micro,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                         ),
@@ -1093,22 +1183,22 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
 
                 // Jump to Ep Input
                 Container(
-                  width: 130,
-                  height: 34,
+                  width: 140,
+                  height: PrismSpace.giant,
                   decoration: BoxDecoration(
-                    color: DizzyVoid.surface1,
+                    color: _Palette.field,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: _Palette.border),
                   ),
                   child: TextField(
                     controller: _jumpEpController,
                     keyboardType: TextInputType.number,
                     textInputAction: TextInputAction.go,
                     onSubmitted: _jumpToEpisode,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(color: _Palette.ink, fontSize: 12),
                     decoration: InputDecoration(
                       hintText: 'Jump to ep #',
-                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                      hintStyle: TextStyle(color: _Palette.muted, fontSize: 11),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -1121,8 +1211,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                           color: _Palette.accent,
                           size: 16,
                         ),
-                        onPressed: () =>
-                            _jumpToEpisode(_jumpEpController.text),
+                        onPressed: () => _jumpToEpisode(_jumpEpController.text),
                       ),
                     ),
                   ),
@@ -1133,10 +1222,10 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 // 50-Chunk Dropdown
                 if (totalBatches > 1)
                   Container(
-                    height: 34,
+                    height: PrismSpace.giant,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
+                      color: _Palette.field,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _Palette.accent.withValues(alpha: 0.4),
@@ -1145,9 +1234,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     child: DropdownButton<int>(
                       value: currentBatchSafe,
                       underline: const SizedBox.shrink(),
-                      dropdownColor: DizzyVoid.surface1,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      dropdownColor: _Palette.panel,
+                      style: TextStyle(
+                        color: _Palette.ink,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1156,17 +1245,14 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                         color: _Palette.accent,
                         size: 16,
                       ),
-                      items: List.generate(
-                        totalBatches,
-                        (idx) {
-                          final start = idx * _chunkSize + 1;
-                          final end = math.min((idx + 1) * _chunkSize, totalEps);
-                          return DropdownMenuItem(
-                            value: idx,
-                            child: Text('$start – $end'),
-                          );
-                        },
-                      ),
+                      items: List.generate(totalBatches, (idx) {
+                        final start = idx * _chunkSize + 1;
+                        final end = math.min((idx + 1) * _chunkSize, totalEps);
+                        return DropdownMenuItem(
+                          value: idx,
+                          child: Text('$start – $end'),
+                        );
+                      }),
                       onChanged: (val) {
                         if (val != null) {
                           setState(() => _selectedEpisodeBatch = val);
@@ -1223,21 +1309,17 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: isHighlighted
-                  ? const Color(0xFFEF4444).withValues(alpha: 0.30)
+                  ? _Palette.accentTint
                   : isCurrent
-                      ? _Palette.accent.withValues(alpha: 0.35)
-                      : (isWatched
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : DizzyVoid.surface1),
+                  ? _Palette.accentTint
+                  : (isWatched ? _Palette.panel : _Palette.field),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isHighlighted
-                    ? const Color(0xFFEF4444)
+                    ? PrismAccent.danger
                     : isCurrent
-                        ? _Palette.accent
-                        : (isWatched
-                            ? Colors.white24
-                            : Colors.white.withValues(alpha: 0.08)),
+                    ? _Palette.accent
+                    : _Palette.border,
                 width: (isCurrent || isHighlighted) ? 1.5 : 1,
               ),
             ),
@@ -1245,11 +1327,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
               child: Text(
                 '$epNum',
                 style: TextStyle(
-                  color: isHighlighted
-                      ? const Color(0xFFEF4444)
-                      : isCurrent
-                          ? _Palette.accent
-                          : (isWatched ? Colors.white70 : Colors.white),
+                  color: (isCurrent || isHighlighted)
+                      ? _Palette.ink
+                      : (isWatched ? _Palette.inkSoft : _Palette.ink),
                   fontSize: 13.5,
                   fontWeight: (isCurrent || isHighlighted)
                       ? FontWeight.w900
@@ -1309,7 +1389,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: _Palette.accent.withValues(alpha: 0.15),
+                                    color: _Palette.accent.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     blurRadius: 18,
                                     spreadRadius: -4,
                                   ),
@@ -1332,9 +1414,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                     maxWidthDiskCache: 500,
                                     errorWidget: (_, __, ___) => Container(
                                       color: _Palette.surface,
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.movie_creation_outlined,
-                                        color: Colors.white24,
+                                        color: _Palette.faint,
                                         size: 32,
                                       ),
                                     ),
@@ -1355,8 +1437,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                               child: Text(
                                 rel.relationType.replaceAll('_', ' '),
                                 style: TextStyle(
-                                  color: _Palette.accent,
-                                  fontSize: 9.5,
+                                  color: _Palette.accentText,
+                                  fontSize: PrismType.micro,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.2,
                                 ),
@@ -1367,8 +1449,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                             const SizedBox(height: 4),
                             Text(
                               rel.title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: _Palette.ink,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 height: 1.2,
@@ -1389,7 +1471,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
-                  left: _canScrollRelationsLeft && _isHoveringRelations ? 10 : -60,
+                  left: _canScrollRelationsLeft && _isHoveringRelations
+                      ? 10
+                      : -60,
                   top: 0,
                   bottom: 0,
                   child: Center(
@@ -1402,7 +1486,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
-                  right: _canScrollRelationsRight && _isHoveringRelations ? 10 : -60,
+                  right: _canScrollRelationsRight && _isHoveringRelations
+                      ? 10
+                      : -60,
                   top: 0,
                   bottom: 0,
                   child: Center(
@@ -1447,7 +1533,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: _anime.recommendations.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: _Space.md),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: _Space.md),
                     itemBuilder: (context, index) {
                       final rec = _anime.recommendations[index];
                       return SizedBox(
@@ -1462,12 +1549,16 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: _Palette.accent.withValues(alpha: 0.15),
+                                      color: _Palette.accent.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       blurRadius: 18,
                                       spreadRadius: -4,
                                     ),
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.45),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
                                       blurRadius: 14,
                                       offset: const Offset(0, 6),
                                     ),
@@ -1485,9 +1576,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                       maxWidthDiskCache: 500,
                                       errorWidget: (_, __, ___) => Container(
                                         color: _Palette.surface,
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.movie_creation_outlined,
-                                          color: Colors.white24,
+                                          color: _Palette.faint,
                                           size: 32,
                                         ),
                                       ),
@@ -1498,8 +1589,8 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                               const SizedBox(height: 8),
                               Text(
                                 rec.displayTitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: _Palette.ink,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   height: 1.25,
@@ -1512,9 +1603,9 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     rec.formattedFormat,
-                                    style: const TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 11,
+                                    style: TextStyle(
+                                      color: _Palette.inkSoft,
+                                      fontSize: PrismType.micro,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     maxLines: 1,
@@ -1569,11 +1660,11 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
+      style: TextStyle(
+        fontSize: PrismType.title,
+        fontWeight: PrismType.wBold,
         letterSpacing: -0.4,
-        color: Colors.white,
+        color: _Palette.ink,
       ),
     );
   }
@@ -1605,12 +1696,7 @@ class _HoverScaleState extends State<_HoverScale> {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           transform: Matrix4.identity()
-            ..scaleByDouble(
-              _hover ? 1.04 : 1.0,
-              _hover ? 1.04 : 1.0,
-              1.0,
-              1.0,
-            ),
+            ..scaleByDouble(_hover ? 1.04 : 1.0, _hover ? 1.04 : 1.0, 1.0, 1.0),
           transformAlignment: Alignment.center,
           child: widget.child,
         ),

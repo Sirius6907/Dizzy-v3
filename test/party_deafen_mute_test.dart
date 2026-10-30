@@ -21,8 +21,11 @@ void main() {
       PartyVoiceService.micOn.value = false;
       try {
         await PartyVoiceService.setMicEnabled(true);
-        expect(PartyVoiceService.micOn.value, isFalse,
-            reason: 'Discord rule: deafened mic stays off');
+        expect(
+          PartyVoiceService.micOn.value,
+          isFalse,
+          reason: 'Discord rule: deafened mic stays off',
+        );
       } finally {
         PartyVoiceService.deafened.value = false;
       }

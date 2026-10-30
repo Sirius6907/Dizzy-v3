@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../design/dizzy_tactile.dart';
 import '../../design/dizzy_tokens.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/stats/wrap_year.dart';
 import '../../services/theme/app_theme_service.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 
 /// F5 — the shareable card.
 ///
@@ -21,27 +22,26 @@ class WrapCard extends StatelessWidget {
   /// the caller can decide how to confirm it.
   final Future<void> Function(String shareText) onShare;
 
-  const WrapCard({
-    super.key,
-    required this.wrap,
-    required this.onShare,
-  });
+  const WrapCard({super.key, required this.wrap, required this.onShare});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
     final shareText = WrapShareCopy.shareText(wrap);
 
-    return DizzyTactileCard(
+    return PrismCard(
       padding: const EdgeInsets.all(DizzySpace.md),
-      borderColor: palette.primaryColor.withValues(alpha: 0.3),
+      glowColor: palette.primaryColor.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             WrapShareCopy.title(wrap),
-            style: const TextStyle(
-              color: DizzyVoid.bone,
+            style: TextStyle(
+              color: ink,
               fontSize: DizzyType.subtitle,
               fontWeight: FontWeight.w900,
             ),
@@ -49,10 +49,7 @@ class WrapCard extends StatelessWidget {
           const SizedBox(height: DizzySpace.xs),
           Text(
             WrapShareCopy.hoursLine(wrap),
-            style: const TextStyle(
-              color: DizzyVoid.ash,
-              fontSize: DizzyType.body,
-            ),
+            style: TextStyle(color: inkSoft, fontSize: DizzyType.body),
           ),
           const SizedBox(height: DizzySpace.md),
           Row(
@@ -75,10 +72,7 @@ class WrapCard extends StatelessWidget {
           const SizedBox(height: DizzySpace.xs),
           Text(
             WrapShareCopy.topTypeLine(wrap),
-            style: const TextStyle(
-              color: DizzyVoid.ash,
-              fontSize: DizzyType.caption,
-            ),
+            style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
           ),
           const SizedBox(height: DizzySpace.md),
           SizedBox(
@@ -94,9 +88,7 @@ class WrapCard extends StatelessWidget {
                 backgroundColor: palette.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: DizzySpace.sm),
-                shape: RoundedRectangleBorder(
-                  borderRadius: DizzyRadius.mdAll,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: DizzyRadius.mdAll),
               ),
             ),
           ),
@@ -106,7 +98,7 @@ class WrapCard extends StatelessWidget {
           Text(
             shareText,
             style: TextStyle(
-              color: DizzyVoid.ash.withValues(alpha: 0.8),
+              color: inkSoft.withValues(alpha: 0.8),
               fontSize: DizzyType.caption,
             ),
           ),
@@ -124,20 +116,26 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+
     return Container(
       padding: const EdgeInsets.all(DizzySpace.sm),
       decoration: BoxDecoration(
-        color: DizzyVoid.voidB,
+        color: isLight ? PrismLight.raisedBottom : DizzyVoid.voidB,
         borderRadius: DizzyRadius.mdAll,
-        border: Border.fromBorderSide(DizzyEdge.hairline),
+        border: isLight
+            ? Border.all(color: PrismLight.borderSubtle)
+            : Border.fromBorderSide(DizzyEdge.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             value,
-            style: const TextStyle(
-              color: DizzyVoid.bone,
+            style: TextStyle(
+              color: ink,
               fontSize: DizzyType.title,
               fontWeight: FontWeight.w900,
             ),
@@ -147,10 +145,7 @@ class _Tile extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: DizzyVoid.ash,
-              fontSize: DizzyType.caption,
-            ),
+            style: TextStyle(color: inkSoft, fontSize: DizzyType.caption),
           ),
         ],
       ),

@@ -1,496 +1,164 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../widgets/common/offline_aware_scaffold.dart';
-import 'package:dizzy/widgets/tactile/dizzy_tactile_card.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
-import '../../services/theme/app_theme_service.dart';
-import '../../services/audiobook/audiobook_settings.dart';
-import '../../services/theme/custom_background_service.dart';
-import '../../services/theme/custom_accent_service.dart';
-import '../../widgets/theme/accent_studio_sheet.dart';
-import '../../services/theme/dock_settings.dart';
-import '../../services/iptv/iptv_settings.dart';
-import '../../services/manga/manga_settings.dart';
-import '../../services/music/music_settings.dart';
-import 'appearance/audiobook_settings_page.dart';
-import 'appearance/custom_background_settings_page.dart';
-import 'appearance/dock_settings_page.dart';
-import 'appearance/home_ui_settings_page.dart';
-import 'appearance/tactile_theme_settings_page.dart';
-import 'appearance/live_tv_settings_page.dart';
-import 'appearance/manga_settings_page.dart';
-import 'appearance/music_settings_page.dart';
-import '../../widgets/guide/guide_trigger.dart';
 
-class AppearanceSettingsPage extends StatefulWidget {
+import '../../design/prism_shadows.dart';
+import '../../design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
+import '../../widgets/common/offline_aware_scaffold.dart';
+
+/// Two clay themes, one page. No wallpaper engine, no accent studio, no
+/// per-screen style knobs — picking a look should take one tap.
+class AppearanceSettingsPage extends StatelessWidget {
   const AppearanceSettingsPage({super.key});
 
   @override
-  State<AppearanceSettingsPage> createState() => _AppearanceSettingsPageState();
-}
-
-class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
-  @override
   Widget build(BuildContext context) {
-    return GuideTrigger(
-      guideKey: 'appearance',
-      steps: AppGuides.appearance,
-      child: OfflineAwareScaffold(
-        backgroundColor: DizzyVoid.voidA,
-        appBar: AppBar(
-          backgroundColor: DizzyVoid.voidB,
-          surfaceTintColor: Colors.transparent,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-            onPressed: () => Navigator.pop(context),
+    return ValueListenableBuilder<AppThemePalette>(
+      valueListenable: AppThemeService.currentPalette,
+      builder: (context, palette, _) {
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : PrismDark.ink;
+        final inkSoft = isLight ? PrismLight.inkSoft : PrismDark.inkSoft;
+        return OfflineAwareScaffold(
+          backgroundColor: palette.scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: palette.appBarBackgroundColor,
+            surfaceTintColor: Colors.transparent,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+              tooltip: 'Back',
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              'Appearance',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+            ),
           ),
-          title: const Text(
-            'Appearance & Interface',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
-          ),
-        ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              children: [
-                // Header description
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Text(
-                    'Fine-tune the visual atmosphere, custom wallpaper background, color palettes, and interface layouts.',
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                children: [
+                  Text(
+                    'Choose a clay',
                     style: TextStyle(
-                      fontSize: 13.5,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      height: 1.4,
+                      color: ink,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
                     ),
                   ),
-                ),
-
-                // Button 0: Custom Wallpaper & Atmosphere Background
-                ValueListenableBuilder<CustomBackgroundData>(
-                  valueListenable: CustomBackgroundService.notifier,
-                  builder: (context, customBg, _) {
-                    return ValueListenableBuilder<AppThemePalette>(
-                      valueListenable: AppThemeService.currentPalette,
-                      builder: (context, currentPalette, _) {
-                        return _buildSectionButton(
-                          icon: Icons.wallpaper_rounded,
-                          iconColor: currentPalette.primaryColor,
-                          title: 'Custom Background & Wallpaper',
-                          subtitle: 'Upload custom photos, choose curated dark wallpapers, and blend theme ambient lighting',
-                          badgeText: customBg.hasCustomBackground ? 'Custom Active' : 'Default Theme',
-                          badgeColor: customBg.hasCustomBackground ? currentPalette.primaryColor : Colors.white38,
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CustomBackgroundSettingsPage(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // UX6: Accent Studio & OLED Mode
-                ValueListenableBuilder<Color?>(
-                  valueListenable: CustomAccentService.customAccent,
-                  builder: (context, customAccent, _) {
-                    final isOled = CustomAccentService.amoledTrueBlack.value;
-                    final displayColor = customAccent ?? AppThemeService.currentPalette.value.primaryColor;
-                    return _buildSectionButton(
-                      icon: Icons.palette_rounded,
-                      iconColor: displayColor,
-                      title: 'Accent Studio & OLED Mode',
-                      subtitle: 'Custom hex neon accent glow, true AMOLED 0x000000 pure black, and blur tuning',
-                      badgeText: isOled ? 'AMOLED Black' : (customAccent != null ? 'Custom Glow' : 'Default'),
-                      badgeColor: displayColor,
-                      onTap: () async {
-                        await AccentStudioSheet.show(context);
-                        setState(() {});
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 1: Tactile Theme Settings
-                ValueListenableBuilder<AppThemePalette>(
-                  valueListenable: AppThemeService.currentPalette,
-                  builder: (context, currentPalette, _) {
-                    return _buildSectionButton(
-                      icon: Icons.palette_rounded,
-                      iconColor: currentPalette.primaryColor,
-                      title: 'Tactile Theme',
-                      subtitle: 'Theme palette, elevation levels, edge sharpness, and shadow style',
-                      badgeText: currentPalette.name,
-                      badgeColor: currentPalette.primaryColor,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const TactileThemeSettingsPage(),
-                          ),
-                        );
-                        setState(() {});
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 2: Liquid Dock / Navbar Items
-                ValueListenableBuilder<Map<String, bool>>(
-                  valueListenable: DockSettings.enabledNotifier,
-                  builder: (context, enabledMap, _) {
-                    final activeCount = enabledMap.values.where((v) => v).length;
-                    final palette = AppThemeService.currentPalette.value;
-                    return _buildSectionButton(
-                      icon: Icons.dock_rounded,
-                      iconColor: palette.primaryColor,
-                      title: 'Liquid Dock / Deck Navbar',
-                      subtitle: 'Choose which navigation shortcuts appear in the bottom liquid glass dock across all screens',
-                      badgeText: '$activeCount / ${DockItemKey.values.length} Items',
-                      badgeColor: palette.primaryColor,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const DockSettingsPage(),
-                          ),
-                        );
-                        setState(() {});
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 3: Home Page UI & Themes
-                ValueListenableBuilder<AppThemePalette>(
-                  valueListenable: AppThemeService.currentPalette,
-                  builder: (context, currentPalette, _) {
-                    return _buildSectionButton(
-                      icon: Icons.palette_rounded,
-                      iconColor: currentPalette.primaryColor,
-                      title: 'Home Page UI & Themes',
-                      subtitle: 'Color schemes, "Because you have on your list" smart slider, hero spotlight, and card density',
-                      badgeText: currentPalette.name,
-                      badgeColor: currentPalette.primaryColor,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HomeUiSettingsPage(),
-                          ),
-                        );
-                        setState(() {});
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 3: Live TV & Sports UI
-                ValueListenableBuilder<bool>(
-                  valueListenable: IptvSettings.enableSpotlight,
-                  builder: (context, spotlightEnabled, _) {
-                    return ValueListenableBuilder<AppThemePalette>(
-                      valueListenable: AppThemeService.currentPalette,
-                      builder: (context, currentPalette, _) {
-                        return _buildSectionButton(
-                          icon: Icons.live_tv_rounded,
-                          iconColor: currentPalette.primaryColor,
-                          title: 'Live TV & Sports UI',
-                          subtitle: 'Broadcast hero spotlight, channel card density, category ordering, and live badge styling',
-                          badgeText: spotlightEnabled ? 'Spotlight ON' : 'Compact',
-                          badgeColor: currentPalette.primaryColor,
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LiveTvSettingsPage(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 4: Manga UI & Reader Atmosphere
-                ValueListenableBuilder<MangaReadingMode>(
-                  valueListenable: MangaSettings.defaultReadingMode,
-                  builder: (context, readingMode, _) {
-                    return ValueListenableBuilder<AppThemePalette>(
-                      valueListenable: AppThemeService.currentPalette,
-                      builder: (context, currentPalette, _) {
-                        return _buildSectionButton(
-                          icon: Icons.menu_book_rounded,
-                          iconColor: currentPalette.primaryColor,
-                          title: 'Manga UI & Reader Atmosphere',
-                          subtitle: 'Ambient moving lighting, card density, reading layout widths, webtoon/horizontal modes, and page deck preview',
-                          badgeText: readingMode == MangaReadingMode.webtoon ? 'Webtoon' : 'Horizontal',
-                          badgeColor: currentPalette.primaryColor,
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MangaSettingsPage(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 5: Audiobook UI & Player Studio
-                ValueListenableBuilder<AudiobookPlayerPreset>(
-                  valueListenable: AudiobookSettings.selectedPlayerPreset,
-                  builder: (context, playerPreset, _) {
-                    return ValueListenableBuilder<AppThemePalette>(
-                      valueListenable: AppThemeService.currentPalette,
-                      builder: (context, currentPalette, _) {
-                        return _buildSectionButton(
-                          icon: Icons.headphones_rounded,
-                          iconColor: currentPalette.primaryColor,
-                          title: 'Audiobook UI & Player Studio',
-                          subtitle: 'Hero spotlight, 5 distinct player designs, drag & drop modular studio, waveform canvas scrubber, and custom controls',
-                          badgeText: playerPreset.label.split(' ').first,
-                          badgeColor: currentPalette.primaryColor,
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AudiobookSettingsPage(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // Button 6: Music UI & Player Studio
-                ValueListenableBuilder<MusicFullscreenPreset>(
-                  valueListenable: MusicSettings.selectedFullscreenPreset,
-                  builder: (context, fullPreset, _) {
-                    return ValueListenableBuilder<AppThemePalette>(
-                      valueListenable: AppThemeService.currentPalette,
-                      builder: (context, currentPalette, _) {
-                        return _buildSectionButton(
-                          icon: Icons.music_note_rounded,
-                          iconColor: currentPalette.primaryColor,
-                          title: 'Music UI & Player Studio',
-                          subtitle: 'Hero spotlight, lossless badges, dual-engine customizer for both mini dock bar and fullscreen turntable/equalizer',
-                          badgeText: fullPreset.label.split(' ').first,
-                          badgeColor: currentPalette.primaryColor,
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MusicSettingsPage(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 28),
-
-                // Visual Overview Notes
-                Text(
-                  'LIVE CUSTOMIZATION SCOPE',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.35),
-                    letterSpacing: 1.1,
+                  const SizedBox(height: 6),
+                  Text(
+                    'Soft clay surfaces, glass edges, real depth. Text stays '
+                    'black on light clay and white on dark clay.',
+                    style: TextStyle(color: inkSoft, fontSize: 13.5, height: 1.45),
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                _buildScopeTile(
-                  icon: Icons.dock_rounded,
-                  title: 'Bottom Liquid Dock',
-                  description: 'Dock items react dynamically with your custom hover magnification, proximity ripples, and wobble springs.',
-                ),
-                const SizedBox(height: 10),
-                _buildScopeTile(
-                  icon: Icons.play_circle_outline_rounded,
-                  title: 'Video Player & Watch Screens',
-                  description: 'Overlays, glass sheets, and media controls render with your custom optical blur, refraction index, and border shimmer.',
-                ),
-                const SizedBox(height: 10),
-                _buildScopeTile(
-                  icon: Icons.home_rounded,
-                  title: 'Home Page & Discovery',
-                  description: 'Adapts to your chosen theme accent colors, smart BestSimilar recommendation slider, and chosen poster density.',
-                ),
-              ],
+                  const SizedBox(height: 22),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final wide = constraints.maxWidth >= 520;
+                      final cards = AppThemeService.palettes
+                          .map(
+                            (option) => _ClayOption(
+                              option: option,
+                              selected: option.id == palette.id,
+                              onTap: () {
+                                if (option.id == palette.id) return;
+                                HapticFeedback.selectionClick();
+                                AppThemeService.setPalette(option);
+                              },
+                            ),
+                          )
+                          .toList(growable: false);
+                      if (!wide) {
+                        return Column(
+                          children: [
+                            cards[0],
+                            const SizedBox(height: 16),
+                            cards[1],
+                          ],
+                        );
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: cards[0]),
+                          const SizedBox(width: 16),
+                          Expanded(child: cards[1]),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'THEME APPLIES EVERYWHERE',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: inkSoft.withValues(alpha: 0.7),
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _note(
+                    Icons.contrast_rounded,
+                    'High-contrast body text',
+                    'Every screen follows the same rule, so nothing washes '
+                    'out in a bright room or disappears at night.',
+                    palette,
+                  ),
+                  const SizedBox(height: 10),
+                  _note(
+                    Icons.layers_rounded,
+                    'One surface language',
+                    'Cards, sheets, dialogs and the dock all sit on the same '
+                    'clay, so the app reads as one piece.',
+                    palette,
+                  ),
+                  const SizedBox(height: 10),
+                  _note(
+                    Icons.movie_filter_rounded,
+                    'Cinema screens stay dark',
+                    'The video and music players keep their own dark chrome — '
+                    'controls never compete with the picture.',
+                    palette,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionButton({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required String badgeText,
-    required Color badgeColor,
-    required VoidCallback onTap,
-  }) {
-    return DizzyTactileCard(
-      margin: EdgeInsets.zero,
-      padding: EdgeInsets.zero,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
+        );
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: iconColor, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            badgeText,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: badgeColor,
-                            ),
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.45),
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.3),
-              ),
-            ],
-          ),
-        ),
     );
   }
 
-  Widget _buildScopeTile({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
+  Widget _note(
+    IconData icon,
+    String title,
+    String body,
+    AppThemePalette palette,
+  ) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : PrismDark.ink;
+    final inkSoft = isLight ? PrismLight.inkSoft : PrismDark.inkSoft;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: BorderRadius.circular(14),
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+        borderRadius: BorderRadius.circular(PrismRadius.md),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: isLight ? PrismLight.borderSubtle : PrismDark.borderSubtle,
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 2),
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: Colors.white70, size: 18),
-          ),
+          Icon(icon, size: 20, color: inkSoft),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -498,25 +166,244 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: ink,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.4),
-                    height: 1.3,
-                  ),
+                  body,
+                  style: TextStyle(color: inkSoft, fontSize: 12, height: 1.35),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A live miniature of the theme: clay background, two raised tiles, a glass
+/// pill and real body text in that theme's ink.
+class _ClayOption extends StatefulWidget {
+  final AppThemePalette option;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ClayOption({
+    required this.option,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  State<_ClayOption> createState() => _ClayOptionState();
+}
+
+class _ClayOptionState extends State<_ClayOption> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final option = widget.option;
+    final previewLight = option.isLight;
+    final ink = previewLight ? PrismLight.ink : PrismDark.ink;
+    final inkSoft = previewLight ? PrismLight.inkSoft : PrismDark.inkSoft;
+    final selected = widget.selected;
+    final accent = option.primaryColor;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: PrismMotion.standard,
+          curve: PrismMotion.curve,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: option.scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(PrismRadius.lg),
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : (previewLight
+                        ? PrismLight.borderSubtle
+                        : PrismDark.borderSubtle),
+              width: selected ? 2 : 1,
+            ),
+            boxShadow: PrismShadows.raised(
+              isLight: previewLight,
+              scale: _hovered ? 0.85 : 0.7,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Miniature app surface.
+              Container(
+                height: 132,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: previewLight ? PrismLight.raisedTop : PrismDark.raised,
+                  borderRadius: BorderRadius.circular(PrismRadius.md),
+                  boxShadow: PrismShadows.resting(
+                    isLight: previewLight,
+                    scale: 0.55,
+                  ),
+                  gradient: PrismShadows.surfaceGradient(previewLight),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 17,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Now playing',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: ink,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: previewLight
+                                ? PrismLight.sunken.withValues(alpha: 0.8)
+                                : PrismDark.sunken,
+                            borderRadius: BorderRadius.circular(PrismRadius.pill),
+                            border: Border.all(
+                              color: previewLight
+                                  ? PrismLight.borderSubtle
+                                  : PrismDark.borderSubtle,
+                            ),
+                          ),
+                          child: Text(
+                            '4K',
+                            style: TextStyle(
+                              color: inkSoft,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Aa',
+                      style: TextStyle(
+                        color: ink,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Body text stays crisp on every surface.',
+                      maxLines: 2,
+                      style: TextStyle(
+                        color: inkSoft,
+                        fontSize: 9.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          option.name,
+                          style: TextStyle(
+                            color: previewLight
+                                ? PrismLight.ink
+                                : PrismDark.ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          previewLight ? 'Black text · soft daylight' : 'White text · deep night',
+                          style: TextStyle(
+                            color: previewLight
+                                ? PrismLight.inkSoft
+                                : PrismDark.inkSoft,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AnimatedContainer(
+                    duration: PrismMotion.micro,
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: selected ? accent : Colors.transparent,
+                      border: Border.all(
+                        color: selected
+                            ? accent
+                            : (previewLight
+                                  ? PrismLight.borderSubtle
+                                  : PrismDark.borderSubtle),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: selected
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

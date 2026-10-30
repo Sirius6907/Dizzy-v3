@@ -31,31 +31,40 @@ class FlaxMoviesScraper extends StreamScraper {
     'Accept': 'application/json, text/plain, */*',
   };
 
-  Future<List<String>> _getWorkerUrls(http.Client client, String embedUrl) async {
+  Future<List<String>> _getWorkerUrls(
+    http.Client client,
+    String embedUrl,
+  ) async {
     final foundUrls = <String>[];
 
     try {
-      final res = await client.get(
-        Uri.parse(embedUrl),
-        headers: {
-          'User-Agent': _ua,
-          'Referer': '$_baseUrl/',
-          'Origin': _baseUrl,
-        },
-      ).timeout(const Duration(seconds: 8));
+      final res = await client
+          .get(
+            Uri.parse(embedUrl),
+            headers: {
+              'User-Agent': _ua,
+              'Referer': '$_baseUrl/',
+              'Origin': _baseUrl,
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final html = res.body;
 
-        final directMatch = RegExp(r'''WORKER_URL\s*[:=]\s*["'](https?://[^"']+)["']''', caseSensitive: false)
-            .firstMatch(html);
+        final directMatch = RegExp(
+          r'''WORKER_URL\s*[:=]\s*["'](https?://[^"']+)["']''',
+          caseSensitive: false,
+        ).firstMatch(html);
         if (directMatch != null && directMatch.group(1) != null) {
           final wUrl = directMatch.group(1)!.replaceAll(RegExp(r'/+$'), '');
           if (!foundUrls.contains(wUrl)) foundUrls.add(wUrl);
         }
 
-        final scriptMatches = RegExp(r'''<script[^>]+src=["']([^"']+)["']''', caseSensitive: false)
-            .allMatches(html);
+        final scriptMatches = RegExp(
+          r'''<script[^>]+src=["']([^"']+)["']''',
+          caseSensitive: false,
+        ).allMatches(html);
 
         for (final sm in scriptMatches) {
           var scriptUrl = sm.group(1);
@@ -76,14 +85,18 @@ class FlaxMoviesScraper extends StreamScraper {
           }
 
           try {
-            final sRes = await client.get(
-              Uri.parse(scriptUrl),
-              headers: {'User-Agent': _ua, 'Referer': embedUrl},
-            ).timeout(const Duration(seconds: 5));
+            final sRes = await client
+                .get(
+                  Uri.parse(scriptUrl),
+                  headers: {'User-Agent': _ua, 'Referer': embedUrl},
+                )
+                .timeout(const Duration(seconds: 5));
 
             if (sRes.statusCode == 200) {
-              final m = RegExp(r'''WORKER_URL\s*[:=]\s*["'](https?://[^"']+)["']''', caseSensitive: false)
-                  .firstMatch(sRes.body);
+              final m = RegExp(
+                r'''WORKER_URL\s*[:=]\s*["'](https?://[^"']+)["']''',
+                caseSensitive: false,
+              ).firstMatch(sRes.body);
               if (m != null && m.group(1) != null) {
                 final wUrl = m.group(1)!.replaceAll(RegExp(r'/+$'), '');
                 if (!foundUrls.contains(wUrl)) foundUrls.add(wUrl);
@@ -120,7 +133,11 @@ class FlaxMoviesScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[FlaxMoviesScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d(
+            '[FlaxMoviesScraper] Could not resolve TMDB ID for "$title"',
+          );
+        }
         return;
       }
 
@@ -141,10 +158,9 @@ class FlaxMoviesScraper extends StreamScraper {
         for (final worker in workerUrls) {
           try {
             final url = '$worker/?$query';
-            final res = await client.get(
-              Uri.parse(url),
-              headers: _headers,
-            ).timeout(const Duration(seconds: 10));
+            final res = await client
+                .get(Uri.parse(url), headers: _headers)
+                .timeout(const Duration(seconds: 10));
 
             if (res.statusCode != 200) continue;
 
@@ -177,9 +193,7 @@ class FlaxMoviesScraper extends StreamScraper {
                 headers: streamHeaders,
                 behaviorHints: {
                   'notWebReady': false,
-                  'proxyHeaders': {
-                    'request': streamHeaders,
-                  },
+                  'proxyHeaders': {'request': streamHeaders},
                 },
               );
               foundStreams = true;

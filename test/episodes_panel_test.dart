@@ -23,7 +23,9 @@ void main() {
 
       final sortedSeasons = seasonMap.keys.toList()..sort();
       for (final s in sortedSeasons) {
-        seasonMap[s]!.sort((a, b) => (a.episode ?? 0).compareTo(b.episode ?? 0));
+        seasonMap[s]!.sort(
+          (a, b) => (a.episode ?? 0).compareTo(b.episode ?? 0),
+        );
       }
 
       expect(sortedSeasons, equals([1, 2]));

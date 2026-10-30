@@ -27,8 +27,7 @@ class CloudClient {
   static bool get isConfigured => _url.isNotEmpty && _anonKey.isNotEmpty;
   static bool get isReady => _ready;
 
-  static final ValueNotifier<bool> cloudAvailable =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> cloudAvailable = ValueNotifier<bool>(false);
 
   /// P14: edge-function URL builder (tmdb-proxy, catalog, resolve…).
   /// '' when unconfigured — callers fail soft.
@@ -60,6 +59,15 @@ class CloudClient {
       AppLog.d('[Cloud] init failed (soft): $e');
       return false;
     }
+  }
+
+  /// Re-attempts cloud readiness after a failed boot or a dropped connection.
+  /// Never throws: false simply means "still offline".
+  static Future<bool> retry() async {
+    if (!isConfigured) return false;
+    if (!_ready) return init();
+    await _ensureAnonSession();
+    return db.auth.currentUser != null;
   }
 
   /// Mint an anonymous session when none exists. Fail-soft: if the

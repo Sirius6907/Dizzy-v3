@@ -28,6 +28,7 @@ class NotificationTriggers {
       <String, DownloadStatus>{};
   static final Set<String> _annSeen = <String>{};
   static Timer? _poll;
+  static Duration _pollInterval = const Duration(minutes: 5);
 
   static bool get attached => _attached;
 
@@ -36,6 +37,7 @@ class NotificationTriggers {
   }) async {
     if (_attached) return;
     _attached = true;
+    _pollInterval = announcementPoll;
     await NotificationInbox.load();
     await NotificationService.initialize();
 
@@ -45,11 +47,27 @@ class NotificationTriggers {
     _onDownloads();
     _onAnnouncements();
 
+    _startPoll();
+  }
+
+  static void _startPoll() {
     _poll?.cancel();
-    _poll = Timer.periodic(announcementPoll, (_) {
+    _poll = Timer.periodic(_pollInterval, (_) {
       // Ignore errors: a poll failure means "no news", not a crash.
       unawaited(AnnouncementService.refresh().catchError((_) {}));
     });
+  }
+
+  /// Stops the announcement poll while the app is backgrounded.
+  static void pause() {
+    _poll?.cancel();
+    _poll = null;
+  }
+
+  /// Restarts the poll after [pause] (only when [attach] has run).
+  static void resume() {
+    if (!_attached || _poll != null) return;
+    _startPoll();
   }
 
   static void detach() {

@@ -163,7 +163,9 @@ class PartySession extends ChangeNotifier {
     bool clearTrack = false,
   }) {
     if (mediaKind != null) {
-      assert(mediaKind == 'video' || mediaKind == 'audio' || mediaKind == 'book');
+      assert(
+        mediaKind == 'video' || mediaKind == 'audio' || mediaKind == 'book',
+      );
       _mediaKind = mediaKind;
     }
     if (chapterIndex != null) _chapterIndex = chapterIndex;

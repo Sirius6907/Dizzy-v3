@@ -45,8 +45,7 @@ class WatchSignal {
 
   bool get isSeries => type.trim().toLowerCase() == 'series';
 
-  bool get isUsable =>
-      mediaId.trim().isNotEmpty && title.trim().isNotEmpty;
+  bool get isUsable => mediaId.trim().isNotEmpty && title.trim().isNotEmpty;
 }
 
 /// One candidate title from the local catalog.
@@ -134,8 +133,22 @@ abstract final class HistoryRailPolicy {
   /// Words dropped before title tokens are compared. Without this, "the" and
   /// "of" make every title look like every other title.
   static const Set<String> _stopWords = {
-    'the', 'a', 'an', 'of', 'and', 'or', 'in', 'on', 'at', 'to', 'for',
-    'with', 'is', 'it', 'my', 'your',
+    'the',
+    'a',
+    'an',
+    'of',
+    'and',
+    'or',
+    'in',
+    'on',
+    'at',
+    'to',
+    'for',
+    'with',
+    'is',
+    'it',
+    'my',
+    'your',
   };
 
   static String _norm(String raw) => raw.trim().toLowerCase();
@@ -266,13 +279,15 @@ abstract final class HistoryRailPolicy {
 
     final picks = scored
         .take(picksPerRail)
-        .map((e) => RailPick(
-              id: e.$1.id,
-              title: e.$1.title,
-              type: e.$1.type,
-              because: seed.title,
-              score: e.$2,
-            ))
+        .map(
+          (e) => RailPick(
+            id: e.$1.id,
+            title: e.$1.title,
+            type: e.$1.type,
+            because: seed.title,
+            score: e.$2,
+          ),
+        )
         .toList();
 
     if (picks.isEmpty) return null;
@@ -345,13 +360,15 @@ abstract final class HistoryRailPolicy {
 
     final picks = usable
         .take(picksPerRail)
-        .map((c) => RailPick(
-              id: c.id,
-              title: c.title,
-              type: c.type,
-              because: '',
-              score: _tasteTotal(c, genreScores),
-            ))
+        .map(
+          (c) => RailPick(
+            id: c.id,
+            title: c.title,
+            type: c.type,
+            because: '',
+            score: _tasteTotal(c, genreScores),
+          ),
+        )
         .toList();
 
     return DiscoverRail(

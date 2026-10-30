@@ -3,11 +3,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home_page_settings.dart';
 
 enum AudiobookPlayerPreset {
-  modernGlass('Modern Glass Island', 'Sleek floating glassmorphism player with waveform scrubber & ambient glow'),
-  vinylStudio('Vinyl Turntable Studio', 'Rotating vinyl disc, tonearm animation & analog vintage VU styling'),
-  minimalCapsule('Minimalist Focus Capsule', 'Compact distraction-free floating capsule with essential controls'),
-  immersiveCanvas('Immersive Canvas Studio', 'Full-screen cinematic ambient blur canvas with oversized artwork'),
-  customStudio('Custom Drag & Drop Studio', 'Your fully customized, arranged and styled audio player');
+  modernGlass(
+    'Modern Glass Island',
+    'Sleek floating glassmorphism player with waveform scrubber & ambient glow',
+  ),
+  vinylStudio(
+    'Vinyl Turntable Studio',
+    'Rotating vinyl disc, tonearm animation & analog vintage VU styling',
+  ),
+  minimalCapsule(
+    'Minimalist Focus Capsule',
+    'Compact distraction-free floating capsule with essential controls',
+  ),
+  immersiveCanvas(
+    'Immersive Canvas Studio',
+    'Full-screen cinematic ambient blur canvas with oversized artwork',
+  ),
+  customStudio(
+    'Custom Drag & Drop Studio',
+    'Your fully customized, arranged and styled audio player',
+  );
 
   final String label;
   final String description;
@@ -15,10 +30,22 @@ enum AudiobookPlayerPreset {
 }
 
 enum AudiobookSeekbarStyle {
-  audioWaveformCanvas('Dynamic Audio Waveform Canvas', 'Procedural animated waveform bars with live equalizer scrubbing'),
-  gradientProgress('Neon Gradient Progress Bar', 'Multi-color vibrant linear gradient scrubber with glowing tip'),
-  standardSlider('Precision Glass Slider', 'Tactile interactive glass track with timecode readouts'),
-  circularRing('Radial Circular Ring Scrubber', 'Radial circular dial scrubber for compact modern interfaces');
+  audioWaveformCanvas(
+    'Dynamic Audio Waveform Canvas',
+    'Procedural animated waveform bars with live equalizer scrubbing',
+  ),
+  gradientProgress(
+    'Neon Gradient Progress Bar',
+    'Multi-color vibrant linear gradient scrubber with glowing tip',
+  ),
+  standardSlider(
+    'Precision Glass Slider',
+    'Tactile interactive glass track with timecode readouts',
+  ),
+  circularRing(
+    'Radial Circular Ring Scrubber',
+    'Radial circular dial scrubber for compact modern interfaces',
+  );
 
   final String label;
   final String description;
@@ -89,48 +116,70 @@ abstract final class AudiobookSettings {
   static const _keyEnableLiquidGlass = 'audiobook_enable_liquid_glass';
   static const _keyShowSpeedControl = 'audiobook_show_speed_control';
   static const _keyShowSkip10Buttons = 'audiobook_show_skip10_buttons';
-  static const _keyShowChaptersQuickButton = 'audiobook_show_chapters_quick_button';
+  static const _keyShowChaptersQuickButton =
+      'audiobook_show_chapters_quick_button';
   static const _keyComponentOrder = 'audiobook_component_order';
 
   // Atmosphere Notifiers
-  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<AmbientLightPattern> ambientLightPattern =
       ValueNotifier<AmbientLightPattern>(AmbientLightPattern.dualOrbs);
-  static final ValueNotifier<double> ambientLightIntensity = ValueNotifier<double>(0.22);
-  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(1.0);
+  static final ValueNotifier<double> ambientLightIntensity =
+      ValueNotifier<double>(0.22);
+  static final ValueNotifier<double> ambientLightSpeed = ValueNotifier<double>(
+    1.0,
+  );
 
   // Discovery Notifiers
   static final ValueNotifier<bool> enableSpotlight = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showContinueListening = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showContinueListening = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<AudiobookCardDensity> cardDensity =
       ValueNotifier<AudiobookCardDensity>(AudiobookCardDensity.standard);
-  static final ValueNotifier<bool> showCategoryPills = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showDurationBadge = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> showCategoryPills = ValueNotifier<bool>(
+    true,
+  );
+  static final ValueNotifier<bool> showDurationBadge = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<bool> cardHoverGlow = ValueNotifier<bool>(true);
 
   // Player Engine Notifiers
   static final ValueNotifier<AudiobookPlayerPreset> selectedPlayerPreset =
       ValueNotifier<AudiobookPlayerPreset>(AudiobookPlayerPreset.modernGlass);
   static final ValueNotifier<AudiobookSeekbarStyle> customSeekbarStyle =
-      ValueNotifier<AudiobookSeekbarStyle>(AudiobookSeekbarStyle.audioWaveformCanvas);
+      ValueNotifier<AudiobookSeekbarStyle>(
+        AudiobookSeekbarStyle.audioWaveformCanvas,
+      );
   static final ValueNotifier<AudiobookPlayButtonStyle> customPlayButtonStyle =
-      ValueNotifier<AudiobookPlayButtonStyle>(AudiobookPlayButtonStyle.circleGlow);
+      ValueNotifier<AudiobookPlayButtonStyle>(
+        AudiobookPlayButtonStyle.circleGlow,
+      );
   static final ValueNotifier<AudiobookHoverEffect> customHoverEffect =
       ValueNotifier<AudiobookHoverEffect>(AudiobookHoverEffect.glowAura);
   static final ValueNotifier<AudiobookArtworkStyle> customArtworkStyle =
       ValueNotifier<AudiobookArtworkStyle>(AudiobookArtworkStyle.square3D);
-  static final ValueNotifier<bool> enableLiquidGlass = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> enableLiquidGlass = ValueNotifier<bool>(
+    true,
+  );
   static final ValueNotifier<bool> showSpeedControl = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showSkip10Buttons = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> showChaptersQuickButton = ValueNotifier<bool>(true);
-  static final ValueNotifier<List<String>> componentOrder = ValueNotifier<List<String>>([
-    'artwork',
-    'title',
-    'seekbar',
-    'mainControls',
-    'secondaryControls',
-    'chaptersButton',
-  ]);
+  static final ValueNotifier<bool> showSkip10Buttons = ValueNotifier<bool>(
+    true,
+  );
+  static final ValueNotifier<bool> showChaptersQuickButton =
+      ValueNotifier<bool>(true);
+  static final ValueNotifier<List<String>> componentOrder =
+      ValueNotifier<List<String>>([
+        'artwork',
+        'title',
+        'seekbar',
+        'mainControls',
+        'secondaryControls',
+        'chaptersButton',
+      ]);
 
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
 
@@ -147,7 +196,8 @@ abstract final class AudiobookSettings {
     ambientLightSpeed.value = prefs.getDouble(_keyAmbientSpeed) ?? 1.0;
 
     enableSpotlight.value = prefs.getBool(_keyEnableSpotlight) ?? true;
-    showContinueListening.value = prefs.getBool(_keyShowContinueListening) ?? true;
+    showContinueListening.value =
+        prefs.getBool(_keyShowContinueListening) ?? true;
     final densityStr = prefs.getString(_keyCardDensity);
     cardDensity.value = AudiobookCardDensity.values.firstWhere(
       (d) => d.name == densityStr,
@@ -190,7 +240,8 @@ abstract final class AudiobookSettings {
     enableLiquidGlass.value = prefs.getBool(_keyEnableLiquidGlass) ?? true;
     showSpeedControl.value = prefs.getBool(_keyShowSpeedControl) ?? true;
     showSkip10Buttons.value = prefs.getBool(_keyShowSkip10Buttons) ?? true;
-    showChaptersQuickButton.value = prefs.getBool(_keyShowChaptersQuickButton) ?? true;
+    showChaptersQuickButton.value =
+        prefs.getBool(_keyShowChaptersQuickButton) ?? true;
 
     final orderList = prefs.getStringList(_keyComponentOrder);
     if (orderList != null && orderList.isNotEmpty) {
@@ -283,7 +334,9 @@ abstract final class AudiobookSettings {
     await prefs.setString(_keyCustomSeekbarStyle, val.name);
   }
 
-  static Future<void> setCustomPlayButtonStyle(AudiobookPlayButtonStyle val) async {
+  static Future<void> setCustomPlayButtonStyle(
+    AudiobookPlayButtonStyle val,
+  ) async {
     customPlayButtonStyle.value = val;
     changeNotifier.value++;
     final prefs = await SharedPreferences.getInstance();

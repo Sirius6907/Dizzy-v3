@@ -36,12 +36,22 @@ class FlyStreamScraper extends StreamScraper {
     final sources = <StreamSource>[];
     final mediaType = (type == 'series' || type == 'tv') ? 'tv' : 'movie';
 
-    final tmdbId = await TmdbHelper.resolveTmdbId(imdbId: imdbId, title: title, type: mediaType, year: year);
-    AppLog.d('[FlyStreamScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)');
+    final tmdbId = await TmdbHelper.resolveTmdbId(
+      imdbId: imdbId,
+      title: title,
+      type: mediaType,
+      year: year,
+    );
+    AppLog.d(
+      '[FlyStreamScraper] Resolved tmdbId: $tmdbId for "$title" (year: $year, imdbId: $imdbId)',
+    );
 
     try {
       final isTv = (mediaType == 'tv');
-      final randomViewer = List.generate(32, (_) => math.Random().nextInt(16).toRadixString(16)).join();
+      final randomViewer = List.generate(
+        32,
+        (_) => math.Random().nextInt(16).toRadixString(16),
+      ).join();
 
       final params = <String, String>{
         'type': isTv ? 'tv' : 'movie',
@@ -54,8 +64,12 @@ class FlyStreamScraper extends StreamScraper {
         if (isTv && episode != null) 'episode': episode.toString(),
       };
 
-      final uri = Uri.parse('$_apiBase/api/streams').replace(queryParameters: params);
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 5));
+      final uri = Uri.parse(
+        '$_apiBase/api/streams',
+      ).replace(queryParameters: params);
+      final res = await http
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 5));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -72,7 +86,8 @@ class FlyStreamScraper extends StreamScraper {
             final quality = s['quality']?.toString() ?? 'Auto';
             final codec = s['videoCodec']?.toString() ?? '';
             final size = s['size']?.toString();
-            final name = s['name']?.toString() ?? s['title']?.toString() ?? title;
+            final name =
+                s['name']?.toString() ?? s['title']?.toString() ?? title;
 
             final descDetails = [
               if (quality.isNotEmpty) quality,
@@ -80,17 +95,21 @@ class FlyStreamScraper extends StreamScraper {
               if (size != null && size.isNotEmpty) size,
             ].join(' · ');
 
-            sources.add(StreamSource(
-              name: 'FlyStream',
-              addonName: 'flystream',
-              title: 'FlyStream $name',
-              description: descDetails.isNotEmpty ? 'FlyStream $descDetails' : 'FlyStream Direct HLS Stream',
-              url: url,
-              headers: {
-                'User-Agent': _ua,
-                'Referer': 'https://flystream.net/',
-              },
-            ));
+            sources.add(
+              StreamSource(
+                name: 'FlyStream',
+                addonName: 'flystream',
+                title: 'FlyStream $name',
+                description: descDetails.isNotEmpty
+                    ? 'FlyStream $descDetails'
+                    : 'FlyStream Direct HLS Stream',
+                url: url,
+                headers: {
+                  'User-Agent': _ua,
+                  'Referer': 'https://flystream.net/',
+                },
+              ),
+            );
           }
         }
       }

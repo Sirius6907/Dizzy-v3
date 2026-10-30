@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
@@ -17,10 +17,7 @@ import '../anime_arabic/anime_arabic_details_page.dart';
 class AnimeSearchPage extends StatefulWidget {
   final bool initialArabicMode;
 
-  const AnimeSearchPage({
-    super.key,
-    this.initialArabicMode = false,
-  });
+  const AnimeSearchPage({super.key, this.initialArabicMode = false});
 
   @override
   State<AnimeSearchPage> createState() => _AnimeSearchPageState();
@@ -52,15 +49,44 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
   bool _loadingInitial = true;
 
   static const _genres = [
-    'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy',
-    'Hentai', 'Horror', 'Mahou Shoujo', 'Mecha', 'Music', 'Mystery',
-    'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life',
-    'Sports', 'Supernatural', 'Thriller',
+    'Action',
+    'Adventure',
+    'Comedy',
+    'Drama',
+    'Ecchi',
+    'Fantasy',
+    'Hentai',
+    'Horror',
+    'Mahou Shoujo',
+    'Mecha',
+    'Music',
+    'Mystery',
+    'Psychological',
+    'Romance',
+    'Sci-Fi',
+    'Slice of Life',
+    'Sports',
+    'Supernatural',
+    'Thriller',
   ];
 
   static const _seasons = ['WINTER', 'SPRING', 'SUMMER', 'FALL'];
-  static const _formats = ['TV', 'TV_SHORT', 'MOVIE', 'OVA', 'ONA', 'SPECIAL', 'MUSIC'];
-  static const _statuses = ['RELEASING', 'FINISHED', 'NOT_YET_RELEASED', 'CANCELLED', 'HIATUS'];
+  static const _formats = [
+    'TV',
+    'TV_SHORT',
+    'MOVIE',
+    'OVA',
+    'ONA',
+    'SPECIAL',
+    'MUSIC',
+  ];
+  static const _statuses = [
+    'RELEASING',
+    'FINISHED',
+    'NOT_YET_RELEASED',
+    'CANCELLED',
+    'HIATUS',
+  ];
   static const _sorts = <String, String>{
     'TRENDING_DESC': 'Trending',
     'POPULARITY_DESC': 'Most Popular',
@@ -104,21 +130,26 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
         final feed = await AnimeArabicService.instance.getHome();
         if (mounted) {
           setState(() {
-            _trendingList = (feed.trending.isNotEmpty ? feed.trending : feed.spotlight)
-                .map((c) {
-                  _arabicCardsMap[c.slug.hashCode.abs()] = c;
-                  return c.toAnimeMedia();
-                }).toList();
-            _popularSeasonList = feed.recentEpisodes
-                .map((c) {
-                  _arabicCardsMap[c.slug.hashCode.abs()] = c;
-                  return c.toAnimeMedia();
-                }).toList();
-            _topRatedList = (feed.topSeasonal.isNotEmpty ? feed.topSeasonal : feed.legendary)
-                .map((c) {
-                  _arabicCardsMap[c.slug.hashCode.abs()] = c;
-                  return c.toAnimeMedia();
-                }).toList();
+            _trendingList =
+                (feed.trending.isNotEmpty ? feed.trending : feed.spotlight).map(
+                  (c) {
+                    _arabicCardsMap[c.slug.hashCode.abs()] = c;
+                    return c.toAnimeMedia();
+                  },
+                ).toList();
+            _popularSeasonList = feed.recentEpisodes.map((c) {
+              _arabicCardsMap[c.slug.hashCode.abs()] = c;
+              return c.toAnimeMedia();
+            }).toList();
+            _topRatedList =
+                (feed.topSeasonal.isNotEmpty
+                        ? feed.topSeasonal
+                        : feed.legendary)
+                    .map((c) {
+                      _arabicCardsMap[c.slug.hashCode.abs()] = c;
+                      return c.toAnimeMedia();
+                    })
+                    .toList();
             _loadingInitial = false;
           });
         }
@@ -245,9 +276,15 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
     required T? current,
     required void Function(T?) onSelected,
   }) async {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final picked = await showModalBottomSheet<_PickResult<T>>(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: palette.cardBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -266,7 +303,9 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: isLight
+                      ? PrismLight.inkFaint
+                      : Colors.white.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -278,8 +317,8 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: ink,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                       ),
@@ -287,11 +326,12 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                     const Spacer(),
                     if (current != null)
                       TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(_PickResult<T>(null, true)),
+                        onPressed: () =>
+                            Navigator.of(ctx).pop(_PickResult<T>(null, true)),
                         child: Text(
                           'Clear',
                           style: TextStyle(
-                            color: AppThemeService.currentPalette.value.primaryColor,
+                            color: palette.primaryColor,
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -300,7 +340,7 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                   ],
                 ),
               ),
-              const Divider(color: Colors.white10, height: 1),
+              Divider(color: hairline, height: 1),
 
               // Options list
               Expanded(
@@ -313,18 +353,18 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                     return Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => Navigator.of(ctx).pop(_PickResult<T>(v, false)),
+                        onTap: () =>
+                            Navigator.of(ctx).pop(_PickResult<T>(v, false)),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: selected
-                                ? AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.12)
+                                ? palette.primaryColor.withValues(alpha: 0.12)
                                 : Colors.transparent,
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.04),
-                              ),
-                            ),
+                            border: Border(bottom: BorderSide(color: hairline)),
                           ),
                           child: Row(
                             children: [
@@ -332,16 +372,20 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                                 child: Text(
                                   label(v),
                                   style: TextStyle(
-                                    color: selected ? AppThemeService.currentPalette.value.primaryColor : Colors.white,
+                                    color: selected
+                                        ? palette.primaryColor
+                                        : ink,
                                     fontSize: 15,
-                                    fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                                    fontWeight: selected
+                                        ? FontWeight.w800
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
                               if (selected)
                                 Icon(
                                   Icons.check_rounded,
-                                  color: AppThemeService.currentPalette.value.primaryColor,
+                                  color: palette.primaryColor,
                                   size: 20,
                                 ),
                             ],
@@ -394,13 +438,19 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
     required VoidCallback onTap,
     IconData? icon,
   }) {
-    final primaryColor = AppThemeService.currentPalette.value.primaryColor;
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final primaryColor = palette.primaryColor;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: active
-            ? primaryColor.withValues(alpha: 0.22)
-            : Colors.white.withValues(alpha: 0.06),
+        color: active ? primaryColor.withValues(alpha: 0.22) : well,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -410,9 +460,7 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: active
-                    ? primaryColor.withValues(alpha: 0.65)
-                    : Colors.white.withValues(alpha: 0.10),
+                color: active ? primaryColor.withValues(alpha: 0.65) : hairline,
                 width: 1.1,
               ),
             ),
@@ -420,13 +468,13 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 14, color: Colors.white70),
+                  Icon(icon, size: 14, color: inkSoft),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: TextStyle(
-                    color: active ? Colors.white : Colors.white70,
+                    color: active ? ink : inkSoft,
                     fontSize: 12.5,
                     fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -435,7 +483,7 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                 Icon(
                   Icons.expand_more_rounded,
                   size: 15,
-                  color: active ? primaryColor : Colors.white38,
+                  color: active ? primaryColor : inkSoft,
                 ),
               ],
             ),
@@ -447,7 +495,8 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
 
   void _openDetails(AnimeMedia anime) {
     if (_isArabicMode || _arabicCardsMap.containsKey(anime.id)) {
-      final card = _arabicCardsMap[anime.id] ??
+      final card =
+          _arabicCardsMap[anime.id] ??
           ArabicAnimeCard(
             slug: anime.titleEnglish.toLowerCase().replaceAll(' ', '-'),
             title: anime.displayTitle,
@@ -455,43 +504,54 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
           );
       Navigator.push(
         context,
-        CinematicSlideRoute(
-          page: AnimeArabicDetailsPage(anime: card),
-        ),
+        CinematicSlideRoute(page: AnimeArabicDetailsPage(anime: card)),
       );
       return;
     }
 
     Navigator.push(
       context,
-      CinematicSlideRoute(
-        page: AnimeDetailsPage(anime: anime),
-      ),
+      CinematicSlideRoute(page: AnimeDetailsPage(anime: anime)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
-    final isSearching = _searchController.text.trim().isNotEmpty || _hasActiveFilters;
+    final isSearching =
+        _searchController.text.trim().isNotEmpty || _hasActiveFilters;
 
     // Split search results into format sliders
     final tvSeries = _allResults
-        .where((a) => a.format.toUpperCase() == 'TV' || a.format.toUpperCase() == 'TV_SHORT')
+        .where(
+          (a) =>
+              a.format.toUpperCase() == 'TV' ||
+              a.format.toUpperCase() == 'TV_SHORT',
+        )
         .toList();
     final movies = _allResults
         .where((a) => a.format.toUpperCase() == 'MOVIE')
         .toList();
     final ovasAndOthers = _allResults
-        .where((a) =>
-            a.format.toUpperCase() != 'TV' &&
-            a.format.toUpperCase() != 'TV_SHORT' &&
-            a.format.toUpperCase() != 'MOVIE')
+        .where(
+          (a) =>
+              a.format.toUpperCase() != 'TV' &&
+              a.format.toUpperCase() != 'TV_SHORT' &&
+              a.format.toUpperCase() != 'MOVIE',
+        )
         .toList();
 
     return ValueListenableBuilder<AppThemePalette>(
       valueListenable: AppThemeService.currentPalette,
       builder: (context, palette, _) {
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+        final inkFaint = isLight ? PrismLight.inkFaint : Colors.white54;
+        final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+        final hairline = isLight
+            ? PrismLight.borderSubtle
+            : Colors.white.withValues(alpha: 0.06);
         return Scaffold(
           backgroundColor: Colors.transparent,
           extendBodyBehindAppBar: true,
@@ -511,235 +571,129 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                         palette.scaffoldBackgroundColor.withValues(alpha: 0.70),
                       ],
                     ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                    ),
+                    border: Border(bottom: BorderSide(color: hairline)),
                   ),
                   child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Row 1: Back Button + Search Bar + 18+ Toggle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-                          color: Colors.white,
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Container(
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                ),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Row 1: Back Button + Search Bar + 18+ Toggle
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_ios_rounded,
+                                size: 20,
                               ),
-                              child: TextField(
-                                controller: _searchController,
-                                focusNode: _focusNode,
-                                autofocus: true,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                textInputAction: TextInputAction.search,
-                                onChanged: _onSearchChanged,
-                                onSubmitted: _performSearch,
-                                decoration: InputDecoration(
-                                  hintText: 'Search anime, movies, OVAs...',
-                                  hintStyle: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.35),
-                                    fontSize: 14,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  suffixIcon: _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.close_rounded, size: 18),
-                                          color: Colors.white60,
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            _onSearchChanged('');
-                                          },
-                                        )
-                                      : const Icon(
-                                          Icons.search_rounded,
-                                          size: 20,
-                                          color: Colors.white54,
-                                        ),
-                                ),
-                              ),
+                              color: ink,
+                              tooltip: 'Back',
+                              onPressed: () => Navigator.pop(context),
                             ),
-                          ),
-                        ),
-
-                        // 18+ Adult Toggle Pill (always general mode now)
-                        Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: GestureDetector(
-                              onTap: () => _toggleAdult(!_allowAdult),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                decoration: BoxDecoration(
-                                  color: _allowAdult
-                                      ? const Color(0xFFEF4444).withValues(alpha: 0.20)
-                                      : Colors.white.withValues(alpha: 0.06),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: _allowAdult
-                                        ? const Color(0xFFEF4444)
-                                        : Colors.white.withValues(alpha: 0.12),
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _allowAdult
-                                          ? Icons.check_box_rounded
-                                          : Icons.check_box_outline_blank_rounded,
-                                      size: 16,
-                                      color: _allowAdult ? const Color(0xFFEF4444) : Colors.white54,
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      '18+',
-                                      style: TextStyle(
-                                        color: _allowAdult ? const Color(0xFFEF4444) : Colors.white70,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Row 2: Custom Dropdown Menu Buttons
-                  SizedBox(
-                    height: 38,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        // Sort Dropdown
-                        _buildFilterDropdownButton(
-                          label: 'Sort: ${_sorts[_sort] ?? "Trending"}',
-                          active: _sort != 'TRENDING_DESC',
-                          onTap: () => _pickFromList<String>(
-                            title: 'Sort By',
-                            items: _sorts.keys.toList(),
-                            label: (k) => _sorts[k]!,
-                            current: _sort,
-                            onSelected: (v) => _sort = v ?? 'TRENDING_DESC',
-                          ),
-                        ),
-
-                        // Genre Dropdown
-                        _buildFilterDropdownButton(
-                          label: _genre ?? 'Genre',
-                          active: _genre != null,
-                          onTap: () => _pickFromList<String>(
-                            title: 'Genre',
-                            items: _genres,
-                            label: (g) => g,
-                            current: _genre,
-                            onSelected: (v) => _genre = v,
-                          ),
-                        ),
-
-                        // Year Dropdown
-                        _buildFilterDropdownButton(
-                          label: _year != null ? '$_year' : 'Year',
-                          active: _year != null,
-                          onTap: _pickYear,
-                        ),
-
-                        // Season Dropdown
-                        _buildFilterDropdownButton(
-                          label: _season != null ? _capitalize(_season!) : 'Season',
-                          active: _season != null,
-                          onTap: () => _pickFromList<String>(
-                            title: 'Season',
-                            items: _seasons,
-                            label: (s) => _capitalize(s),
-                            current: _season,
-                            onSelected: (v) => _season = v,
-                          ),
-                        ),
-
-                        // Format Dropdown
-                        _buildFilterDropdownButton(
-                          label: _format ?? 'Format',
-                          active: _format != null,
-                          onTap: () => _pickFromList<String>(
-                            title: 'Format',
-                            items: _formats,
-                            label: (f) => f,
-                            current: _format,
-                            onSelected: (v) => _format = v,
-                          ),
-                        ),
-
-                        // Status Dropdown
-                        _buildFilterDropdownButton(
-                          label: _status != null ? _capitalize(_status!.replaceAll('_', ' ')) : 'Status',
-                          active: _status != null,
-                          onTap: () => _pickFromList<String>(
-                            title: 'Status',
-                            items: _statuses,
-                            label: (s) => _capitalize(s.replaceAll('_', ' ')),
-                            current: _status,
-                            onSelected: (v) => _status = v,
-                          ),
-                        ),
-
-                        // Reset Button
-                        if (_hasActiveFilters)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Material(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(20),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: _resetFilters,
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 8),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  height: 42,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white24),
+                                    color: well,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: hairline),
                                   ),
-                                  child: const Row(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    focusNode: _focusNode,
+                                    autofocus: true,
+                                    style: TextStyle(
+                                      color: ink,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textInputAction: TextInputAction.search,
+                                    onChanged: _onSearchChanged,
+                                    onSubmitted: _performSearch,
+                                    decoration: InputDecoration(
+                                      hintText: 'Search anime, movies, OVAs...',
+                                      hintStyle: TextStyle(
+                                        color: inkSoft,
+                                        fontSize: 14,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                      suffixIcon:
+                                          _searchController.text.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(
+                                                Icons.close_rounded,
+                                                size: 18,
+                                              ),
+                                              color: inkSoft,
+                                              tooltip: 'Clear search',
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                _onSearchChanged('');
+                                              },
+                                            )
+                                          : Icon(
+                                              Icons.search_rounded,
+                                              size: 20,
+                                              color: inkFaint,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // 18+ Adult Toggle Pill (always general mode now)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => _toggleAdult(!_allowAdult),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _allowAdult
+                                        ? const Color(
+                                            0xFFEF4444,
+                                          ).withValues(alpha: 0.20)
+                                        : well,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: _allowAdult
+                                          ? const Color(0xFFEF4444)
+                                          : hairline,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.close_rounded, size: 14, color: Colors.white70),
-                                      SizedBox(width: 4),
+                                      Icon(
+                                        _allowAdult
+                                            ? Icons.check_box_rounded
+                                            : Icons
+                                                  .check_box_outline_blank_rounded,
+                                        size: 16,
+                                        color: _allowAdult
+                                            ? const Color(0xFFEF4444)
+                                            : inkSoft,
+                                      ),
+                                      const SizedBox(width: 5),
                                       Text(
-                                        'Reset',
+                                        '18+',
                                         style: TextStyle(
-                                          color: Colors.white70,
+                                          color: _allowAdult
+                                              ? const Color(0xFFEF4444)
+                                              : inkSoft,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -749,120 +703,254 @@ class _AnimeSearchPageState extends State<AnimeSearchPage> {
                                 ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Row 2: Custom Dropdown Menu Buttons
+                      SizedBox(
+                        height: 38,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            // Sort Dropdown
+                            _buildFilterDropdownButton(
+                              label: 'Sort: ${_sorts[_sort] ?? "Trending"}',
+                              active: _sort != 'TRENDING_DESC',
+                              onTap: () => _pickFromList<String>(
+                                title: 'Sort By',
+                                items: _sorts.keys.toList(),
+                                label: (k) => _sorts[k]!,
+                                current: _sort,
+                                onSelected: (v) => _sort = v ?? 'TRENDING_DESC',
+                              ),
+                            ),
+
+                            // Genre Dropdown
+                            _buildFilterDropdownButton(
+                              label: _genre ?? 'Genre',
+                              active: _genre != null,
+                              onTap: () => _pickFromList<String>(
+                                title: 'Genre',
+                                items: _genres,
+                                label: (g) => g,
+                                current: _genre,
+                                onSelected: (v) => _genre = v,
+                              ),
+                            ),
+
+                            // Year Dropdown
+                            _buildFilterDropdownButton(
+                              label: _year != null ? '$_year' : 'Year',
+                              active: _year != null,
+                              onTap: _pickYear,
+                            ),
+
+                            // Season Dropdown
+                            _buildFilterDropdownButton(
+                              label: _season != null
+                                  ? _capitalize(_season!)
+                                  : 'Season',
+                              active: _season != null,
+                              onTap: () => _pickFromList<String>(
+                                title: 'Season',
+                                items: _seasons,
+                                label: (s) => _capitalize(s),
+                                current: _season,
+                                onSelected: (v) => _season = v,
+                              ),
+                            ),
+
+                            // Format Dropdown
+                            _buildFilterDropdownButton(
+                              label: _format ?? 'Format',
+                              active: _format != null,
+                              onTap: () => _pickFromList<String>(
+                                title: 'Format',
+                                items: _formats,
+                                label: (f) => f,
+                                current: _format,
+                                onSelected: (v) => _format = v,
+                              ),
+                            ),
+
+                            // Status Dropdown
+                            _buildFilterDropdownButton(
+                              label: _status != null
+                                  ? _capitalize(_status!.replaceAll('_', ' '))
+                                  : 'Status',
+                              active: _status != null,
+                              onTap: () => _pickFromList<String>(
+                                title: 'Status',
+                                items: _statuses,
+                                label: (s) =>
+                                    _capitalize(s.replaceAll('_', ' ')),
+                                current: _status,
+                                onSelected: (v) => _status = v,
+                              ),
+                            ),
+
+                            // Reset Button
+                            if (_hasActiveFilters)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Material(
+                                  color: well,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: _resetFilters,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: hairline),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.close_rounded,
+                                            size: 14,
+                                            color: inkSoft,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Reset',
+                                            style: TextStyle(
+                                              color: inkSoft,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
-      body: AnimatedAmbientBackground(
-        child: Stack(
-          children: [
-            // Content Area
-            if (_isLoading || (_loadingInitial && _allResults.isEmpty && _trendingList.isEmpty))
-              Center(
-                child: CircularProgressIndicator(color: palette.primaryColor),
-              )
-            else if (isSearching && _allResults.isEmpty)
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      size: 64,
-                      color: Colors.white.withValues(alpha: 0.2),
+          body: AnimatedAmbientBackground(
+            child: Stack(
+              children: [
+                // Content Area
+                if (_isLoading ||
+                    (_loadingInitial &&
+                        _allResults.isEmpty &&
+                        _trendingList.isEmpty))
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: palette.primaryColor,
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No anime found matching your criteria',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  )
+                else if (isSearching && _allResults.isEmpty)
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 64,
+                          color: inkFaint,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No anime found matching your criteria',
+                          style: TextStyle(
+                            color: inkSoft,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try different keywords or clearing filters',
+                          style: TextStyle(color: inkSoft, fontSize: 13),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Try different keywords or clearing filters',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 13,
-                      ),
+                  )
+                else if (_allResults.isNotEmpty)
+                  ListView(
+                    clipBehavior: Clip.none,
+                    padding: EdgeInsets.only(
+                      top: topPadding + kToolbarHeight + 80,
+                      bottom: 40,
                     ),
-                  ],
-                ),
-              )
-            else if (_allResults.isNotEmpty)
-              ListView(
-                clipBehavior: Clip.none,
-                padding: EdgeInsets.only(
-                  top: topPadding + kToolbarHeight + 80,
-                  bottom: 40,
-                ),
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  if (tvSeries.isNotEmpty)
-                    AnimeSliderSection(
-                      title: 'Anime TV Series',
-                      subtitle: '${tvSeries.length} Results',
-                      animeList: tvSeries,
-                      onAnimeTap: _openDetails,
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      if (tvSeries.isNotEmpty)
+                        AnimeSliderSection(
+                          title: 'Anime TV Series',
+                          subtitle: '${tvSeries.length} Results',
+                          animeList: tvSeries,
+                          onAnimeTap: _openDetails,
+                        ),
+                      if (movies.isNotEmpty)
+                        AnimeSliderSection(
+                          title: 'Anime Movies',
+                          subtitle: '${movies.length} Results',
+                          animeList: movies,
+                          onAnimeTap: _openDetails,
+                        ),
+                      if (ovasAndOthers.isNotEmpty)
+                        AnimeSliderSection(
+                          title: 'OVAs, ONAs & Specials',
+                          subtitle: '${ovasAndOthers.length} Results',
+                          animeList: ovasAndOthers,
+                          onAnimeTap: _openDetails,
+                        ),
+                    ],
+                  )
+                else
+                  // Discovery Sliders when not searching
+                  ListView(
+                    clipBehavior: Clip.none,
+                    padding: EdgeInsets.only(
+                      top: topPadding + kToolbarHeight + 80,
+                      bottom: 40,
                     ),
-                  if (movies.isNotEmpty)
-                    AnimeSliderSection(
-                      title: 'Anime Movies',
-                      subtitle: '${movies.length} Results',
-                      animeList: movies,
-                      onAnimeTap: _openDetails,
-                    ),
-                  if (ovasAndOthers.isNotEmpty)
-                    AnimeSliderSection(
-                      title: 'OVAs, ONAs & Specials',
-                      subtitle: '${ovasAndOthers.length} Results',
-                      animeList: ovasAndOthers,
-                      onAnimeTap: _openDetails,
-                    ),
-                ],
-              )
-            else
-              // Discovery Sliders when not searching
-              ListView(
-                clipBehavior: Clip.none,
-                padding: EdgeInsets.only(
-                  top: topPadding + kToolbarHeight + 80,
-                  bottom: 40,
-                ),
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  if (_trendingList.isNotEmpty)
-                    AnimeSliderSection(
-                      title: 'Trending Anime',
-                      animeList: _trendingList,
-                      onAnimeTap: _openDetails,
-                    ),
-                  if (_popularSeasonList.isNotEmpty)
-                    AnimeSliderSection(
-                      title: 'Popular This Season',
-                      animeList: _popularSeasonList,
-                      onAnimeTap: _openDetails,
-                    ),
-                  if (_topRatedList.isNotEmpty)
-                    AnimeSliderSection(
-                      title: 'All-Time Top Rated',
-                      animeList: _topRatedList,
-                      onAnimeTap: _openDetails,
-                    ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      if (_trendingList.isNotEmpty)
+                        AnimeSliderSection(
+                          title: 'Trending Anime',
+                          animeList: _trendingList,
+                          onAnimeTap: _openDetails,
+                        ),
+                      if (_popularSeasonList.isNotEmpty)
+                        AnimeSliderSection(
+                          title: 'Popular This Season',
+                          animeList: _popularSeasonList,
+                          onAnimeTap: _openDetails,
+                        ),
+                      if (_topRatedList.isNotEmpty)
+                        AnimeSliderSection(
+                          title: 'All-Time Top Rated',
+                          animeList: _topRatedList,
+                          onAnimeTap: _openDetails,
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }

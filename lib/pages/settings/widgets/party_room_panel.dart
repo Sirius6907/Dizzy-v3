@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../../services/cloud/cloud_client.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../services/cloud/watch_party_service.dart';
 import '../../../services/watchparty/party_chat_service.dart';
 import '../../../services/watchparty/party_voice_service.dart';
@@ -38,9 +40,8 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   int _membersKey = -1;
 
   String get _roomId => widget.room.roomId;
-  String? get _myUid => CloudClient.isReady
-      ? CloudClient.db.auth.currentUser?.id
-      : null;
+  String? get _myUid =>
+      CloudClient.isReady ? CloudClient.db.auth.currentUser?.id : null;
 
   @override
   void dispose() {
@@ -50,13 +51,20 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final panel = isLight ? PrismLight.raisedTop : PrismDark.raised;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: panel,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: DizzyGlow.violet.withValues(alpha: 0.35)),
+        border: Border.all(color: DizzyGlow.violet.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,29 +75,32 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
               Expanded(
                 child: Text(
                   '🏠 ${widget.room.title} • $_roomId',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               if (_locked)
                 const Padding(
                   padding: EdgeInsets.only(right: 6),
-                  child: Icon(Icons.lock_rounded,
-                      color: Colors.amber, size: 18),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    color: Colors.amber,
+                    size: 18,
+                  ),
                 ),
               IconButton(
                 tooltip: 'Refresh members',
                 onPressed: _refreshMembers,
-                icon: const Icon(Icons.refresh_rounded,
-                    color: Colors.white54, size: 20),
+                icon: Icon(Icons.refresh_rounded, color: inkSoft, size: 20),
               ),
             ],
           ),
           const SizedBox(height: 10),
           _members(),
-          const Divider(color: Colors.white10, height: 24),
+          Divider(color: hairline, height: 24),
           _chat(),
           const SizedBox(height: 10),
           _controls(),
@@ -114,43 +125,50 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   }
 
   Widget _members() => FutureBuilder<List<PartyMember>>(
-        // ignore: discarded_futures
-        future: _membersQuery(),
-        builder: (c, snap) {
-          final members = snap.data ?? const [];
-          if (members.isEmpty) {
-            return const Text('Members loading…',
-                style: TextStyle(color: Colors.white38, fontSize: 12));
-          }
-          return Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [for (final m in members) _memberChip(m)],
-          );
-        },
+    // ignore: discarded_futures
+    future: _membersQuery(),
+    builder: (c, snap) {
+      final isLight = AppThemeService.currentPalette.value.isLight;
+      final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+      final members = snap.data ?? const [];
+      if (members.isEmpty) {
+        return Text(
+          'Members loading…',
+          style: TextStyle(color: inkSoft, fontSize: 12),
+        );
+      }
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [for (final m in members) _memberChip(m)],
       );
+    },
+  );
 
   Widget _memberChip(PartyMember m) {
     final mine = m.userId == _myUid;
     return ValueListenableBuilder<Set<String>>(
       valueListenable: PartyVoiceService.speakingIds,
       builder: (c, ids, _) {
+        final isLight = AppThemeService.currentPalette.value.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+        final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+        final hairline = isLight
+            ? PrismLight.borderSubtle
+            : Colors.white.withValues(alpha: 0.12);
         final live = ids.contains(m.userId);
         return GestureDetector(
-          onLongPress: widget.isHost && !mine
-              ? () => _confirmKick(m)
-              : null,
+          onLongPress: widget.isHost && !mine ? () => _confirmKick(m) : null,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: DizzyVoid.voidB,
+              color: well,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: live
-                      ? Colors.greenAccent
-                      : Colors.white.withValues(alpha: 0.12),
-                  width: live ? 2 : 1),
+                color: live ? Colors.greenAccent : hairline,
+                width: live ? 2 : 1,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -167,26 +185,33 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                     ),
                   ),
                 ],
-                Text(m.displayName,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700)),
+                Text(
+                  m.displayName,
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 if (m.isHost)
                   const Padding(
                     padding: EdgeInsets.only(left: 4),
-                    child: Text('HOST',
-                        style: TextStyle(
-                            color: Colors.amber,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900)),
+                    child: Text(
+                      'HOST',
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 if (mine)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4),
-                    child: Text('(you)',
-                        style: TextStyle(
-                            color: Colors.white54, fontSize: 10)),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      '(you)',
+                      style: TextStyle(color: inkSoft, fontSize: 11),
+                    ),
                   ),
               ],
             ),
@@ -196,113 +221,136 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
     );
   }
 
-  Widget _chat() => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _pinnedBanner(),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 220),
-            child: StreamBuilder<List<PartyChatMessage>>(
-              stream: PartyChatService.watchMessages(_roomId),
-              builder: (c, snap) {
-                final msgs = snap.data ?? const [];
-                if (msgs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'No messages yet. Say hi — or stay quiet, lurking is allowed 🤫',
-                      style:
-                          TextStyle(color: Colors.white38, fontSize: 12)),
-                  );
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: msgs.length,
-                  itemBuilder: (c, i) => _bubble(msgs[i]),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (_replyTo != null) _replyStrip(),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _input,
-                  maxLength: 500,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 13),
-                  decoration: const InputDecoration(
-                    hintText: 'Chat… (introverts welcome)',
-                    hintStyle:
-                        TextStyle(color: Colors.white38, fontSize: 12),
-                    counterText: '',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+  Widget _chat() {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.10);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _pinnedBanner(),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220),
+          child: StreamBuilder<List<PartyChatMessage>>(
+            stream: PartyChatService.watchMessages(_roomId),
+            builder: (c, snap) {
+              final msgs = snap.data ?? const [];
+              if (msgs.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'No messages yet. Say hi — or stay quiet, lurking is allowed 🤫',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
                   ),
-                  onSubmitted: (_) => _send(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Send',
-                onPressed: _sending ? null : _send,
-                icon: const Icon(Icons.send_rounded,
-                    color: Colors.white70),
-              ),
-            ],
+                );
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: msgs.length,
+                itemBuilder: (c, i) => _bubble(msgs[i]),
+              );
+            },
           ),
-        ],
-      );
+        ),
+        const SizedBox(height: 8),
+        if (_replyTo != null) _replyStrip(),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _input,
+                maxLength: 500,
+                style: TextStyle(color: ink, fontSize: 13),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: well,
+                  hintText: 'Chat… (introverts welcome)',
+                  hintStyle: TextStyle(color: inkSoft, fontSize: 12),
+                  counterText: '',
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: hairline),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: hairline),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: palette.primaryColor),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                onSubmitted: (_) => _send(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Send',
+              onPressed: _sending ? null : _send,
+              icon: Icon(Icons.send_rounded, color: inkSoft),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   /// P11: host's pinned note ("interval in 5 min"). Host can unpin.
   Widget _pinnedBanner() => StreamBuilder<String?>(
-        stream: PartyChatService.watchPinned(_roomId),
-        builder: (c, snap) {
-          final text = snap.data;
-          if (text == null || text.isEmpty) return const SizedBox.shrink();
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.amber.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: Colors.amber.withValues(alpha: 0.4)),
+    stream: PartyChatService.watchPinned(_roomId),
+    builder: (c, snap) {
+      final isLight = AppThemeService.currentPalette.value.isLight;
+      final ink = isLight ? PrismLight.ink : Colors.white;
+      final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+      final text = snap.data;
+      if (text == null || text.isEmpty) return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.amber.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Text('📌', style: TextStyle(fontSize: 13)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(color: ink, fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            child: Row(
-              children: [
-                const Text('📌', style: TextStyle(fontSize: 13)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(text,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 12),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
+            if (widget.isHost)
+              GestureDetector(
+                onTap: () async {
+                  await PartyChatService.setPinned(_roomId, null);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: Icon(Icons.close_rounded, color: inkSoft, size: 16),
                 ),
-                if (widget.isHost)
-                  GestureDetector(
-                    onTap: () async {
-                      await PartyChatService.setPinned(_roomId, null);
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 6),
-                      child: Icon(Icons.close_rounded,
-                          color: Colors.white54, size: 16),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+              ),
+          ],
+        ),
       );
+    },
+  );
 
   /// P11: "replying to X" strip above the composer.
   Widget _replyStrip() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white54;
     final r = _replyTo!;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -314,16 +362,16 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
       child: Row(
         children: [
           Expanded(
-            child: Text('↩ ${r.displayName}: ${r.body}',
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 11),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              '↩ ${r.displayName}: ${r.body}',
+              style: TextStyle(color: inkSoft, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           GestureDetector(
             onTap: () => setState(() => _replyTo = null),
-            child: const Icon(Icons.close_rounded,
-                color: Colors.white54, size: 16),
+            child: Icon(Icons.close_rounded, color: inkFaint, size: 16),
           ),
         ],
       ),
@@ -331,6 +379,20 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   }
 
   Widget _bubble(PartyChatMessage m) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
+    final quoteBg = isLight
+        ? PrismLight.raisedTop
+        : Colors.white.withValues(alpha: 0.06);
+    final reactionBg = isLight
+        ? PrismLight.raisedTop
+        : Colors.white.withValues(alpha: 0.08);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : Colors.white.withValues(alpha: 0.08);
     final mine = m.senderId == _myUid;
     return GestureDetector(
       onLongPress: () => _messageActions(m),
@@ -338,16 +400,12 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
         alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           margin: const EdgeInsets.only(bottom: 6),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           constraints: const BoxConstraints(maxWidth: 440),
           decoration: BoxDecoration(
-            color: mine
-                ? DizzyGlow.violet.withValues(alpha: 0.35)
-                : DizzyVoid.voidB,
+            color: mine ? DizzyGlow.violet.withValues(alpha: 0.35) : well,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: hairline),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,14 +414,14 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(m.displayName,
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 10)),
+                  Text(
+                    m.displayName,
+                    style: TextStyle(color: inkSoft, fontSize: 11),
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}',
-                    style: const TextStyle(
-                        color: Colors.white38, fontSize: 9),
+                    style: TextStyle(color: inkFaint, fontSize: 11),
                   ),
                 ],
               ),
@@ -372,28 +430,29 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                 Container(
                   margin: const EdgeInsets.only(top: 4),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: quoteBg,
                     borderRadius: BorderRadius.circular(8),
                     border: Border(
                       left: BorderSide(
-                          color: DizzyGlow.violet
-                              .withValues(alpha: 0.7),
-                          width: 2),
+                        color: DizzyGlow.violet.withValues(alpha: 0.7),
+                        width: 2,
+                      ),
                     ),
                   ),
-                  child: Text('↩ ${m.replyName}: ${m.replyPreview}',
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 11),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    '↩ ${m.replyName}: ${m.replyPreview}',
+                    style: TextStyle(color: inkSoft, fontSize: 11),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(m.body,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 13)),
+                child: Text(m.body, style: TextStyle(color: ink, fontSize: 13)),
               ),
               // P11: reaction chips (tap = toggle mine).
               if (m.reactions.isNotEmpty)
@@ -409,14 +468,17 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                               PartyChatService.toggleReaction(m.id, e.key),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.white
-                                  .withValues(alpha: 0.08),
+                              color: reactionBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Text('${e.key} ${e.value}',
-                                style: const TextStyle(fontSize: 11)),
+                            child: Text(
+                              '${e.key} ${e.value}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
                           ),
                         ),
                     ],
@@ -431,9 +493,13 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
 
   /// P11: long-press → reply / react / pin (host).
   Future<void> _messageActions(PartyChatMessage m) async {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
+    final well = isLight ? PrismLight.raisedBottom : PrismDark.sunken;
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: palette.cardBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -444,11 +510,12 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(m.body,
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                m.body,
+                style: TextStyle(color: inkSoft, fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 6,
@@ -459,12 +526,10 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                       child: Container(
                         padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color:
-                              Colors.white.withValues(alpha: 0.06),
+                          color: well,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text(e,
-                            style: const TextStyle(fontSize: 20)),
+                        child: Text(e, style: const TextStyle(fontSize: 20)),
                       ),
                     ),
                 ],
@@ -484,8 +549,7 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.pop(c, 'pin'),
-                        icon: const Icon(Icons.push_pin_rounded,
-                            size: 16),
+                        icon: const Icon(Icons.push_pin_rounded, size: 16),
                         label: const Text('Pin'),
                       ),
                     ),
@@ -503,53 +567,58 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
     } else if (action == 'pin') {
       final ok = await PartyChatService.setPinned(_roomId, m.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(ok ? 'Pinned for everyone. 📌' : 'Pin failed.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ok ? 'Pinned for everyone. 📌' : 'Pin failed.')),
+      );
     } else if (action.startsWith('react:')) {
       await PartyChatService.toggleReaction(m.id, action.substring(6));
     }
   }
 
   Widget _controls() => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          if (widget.isHost)
-            OutlinedButton.icon(
-              onPressed: _toggleLock,
-              icon: Icon(
-                  _locked
-                      ? Icons.lock_open_rounded
-                      : Icons.lock_rounded,
-                  size: 16),
-              label: Text(_locked ? 'Unlock' : 'Lock'),
-            ),
-          if (widget.isHost)
-            OutlinedButton.icon(
-              onPressed: _endRoom,
-              icon: const Icon(Icons.stop_rounded, size: 16),
-              label: const Text('End for all'),
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent),
-            ),
-          OutlinedButton.icon(
-            onPressed: _leave,
-            icon: const Icon(Icons.logout_rounded, size: 16),
-            label: const Text('Leave'),
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      if (widget.isHost)
+        OutlinedButton.icon(
+          onPressed: _toggleLock,
+          icon: Icon(
+            _locked ? Icons.lock_open_rounded : Icons.lock_rounded,
+            size: 16,
           ),
-        ],
-      );
+          label: Text(_locked ? 'Unlock' : 'Lock'),
+        ),
+      if (widget.isHost)
+        OutlinedButton.icon(
+          onPressed: _endRoom,
+          icon: const Icon(Icons.stop_rounded, size: 16),
+          label: const Text('End for all'),
+          style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
+        ),
+      OutlinedButton.icon(
+        onPressed: _leave,
+        icon: const Icon(Icons.logout_rounded, size: 16),
+        label: const Text('Leave'),
+      ),
+    ],
+  );
 
   Future<void> _send() async {
     final text = _input.text;
     if (!PartyChatService.validBody(text) || _sending) return;
     setState(() => _sending = true);
-    final ok = await PartyChatService.sendMessage(_roomId, text,
-        replyToId: _replyTo?.id);
+    final ok = await PartyChatService.sendMessage(
+      _roomId,
+      text,
+      replyToId: _replyTo?.id,
+    );
     if (mounted) setState(() => _sending = false);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Not sent — slow down (1 msg / 2s) or rejoin.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Not sent — slow down (1 msg / 2s) or rejoin.'),
+        ),
+      );
       return;
     }
     _input.clear();
@@ -557,14 +626,14 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
   }
 
   Future<void> _toggleLock() async {
-    final ok =
-        await PartyChatService.setLocked(_roomId, !_locked);
+    final ok = await PartyChatService.setLocked(_roomId, !_locked);
     if (!mounted) return;
     if (ok) {
       setState(() => _locked = !_locked);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lock toggle failed.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lock toggle failed.')));
     }
   }
 
@@ -574,23 +643,26 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
       builder: (c) => AlertDialog(
         title: Text('Kick ${m.displayName}?'),
         content: const Text(
-            'They leave voice + room immediately. They can rejoin unless locked.'),
+          'They leave voice + room immediately. They can rejoin unless locked.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Kick')),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Kick'),
+          ),
         ],
       ),
     );
     if (ok == true) {
-      final done =
-          await PartyChatService.kickMember(_roomId, m.userId);
+      final done = await PartyChatService.kickMember(_roomId, m.userId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(done ? 'Kicked.' : 'Kick failed.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(done ? 'Kicked.' : 'Kick failed.')),
+      );
       if (done) setState(() => _memberTick++);
     }
   }
@@ -603,11 +675,13 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
         content: const Text('Chat is wiped and members are disconnected.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('End room')),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('End room'),
+          ),
         ],
       ),
     );

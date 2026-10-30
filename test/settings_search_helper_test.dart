@@ -3,15 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dizzy/services/settings/settings_search_helper.dart';
 
-SettingSearchEntry _e(String title,
-        {String subtitle = '', String keywords = ''}) =>
-    SettingSearchEntry(
-      title: title,
-      subtitle: subtitle,
-      keywords: keywords,
-      icon: Icons.settings,
-      open: (_) => const SizedBox(),
-    );
+SettingSearchEntry _e(
+  String title, {
+  String subtitle = '',
+  String keywords = '',
+}) => SettingSearchEntry(
+  title: title,
+  subtitle: subtitle,
+  keywords: keywords,
+  icon: Icons.settings,
+  open: (_) => const SizedBox(),
+);
 
 /// Polish P8: in-settings search never loses a setting.
 void main() {
@@ -29,8 +31,11 @@ void main() {
     });
 
     test('matches subtitle + keywords', () {
-      final e = _e('Sources',
-          subtitle: 'Which video sources work now', keywords: 'scraper');
+      final e = _e(
+        'Sources',
+        subtitle: 'Which video sources work now',
+        keywords: 'scraper',
+      );
       expect(SettingsSearchHelper.matches('video', e), isTrue);
       expect(SettingsSearchHelper.matches('scraper', e), isTrue);
     });

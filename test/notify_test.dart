@@ -11,10 +11,14 @@ void main() {
     });
 
     test('tones have distinct colors', () {
-      expect(DizzyNotify.backgroundFor(NotifyTone.success),
-          const Color(0xFF10B981));
-      expect(DizzyNotify.backgroundFor(NotifyTone.warn),
-          const Color(0xFFB45309));
+      expect(
+        DizzyNotify.backgroundFor(NotifyTone.success),
+        const Color(0xFF10B981),
+      );
+      expect(
+        DizzyNotify.backgroundFor(NotifyTone.warn),
+        const Color(0xFFB45309),
+      );
       expect(
         DizzyNotify.backgroundFor(NotifyTone.info),
         isNot(DizzyNotify.backgroundFor(NotifyTone.success)),
@@ -23,12 +27,9 @@ void main() {
 
     testWidgets('show renders the Easy English line', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: Text('x')),
-        ),
+        const MaterialApp(home: Scaffold(body: Text('x'))),
       );
-      final ctx =
-          tester.element(find.text('x'));
+      final ctx = tester.element(find.text('x'));
       DizzyNotify.show(ctx, 'Code copied.', tone: NotifyTone.success);
       await tester.pump();
       expect(find.text('Code copied.'), findsOneWidget);
@@ -38,9 +39,7 @@ void main() {
   group('DizzyDialogs.confirm', () {
     testWidgets('Cancel → false, confirm → true', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: Text('x')),
-        ),
+        const MaterialApp(home: Scaffold(body: Text('x'))),
       );
       final ctx = tester.element(find.text('x'));
 

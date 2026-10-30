@@ -10,14 +10,102 @@ import '../errors/app_log.dart';
 
 /// Subtitle styling preset for rapid 1-tap appearance selection.
 enum SubtitleStylePreset {
-  classicWhite('Classic White', 'Crisp white text with black outline', '#FFFFFFFF', '#00000000', '#FF000000', 2.0, 0.0, '#00000000', false, false),
-  cinemaYellow('Cinema Yellow', 'Warm yellow text with subtle shadow and border', '#FFFFEB3B', '#00000000', '#FF000000', 2.5, 1.5, '#80000000', false, false),
-  streamingBox('Streaming Box', 'White text inside a 50% translucent black box', '#FFFFFFFF', '#80000000', '#00000000', 0.0, 0.0, '#00000000', false, false),
-  highContrast('High Contrast', 'Bold yellow text with solid opaque black box', '#FFFFD600', '#FF000000', '#FF000000', 0.0, 0.0, '#00000000', true, false),
-  animeClean('Anime Clean', 'Bold white text with deep outline & shadow', '#FFFFFFFF', '#00000000', '#FF000000', 3.5, 2.0, '#BF000000', true, false),
-  cyberpunkCyan('Cyberpunk Cyan', 'Vibrant cyan text with dark border', '#00E5FF', '#00000000', '#FF0D111A', 2.5, 1.0, '#6600E5FF', false, false),
-  nightModeSoft('Night Mode Warm', 'Soft cream text with 40% translucent background', '#FFF8E1', '#66000000', '#00000000', 0.0, 0.0, '#00000000', false, false),
-  custom('Custom', 'User configured custom subtitle styles', '#FFFFFFFF', '#00000000', '#FF000000', 2.0, 0.0, '#00000000', false, false);
+  classicWhite(
+    'Classic White',
+    'Crisp white text with black outline',
+    '#FFFFFFFF',
+    '#00000000',
+    '#FF000000',
+    2.0,
+    0.0,
+    '#00000000',
+    false,
+    false,
+  ),
+  cinemaYellow(
+    'Cinema Yellow',
+    'Warm yellow text with subtle shadow and border',
+    '#FFFFEB3B',
+    '#00000000',
+    '#FF000000',
+    2.5,
+    1.5,
+    '#80000000',
+    false,
+    false,
+  ),
+  streamingBox(
+    'Streaming Box',
+    'White text inside a 50% translucent black box',
+    '#FFFFFFFF',
+    '#80000000',
+    '#00000000',
+    0.0,
+    0.0,
+    '#00000000',
+    false,
+    false,
+  ),
+  highContrast(
+    'High Contrast',
+    'Bold yellow text with solid opaque black box',
+    '#FFFFD600',
+    '#FF000000',
+    '#FF000000',
+    0.0,
+    0.0,
+    '#00000000',
+    true,
+    false,
+  ),
+  animeClean(
+    'Anime Clean',
+    'Bold white text with deep outline & shadow',
+    '#FFFFFFFF',
+    '#00000000',
+    '#FF000000',
+    3.5,
+    2.0,
+    '#BF000000',
+    true,
+    false,
+  ),
+  cyberpunkCyan(
+    'Cyberpunk Cyan',
+    'Vibrant cyan text with dark border',
+    '#00E5FF',
+    '#00000000',
+    '#FF0D111A',
+    2.5,
+    1.0,
+    '#6600E5FF',
+    false,
+    false,
+  ),
+  nightModeSoft(
+    'Night Mode Warm',
+    'Soft cream text with 40% translucent background',
+    '#FFF8E1',
+    '#66000000',
+    '#00000000',
+    0.0,
+    0.0,
+    '#00000000',
+    false,
+    false,
+  ),
+  custom(
+    'Custom',
+    'User configured custom subtitle styles',
+    '#FFFFFFFF',
+    '#00000000',
+    '#FF000000',
+    2.0,
+    0.0,
+    '#00000000',
+    false,
+    false,
+  );
 
   final String label;
   final String description;
@@ -46,11 +134,7 @@ enum SubtitleStylePreset {
 
 /// Anime4K GLSL shader upscaling presets for libmpv / media_kit.
 enum Anime4KPreset {
-  off(
-    'Off',
-    'Standard video playback without neural upscaling shaders',
-    [],
-  ),
+  off('Off', 'Standard video playback without neural upscaling shaders', []),
   modeAFast(
     'Mode A (Fast / Balanced)',
     'Restores line art and upscales cleanly. Balanced GPU load, ideal for 1080p anime and mobile/integrated GPUs.',
@@ -103,11 +187,7 @@ enum Anime4KPreset {
   final String description;
   final List<String> shaderFiles;
 
-  const Anime4KPreset(
-    this.label,
-    this.description,
-    this.shaderFiles,
-  );
+  const Anime4KPreset(this.label, this.description, this.shaderFiles);
 }
 
 /// P3 — playback buffer profiles. Eco sips battery/radio, Max pre-buffers
@@ -156,8 +236,12 @@ abstract final class PlayerSettings {
   // Hardcoded engine defaults — not user-configurable
   // autoResyncOnStall and hardwareAudioClock are kept as ValueNotifiers for
   // compatibility with player_screen.dart but are always true.
-  static final ValueNotifier<bool> autoResyncOnStall = ValueNotifier<bool>(true);
-  static final ValueNotifier<bool> hardwareAudioClock = ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> autoResyncOnStall = ValueNotifier<bool>(
+    true,
+  );
+  static final ValueNotifier<bool> hardwareAudioClock = ValueNotifier<bool>(
+    true,
+  );
 
   // Instant-Play UX Keys
   static const _keyAutoplayFirstVerified = 'player_autoplay_first_verified';
@@ -167,13 +251,15 @@ abstract final class PlayerSettings {
 
   /// Auto-play the first verified playable source the moment it's found
   /// (movies / TV). Default: on.
-  static final ValueNotifier<bool> autoplayFirstVerified =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> autoplayFirstVerified = ValueNotifier<bool>(
+    true,
+  );
 
   /// Auto-play the next episode (binge) when the current one completes,
   /// using the prefetched source. Default: on.
-  static final ValueNotifier<bool> nextEpisodeAutoPlay =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> nextEpisodeAutoPlay = ValueNotifier<bool>(
+    true,
+  );
 
   /// Silently switch to the best backup source when the current one
   /// stalls or dies mid-play. Default: on.
@@ -181,8 +267,9 @@ abstract final class PlayerSettings {
 
   /// Show skip-intro/credits buttons, using IntroDB data plus smart
   /// window heuristics when data is missing. Default: on.
-  static final ValueNotifier<bool> skipIntroHeuristics =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> skipIntroHeuristics = ValueNotifier<bool>(
+    true,
+  );
 
   /// F1: auto-skip intro/recap/credits when they start. Default ON — the
   /// one-tap promise is "press once, watch the whole thing"; nobody wants
@@ -190,14 +277,14 @@ abstract final class PlayerSettings {
   /// Video settings restores the manual skip button. Previews NEVER
   /// auto-skip (see `AutoSkipPolicy`).
   static const _keyAutoSkipIntro = 'player_auto_skip_intro';
-  static final ValueNotifier<bool> autoSkipIntro =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> autoSkipIntro = ValueNotifier<bool>(true);
   static const _keyAutoSkipRecap = 'player_auto_skip_recap';
-  static final ValueNotifier<bool> autoSkipRecap =
-      ValueNotifier<bool>(true);
+  static final ValueNotifier<bool> autoSkipRecap = ValueNotifier<bool>(true);
 
   /// Android Direct Surface (SurfaceProducer / SurfaceView) toggle. Default: false (off).
-  static final ValueNotifier<bool> enableSurfaceProducer = ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> enableSurfaceProducer = ValueNotifier<bool>(
+    false,
+  );
 
   // Data Saver (v1.1.8) — caps network buffering & disables prefetch to cut
   // mobile data usage; also silences non-essential background fetches.
@@ -208,8 +295,9 @@ abstract final class PlayerSettings {
   /// Default OFF (v1.1.9): blind accept was an MITM hole. Only enable for
   /// local/dev servers. Normal CDNs are unaffected.
   static const _keyAllowInsecureProbes = 'player_allow_insecure_probes';
-  static final ValueNotifier<bool> allowInsecureProbes =
-      ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> allowInsecureProbes = ValueNotifier<bool>(
+    false,
+  );
 
   /// Last used player volume (0.0-1.0), restored on next open. Default 1.0.
   static const _keyLastVolume = 'player_last_volume';
@@ -276,18 +364,32 @@ abstract final class PlayerSettings {
   static final ValueNotifier<String> subFont = ValueNotifier<String>('subfont');
   static final ValueNotifier<int> subFontSize = ValueNotifier<int>(32);
   static final ValueNotifier<double> subScale = ValueNotifier<double>(1.0);
-  static final ValueNotifier<String> subColor = ValueNotifier<String>('#FFFFFFFF');
-  static final ValueNotifier<String> subBackColor = ValueNotifier<String>('#00000000');
-  static final ValueNotifier<String> subBorderColor = ValueNotifier<String>('#FF000000');
+  static final ValueNotifier<String> subColor = ValueNotifier<String>(
+    '#FFFFFFFF',
+  );
+  static final ValueNotifier<String> subBackColor = ValueNotifier<String>(
+    '#00000000',
+  );
+  static final ValueNotifier<String> subBorderColor = ValueNotifier<String>(
+    '#FF000000',
+  );
   static final ValueNotifier<double> subBorderSize = ValueNotifier<double>(2.0);
-  static final ValueNotifier<double> subShadowOffset = ValueNotifier<double>(0.0);
-  static final ValueNotifier<String> subShadowColor = ValueNotifier<String>('#80000000');
+  static final ValueNotifier<double> subShadowOffset = ValueNotifier<double>(
+    0.0,
+  );
+  static final ValueNotifier<String> subShadowColor = ValueNotifier<String>(
+    '#80000000',
+  );
   static final ValueNotifier<bool> subBold = ValueNotifier<bool>(false);
   static final ValueNotifier<bool> subItalic = ValueNotifier<bool>(false);
   static final ValueNotifier<double> subMarginY = ValueNotifier<double>(30.0);
   static final ValueNotifier<double> subPos = ValueNotifier<double>(100.0);
-  static final ValueNotifier<String> subAlignX = ValueNotifier<String>('center');
-  static final ValueNotifier<String> subAssOverride = ValueNotifier<String>('no');
+  static final ValueNotifier<String> subAlignX = ValueNotifier<String>(
+    'center',
+  );
+  static final ValueNotifier<String> subAssOverride = ValueNotifier<String>(
+    'no',
+  );
   static final ValueNotifier<bool> useLibass = ValueNotifier<bool>(false);
   static final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
 
@@ -355,13 +457,13 @@ abstract final class PlayerSettings {
     subAlignX.value = prefs.getString(_keySubAlignX) ?? 'center';
     subAssOverride.value = prefs.getString(_keySubAssOverride) ?? 'no';
     useLibass.value = prefs.getBool(_keyUseLibass) ?? false;
-    enableSurfaceProducer.value = prefs.getBool(_keyEnableSurfaceProducer) ?? false;
+    enableSurfaceProducer.value =
+        prefs.getBool(_keyEnableSurfaceProducer) ?? false;
 
     // Instant-Play UX
     autoplayFirstVerified.value =
         prefs.getBool(_keyAutoplayFirstVerified) ?? true;
-    nextEpisodeAutoPlay.value =
-        prefs.getBool(_keyNextEpisodeAutoPlay) ?? true;
+    nextEpisodeAutoPlay.value = prefs.getBool(_keyNextEpisodeAutoPlay) ?? true;
     autoFailover.value = prefs.getBool(_keyAutoFailover) ?? true;
     dataSaver.value = prefs.getBool(_keyDataSaver) ?? false;
     // P3: load saved buffer profile; Smooth Mode (low-RAM default) forces eco.
@@ -373,8 +475,7 @@ abstract final class PlayerSettings {
       );
     }
     allowInsecureProbes.value = prefs.getBool(_keyAllowInsecureProbes) ?? false;
-    lastVolume.value =
-        (prefs.getDouble(_keyLastVolume) ?? 1.0).clamp(0.0, 1.0);
+    lastVolume.value = (prefs.getDouble(_keyLastVolume) ?? 1.0).clamp(0.0, 1.0);
     skipIntroHeuristics.value = prefs.getBool(_keySkipIntroHeuristics) ?? true;
     autoSkipIntro.value = prefs.getBool(_keyAutoSkipIntro) ?? true;
     autoSkipRecap.value = prefs.getBool(_keyAutoSkipRecap) ?? true;
@@ -396,7 +497,9 @@ abstract final class PlayerSettings {
         targetDir = await getTemporaryDirectory();
       }
 
-      final shadersDir = Directory(p.join(targetDir.path, 'shaders', 'anime4k'));
+      final shadersDir = Directory(
+        p.join(targetDir.path, 'shaders', 'anime4k'),
+      );
       if (!await shadersDir.exists()) {
         await shadersDir.create(recursive: true);
       }
@@ -447,7 +550,9 @@ abstract final class PlayerSettings {
         final shaderFile = File(p.join(shadersDir.path, filename));
         if (!await shaderFile.exists() || (await shaderFile.length()) == 0) {
           try {
-            final data = await rootBundle.load('assets/shaders/anime4k/$filename');
+            final data = await rootBundle.load(
+              'assets/shaders/anime4k/$filename',
+            );
             if (data.lengthInBytes > 0) {
               await shaderFile.writeAsBytes(
                 data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
@@ -459,7 +564,9 @@ abstract final class PlayerSettings {
       }
 
       _extractedAnime4kDir = shadersDir.path;
-      AppLog.d('[PlayerSettings] Anime4K shaders extracted to: $_extractedAnime4kDir');
+      AppLog.d(
+        '[PlayerSettings] Anime4K shaders extracted to: $_extractedAnime4kDir',
+      );
     } catch (e) {
       AppLog.d('[PlayerSettings] Error extracting Anime4K shaders: $e');
     }
@@ -508,7 +615,9 @@ abstract final class PlayerSettings {
       if (await fontFile.exists() && (await fontFile.length()) > 0) {
         _extractedFontDir = fontsDir.path;
         _extractedFontPath = fontFile.path;
-        AppLog.d('[PlayerSettings] libass font extracted successfully to: $_extractedFontPath');
+        AppLog.d(
+          '[PlayerSettings] libass font extracted successfully to: $_extractedFontPath',
+        );
       }
     } catch (e) {
       AppLog.d('[PlayerSettings] Error extracting libass font fallback: $e');
@@ -540,7 +649,10 @@ abstract final class PlayerSettings {
   }
 
   /// Configures network stream continuity with strict separation between Live IPTV and VOD.
-  static Future<void> applyStreamContinuity(Player player, {bool isLive = false}) async {
+  static Future<void> applyStreamContinuity(
+    Player player, {
+    bool isLive = false,
+  }) async {
     try {
       final dynamic platform = player.platform;
       if (platform == null) return;
@@ -596,7 +708,11 @@ abstract final class PlayerSettings {
 
   /// Pre-Open Properties: Demuxer, hardware decoder, cache buffer, and FFmpeg flags
   /// that MUST be configured before opening media.
-  static Future<void> applyPreOpenProperties(Player player, {bool isLive = false, bool isTorrent = false}) async {
+  static Future<void> applyPreOpenProperties(
+    Player player, {
+    bool isLive = false,
+    bool isTorrent = false,
+  }) async {
     try {
       final dynamic platform = player.platform;
       if (platform == null) return;
@@ -629,7 +745,8 @@ abstract final class PlayerSettings {
       // LOW-VRAM GUARD: shader chains on ≤4GB GPUs spill VRAM into system
       // RAM (WDDM) → 10GB RAM spike → EGL context-lost crash. Skip them.
       final anime4kAllowed =
-          anime4kPreset.value != Anime4KPreset.off && !await _isLowVramForAnime4k();
+          anime4kPreset.value != Anime4KPreset.off &&
+          !await _isLowVramForAnime4k();
       if (anime4kAllowed && _extractedAnime4kDir != null) {
         final files = anime4kPreset.value.shaderFiles;
         if (files.isNotEmpty) {
@@ -638,7 +755,9 @@ abstract final class PlayerSettings {
               .map((f) => p.join(_extractedAnime4kDir!, f))
               .join(separator);
           await platform.setProperty('glsl-shaders', shaderChain);
-          AppLog.d('[PlayerSettings] Applied Anime4K pre-open shader chain: ${anime4kPreset.value.label}');
+          AppLog.d(
+            '[PlayerSettings] Applied Anime4K pre-open shader chain: ${anime4kPreset.value.label}',
+          );
         } else {
           await platform.setProperty('glsl-shaders', '');
         }
@@ -660,17 +779,25 @@ abstract final class PlayerSettings {
         final tMaxMB = dataSaver.value
             ? 32
             : (playbackProfile.value == PlaybackProfile.eco
-                ? (isMobile ? 48 : 64)
-                : (isMobile ? 64 : 120));
+                  ? (isMobile ? 48 : 64)
+                  : (isMobile ? 64 : 120));
         await platform.setProperty('cache', 'yes');
         await platform.setProperty('cache-secs', '$cacheSecs');
         await platform.setProperty('demuxer-readahead-secs', '$readaheadSecs');
-        await platform.setProperty('demuxer-max-bytes',
-            '${tMaxMB * 1024 * 1024}');
-        await platform.setProperty('demuxer-max-back-bytes',
-            '${tMaxMB * 1024 * 1024 ~/ 3}');
-        await platform.setProperty('network-timeout', '60'); // 60s — torrents need patience
-        await platform.setProperty('stream-lavf-o',
+        await platform.setProperty(
+          'demuxer-max-bytes',
+          '${tMaxMB * 1024 * 1024}',
+        );
+        await platform.setProperty(
+          'demuxer-max-back-bytes',
+          '${tMaxMB * 1024 * 1024 ~/ 3}',
+        );
+        await platform.setProperty(
+          'network-timeout',
+          '60',
+        ); // 60s — torrents need patience
+        await platform.setProperty(
+          'stream-lavf-o',
           'reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=10',
         );
         return;
@@ -692,7 +819,10 @@ abstract final class PlayerSettings {
       await platform.setProperty('demuxer-max-back-bytes', dsBack);
       await platform.setProperty('cache-secs', '$cacheSecs');
       await platform.setProperty('demuxer-readahead-secs', '$readaheadSecs');
-      await platform.setProperty('network-timeout', '45'); // slow/fluctuating nets need patience, not 30s drops
+      await platform.setProperty(
+        'network-timeout',
+        '45',
+      ); // slow/fluctuating nets need patience, not 30s drops
 
       // Network Stream Continuity (Live IPTV vs VOD separation)
       await applyStreamContinuity(player, isLive: isLive);
@@ -700,9 +830,14 @@ abstract final class PlayerSettings {
       // Native HLS & image-disguised (.jpg/.png) stream probing
       // Data Saver: cap HLS bitrate instead of pulling the max variant.
       await platform.setProperty(
-          'hls-bitrate', dataSaver.value ? '1000000' : 'max'); // ~1 Mbps cap when saving data
+        'hls-bitrate',
+        dataSaver.value ? '1000000' : 'max',
+      ); // ~1 Mbps cap when saving data
       await platform.setProperty('demuxer-lavf-probesize', probeSize);
-      await platform.setProperty('demuxer-lavf-analyzeduration', analyzeDuration);
+      await platform.setProperty(
+        'demuxer-lavf-analyzeduration',
+        analyzeDuration,
+      );
       await platform.setProperty('demuxer-lavf-o', 'strict=experimental');
     } catch (e) {
       AppLog.d('[PlayerSettings] applyPreOpenProperties warning: $e');
@@ -800,7 +935,10 @@ abstract final class PlayerSettings {
   }
 
   /// Automatically resolves all required Referer, Origin, and User-Agent headers for known streaming CDNs.
-  static Map<String, String> resolveStreamHeaders(String url, [Map<String, String>? initialHeaders]) {
+  static Map<String, String> resolveStreamHeaders(
+    String url, [
+    Map<String, String>? initialHeaders,
+  ]) {
     final h = <String, String>{
       'Connection': 'keep-alive',
       'Accept': '*/*',
@@ -814,7 +952,9 @@ abstract final class PlayerSettings {
     final lower = url.toLowerCase();
     if (lower.contains('hakunaymatata.com')) {
       h['User-Agent'] = 'Lavf/60.16.100';
-    } else if (lower.contains('sabrina-stream-proxy') || lower.contains('dulo.') || lower.contains('dulo.gd')) {
+    } else if (lower.contains('sabrina-stream-proxy') ||
+        lower.contains('dulo.') ||
+        lower.contains('dulo.gd')) {
       h['Referer'] = 'https://d.dulo.gd/';
       h['Origin'] = 'https://d.dulo.gd';
     } else if (lower.contains('movieboxnoob.cc') ||
@@ -829,7 +969,8 @@ abstract final class PlayerSettings {
         lower.contains('vidzy.cc') ||
         lower.contains('vimeos.zip') ||
         lower.contains('wecollege.net')) {
-      final customRef = initialHeaders?['Referer'] ?? initialHeaders?['referer'];
+      final customRef =
+          initialHeaders?['Referer'] ?? initialHeaders?['referer'];
       if (customRef != null && customRef.isNotEmpty) {
         h['Referer'] = customRef;
         h['Origin'] = customRef.replaceAll(RegExp(r'/+$'), '');
@@ -840,16 +981,20 @@ abstract final class PlayerSettings {
     } else if (lower.contains('chillflix.lol')) {
       h['Referer'] = 'https://www.chillflix.lol/';
       h['Origin'] = 'https://www.chillflix.lol';
-    } else if (lower.contains('hclod.qzz.io') || lower.contains('watchplay.shop')) {
+    } else if (lower.contains('hclod.qzz.io') ||
+        lower.contains('watchplay.shop')) {
       h['Referer'] = 'https://v1.watchplay.shop/';
       h['Origin'] = 'https://v1.watchplay.shop';
-    } else if (lower.contains('valhallastream') || lower.contains('1shows.app') || lower.contains('rivestream')) {
+    } else if (lower.contains('valhallastream') ||
+        lower.contains('1shows.app') ||
+        lower.contains('rivestream')) {
       h['Referer'] = 'https://www.rivestream.app/';
       h['Origin'] = 'https://www.rivestream.app';
     } else if (lower.contains('videasy') || lower.contains('speedracelight')) {
       h['Referer'] = 'https://player.videasy.to/';
       h['Origin'] = 'https://player.videasy.to';
-    } else if (lower.contains('streamraiwind.stream') || lower.contains('vuflix.co')) {
+    } else if (lower.contains('streamraiwind.stream') ||
+        lower.contains('vuflix.co')) {
       h['Referer'] = 'https://vuflix.co/';
       h['Origin'] = 'https://vuflix.co';
     } else if (lower.contains('net77.cc') || lower.contains('nm-cdn4.top')) {
@@ -866,14 +1011,17 @@ abstract final class PlayerSettings {
         lower.contains('cloudvideo.lat') ||
         lower.contains('megaplay.buzz') ||
         lower.contains('vidwish.live') ||
-        (initialHeaders != null && initialHeaders['Referer']?.contains('megaplay.buzz') == true) ||
-        (initialHeaders != null && initialHeaders['Referer']?.contains('vidwish') == true)) {
+        (initialHeaders != null &&
+            initialHeaders['Referer']?.contains('megaplay.buzz') == true) ||
+        (initialHeaders != null &&
+            initialHeaders['Referer']?.contains('vidwish') == true)) {
       h['Referer'] = 'https://megaplay.buzz/';
       h['Origin'] = 'https://megaplay.buzz';
       h['Cookie'] = 'SITE_TOTAL_ID=ce655f0eea754f2888ea98ded373e3b5';
     } else if (lower.contains('anidb.app') ||
         lower.contains('hls.anidb.app') ||
-        (initialHeaders != null && initialHeaders['Referer']?.contains('anidb.app') == true)) {
+        (initialHeaders != null &&
+            initialHeaders['Referer']?.contains('anidb.app') == true)) {
       h['Referer'] = 'https://anidb.app/';
       h['Origin'] = 'https://anidb.app';
     }
@@ -881,7 +1029,10 @@ abstract final class PlayerSettings {
   }
 
   /// Convenience method that applies both pre-open and post-open properties to a media_kit [Player].
-  static Future<void> applyToPlayer(Player player, {bool isLive = false}) async {
+  static Future<void> applyToPlayer(
+    Player player, {
+    bool isLive = false,
+  }) async {
     await applyPreOpenProperties(player, isLive: isLive);
     await applyPostOpenProperties(player);
   }
@@ -905,32 +1056,66 @@ abstract final class PlayerSettings {
           }
 
           // Font family
-          final font = (subFont.value.trim().isEmpty || subFont.value == 'subfont')
+          final font =
+              (subFont.value.trim().isEmpty || subFont.value == 'subfont')
               ? 'Poppins'
               : subFont.value.trim();
           await platform.setProperty('sub-font', font);
 
           // Typography
-          await platform.setProperty('sub-font-size', subFontSize.value.toString());
-          await platform.setProperty('sub-scale', subScale.value.toStringAsFixed(2));
+          await platform.setProperty(
+            'sub-font-size',
+            subFontSize.value.toString(),
+          );
+          await platform.setProperty(
+            'sub-scale',
+            subScale.value.toStringAsFixed(2),
+          );
           await platform.setProperty('sub-bold', subBold.value ? 'yes' : 'no');
-          await platform.setProperty('sub-italic', subItalic.value ? 'yes' : 'no');
+          await platform.setProperty(
+            'sub-italic',
+            subItalic.value ? 'yes' : 'no',
+          );
 
           // Colors
-          await platform.setProperty('sub-color', _formatMpvColor(subColor.value));
-          await platform.setProperty('sub-back-color', _formatMpvColor(subBackColor.value));
+          await platform.setProperty(
+            'sub-color',
+            _formatMpvColor(subColor.value),
+          );
+          await platform.setProperty(
+            'sub-back-color',
+            _formatMpvColor(subBackColor.value),
+          );
 
           // Borders & Outlines
-          await platform.setProperty('sub-border-color', _formatMpvColor(subBorderColor.value));
-          await platform.setProperty('sub-border-size', subBorderSize.value.toStringAsFixed(1));
+          await platform.setProperty(
+            'sub-border-color',
+            _formatMpvColor(subBorderColor.value),
+          );
+          await platform.setProperty(
+            'sub-border-size',
+            subBorderSize.value.toStringAsFixed(1),
+          );
 
           // Shadows
-          await platform.setProperty('sub-shadow-offset', subShadowOffset.value.toStringAsFixed(1));
-          await platform.setProperty('sub-shadow-color', _formatMpvColor(subShadowColor.value));
+          await platform.setProperty(
+            'sub-shadow-offset',
+            subShadowOffset.value.toStringAsFixed(1),
+          );
+          await platform.setProperty(
+            'sub-shadow-color',
+            _formatMpvColor(subShadowColor.value),
+          );
 
           // Positioning & Layout
-          await platform.setProperty('sub-margin-y', subMarginY.value.round().toString());
-          await platform.setProperty('sub-pos', subPos.value.round().toString());
+          await platform.setProperty(
+            'sub-margin-y',
+            subMarginY.value.round().toString(),
+          );
+          await platform.setProperty(
+            'sub-pos',
+            subPos.value.round().toString(),
+          );
           await platform.setProperty('sub-align-x', subAlignX.value);
 
           // ASS/SSA Script Preservation vs Override
@@ -958,9 +1143,7 @@ abstract final class PlayerSettings {
   /// Builds a reactive [SubtitleViewConfiguration] for Flutter's subtitle overlay widget.
   static SubtitleViewConfiguration getSubtitleViewConfiguration() {
     if (useLibass.value) {
-      return const SubtitleViewConfiguration(
-        visible: false,
-      );
+      return const SubtitleViewConfiguration(visible: false);
     }
 
     Color parseColor(String hex, {Color fallback = Colors.white}) {
@@ -974,11 +1157,22 @@ abstract final class PlayerSettings {
     }
 
     final textColor = parseColor(subColor.value);
-    final boxColor = parseColor(subBackColor.value, fallback: Colors.transparent);
-    final borderColor = parseColor(subBorderColor.value, fallback: Colors.black);
-    final shadowColor = parseColor(subShadowColor.value, fallback: Colors.black54);
+    final boxColor = parseColor(
+      subBackColor.value,
+      fallback: Colors.transparent,
+    );
+    final borderColor = parseColor(
+      subBorderColor.value,
+      fallback: Colors.black,
+    );
+    final shadowColor = parseColor(
+      subShadowColor.value,
+      fallback: Colors.black54,
+    );
 
-    final font = (subFont.value.isEmpty || subFont.value == 'subfont') ? 'Poppins' : subFont.value;
+    final font = (subFont.value.isEmpty || subFont.value == 'subfont')
+        ? 'Poppins'
+        : subFont.value;
     final align = subAlignX.value == 'left'
         ? TextAlign.left
         : (subAlignX.value == 'right' ? TextAlign.right : TextAlign.center);
@@ -1042,11 +1236,15 @@ abstract final class PlayerSettings {
 
   static String _buildAssForceStyleString(String font) {
     try {
-      final isBoxed = subBackColor.value != '#00000000' && !subBackColor.value.startsWith('#00');
+      final isBoxed =
+          subBackColor.value != '#00000000' &&
+          !subBackColor.value.startsWith('#00');
       final borderStyle = isBoxed ? 3 : 1;
       final primaryColour = _toAssColor(subColor.value);
       final outlineColour = _toAssColor(subBorderColor.value);
-      final backColour = _toAssColor(isBoxed ? subBackColor.value : subShadowColor.value);
+      final backColour = _toAssColor(
+        isBoxed ? subBackColor.value : subShadowColor.value,
+      );
 
       final size = (subFontSize.value * subScale.value).round();
       final bold = subBold.value ? 1 : 0;
@@ -1075,7 +1273,10 @@ abstract final class PlayerSettings {
     final b = str.substring(6, 8);
 
     // Invert alpha for ASS (00 = opaque, FF = transparent)
-    final assAlpha = (255 - alpha).toRadixString(16).padLeft(2, '0').toUpperCase();
+    final assAlpha = (255 - alpha)
+        .toRadixString(16)
+        .padLeft(2, '0')
+        .toUpperCase();
 
     return '&H$assAlpha$b$g$r';
   }
@@ -1089,7 +1290,10 @@ abstract final class PlayerSettings {
   // Subtitle Customization Setters (the only user-configurable settings)
   // ───────────────────────────────────────────────────────────────────────────
 
-  static Future<void> setSubStylePreset(SubtitleStylePreset preset, {Player? player}) async {
+  static Future<void> setSubStylePreset(
+    SubtitleStylePreset preset, {
+    Player? player,
+  }) async {
     subStylePreset.value = preset;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySubStylePreset, preset.name);
@@ -1135,7 +1339,11 @@ abstract final class PlayerSettings {
     _notify();
   }
 
-  static Future<void> setSubColor(String hex, {bool notify = true, Player? player}) async {
+  static Future<void> setSubColor(
+    String hex, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subColor.value = hex;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySubColor, hex);
@@ -1143,7 +1351,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubBackColor(String hex, {bool notify = true, Player? player}) async {
+  static Future<void> setSubBackColor(
+    String hex, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subBackColor.value = hex;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySubBackColor, hex);
@@ -1151,7 +1363,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubBorderColor(String hex, {bool notify = true, Player? player}) async {
+  static Future<void> setSubBorderColor(
+    String hex, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subBorderColor.value = hex;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySubBorderColor, hex);
@@ -1159,7 +1375,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubBorderSize(double size, {bool notify = true, Player? player}) async {
+  static Future<void> setSubBorderSize(
+    double size, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subBorderSize.value = size.clamp(0.0, 8.0);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_keySubBorderSize, subBorderSize.value);
@@ -1167,7 +1387,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubShadowOffset(double offset, {bool notify = true, Player? player}) async {
+  static Future<void> setSubShadowOffset(
+    double offset, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subShadowOffset.value = offset.clamp(0.0, 8.0);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_keySubShadowOffset, subShadowOffset.value);
@@ -1175,7 +1399,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubShadowColor(String hex, {bool notify = true, Player? player}) async {
+  static Future<void> setSubShadowColor(
+    String hex, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subShadowColor.value = hex;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySubShadowColor, hex);
@@ -1183,7 +1411,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubBold(bool val, {bool notify = true, Player? player}) async {
+  static Future<void> setSubBold(
+    bool val, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subBold.value = val;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keySubBold, val);
@@ -1191,7 +1423,11 @@ abstract final class PlayerSettings {
     if (notify) _notify();
   }
 
-  static Future<void> setSubItalic(bool val, {bool notify = true, Player? player}) async {
+  static Future<void> setSubItalic(
+    bool val, {
+    bool notify = true,
+    Player? player,
+  }) async {
     subItalic.value = val;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keySubItalic, val);

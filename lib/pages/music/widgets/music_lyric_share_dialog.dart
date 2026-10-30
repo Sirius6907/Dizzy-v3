@@ -54,7 +54,10 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
 
     _selectedLineIndices = <int>{};
     if (widget.lyrics.syncedLines.isNotEmpty) {
-      final start = widget.initialLineIndex.clamp(0, widget.lyrics.syncedLines.length - 1);
+      final start = widget.initialLineIndex.clamp(
+        0,
+        widget.lyrics.syncedLines.length - 1,
+      );
       _selectedLineIndices.add(start);
       if (start + 1 < widget.lyrics.syncedLines.length) {
         _selectedLineIndices.add(start + 1);
@@ -63,7 +66,9 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
   }
 
   Future<void> _loadPalette() async {
-    final real = await MusicArtworkPaletteService.instance.extractPalette(widget.track);
+    final real = await MusicArtworkPaletteService.instance.extractPalette(
+      widget.track,
+    );
     if (mounted) setState(() => _palette = real);
   }
 
@@ -124,7 +129,11 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
                         color: _palette.primary.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.auto_awesome_rounded, color: _palette.accent, size: 20),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: _palette.accent,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Text(
@@ -137,7 +146,10 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -208,15 +220,26 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white70,
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: _getShareableText()));
+                          Clipboard.setData(
+                            ClipboardData(text: _getShareableText()),
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Lyric quotes copied to clipboard! ✨'),
+                              content: Text(
+                                'Lyric quotes copied to clipboard! ✨',
+                              ),
                               duration: Duration(seconds: 2),
                             ),
                           );
@@ -232,22 +255,34 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _palette.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                         ),
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: _getShareableText()));
+                          Clipboard.setData(
+                            ClipboardData(text: _getShareableText()),
+                          );
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: _palette.primary,
-                              content: const Text('Lyric card copied & ready to share on Instagram/WhatsApp! 🚀'),
+                              content: const Text(
+                                'Lyric card copied & ready to share on Instagram/WhatsApp! 🚀',
+                              ),
                               duration: const Duration(seconds: 3),
                             ),
                           );
                         },
                         icon: const Icon(Icons.share_rounded, size: 18),
-                        label: const Text('Share Card', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Share Card',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ],
@@ -268,7 +303,9 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? _palette.primary : Colors.white.withValues(alpha: 0.08),
+          color: isSelected
+              ? _palette.primary
+              : Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -388,7 +425,11 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
                   height: 1.35,
                   letterSpacing: -0.3,
                   shadows: [
-                    Shadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 2)),
+                    Shadow(
+                      color: Colors.black45,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
               ),
@@ -401,16 +442,25 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.music_note_rounded, color: Colors.white, size: 14),
+                    Icon(
+                      Icons.music_note_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'Dizzy Music',
@@ -452,7 +502,8 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         itemCount: lines.length,
-        separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+        separatorBuilder: (_, __) =>
+            const Divider(color: Colors.white10, height: 1),
         itemBuilder: (context, index) {
           final isSelected = _selectedLineIndices.contains(index);
           return InkWell(
@@ -461,13 +512,17 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? _palette.primary.withValues(alpha: 0.25) : Colors.transparent,
+                color: isSelected
+                    ? _palette.primary.withValues(alpha: 0.25)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
                   Icon(
-                    isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    isSelected
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
                     color: isSelected ? _palette.primary : Colors.white30,
                     size: 18,
                   ),
@@ -477,7 +532,9 @@ class _MusicLyricShareDialogState extends State<MusicLyricShareDialog> {
                       lines[index].text,
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.white70,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         fontSize: 13,
                       ),
                     ),

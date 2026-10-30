@@ -17,10 +17,7 @@ import '../../utils/perf/performance_mode.dart';
 class AnimatedAmbientBackground extends StatefulWidget {
   final Widget? child;
 
-  const AnimatedAmbientBackground({
-    super.key,
-    this.child,
-  });
+  const AnimatedAmbientBackground({super.key, this.child});
 
   @override
   State<AnimatedAmbientBackground> createState() =>
@@ -62,7 +59,8 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
   /// Static wallpaper / plain scaffold needs no per-frame ticks.
   void _applyPerfGate() {
     final customBg = CustomBackgroundService.current;
-    final showLights = HomePageSettings.enableAmbientLights.value &&
+    final showLights =
+        HomePageSettings.enableAmbientLights.value &&
         PerformanceMode.ambientAllowed.value &&
         (!customBg.hasCustomBackground || customBg.blendThemeLights);
     if (showLights) {
@@ -134,8 +132,8 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
             return ValueListenableBuilder<bool>(
               valueListenable: PerformanceMode.ambientAllowed,
               builder: (context, perfAllowed, _) {
-                final showLights = HomePageSettings
-                        .enableAmbientLights.value &&
+                final showLights =
+                    HomePageSettings.enableAmbientLights.value &&
                     perfAllowed &&
                     (!hasWallpaper || customBg.blendThemeLights);
                 return Stack(
@@ -151,12 +149,12 @@ class _AnimatedAmbientBackgroundState extends State<AnimatedAmbientBackground>
                         child: AnimatedBuilder(
                           animation: _controller,
                           builder: (context, _) {
-                            final speed = HomePageSettings
-                                .ambientLightSpeed.value;
-                            final intensity = HomePageSettings
-                                .ambientLightIntensity.value;
-                            final pattern = HomePageSettings
-                                .ambientLightPattern.value;
+                            final speed =
+                                HomePageSettings.ambientLightSpeed.value;
+                            final intensity =
+                                HomePageSettings.ambientLightIntensity.value;
+                            final pattern =
+                                HomePageSettings.ambientLightPattern.value;
                             final t = (_controller.value * speed) % 1.0;
                             return _LightOrbs(
                               t: t,
@@ -237,6 +235,9 @@ class _LightOrbs extends StatelessWidget {
     }
     final primaryAlpha = (0.08 + intensity * 0.35).clamp(0.0, 0.5);
     final accentAlpha = (0.06 + intensity * 0.30).clamp(0.0, 0.45);
+    // Light clay needs a much fainter aura: a strong coral disc reads as a
+    // flat sticker on #E9EDF4 instead of ambient light.
+    final lightScale = palette.isLight ? 0.45 : 1.0;
     return Stack(
       children: [
         Positioned(
@@ -247,12 +248,13 @@ class _LightOrbs extends StatelessWidget {
             height: size.height * s1,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.center,
-                end: Alignment.center,
+              gradient: RadialGradient(
+                radius: 0.5,
                 colors: [
-                  palette.primaryColor.withValues(alpha: primaryAlpha),
-                  Colors.transparent,
+                  palette.primaryColor.withValues(
+                    alpha: primaryAlpha * lightScale,
+                  ),
+                  palette.primaryColor.withValues(alpha: 0),
                 ],
                 stops: const [0.0, 1.0],
               ),
@@ -267,12 +269,13 @@ class _LightOrbs extends StatelessWidget {
             height: size.height * s2,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.center,
-                end: Alignment.center,
+              gradient: RadialGradient(
+                radius: 0.5,
                 colors: [
-                  palette.accentColor.withValues(alpha: accentAlpha),
-                  Colors.transparent,
+                  palette.accentColor.withValues(
+                    alpha: accentAlpha * lightScale,
+                  ),
+                  palette.accentColor.withValues(alpha: 0),
                 ],
                 stops: const [0.0, 1.0],
               ),

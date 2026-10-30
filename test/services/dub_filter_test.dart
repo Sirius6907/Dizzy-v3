@@ -31,8 +31,10 @@ void main() {
       ];
       final out = filterByDubMode(sources, hindi: true, mediaTitle: 'Movie');
       expect(out.length, 2);
-      expect(out.map((s) => s.name),
-          containsAll(['MeowTV Hindiv3 1080p', 'Rivestream Hindicast']));
+      expect(
+        out.map((s) => s.name),
+        containsAll(['MeowTV Hindiv3 1080p', 'Rivestream Hindicast']),
+      );
     });
 
     test('hindi mode with zero hindi sources returns empty list', () {
@@ -55,7 +57,7 @@ void main() {
 
     test('hindi tag in description is detected', () {
       final sources = [
-        mkSrc('Generic Server', description: '1080p WEB-DL Hindi Dual Audio')
+        mkSrc('Generic Server', description: '1080p WEB-DL Hindi Dual Audio'),
       ];
       final out = filterByDubMode(sources, hindi: true, mediaTitle: 'Movie');
       expect(out.length, 1);
@@ -65,8 +67,11 @@ void main() {
       // The media title is stripped from detection text, so a movie named
       // e.g. "Hindi Medium" must not make every source count as hindi.
       final sources = [mkSrc('VidSrc Pro 1080p')];
-      final out =
-          filterByDubMode(sources, hindi: true, mediaTitle: 'Hindi Medium');
+      final out = filterByDubMode(
+        sources,
+        hindi: true,
+        mediaTitle: 'Hindi Medium',
+      );
       expect(out, isEmpty);
     });
 

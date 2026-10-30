@@ -5,6 +5,7 @@ import '../../utils/perf/image_caps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/music/music_track.dart';
 import '../../services/theme/app_theme_service.dart';
@@ -19,7 +20,6 @@ import '../../widgets/common/animated_ambient_background.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
 import '../settings/settings_page.dart';
 import '../../utils/navigation/route_transitions.dart';
-
 
 import 'widgets/music_sidebar.dart';
 import 'widgets/music_top_header.dart';
@@ -41,7 +41,6 @@ import 'views/music_search_view.dart';
 import 'views/music_browse_view.dart';
 import 'views/music_radio_view.dart';
 import 'views/music_library_view.dart';
-import '../../widgets/guide/guide_card.dart';
 
 class MusicPage extends StatefulWidget {
   const MusicPage({super.key});
@@ -52,7 +51,8 @@ class MusicPage extends StatefulWidget {
 
 class _MusicPageState extends State<MusicPage> {
   final MusicService _musicService = MusicService.instance;
-  final MusicPlayerController _playerController = MusicPlayerController.instance;
+  final MusicPlayerController _playerController =
+      MusicPlayerController.instance;
   final MusicLibraryService _libraryService = MusicLibraryService.instance;
 
   final TextEditingController _searchController = TextEditingController();
@@ -101,13 +101,6 @@ class _MusicPageState extends State<MusicPage> {
     _libraryService.init();
     MusicDownloadService.instance.init();
     _loadMusicData();
-
-    // P7: first-time music studio card (show once on screen enter).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        GuideCard.maybeShow(context, 'music_studio', AppGuides.musicStudio);
-      }
-    });
   }
 
   @override
@@ -312,140 +305,147 @@ class _MusicPageState extends State<MusicPage> {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: const Color(0xFF7C5CFF).withValues(alpha: 0.3),
+      builder: (ctx) {
+        final palette = AppThemeService.currentPalette.value;
+        final isLight = palette.isLight;
+        final ink = isLight ? PrismLight.ink : Colors.white;
+        final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+        return AlertDialog(
+          backgroundColor: palette.cardBackgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: isLight
+                  ? PrismLight.borderSubtle
+                  : const Color(0xFF7C5CFF).withValues(alpha: 0.3),
+            ),
           ),
-        ),
-        title: const Row(
-          children: [
-            Icon(
-              Icons.playlist_add_rounded,
-              color: Color(0xFF7C5CFF),
-              size: 26,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'New Playlist',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
+          title: Row(
+            children: [
+              const Icon(
+                Icons.playlist_add_rounded,
+                color: Color(0xFF7C5CFF),
+                size: 26,
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (initialTrack != null) ...[
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: initialTrack.coverUrl,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                      // P12: decode-capped (was full-res).
-                      memCacheWidth: ImageCaps.kThumb,
-                      maxWidthDiskCache: ImageCaps.kThumb,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          initialTrack.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          initialTrack.artist,
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 10),
+              Text(
+                'New Playlist',
+                style: TextStyle(color: ink, fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 16),
             ],
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Enter playlist title...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                filled: true,
-                fillColor: DizzyVoid.surface2,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (initialTrack != null) ...[
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: initialTrack.coverUrl,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        // P12: decode-capped (was full-res).
+                        memCacheWidth: ImageCaps.kThumb,
+                        maxWidthDiskCache: ImageCaps.kThumb,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            initialTrack.title,
+                            style: TextStyle(
+                              color: ink,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            initialTrack.artist,
+                            style: TextStyle(color: inkSoft, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                focusedBorder: OutlineInputBorder(
+                const SizedBox(height: 16),
+              ],
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: TextStyle(color: ink, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Enter playlist title...',
+                  hintStyle: TextStyle(
+                    color: isLight ? PrismLight.inkFaint : Colors.white38,
+                  ),
+                  filled: true,
+                  fillColor: isLight ? PrismLight.sunken : DizzyVoid.surface2,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF7C5CFF)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: inkSoft),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C5CFF),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF7C5CFF)),
+                ),
+              ),
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  final pl = await _libraryService.createPlaylist(name);
+                  if (initialTrack != null) {
+                    await _libraryService.addTrackToPlaylist(
+                      pl.id,
+                      initialTrack,
+                    );
+                    _showToast('Added "${initialTrack.title}" to "$name"');
+                  } else {
+                    _showToast('Created playlist "$name"');
+                  }
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text(
+                'Create',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C5CFF),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () async {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                final pl = await _libraryService.createPlaylist(name);
-                if (initialTrack != null) {
-                  await _libraryService.addTrackToPlaylist(pl.id, initialTrack);
-                  _showToast('Added "${initialTrack.title}" to "$name"');
-                } else {
-                  _showToast('Created playlist "$name"');
-                }
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text(
-              'Create',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -540,24 +540,44 @@ class _MusicPageState extends State<MusicPage> {
                       child: InkWell(
                         onTap: () {
                           Navigator.pop(ctx);
-                          MusicRadioService.instance.startRadioForTrack(context, track);
+                          MusicRadioService.instance.startRadioForTrack(
+                            context,
+                            track,
+                          );
                         },
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7C5CFF).withValues(alpha: 0.16),
+                            color: const Color(
+                              0xFF7C5CFF,
+                            ).withValues(alpha: 0.16),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFF7C5CFF).withValues(alpha: 0.35)),
+                            border: Border.all(
+                              color: const Color(
+                                0xFF7C5CFF,
+                              ).withValues(alpha: 0.35),
+                            ),
                           ),
                           child: const Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.radio_rounded, color: Color(0xFF7C5CFF), size: 20),
+                              Icon(
+                                Icons.radio_rounded,
+                                color: Color(0xFF7C5CFF),
+                                size: 20,
+                              ),
                               SizedBox(height: 4),
                               Text(
                                 'Song Radio',
-                                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -576,20 +596,33 @@ class _MusicPageState extends State<MusicPage> {
                         },
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
                           child: const Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.playlist_play_rounded, color: Colors.white, size: 20),
+                              Icon(
+                                Icons.playlist_play_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                               SizedBox(height: 4),
                               Text(
                                 'Play Next',
-                                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -608,20 +641,33 @@ class _MusicPageState extends State<MusicPage> {
                         },
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
                           child: const Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.queue_music_rounded, color: Colors.white, size: 20),
+                              Icon(
+                                Icons.queue_music_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                               SizedBox(height: 4),
                               Text(
                                 'Add Queue',
-                                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -635,23 +681,32 @@ class _MusicPageState extends State<MusicPage> {
                 // Quick Offline Download Action
                 Builder(
                   builder: (context) {
-                    final isDownloaded = MusicDownloadService.instance.isDownloaded(track.id);
-                    final isQueued = MusicDownloadService.instance.isQueued(track.id);
+                    final isDownloaded = MusicDownloadService.instance
+                        .isDownloaded(track.id);
+                    final isQueued = MusicDownloadService.instance.isQueued(
+                      track.id,
+                    );
 
                     return InkWell(
                       onTap: () async {
                         Navigator.pop(ctx);
                         if (isDownloaded) {
-                          await MusicDownloadService.instance.deleteDownloadedTrack(track.id);
+                          await MusicDownloadService.instance
+                              .deleteDownloadedTrack(track.id);
                           _showToast('Removed "${track.title}" from downloads');
                         } else if (!isQueued) {
                           MusicDownloadService.instance.queueTrack(track);
-                          _showToast('Added "${track.title}" to download queue');
+                          _showToast(
+                            'Added "${track.title}" to download queue',
+                          );
                         }
                       },
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: isDownloaded
                               ? const Color(0xFF00B0FF).withValues(alpha: 0.15)
@@ -668,8 +723,12 @@ class _MusicPageState extends State<MusicPage> {
                             Icon(
                               isDownloaded
                                   ? Icons.download_done_rounded
-                                  : (isQueued ? Icons.hourglass_top_rounded : Icons.download_rounded),
-                              color: isDownloaded ? const Color(0xFF00E5FF) : Colors.white,
+                                  : (isQueued
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.download_rounded),
+                              color: isDownloaded
+                                  ? const Color(0xFF00E5FF)
+                                  : Colors.white,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
@@ -677,16 +736,24 @@ class _MusicPageState extends State<MusicPage> {
                               child: Text(
                                 isDownloaded
                                     ? 'Downloaded Offline (Tap to Remove)'
-                                    : (isQueued ? 'Downloading / Queued...' : 'Download Track Offline'),
+                                    : (isQueued
+                                          ? 'Downloading / Queued...'
+                                          : 'Download Track Offline'),
                                 style: TextStyle(
-                                  color: isDownloaded ? const Color(0xFF00E5FF) : Colors.white,
+                                  color: isDownloaded
+                                      ? const Color(0xFF00E5FF)
+                                      : Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13.5,
                                 ),
                               ),
                             ),
                             if (isDownloaded)
-                              const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                              const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.redAccent,
+                                size: 18,
+                              ),
                           ],
                         ),
                       ),
@@ -703,19 +770,32 @@ class _MusicPageState extends State<MusicPage> {
                   },
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.info_outline_rounded, color: Color(0xFF00D2EF), size: 20),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Color(0xFF00D2EF),
+                          size: 20,
+                        ),
                         SizedBox(width: 12),
                         Text(
                           'Song Info & Audio Specs (FLAC/Bitrate)',
-                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -806,7 +886,9 @@ class _MusicPageState extends State<MusicPage> {
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final pl = playlists[index];
-                        final inPlaylist = pl.tracks.any((t) => t.id == track.id);
+                        final inPlaylist = pl.tracks.any(
+                          (t) => t.id == track.id,
+                        );
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -820,7 +902,9 @@ class _MusicPageState extends State<MusicPage> {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF7C5CFF).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFF7C5CFF,
+                              ).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -896,14 +980,14 @@ class _MusicPageState extends State<MusicPage> {
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
-        backgroundColor: DizzyVoid.voidA,
+        backgroundColor: AppThemeService.currentPalette.value.isLight
+            ? PrismLight.bg
+            : DizzyVoid.voidA,
         body: Stack(
           children: [
             // Dynamic Ambient Background Atmosphere
             if (MusicSettings.enableAmbientLights.value)
-              const Positioned.fill(
-                child: AnimatedAmbientBackground(),
-              ),
+              const Positioned.fill(child: AnimatedAmbientBackground()),
 
             // Main App Shell Layout
             Row(
@@ -917,16 +1001,15 @@ class _MusicPageState extends State<MusicPage> {
                         if (tab != 'Search') _hasSearched = false;
                       });
                     },
-                    onShortcutsTap: () => setState(() => _showShortcutsModal = true),
+                    onShortcutsTap: () =>
+                        setState(() => _showShortcutsModal = true),
                   ),
 
                 // Main Page Content Area
                 Expanded(
                   child: Stack(
                     children: [
-                      Positioned.fill(
-                        child: _buildTabContent(isDesktop),
-                      ),
+                      Positioned.fill(child: _buildTabContent(isDesktop)),
 
                       // Sticky Top Header (Search bar, status, settings)
                       Positioned(
@@ -979,7 +1062,9 @@ class _MusicPageState extends State<MusicPage> {
               Positioned(
                 left: isDesktop ? 260 : 12,
                 right: 12,
-                bottom: isDesktop ? 16 : (64.0 + MediaQuery.paddingOf(context).bottom + 10.0),
+                bottom: isDesktop
+                    ? 16
+                    : (64.0 + MediaQuery.paddingOf(context).bottom + 10.0),
                 child: MusicBottomPlayerBar(
                   playerController: _playerController,
                   isSaved: _libraryService.isTrackLiked(
@@ -987,7 +1072,9 @@ class _MusicPageState extends State<MusicPage> {
                   ),
                   onToggleSave: () {
                     if (_playerController.currentTrack != null) {
-                      _libraryService.toggleLikeTrack(_playerController.currentTrack!);
+                      _libraryService.toggleLikeTrack(
+                        _playerController.currentTrack!,
+                      );
                     }
                   },
                   onExpandTap: () => setState(() => _isPlayerExpanded = true),
@@ -1031,7 +1118,8 @@ class _MusicPageState extends State<MusicPage> {
                 child: MusicArtistDetailModal(
                   details: _activeArtistModal!,
                   onClose: () => setState(() => _activeArtistModal = null),
-                  onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+                  onPlayTrack: (t, queue) =>
+                      _playerController.playTrack(t, playlistQueue: queue),
                   onAddToPlaylist: _showAddToPlaylistMenu,
                   onOpenAlbum: _openAlbumModal,
                 ),
@@ -1043,7 +1131,8 @@ class _MusicPageState extends State<MusicPage> {
                 child: MusicAlbumDetailModal(
                   details: _activeAlbumModal!,
                   onClose: () => setState(() => _activeAlbumModal = null),
-                  onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+                  onPlayTrack: (t, queue) =>
+                      _playerController.playTrack(t, playlistQueue: queue),
                   onAddToPlaylist: _showAddToPlaylistMenu,
                 ),
               ),
@@ -1053,8 +1142,10 @@ class _MusicPageState extends State<MusicPage> {
               Positioned.fill(
                 child: MusicCuratedPlaylistDetailModal(
                   details: _activeCuratedPlaylistModal!,
-                  onClose: () => setState(() => _activeCuratedPlaylistModal = null),
-                  onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+                  onClose: () =>
+                      setState(() => _activeCuratedPlaylistModal = null),
+                  onPlayTrack: (t, queue) =>
+                      _playerController.playTrack(t, playlistQueue: queue),
                   onAddToPlaylist: _showAddToPlaylistMenu,
                 ),
               ),
@@ -1064,10 +1155,15 @@ class _MusicPageState extends State<MusicPage> {
               Positioned.fill(
                 child: MusicUserPlaylistDetailModal(
                   playlist: _activeUserPlaylistModal!,
-                  onClose: () => setState(() => _activeUserPlaylistModal = null),
-                  onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+                  onClose: () =>
+                      setState(() => _activeUserPlaylistModal = null),
+                  onPlayTrack: (t, queue) =>
+                      _playerController.playTrack(t, playlistQueue: queue),
                   onRemoveTrack: (trackId) async {
-                    await _libraryService.removeTrackFromPlaylist(_activeUserPlaylistModal!.id, trackId);
+                    await _libraryService.removeTrackFromPlaylist(
+                      _activeUserPlaylistModal!.id,
+                      trackId,
+                    );
                     setState(() {
                       final updated = _libraryService.userPlaylists.firstWhere(
                         (p) => p.id == _activeUserPlaylistModal!.id,
@@ -1092,7 +1188,8 @@ class _MusicPageState extends State<MusicPage> {
               Positioned.fill(
                 child: MusicDownloadedTracksModal(
                   onClose: () => setState(() => _showDownloadsModal = false),
-                  onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+                  onPlayTrack: (t, queue) =>
+                      _playerController.playTrack(t, playlistQueue: queue),
                   onAddToPlaylist: _showAddToPlaylistMenu,
                 ),
               ),
@@ -1107,7 +1204,9 @@ class _MusicPageState extends State<MusicPage> {
                   ),
                   onToggleSave: () {
                     if (_playerController.currentTrack != null) {
-                      _libraryService.toggleLikeTrack(_playerController.currentTrack!);
+                      _libraryService.toggleLikeTrack(
+                        _playerController.currentTrack!,
+                      );
                     }
                   },
                   onCollapse: () => setState(() => _isPlayerExpanded = false),
@@ -1128,7 +1227,10 @@ class _MusicPageState extends State<MusicPage> {
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF7C5CFF),
                       borderRadius: BorderRadius.circular(20),
@@ -1159,22 +1261,29 @@ class _MusicPageState extends State<MusicPage> {
 
   Widget _buildTabContent(bool isDesktop) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: Color(0xFF7C5CFF)),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: Color(0xFF7C5CFF)),
+            const SizedBox(height: 16),
             Text(
               'Loading music discovery...',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                color: PrismInk.soft(
+                  AppThemeService.currentPalette.value.isLight,
+                ),
+                fontSize: 14,
+              ),
             ),
           ],
         ),
       );
     }
 
-    if (_activeTab == 'Search' || _hasSearched || _searchController.text.isNotEmpty) {
+    if (_activeTab == 'Search' ||
+        _hasSearched ||
+        _searchController.text.isNotEmpty) {
       return MusicSearchView(
         scrollController: _scrollController,
         searchData: _searchData,
@@ -1182,7 +1291,8 @@ class _MusicPageState extends State<MusicPage> {
         activeQuery: _activeQuery,
         selectedFilter: _selectedFilter,
         onFilterSelected: (filter) => setState(() => _selectedFilter = filter),
-        onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+        onPlayTrack: (t, queue) =>
+            _playerController.playTrack(t, playlistQueue: queue),
         onAddToPlaylist: _showAddToPlaylistMenu,
         onOpenArtistModal: _openArtistModal,
         onOpenAlbumModal: _openAlbumModal,
@@ -1219,8 +1329,10 @@ class _MusicPageState extends State<MusicPage> {
             _showToast('No liked songs yet');
           }
         },
-        onOpenUserPlaylist: (pl) => setState(() => _activeUserPlaylistModal = pl),
-        onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+        onOpenUserPlaylist: (pl) =>
+            setState(() => _activeUserPlaylistModal = pl),
+        onPlayTrack: (t, queue) =>
+            _playerController.playTrack(t, playlistQueue: queue),
         onAddToPlaylist: _showAddToPlaylistMenu,
         currentPlayingTrack: _playerController.currentTrack,
         isPlaying: _playerController.isPlaying,
@@ -1246,7 +1358,8 @@ class _MusicPageState extends State<MusicPage> {
       onAlbumTap: (album) => _openAlbumModal(album.id),
       onCuratedPlaylistTap: (pl) => _openCuratedPlaylistModal(pl.id),
       onAddToPlaylist: _showAddToPlaylistMenu,
-      onPlayTrack: (t, queue) => _playerController.playTrack(t, playlistQueue: queue),
+      onPlayTrack: (t, queue) =>
+          _playerController.playTrack(t, playlistQueue: queue),
       onToggleSave: (t) {
         _libraryService.toggleLikeTrack(t);
         _showToast(

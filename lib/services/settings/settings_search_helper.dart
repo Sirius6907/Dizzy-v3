@@ -28,14 +28,13 @@ abstract final class SettingsSearchHelper {
   static bool matches(String query, SettingSearchEntry entry) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return true;
-    final hay =
-        '${entry.title} ${entry.subtitle} ${entry.keywords}'.toLowerCase();
+    final hay = '${entry.title} ${entry.subtitle} ${entry.keywords}'
+        .toLowerCase();
     return q.split(RegExp(r'\s+')).every(hay.contains);
   }
 
   static List<SettingSearchEntry> filter(
     String query,
     List<SettingSearchEntry> entries,
-  ) =>
-      entries.where((e) => matches(query, e)).toList();
+  ) => entries.where((e) => matches(query, e)).toList();
 }

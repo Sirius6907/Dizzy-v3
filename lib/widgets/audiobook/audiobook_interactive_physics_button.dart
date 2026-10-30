@@ -25,10 +25,12 @@ class AudiobookInteractivePhysicsButton extends StatefulWidget {
   });
 
   @override
-  State<AudiobookInteractivePhysicsButton> createState() => _AudiobookInteractivePhysicsButtonState();
+  State<AudiobookInteractivePhysicsButton> createState() =>
+      _AudiobookInteractivePhysicsButtonState();
 }
 
-class _AudiobookInteractivePhysicsButtonState extends State<AudiobookInteractivePhysicsButton>
+class _AudiobookInteractivePhysicsButtonState
+    extends State<AudiobookInteractivePhysicsButton>
     with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   bool _isPressed = false;
@@ -84,7 +86,8 @@ class _AudiobookInteractivePhysicsButtonState extends State<AudiobookInteractive
 
   @override
   Widget build(BuildContext context) {
-    final activeEffect = widget.effect ?? AudiobookSettings.customHoverEffect.value;
+    final activeEffect =
+        widget.effect ?? AudiobookSettings.customHoverEffect.value;
     final palette = AppThemeService.currentPalette.value;
     final glow = widget.glowColor ?? palette.primaryColor;
 
@@ -100,7 +103,9 @@ class _AudiobookInteractivePhysicsButtonState extends State<AudiobookInteractive
         }
       },
       onHover: (event) {
-        if (!widget.enabled || activeEffect != AudiobookHoverEffect.tilt3D) return;
+        if (!widget.enabled || activeEffect != AudiobookHoverEffect.tilt3D) {
+          return;
+        }
         final renderBox = context.findRenderObject() as RenderBox?;
         if (renderBox != null) {
           _onPointerHover(event, renderBox.size);
@@ -160,7 +165,9 @@ class _AudiobookInteractivePhysicsButtonState extends State<AudiobookInteractive
                         spreadRadius: _isPressed ? 3 : 1,
                       ),
                       BoxShadow(
-                        color: Colors.white.withValues(alpha: _isPressed ? 0.35 : 0.18),
+                        color: Colors.white.withValues(
+                          alpha: _isPressed ? 0.35 : 0.18,
+                        ),
                         blurRadius: 8,
                       ),
                     ]
@@ -188,7 +195,9 @@ class _AudiobookInteractivePhysicsButtonState extends State<AudiobookInteractive
                   boxShadow: _isHovered
                       ? [
                           BoxShadow(
-                            color: glow.withValues(alpha: 0.35 * (1.0 - rippleVal * 0.3)),
+                            color: glow.withValues(
+                              alpha: 0.35 * (1.0 - rippleVal * 0.3),
+                            ),
                             blurRadius: 16 + (rippleVal * 12),
                             spreadRadius: rippleVal * 2,
                           ),
@@ -221,7 +230,9 @@ class _AudiobookInteractivePhysicsButtonState extends State<AudiobookInteractive
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.35 * (1.0 - rippleVal * 0.4)),
+                                    Colors.white.withValues(
+                                      alpha: 0.35 * (1.0 - rippleVal * 0.4),
+                                    ),
                                     glow.withValues(alpha: 0.15),
                                     Colors.transparent,
                                   ],

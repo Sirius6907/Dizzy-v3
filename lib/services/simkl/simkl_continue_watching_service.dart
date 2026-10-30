@@ -83,8 +83,8 @@ class SimklContinueWatchingService {
       }
       // The GETs are independent — kick them off together, then await, so a
       // cold start (no warm caches) costs one round-trip, not several.
-      final episodeFuture =
-          SimklService.instance.fetchEpisodePlaybackSessions();
+      final episodeFuture = SimklService.instance
+          .fetchEpisodePlaybackSessions();
       final movieFuture = SimklService.instance.fetchMoviePlaybackSessions();
       final libFuture = SimklService.instance.fetchLibrarySnapshotOrNull();
       final upNextFuture = SimklService.instance.fetchUpNextShowsOrNull();
@@ -258,7 +258,9 @@ class SimklContinueWatchingService {
     for (final raw in shows) {
       if (raw is! Map) continue;
       final se = SimklService.parseSimklEpisodeCode(raw['next_to_watch']);
-      if (se == null) continue; // null / completed / anime-absolute → no up-next
+      if (se == null) {
+        continue; // null / completed / anime-absolute → no up-next
+      }
       final show = raw['show'];
       if (show is! Map) continue;
       final imdb = _imdbOf(show['ids']);
@@ -312,7 +314,8 @@ class SimklContinueWatchingService {
     StremioMeta? libMeta,
     dynamic sessionTitle,
   ) {
-    final title = libMeta?.name ?? (sessionTitle is String ? sessionTitle : null);
+    final title =
+        libMeta?.name ?? (sessionTitle is String ? sessionTitle : null);
     return StremioMeta(
       id: imdb,
       imdbId: imdb,

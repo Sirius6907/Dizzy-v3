@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import '../net/dizzy_net.dart';
+import '../config/env_service.dart';
 
 /// 1-to-1 Match of WAVE / NuvioTV InAppYouTubeExtractor for Audio Streams.
 ///
@@ -20,8 +21,11 @@ class YoutubeAudioExtractor {
 
   static const String _tag = 'YoutubeAudioExtractor';
 
-  static const String _fallbackApiKey =
-      'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+  /// YouTube's public WEB InnerTube key (shipped in every youtube.com page);
+  /// overridable so a key rotation needs no code change.
+  static const String _publicWebKey = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+  static String get _fallbackApiKey =>
+      EnvService.get('YOUTUBE_INNERTUBE_KEY', defaultValue: _publicWebKey);
 
   static const Duration _configTtl = Duration(hours: 3);
   static const Duration _requestTimeout = Duration(seconds: 10);
@@ -219,9 +223,14 @@ class YoutubeAudioExtractor {
       return (url: cached.url, userAgent: cached.userAgent);
     }
 
-    var result = await _extractAudioInternal(videoId, forceRefreshConfig: false);
+    var result = await _extractAudioInternal(
+      videoId,
+      forceRefreshConfig: false,
+    );
     if (result == null) {
-      _log('First extraction attempt failed for $videoId, retrying with fresh config...');
+      _log(
+        'First extraction attempt failed for $videoId, retrying with fresh config...',
+      );
       result = await _extractAudioInternal(videoId, forceRefreshConfig: true);
     }
 
@@ -306,23 +315,28 @@ class YoutubeAudioExtractor {
           final mimeType = _str(format, 'mimeType')?.toLowerCase() ?? '';
           if (!mimeType.contains('audio/')) continue;
 
-          final bitrate = (_num(format, 'bitrate') ?? _num(format, 'averageBitrate') ?? 0).toDouble();
-          final asr = double.tryParse(_str(format, 'audioSampleRate') ?? '') ?? 0.0;
+          final bitrate =
+              (_num(format, 'bitrate') ?? _num(format, 'averageBitrate') ?? 0)
+                  .toDouble();
+          final asr =
+              double.tryParse(_str(format, 'audioSampleRate') ?? '') ?? 0.0;
           final score = (bitrate * 1000000.0) + asr;
           final hasN = _hasNParam(url);
           final ext = mimeType.contains('webm') ? 'webm' : 'm4a';
 
-          candidates.add(_NuvioAudioCandidate(
-            clientKey: client.key,
-            clientPriority: client.priority,
-            userAgent: client.userAgent,
-            url: url,
-            score: score,
-            hasN: hasN,
-            itag: _str(format, 'itag') ?? '',
-            bitrate: bitrate,
-            ext: ext,
-          ));
+          candidates.add(
+            _NuvioAudioCandidate(
+              clientKey: client.key,
+              clientPriority: client.priority,
+              userAgent: client.userAgent,
+              url: url,
+              score: score,
+              hasN: hasN,
+              itag: _str(format, 'itag') ?? '',
+              bitrate: bitrate,
+              ext: ext,
+            ),
+          );
         }
 
         // Also check progressive formats as secondary fallback
@@ -330,20 +344,24 @@ class YoutubeAudioExtractor {
         for (final format in formats) {
           final url = _usableUrl(format);
           if (url == null || url.isEmpty) continue;
-          final bitrate = (_num(format, 'bitrate') ?? _num(format, 'averageBitrate') ?? 0).toDouble();
+          final bitrate =
+              (_num(format, 'bitrate') ?? _num(format, 'averageBitrate') ?? 0)
+                  .toDouble();
           final hasN = _hasNParam(url);
 
-          candidates.add(_NuvioAudioCandidate(
-            clientKey: client.key,
-            clientPriority: client.priority,
-            userAgent: client.userAgent,
-            url: url,
-            score: bitrate, // lower score than adaptive
-            hasN: hasN,
-            itag: _str(format, 'itag') ?? '',
-            bitrate: bitrate,
-            ext: 'mp4',
-          ));
+          candidates.add(
+            _NuvioAudioCandidate(
+              clientKey: client.key,
+              clientPriority: client.priority,
+              userAgent: client.userAgent,
+              url: url,
+              score: bitrate, // lower score than adaptive
+              hasN: hasN,
+              itag: _str(format, 'itag') ?? '',
+              bitrate: bitrate,
+              ext: 'mp4',
+            ),
+          );
         }
       } catch (e) {
         _log('Client ${client.key} failed: $e');
@@ -351,7 +369,9 @@ class YoutubeAudioExtractor {
     }
 
     if (loginRequiredCount == _clients.length) {
-      _log('All ${_clients.length} clients returned LOGIN_REQUIRED, invalidating config');
+      _log(
+        'All ${_clients.length} clients returned LOGIN_REQUIRED, invalidating config',
+      );
       _config = null;
       return null;
     }
@@ -375,9 +395,14 @@ class YoutubeAudioExtractor {
 
     // Probing & CDN resolution
     for (final best in candidates) {
-      final reachableUrl = await _resolveReachableUrl(best.url, userAgent: best.userAgent);
+      final reachableUrl = await _resolveReachableUrl(
+        best.url,
+        userAgent: best.userAgent,
+      );
       if (reachableUrl != null) {
-        _log('Resolved reachable audio URL (client=${best.clientKey}, itag=${best.itag}, ext=${best.ext})');
+        _log(
+          'Resolved reachable audio URL (client=${best.clientKey}, itag=${best.itag}, ext=${best.ext})',
+        );
         return (url: reachableUrl, userAgent: best.userAgent);
       }
     }
@@ -387,7 +412,10 @@ class YoutubeAudioExtractor {
 
   /// Probes CDN nodes for the given googlevideo URL and returns the first reachable one.
   /// Generates alternate hosts based on YouTube's `mn` parameter.
-  Future<String?> _resolveReachableUrl(String url, {required String userAgent}) async {
+  Future<String?> _resolveReachableUrl(
+    String url, {
+    required String userAgent,
+  }) async {
     if (!url.contains('googlevideo.com')) return url;
     final uri = Uri.tryParse(url);
     if (uri == null) return url;
@@ -397,7 +425,11 @@ class YoutubeAudioExtractor {
       return await _isUrlReachable(url, userAgent: userAgent) ? url : null;
     }
 
-    final servers = mnParam.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    final servers = mnParam
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (servers.length < 2) {
       return await _isUrlReachable(url, userAgent: userAgent) ? url : null;
     }
@@ -416,7 +448,9 @@ class YoutubeAudioExtractor {
     }
 
     if (candidates.length == 1) {
-      return await _isUrlReachable(candidates[0], userAgent: userAgent) ? candidates[0] : null;
+      return await _isUrlReachable(candidates[0], userAgent: userAgent)
+          ? candidates[0]
+          : null;
     }
 
     final completer = Completer<String?>();
@@ -433,20 +467,25 @@ class YoutubeAudioExtractor {
 
     return await completer.future.timeout(
       const Duration(milliseconds: 2000),
-      onTimeout: () => _isUrlReachable(candidates.first, userAgent: userAgent).then((ok) => ok ? candidates.first : null),
+      onTimeout: () => _isUrlReachable(
+        candidates.first,
+        userAgent: userAgent,
+      ).then((ok) => ok ? candidates.first : null),
     );
   }
 
   Future<bool> _isUrlReachable(String url, {required String userAgent}) async {
     try {
-      final res = await DizzyNet.instance.get(
-        Uri.parse(url),
-        headers: {
-          'Range': 'bytes=0-0',
-          'User-Agent': userAgent,
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-      ).timeout(const Duration(milliseconds: 1500));
+      final res = await DizzyNet.instance
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Range': 'bytes=0-0',
+              'User-Agent': userAgent,
+              'Accept-Language': 'en-US,en;q=0.9',
+            },
+          )
+          .timeout(const Duration(milliseconds: 1500));
       return res.statusCode == 200 || res.statusCode == 206;
     } catch (_) {
       return false;
@@ -658,7 +697,8 @@ class YoutubeAudioExtractor {
 
       // 4. Duration match
       if (targetDuration != null && candDuration != null) {
-        final diffSecs = (candDuration.inSeconds - targetDuration.inSeconds).abs();
+        final diffSecs = (candDuration.inSeconds - targetDuration.inSeconds)
+            .abs();
         if (diffSecs <= 4) {
           score += 80.0;
         } else if (diffSecs <= 10) {
@@ -881,7 +921,9 @@ class YoutubeAudioExtractor {
   static Set<String> _detectVariants(String norm) {
     final tags = <String>{};
 
-    if (RegExp(r'\b(8d|16d|spatial\saudio?|binaural|360|surround)\b').hasMatch(norm)) {
+    if (RegExp(
+      r'\b(8d|16d|spatial\saudio?|binaural|360|surround)\b',
+    ).hasMatch(norm)) {
       tags.add('8d');
     }
     if (RegExp(r'\b(slowed|reverb)\b').hasMatch(norm)) {
@@ -893,13 +935,19 @@ class YoutubeAudioExtractor {
     if (RegExp(r'\blo[\s]?fi\b').hasMatch(norm)) {
       tags.add('lofi');
     }
-    if (RegExp(r'\b(instrumental|karaoke|no\svo[ck]als?|backing\strack)\b').hasMatch(norm)) {
+    if (RegExp(
+      r'\b(instrumental|karaoke|no\svo[ck]als?|backing\strack)\b',
+    ).hasMatch(norm)) {
       tags.add('instrumental');
     }
-    if (RegExp(r'\b(remix|mashup|bootleg|flip|vip\smix|reedit)\b').hasMatch(norm)) {
+    if (RegExp(
+      r'\b(remix|mashup|bootleg|flip|vip\smix|reedit)\b',
+    ).hasMatch(norm)) {
       tags.add('remix');
     }
-    if (RegExp(r'\b(live\b|in\sconcert|live\sat|live\sfrom)\b').hasMatch(norm)) {
+    if (RegExp(
+      r'\b(live\b|in\sconcert|live\sat|live\sfrom)\b',
+    ).hasMatch(norm)) {
       tags.add('live');
     }
     if (RegExp(r'\b(acoustic|unplugged)\b').hasMatch(norm)) {

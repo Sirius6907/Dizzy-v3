@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../models/stream/stream_model.dart';
 import '../../services/anime_arabic/anime_arabic_extractor.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
-import '../../services/theme/app_theme_service.dart';
 import '../../services/stream/stream_probe_race.dart';
 import '../player/player_screen.dart';
+
+/// Theme-aware clay surface tokens for this sheet.
+abstract final class _Clay {
+  static bool get isLight => AppThemeService.currentPalette.value.isLight;
+  static Color get accent => AppThemeService.currentPalette.value.primaryColor;
+  static Color get ink => isLight ? PrismLight.ink : Colors.white;
+  static Color get inkSoft => isLight ? PrismLight.inkSoft : Colors.white70;
+  static Color get faint => isLight ? PrismLight.inkFaint : Colors.white38;
+  static Color get panel => isLight ? PrismLight.raisedTop : PrismDark.raised;
+  static Color get border =>
+      isLight ? PrismLight.borderSubtle : PrismDark.borderSubtle;
+  static Color get accentText => PrismAccent.text(isLight);
+}
 
 class AnimeArabicStreamSheet extends StatefulWidget {
   final ArabicAnimeDetails details;
@@ -63,7 +77,8 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
       if (hits.isEmpty) {
         setState(() {
           _isScraping = false;
-          _error = 'No playable Arabic streams found for Episode ${widget.episode.number}.';
+          _error =
+              'No playable Arabic streams found for Episode ${widget.episode.number}.';
         });
         return;
       }
@@ -148,19 +163,13 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 1,
+        gradient: PrismShadows.surfaceGradient(
+          AppThemeService.currentPalette.value.isLight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
-            blurRadius: 30,
-            offset: const Offset(0, -10),
-          ),
-        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: PrismShadows.floating(
+          isLight: AppThemeService.currentPalette.value.isLight,
+        ),
       ),
       padding: EdgeInsets.only(
         top: 16,
@@ -178,7 +187,9 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: _Clay.isLight
+                    ? PrismLight.raisedBottom
+                    : Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -198,8 +209,8 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
                   errorBuilder: (_, __, ___) => Container(
                     width: 44,
                     height: 60,
-                    color: Colors.white10,
-                    child: const Icon(Icons.movie_rounded, color: Colors.white38),
+                    color: _Clay.panel,
+                    child: Icon(Icons.movie_rounded, color: _Clay.faint),
                   ),
                 ),
               ),
@@ -212,10 +223,10 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
                       widget.details.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: _Clay.ink,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -225,7 +236,7 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
                           : '${_allSources.length} سيرفر متاح',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppThemeService.currentPalette.value.primaryColor.withValues(alpha: 0.9),
+                        color: _Clay.accentText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -233,8 +244,9 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
                 ),
               ),
               IconButton(
+                tooltip: 'إغلاق',
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: Colors.white60),
+                icon: Icon(Icons.close_rounded, color: _Clay.inkSoft),
               ),
             ],
           ),
@@ -246,15 +258,14 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
               padding: const EdgeInsets.symmetric(vertical: 36),
               child: Column(
                 children: [
-                  CircularProgressIndicator(color: AppThemeService.currentPalette.value.primaryColor),
+                  CircularProgressIndicator(
+                    color: AppThemeService.currentPalette.value.primaryColor,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     _statusLine,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: _Clay.inkSoft, fontSize: 13),
                   ),
                 ],
               ),
@@ -264,18 +275,24 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Column(
                 children: [
-                  const Icon(Icons.info_outline_rounded, color: Colors.orangeAccent, size: 36),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: _Clay.isLight
+                        ? PrismAccent.danger
+                        : Colors.orangeAccent,
+                    size: 36,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     _error!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: _Clay.inkSoft, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppThemeService.currentPalette.value.primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: _Clay.accent,
+                      foregroundColor: PrismAccent.onAccent,
                     ),
                     onPressed: _startScraping,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -311,11 +328,9 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: DizzyVoid.surface1,
+            color: _Clay.panel,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+            border: Border.all(color: _Clay.border),
           ),
           child: Row(
             children: [
@@ -339,8 +354,8 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
                   children: [
                     Text(
                       source.name ?? 'سيرفر تشغيل',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: _Clay.ink,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -348,17 +363,14 @@ class _AnimeArabicStreamSheetState extends State<AnimeArabicStreamSheet> {
                     const SizedBox(height: 2),
                     Text(
                       source.description ?? 'تشغيل مباشر • جودة عالية',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: _Clay.inkSoft, fontSize: 11),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: Colors.white30,
+                color: _Clay.faint,
                 size: 14,
               ),
             ],

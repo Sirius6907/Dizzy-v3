@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+import 'package:dizzy/widgets/prism/prism_card.dart';
 
+import '../../services/cloud/cloud_client.dart';
 import '../../services/cloud/watch_party_service.dart';
 import '../../services/cloud/remote_config_service.dart';
 import '../../services/device/device_id_service.dart';
@@ -10,8 +12,6 @@ import '../../services/watchparty/party_session.dart';
 import '../../services/watchparty/party_voice_service.dart';
 import '../../services/watchparty/guest_auto_open.dart';
 import '../../services/watchparty/watch_sync_engine.dart';
-import '../../services/guide/guide_service.dart';
-import '../../widgets/guide/guide_card.dart';
 import '../../widgets/party/voice_consent_sheet.dart';
 import 'widgets/party_room_panel.dart';
 
@@ -53,23 +53,19 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     super.initState();
     // ignore: unawaited_futures
     WatchPartyService.loadPrefs();
-    // P13: old 'watch_party' seen-flag migrates to 'party_v2' (no re-nag),
-    // then the new 3-card flow shows for fresh users (skipable, never nags).
-    // ignore: unawaited_futures
-    GuideService.migrateLegacyPartyKey();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      GuideCard.maybeShow(context, 'party_v2', AppGuides.partyV2);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white70;
     final available = WatchPartyService.isAvailable;
     return Scaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         title: const Text(
           'Watch Party',
@@ -81,8 +77,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
           constraints: const BoxConstraints(maxWidth: 700),
           // P12: pull-to-refresh the lobby (sweep dead rooms + reload).
           child: RefreshIndicator(
-            color: DizzyGlow.violet,
-            backgroundColor: DizzyVoid.surface1,
+            color: PrismAccent.accent,
+            backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
             onRefresh: () async {
               try {
                 await WatchPartyService.sweepStale();
@@ -97,35 +93,58 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                Container(
+                PrismCard(
                   padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        palette.primaryColor.withValues(alpha: 0.24),
-                        DizzyGlow.violet.withValues(alpha: 0.12),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: palette.primaryColor.withValues(alpha: 0.30),
-                    ),
-                  ),
-                  child: const Column(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '🍿 Watch together, anywhere',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: palette.primaryColor,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: palette.primaryColor.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.groups_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Watch together, anywhere',
+                              style: TextStyle(
+                                color: ink,
+                                fontSize: 21,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Text(
                         'Host a room, share its six-character Room ID, then play, pause and seek in sync. Media streams stay on every viewer’s own device.',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                        style: TextStyle(
+                          color: inkSoft,
+                          fontSize: 13.5,
+                          height: 1.45,
+                        ),
                       ),
                     ],
                   ),
@@ -184,123 +203,142 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
 
   Widget _deviceChip() => ValueListenableBuilder<String?>(
     valueListenable: DeviceIdService.deviceCode,
-    builder: (c, code, _) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.badge_outlined, color: Colors.white54, size: 20),
-          const SizedBox(width: 10),
-          const Text(
-            'My Device ID',
-            style: TextStyle(color: Colors.white60, fontSize: 13),
+    builder: (c, code, _) {
+      final isLight = AppThemeService.currentPalette.value.isLight;
+      final ink = isLight ? PrismLight.ink : Colors.white;
+      final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08),
           ),
-          const Spacer(),
-          Text(
-            code == null ? '…' : DeviceIdService.displayCode(code),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.badge_outlined, color: inkSoft, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              'My Device ID',
+              style: TextStyle(color: inkSoft, fontSize: 13),
             ),
-          ),
-        ],
-      ),
-    ),
+            const Spacer(),
+            Text(
+              code == null ? '…' : DeviceIdService.displayCode(code),
+              style: TextStyle(
+                color: ink,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
   );
 
-  Widget _pubLobby(dynamic palette) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          const Text(
-            '🔴 Live public rooms',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: () {
-              // ignore: unawaited_futures
-              WatchPartyService.sweepStale();
-              _invalidateLobby();
-            },
-            icon: const Icon(
-              Icons.refresh_rounded,
-              color: Colors.white54,
-              size: 22,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      if (!WatchPartyService.isKidsProfile) _adultGate(),
-      if (!WatchPartyService.isKidsProfile) const SizedBox(height: 8),
-      FutureBuilder<List<WatchPartyRoom>>(
-        future: _lobbyQuery(),
-        builder: (c, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            );
-          }
-          final rooms = snap.data ?? const [];
-          if (rooms.isEmpty) {
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: DizzyVoid.surface1,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+  Widget _pubLobby(dynamic palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '🔴 Live public rooms',
+              style: TextStyle(
+                color: ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
               ),
-              child: const Text(
-                'No public rooms live right now. Create one and it shows up here for everyone.',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
-              ),
+            ),
+            const Spacer(),
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: () {
+                // ignore: unawaited_futures
+                WatchPartyService.sweepStale();
+                _invalidateLobby();
+              },
+              icon: Icon(Icons.refresh_rounded, color: inkSoft, size: 22),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (!WatchPartyService.isKidsProfile) _adultGate(),
+        if (!WatchPartyService.isKidsProfile) const SizedBox(height: 8),
+        FutureBuilder<List<WatchPartyRoom>>(
+          future: _lobbyQuery(),
+          builder: (c, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            }
+            final rooms = snap.data ?? const [];
+            if (rooms.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isLight
+                        ? PrismLight.borderSubtle
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Text(
+                  'No public rooms live right now. Create one and it shows up here for everyone.',
+                  style: TextStyle(color: inkSoft, fontSize: 13),
+                ),
+              );
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: rooms.length,
+              itemBuilder: (c, i) => _pubTile(palette, rooms[i]),
             );
-          }
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: rooms.length,
-            itemBuilder: (c, i) => _pubTile(palette, rooms[i]),
-          );
-        },
-      ),
-    ],
-  );
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _adultGate() => ValueListenableBuilder<bool>(
     valueListenable: WatchPartyService.adultUnlocked,
-    builder: (c, unlocked, _) => SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: const Text(
-        'Show 18+ rooms',
-        style: TextStyle(color: Colors.white, fontSize: 14),
-      ),
-      subtitle: const Text(
-        'Age-gated. Kids profiles never see this.',
-        style: TextStyle(color: Colors.white54, fontSize: 12),
-      ),
-      value: unlocked,
-      onChanged: (v) => v
-          ? _confirmAdult()
-          : WatchPartyService.setAdultUnlocked(
-              false,
-            ).then((_) => setState(() {})),
-    ),
+    builder: (c, unlocked, _) {
+      final isLight = AppThemeService.currentPalette.value.isLight;
+      final ink = isLight ? PrismLight.ink : Colors.white;
+      final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+      return SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          'Show 18+ rooms',
+          style: TextStyle(color: ink, fontSize: 14),
+        ),
+        subtitle: Text(
+          'Age-gated. Kids profiles never see this.',
+          style: TextStyle(color: inkSoft, fontSize: 12),
+        ),
+        value: unlocked,
+        onChanged: (v) => v
+            ? _confirmAdult()
+            : WatchPartyService.setAdultUnlocked(
+                false,
+              ).then((_) => setState(() {})),
+      );
+    },
   );
 
   Future<void> _confirmAdult() async {
@@ -329,90 +367,101 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
   }
 
-  Widget _pubTile(dynamic palette, WatchPartyRoom r) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(
-      color: DizzyVoid.surface1,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-    ),
-    child: ListTile(
-      // P12: red pulse while something plays, dim TV while picking.
-      leading: Icon(
-        r.isLiveNow
-            ? Icons.radio_button_checked_rounded
-            : Icons.live_tv_rounded,
-        color: r.isLiveNow
-            ? Colors.redAccent
-            : palette.primaryColor.withValues(alpha: 0.55),
-        size: 28,
-      ),
-      title: Text(
-        r.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
+  Widget _pubTile(dynamic palette, WatchPartyRoom r) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+    final inkFaint = isLight ? PrismLight.inkFaint : Colors.white38;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08),
         ),
       ),
-      // P12: LIVE watching title + headcount, or the picking state.
-      subtitle: Text(
-        WatchPartyService.isFull(r.memberCount)
-            ? '${r.roomId} • FULL (${r.memberCount}/${WatchPartyService.maxMembers})'
-            : r.isLiveNow
-            ? '🔴 ${r.watchingLabel} • 👥 ${r.memberCount} watching'
-            : '💭 Choosing… • 👥 ${r.memberCount} in room',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: Colors.white54, fontSize: 12),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (r.isAdult)
-            const Padding(
-              padding: EdgeInsets.only(right: 4),
-              child: Text(
-                '18+',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+      child: ListTile(
+        // P12: red pulse while something plays, dim TV while picking.
+        leading: Icon(
+          r.isLiveNow
+              ? Icons.radio_button_checked_rounded
+              : Icons.live_tv_rounded,
+          color: r.isLiveNow
+              ? (isLight ? PrismAccent.accent : Colors.redAccent)
+              : palette.primaryColor.withValues(alpha: 0.55),
+          size: 28,
+        ),
+        title: Text(
+          r.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        // P12: LIVE watching title + headcount, or the picking state.
+        subtitle: Text(
+          WatchPartyService.isFull(r.memberCount)
+              ? '${r.roomId} • FULL (${r.memberCount}/${WatchPartyService.maxMembers})'
+              : r.isLiveNow
+              ? '🔴 ${r.watchingLabel} • 👥 ${r.memberCount} watching'
+              : '💭 Choosing… • 👥 ${r.memberCount} in room',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: inkSoft, fontSize: 12),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (r.isAdult)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text(
+                  '18+',
+                  style: TextStyle(
+                    color: isLight
+                        ? PrismAccent.text(isLight)
+                        : Colors.redAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
+            IconButton(
+              tooltip: 'Report room',
+              onPressed: () => _reportRoom(r),
+              icon: Icon(Icons.flag_outlined, color: inkFaint, size: 20),
             ),
-          IconButton(
-            tooltip: 'Report room',
-            onPressed: () => _reportRoom(r),
-            icon: const Icon(
-              Icons.flag_outlined,
-              color: Colors.white38,
-              size: 20,
-            ),
-          ),
-          const Icon(Icons.arrow_forward_rounded, color: Colors.white54),
-        ],
+            Icon(Icons.arrow_forward_rounded, color: inkSoft),
+          ],
+        ),
+        onTap: _busy
+            ? null
+            : () {
+                if (WatchPartyService.isFull(r.memberCount)) {
+                  _snack('Room is full (${WatchPartyService.maxMembers} max).');
+                  return;
+                }
+                _joinPublic(r);
+              },
       ),
-      onTap: _busy
-          ? null
-          : () {
-              if (WatchPartyService.isFull(r.memberCount)) {
-                _snack('Room is full (${WatchPartyService.maxMembers} max).');
-                return;
-              }
-              _joinPublic(r);
-            },
-    ),
-  );
+    );
+  }
 
   /// v1.2.0-P4: host per-user mute sheet (Easy English, no tech words).
   void _showVoiceMembers(BuildContext context) {
     final ids = PartyVoiceService.remoteIds;
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     showModalBottomSheet(
       context: context,
-      backgroundColor: DizzyVoid.surface1,
+      backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -423,45 +472,45 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'People in voice',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: ink,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Tap mute to silence one person. They can unmute and speak again.',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
+                style: TextStyle(color: inkSoft, fontSize: 12),
               ),
               const SizedBox(height: 12),
               if (ids.isEmpty)
-                const Text(
+                Text(
                   'Nobody else here yet.',
-                  style: TextStyle(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(color: inkSoft, fontSize: 13),
                 ),
               for (final id in ids)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFF1E2A3D),
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: Colors.white70,
-                      size: 20,
-                    ),
+                  leading: CircleAvatar(
+                    backgroundColor: isLight
+                        ? PrismLight.raisedBottom
+                        : const Color(0xFF1E2A3D),
+                    child: Icon(Icons.person_rounded, color: inkSoft, size: 20),
                   ),
                   title: Text(
                     'Friend ${id.length > 6 ? id.substring(id.length - 6) : id}',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: ink, fontSize: 14),
                   ),
                   trailing: IconButton(
                     tooltip: 'Mute this person',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.mic_off_rounded,
-                      color: Colors.orangeAccent,
+                      color: isLight
+                          ? PrismAccent.starTextLight
+                          : Colors.orangeAccent,
                     ),
                     onPressed: () async {
                       final ok = await PartyVoiceService.muteUser(id);
@@ -481,12 +530,20 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     valueListenable: PartyVoiceService.connected,
     builder: (c, connected, _) {
       if (!connected) return const SizedBox.shrink();
+      final isLight = AppThemeService.currentPalette.value.isLight;
+      final ink = isLight ? PrismLight.ink : Colors.white;
+      final inkSoft = isLight ? PrismLight.inkSoft : Colors.white54;
+      final liveGreen = isLight
+          ? PrismAccent.successTextLight
+          : Colors.greenAccent;
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E2A1A),
+          color: isLight
+              ? PrismAccent.successTextLight.withValues(alpha: 0.10)
+              : const Color(0xFF0E2A1A),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.35)),
+          border: Border.all(color: liveGreen.withValues(alpha: 0.35)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -497,8 +554,8 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   valueListenable: PartyVoiceService.memberCount,
                   builder: (c, n, _) => Text(
                     '🔊 Voice • $n in channel',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: ink,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -520,7 +577,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                     },
                     icon: Icon(
                       on ? Icons.mic_rounded : Icons.mic_off_rounded,
-                      color: on ? Colors.greenAccent : Colors.white54,
+                      color: on ? liveGreen : inkSoft,
                     ),
                   ),
                 ),
@@ -534,7 +591,11 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                       deaf
                           ? Icons.hearing_disabled_rounded
                           : Icons.hearing_rounded,
-                      color: deaf ? Colors.orangeAccent : Colors.white54,
+                      color: deaf
+                          ? (isLight
+                                ? PrismAccent.starTextLight
+                                : Colors.orangeAccent)
+                          : inkSoft,
                     ),
                   ),
                 ),
@@ -542,10 +603,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                   IconButton(
                     tooltip: 'Mute one person',
                     onPressed: () => _showVoiceMembers(c),
-                    icon: const Icon(
-                      Icons.manage_accounts_rounded,
-                      color: Colors.white54,
-                    ),
+                    icon: Icon(Icons.manage_accounts_rounded, color: inkSoft),
                   ),
                   IconButton(
                     tooltip: 'Mute everyone',
@@ -553,18 +611,17 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                       final ok = await PartyVoiceService.muteAll();
                       _snack(ok ? 'Everyone muted.' : 'Mute-all failed.');
                     },
-                    icon: const Icon(
-                      Icons.volume_off_rounded,
-                      color: Colors.white54,
-                    ),
+                    icon: Icon(Icons.volume_off_rounded, color: inkSoft),
                   ),
                 ],
                 IconButton(
                   tooltip: 'Leave voice',
                   onPressed: () => PartyVoiceService.leave(),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.call_end_rounded,
-                    color: Colors.redAccent,
+                    color: isLight
+                        ? PrismAccent.text(isLight)
+                        : Colors.redAccent,
                   ),
                 ),
               ],
@@ -577,10 +634,7 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         '🗣️ ${ids.length} speaking…',
-                        style: const TextStyle(
-                          color: Colors.greenAccent,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: liveGreen, fontSize: 12),
                       ),
                     ),
             ),
@@ -652,34 +706,67 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     }
   }
 
-  Widget _lockedCard(dynamic palette) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: DizzyVoid.surface1,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-    ),
-    child: const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.cloud_off_rounded, color: Colors.white70),
-        SizedBox(height: 8),
-        Text(
-          'Cloud not available',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+  Widget _lockedCard(dynamic palette) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.cloud_off_rounded, color: inkSoft),
+          const SizedBox(height: 8),
+          Text(
+            'Cloud not available',
+            style: TextStyle(
+              color: ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          'Watch Party needs a cloud-enabled build. Sync and other features work offline.',
-          style: TextStyle(color: Colors.white60, fontSize: 13),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: 4),
+          Text(
+            'Watch Party needs a connection to its cloud service. Check your internet, then retry.',
+            style: TextStyle(color: inkSoft, fontSize: 13),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: _busy ? null : _retryCloud,
+            icon: Icon(Icons.refresh_rounded, color: palette.primaryColor, size: 18),
+            label: Text(
+              _busy ? 'Connecting…' : 'Retry connection',
+              style: TextStyle(
+                color: palette.primaryColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _retryCloud() async {
+    setState(() => _busy = true);
+    final ok = await CloudClient.retry();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Still offline — check your connection.')),
+      );
+    }
+  }
 
   Widget _actionCard({
     required dynamic palette,
@@ -687,45 +774,54 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
     required String title,
     required String subtitle,
     required VoidCallback? onTap,
-  }) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(16),
-    child: Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: palette.primaryColor, size: 30),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
-                ),
-              ],
-            ),
+  }) {
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.08),
           ),
-          const Icon(Icons.chevron_right_rounded, color: Colors.white54),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: palette.primaryColor, size: 30),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: inkSoft),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Future<void> _createRoom() async {
     // Phase E2: admin feature flag — killed → Easy English, no dead spinner.
@@ -965,29 +1061,35 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
 
   void _showRoomReady(WatchPartyRoom room, {bool asHost = false}) {
     // v1.2.0-T2.8: big code card + Copy/Invite (dead-easy sharing).
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     showDialog<void>(
       context: context,
       builder: (c) => AlertDialog(
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor: isLight ? PrismLight.raisedTop : PrismDark.raised,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Room ready 🎉',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: Text('Room ready 🎉', style: TextStyle(color: ink)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.07),
+                color: isLight
+                    ? PrismLight.raisedBottom
+                    : Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                border: Border.all(
+                  color: isLight
+                      ? PrismLight.borderSubtle
+                      : Colors.white.withValues(alpha: 0.12),
+                ),
               ),
               child: Text(
                 room.roomId,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: ink,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 6,
@@ -999,21 +1101,26 @@ class _WatchPartyPageState extends State<WatchPartyPage> {
               room.isPrivate
                   ? 'Private room — share the 6-digit pass too.'
                   : 'Public room — code is enough, no pass.',
-              style: const TextStyle(color: Colors.white60, fontSize: 12.5),
+              style: TextStyle(color: inkSoft, fontSize: 12.5),
               textAlign: TextAlign.center,
             ),
             if (room.isAdult)
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   '⚠️ 18+ room — viewer discretion advised.',
-                  style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                  style: TextStyle(
+                    color: isLight
+                        ? PrismAccent.starTextLight
+                        : Colors.orangeAccent,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Play a title and all screens follow together.',
-              style: TextStyle(color: Colors.white60, fontSize: 12.5),
+              style: TextStyle(color: inkSoft, fontSize: 12.5),
               textAlign: TextAlign.center,
             ),
           ],

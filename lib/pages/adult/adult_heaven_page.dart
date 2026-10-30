@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../design/dizzy_tactile.dart';
+import '../../design/prism_tokens.dart';
 import '../../models/movie/movie_section.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/adult/adult_directory.dart';
@@ -77,8 +77,8 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
         if (!addon.isCatalogsActive) continue;
         try {
           final sections = await _manager.fetchAllHomeSections().timeout(
-                const Duration(seconds: 30),
-              );
+            const Duration(seconds: 30),
+          );
           for (final s in sections) {
             if (s.addonBaseUrl == addon.baseUrl) out.add(s);
           }
@@ -104,40 +104,45 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
 
   Future<void> _install(AdultDirectoryEntry entry) async {
     HapticFeedback.mediumImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Adding ${entry.name}...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Adding ${entry.name}...')));
     try {
       await _manager.addAddon(entry.manifestUrl);
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${entry.name} added ✓')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${entry.name} added ✓')));
       _load();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not add: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not add: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
     return OfflineAwareScaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('🔞 18+ Heaven',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+        title: const Text(
+          '🔞 18+ Heaven',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+        ),
       ),
       body: ValueListenableBuilder<bool>(
         valueListenable: AdultSectionGate.visible,
@@ -152,11 +157,15 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Could not load right now.',
-                      style: TextStyle(color: Colors.white)),
+                  Text(
+                    'Could not load right now.',
+                    style: TextStyle(color: ink),
+                  ),
                   const SizedBox(height: 12),
                   FilledButton(
-                      onPressed: _load, child: const Text('Try again')),
+                    onPressed: _load,
+                    child: const Text('Try again'),
+                  ),
                 ],
               ),
             );
@@ -177,7 +186,7 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
                 final missing = _missingInstalls();
                 final mi = i - _sections.length;
                 if (mi < missing.length) return _installCard(missing[mi]);
-                return const SizedBox(height: 110);
+                return SizedBox(height: PrismLayout.dockClearance(context));
               },
             ),
           );
@@ -192,28 +201,46 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
   /// was a tautology — _installedIds is BUILT from the installed list, so it
   /// was true for every installed addon, marking every entry "known" and the
   /// install cards NEVER rendered. Now matches the ENTRY id / base URL.)
-  List<AdultDirectoryEntry> _missingInstalls() =>
-      AdultDirectory.missingEntries(_manager.addons
-          .map((a) => (id: a.manifest.id, baseUrl: a.baseUrl))
-          .toList());
+  List<AdultDirectoryEntry> _missingInstalls() => AdultDirectory.missingEntries(
+    _manager.addons
+        .map((a) => (id: a.manifest.id, baseUrl: a.baseUrl))
+        .toList(),
+  );
 
   Widget _installCard(AdultDirectoryEntry entry) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Card(
-        color: const Color(0xFF1B1E2E),
+        color: isLight ? PrismLight.raisedTop : const Color(0xFF1B1E2E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+          side: BorderSide(
+            color: isLight
+                ? PrismLight.borderSubtle
+                : Colors.white.withValues(alpha: 0.12),
+          ),
         ),
         child: ListTile(
-          leading: const Icon(Icons.add_box_rounded,
-              color: Color(0xFFE50914), size: 32),
-          title: Text(entry.name,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w700)),
-          subtitle: Text(entry.oneLine,
-              style: const TextStyle(color: Colors.white60, fontSize: 12)),
+          leading: const Icon(
+            Icons.add_box_rounded,
+            color: Color(0xFFE50914),
+            size: 32,
+          ),
+          title: Text(
+            entry.name,
+            style: TextStyle(
+              color: isLight ? PrismLight.ink : Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            entry.oneLine,
+            style: TextStyle(
+              color: isLight ? PrismLight.inkSoft : Colors.white60,
+              fontSize: 12,
+            ),
+          ),
           trailing: FilledButton(
             onPressed: () => _install(entry),
             child: const Text('Install'),
@@ -224,24 +251,31 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
   }
 
   Widget _locked() {
-    return const Center(
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🔞', style: TextStyle(fontSize: 56)),
-            SizedBox(height: 16),
-            Text('18+ Heaven is locked',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800)),
-            SizedBox(height: 8),
+            const Text('🔞', style: TextStyle(fontSize: 56)),
+            const SizedBox(height: 16),
+            Text(
+              '18+ Heaven is locked',
+              style: TextStyle(
+                color: isLight ? PrismLight.ink : Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               'Confirm you are 18+ in Settings → Privacy. Your admin must also allow this device.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white60, fontSize: 13),
+              style: TextStyle(
+                color: isLight ? PrismLight.inkSoft : Colors.white60,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -250,20 +284,27 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
   }
 
   Widget _emptyState() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
     final missing = _missingInstalls();
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         const SizedBox(height: 12),
-        const Text('No 18+ sources yet',
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w800)),
+        Text(
+          'No 18+ sources yet',
+          style: TextStyle(
+            color: isLight ? PrismLight.ink : Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Install one below — rows appear here category-wise.',
-          style: TextStyle(color: Colors.white60, fontSize: 13),
+          style: TextStyle(
+            color: isLight ? PrismLight.inkSoft : Colors.white60,
+            fontSize: 13,
+          ),
         ),
         const SizedBox(height: 12),
         for (final e in missing) _installCard(e),

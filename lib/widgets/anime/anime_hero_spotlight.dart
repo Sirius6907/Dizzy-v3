@@ -65,7 +65,9 @@ class _AnimeHeroSpotlightState extends State<AnimeHeroSpotlight> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final isMobile = screenWidth < 650;
-    final bannerHeight = isMobile ? 320.0 : (screenHeight * 0.60).clamp(440.0, 680.0);
+    final bannerHeight = isMobile
+        ? 320.0
+        : (screenHeight * 0.60).clamp(440.0, 680.0);
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
@@ -93,9 +95,8 @@ class _AnimeHeroSpotlightState extends State<AnimeHeroSpotlight> {
                         alignment: const Alignment(0, -0.15),
                         memCacheWidth: 1280,
                         maxWidthDiskCache: 1280,
-                        placeholder: (_, __) => Container(
-                          color: DizzyVoid.surface1,
-                        ),
+                        placeholder: (_, __) =>
+                            Container(color: DizzyVoid.surface1),
                         errorWidget: (_, __, ___) => Container(
                           color: DizzyVoid.surface1,
                           child: const Icon(
@@ -151,215 +152,230 @@ class _AnimeHeroSpotlightState extends State<AnimeHeroSpotlight> {
                           maxWidth: isMobile ? double.infinity : 640.0,
                         ),
                         child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Top Pills Row
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF7C5CFF),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Text(
-                                  'FEATURED ANIME',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                              if (anime.averageScore > 0)
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Top Pills Row
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.65),
+                                    color: const Color(0xFF7C5CFF),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: const Color(0xFFFFB800)
-                                          .withValues(alpha: 0.4),
+                                  ),
+                                  child: const Text(
+                                    'FEATURED ANIME',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.star_rounded,
-                                        color: Color(0xFFFFB800),
-                                        size: 14,
+                                ),
+                                if (anime.averageScore > 0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.65,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${anime.formattedScore} / 10',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFFFFB800,
+                                        ).withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.star_rounded,
+                                          color: Color(0xFFFFB800),
+                                          size: 14,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              if (anime.formattedSeasonYear.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    anime.formattedSeasonYear,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${anime.formattedScore} / 10',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Title
-                          Text(
-                            anime.displayTitle,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 22 : 32,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.6,
-                              height: 1.15,
+                                if (anime.formattedSeasonYear.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      anime.formattedSeasonYear,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 12),
 
-                          // Genres & Studio
-                          if (anime.genres.isNotEmpty ||
-                              anime.studioName.isNotEmpty)
+                            // Title
                             Text(
-                              [
-                                if (anime.studioName.isNotEmpty)
-                                  anime.studioName,
-                                ...anime.genres.take(3),
-                              ].join(' • '),
+                              anime.displayTitle,
                               style: TextStyle(
-                                color: AppThemeService.currentPalette.value.primaryColor
-                                    .withValues(alpha: 0.95),
-                                fontSize: isMobile ? 12 : 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          const SizedBox(height: 8),
-
-                          // Synopsis snippet
-                          if (!isMobile && anime.description.isNotEmpty) ...[
-                            Text(
-                              anime.description,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                height: 1.4,
+                                color: Colors.white,
+                                fontSize: isMobile ? 22 : 32,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.6,
+                                height: 1.15,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 16),
-                          ],
+                            const SizedBox(height: 8),
 
-                          // Action Buttons Row
-                          Row(
-                            children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppThemeService.currentPalette.value.primaryColor,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isMobile ? 16 : 22,
-                                    vertical: isMobile ? 10 : 12,
-                                  ),
-                                  shadowColor: AppThemeService.currentPalette.value.primaryColor
-                                      .withValues(alpha: 0.5),
-                                  elevation: 8,
+                            // Genres & Studio
+                            if (anime.genres.isNotEmpty ||
+                                anime.studioName.isNotEmpty)
+                              Text(
+                                [
+                                  if (anime.studioName.isNotEmpty)
+                                    anime.studioName,
+                                  ...anime.genres.take(3),
+                                ].join(' • '),
+                                style: TextStyle(
+                                  color: AppThemeService
+                                      .currentPalette
+                                      .value
+                                      .primaryColor
+                                      .withValues(alpha: 0.95),
+                                  fontSize: isMobile ? 12 : 13,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                onPressed: () =>
-                                    widget.onPlayEpisode(anime, 1),
-                                icon: const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                label: const Text(
-                                  'Play Ep 1',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 10),
-                              IconButton(
-                                style: IconButton.styleFrom(
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.15),
+                            const SizedBox(height: 8),
+
+                            // Synopsis snippet
+                            if (!isMobile && anime.description.isNotEmpty) ...[
+                              Text(
+                                anime.description,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  height: 1.4,
                                 ),
-                                icon: Icon(
-                                  widget.isInWatchlist(anime.id)
-                                      ? Icons.bookmark_rounded
-                                      : Icons.bookmark_outline_rounded,
-                                  color: widget.isInWatchlist(anime.id)
-                                      ? const Color(0xFF00D294)
-                                      : Colors.white,
-                                  size: 20,
-                                ),
-                                onPressed: () =>
-                                    widget.onToggleWatchlist(anime),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                style: IconButton.styleFrom(
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.15),
-                                ),
-                                icon: const Icon(
-                                  Icons.info_outline_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                onPressed: () =>
-                                    widget.onDetailsTap(anime),
-                              ),
+                              const SizedBox(height: 16),
                             ],
-                          ),
-                        ],
+
+                            // Action Buttons Row
+                            Row(
+                              children: [
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppThemeService
+                                        .currentPalette
+                                        .value
+                                        .primaryColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isMobile ? 16 : 22,
+                                      vertical: isMobile ? 10 : 12,
+                                    ),
+                                    shadowColor: AppThemeService
+                                        .currentPalette
+                                        .value
+                                        .primaryColor
+                                        .withValues(alpha: 0.5),
+                                    elevation: 8,
+                                  ),
+                                  onPressed: () =>
+                                      widget.onPlayEpisode(anime, 1),
+                                  icon: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  label: const Text(
+                                    'Play Ep 1',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                IconButton(
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.white.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                  ),
+                                  icon: Icon(
+                                    widget.isInWatchlist(anime.id)
+                                        ? Icons.bookmark_rounded
+                                        : Icons.bookmark_outline_rounded,
+                                    color: widget.isInWatchlist(anime.id)
+                                        ? const Color(0xFF00D294)
+                                        : Colors.white,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      widget.onToggleWatchlist(anime),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.white.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.info_outline_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => widget.onDetailsTap(anime),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
+                  ],
+                );
+              },
+            ),
 
             // Bottom Right Page Indicator Dots
             if (widget.featuredAnime.length > 1)
@@ -368,24 +384,21 @@ class _AnimeHeroSpotlightState extends State<AnimeHeroSpotlight> {
                 bottom: 20,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    widget.featuredAnime.length,
-                    (idx) {
-                      final isActive = idx == _currentPage;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: isActive ? 22 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? AppThemeService.currentPalette.value.primaryColor
-                              : Colors.white.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      );
-                    },
-                  ),
+                  children: List.generate(widget.featuredAnime.length, (idx) {
+                    final isActive = idx == _currentPage;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: isActive ? 22 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppThemeService.currentPalette.value.primaryColor
+                            : Colors.white.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
                 ),
               ),
           ],

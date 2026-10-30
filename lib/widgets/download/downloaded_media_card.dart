@@ -11,6 +11,8 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../design/prism_shadows.dart';
+import '../../services/theme/app_theme_service.dart';
 import '../../models/download/download_task_model.dart';
 import '../../utils/perf/image_caps.dart';
 
@@ -37,89 +39,102 @@ class DownloadedMediaCard extends StatelessWidget {
     final url = task.posterUrl;
     final hasPoster = url != null && url.isNotEmpty;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                hasPoster
-                    ? CachedNetworkImage(
-                        imageUrl: url,
-                        fit: BoxFit.cover,
-                        memCacheWidth: ImageCaps.kCardW,
-                        maxWidthDiskCache: ImageCaps.kCardW,
-                        errorWidget: (_, __, ___) => const _PosterFallback(),
-                      )
-                    : const _PosterFallback(),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Color(0xB3000000)],
+    final palette = AppThemeService.currentPalette.value;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: PrismShadows.surfaceGradient(palette.isLight),
+        boxShadow: PrismShadows.resting(isLight: palette.isLight),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  hasPoster
+                      ? CachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.cover,
+                          memCacheWidth: ImageCaps.kCardW,
+                          maxWidthDiskCache: ImageCaps.kCardW,
+                          errorWidget: (_, __, ___) => const _PosterFallback(),
+                        )
+                      : const _PosterFallback(),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Color(0xB3000000)],
+                      ),
                     ),
                   ),
-                ),
-                Center(
-                  child: _CircleButton(
-                    icon: Icons.play_arrow_rounded,
-                    onPressed: onPlay,
-                    tooltip: 'Play',
+                  Center(
+                    child: _CircleButton(
+                      icon: Icons.play_arrow_rounded,
+                      onPressed: onPlay,
+                      tooltip: 'Play',
+                    ),
                   ),
-                ),
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: _CircleButton(
-                    icon: Icons.folder_open_rounded,
-                    onPressed: onOpenFolder,
-                    tooltip: 'Open folder',
-                    dimmed: true,
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: _CircleButton(
+                      icon: Icons.folder_open_rounded,
+                      onPressed: onOpenFolder,
+                      tooltip: 'Open folder',
+                      dimmed: true,
+                    ),
                   ),
-                ),
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: _CircleButton(
-                    icon: Icons.delete_outline_rounded,
-                    onPressed: onDelete,
-                    tooltip: 'Delete',
-                    dimmed: true,
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: _CircleButton(
+                      icon: Icons.delete_outline_rounded,
+                      onPressed: onDelete,
+                      tooltip: 'Delete',
+                      dimmed: true,
+                    ),
                   ),
-                ),
-                Positioned(
-                  bottom: 6,
-                  right: 6,
-                  child: _SizeTag(bytes: task.totalBytes),
-                ),
-              ],
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: _SizeTag(bytes: task.totalBytes),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _subtitle,
-                  style: TextStyle(fontSize: 10.5, color: scheme.onSurfaceVariant),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _subtitle,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
-import 'package:dizzy/design/dizzy_tokens.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 
 import '../../models/movie/movie.dart';
 
@@ -10,6 +9,7 @@ import '../../models/addon/addon.dart';
 import '../../models/movie/movie_section.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/catalog/catalog_service.dart';
+import '../../services/catalog/recommend_service.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/home/home_page_settings.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
@@ -27,32 +27,67 @@ import '../../widgets/movie/movie_slider_section.dart';
 import '../search/search_page.dart';
 import '../settings/settings_page.dart';
 import '../../services/theme/dock_settings.dart';
-import '../../widgets/common/app_liquid_dock.dart';
+import '../../widgets/prism/prism_dock.dart';
 import '../../services/updater/app_updater_service.dart';
 import '../../widgets/updater/update_dialog.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
 import '../../widgets/cloud/consent_onboarding_sheet.dart';
-import '../../widgets/onboarding/onboarding_superpower_sheet.dart';
+import '../../widgets/onboarding/username_gate_screen.dart';
 import '../../services/cloud/cloud_auth_service.dart';
-import '../../widgets/guide/guide_card.dart';
 
 /// Trending row (P22 warm catalog edge feed → snapshot → hidden).
 /// Fail-soft by design: offline/empty = no row, never an error.
 /// Cards open DetailsPage via the built-in title fallback (tmdb: ids
 /// auto-resolve through Cinemeta by title+year on tap).
-/// Pure: catalog cards → top-of-home "Trending Now" section (null when
+/// Pure: catalog cards → top-of-home "New & Trending" section (null when
 /// empty). Unit-tested.
 MovieSection? buildTrendingSection(List<CatalogCard> cards) {
   if (cards.isEmpty) return null;
   return MovieSection(
-    title: 'Trending Now',
-    subtitle: 'What everyone is watching',
+    title: 'New & Trending',
+    subtitle: 'Fresh in Hindi & English',
     contentType: 'mixed',
     addonBaseUrl: '',
     catalog: AddonCatalog(
       type: 'mixed',
       id: 'trending',
+      genres: const [],
+      supportsSearch: false,
+      supportsSkip: false,
+    ),
+    movies: [
+      for (final c in cards)
+        Movie(
+          id: 'tmdb:${c.id}',
+          name: c.title,
+          poster: c.poster,
+          year: c.year.isEmpty ? null : c.year,
+          type: c.mediaType == 'tv' ? 'series' : 'movie',
+          addonBaseUrl: '',
+          imdbRating: c.rating > 0 ? c.rating.toStringAsFixed(1) : null,
+        ),
+    ],
+  );
+}
+
+/// Personal rail from the taste engine (Phase 2). Null when the user is
+/// still cold (under three events) so the row never shows fake relevance.
+/// Pure: catalog cards → "For You" section. Unit-tested.
+MovieSection? buildForYouSection(List<CatalogCard> cards) {
+  if (cards.isEmpty) return null;
+  final reason = cards.first.reason;
+  final subtitle = reason.startsWith('genre:') && reason.length > 6
+      ? 'More ${reason.substring(6)} for you'
+      : 'Picked from what you watch';
+  return MovieSection(
+    title: 'For You',
+    subtitle: subtitle,
+    contentType: 'mixed',
+    addonBaseUrl: '',
+    catalog: AddonCatalog(
+      type: 'mixed',
+      id: 'for_you',
       genres: const [],
       supportsSearch: false,
       supportsSkip: false,
@@ -99,7 +134,7 @@ class _HomePageState extends State<HomePage> {
     _hasShownIntro = true;
 
     HomePageSettings.changeNotifier.addListener(_onSettingsChanged);
-    AppThemeService.currentPalette.addListener(_onSettingsChanged);
+    AppThemeService.currentPalette.addListener(_onThemeChanged);
     MyListService.items.addListener(_onSettingsChanged);
     ContinueWatchingService.activeItems.addListener(_onSettingsChanged);
 
@@ -130,23 +165,23 @@ class _HomePageState extends State<HomePage> {
     await _checkP2pWarning();
     if (!mounted) return;
 
+    // v1.3.3: the name is the first screen after the intro — before the
+    // privacy sheet, because identity is the promise and consent is the
+    // settings. Non-blocking when the server is unreachable.
+    await UsernameGateFlow.maybeShow(context);
+    if (!mounted) return;
+
     // S2 (v1.1.9): consent is explicit and shown once, after other startup UI.
     if (!CloudAuthService.onboarded.value) {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor:
+            AppThemeService.currentPalette.value.cardBackgroundColor,
         builder: (_) => const ConsentOnboardingSheet(),
       );
     }
     if (!mounted) return;
-
-    // UX4: Guided Onboarding Superpower Cards (one-time on first launch)
-    await OnboardingSuperpowerSheet.maybeShow(context);
-    if (!mounted) return;
-
-    // P7: the Home card waits its turn so it never lands under the tour.
-    await GuideCard.maybeShow(context, 'home', AppGuides.home);
   }
 
   Future<void> _checkAutoUpdate() async {
@@ -185,11 +220,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     HomePageSettings.changeNotifier.removeListener(_onSettingsChanged);
-    AppThemeService.currentPalette.removeListener(_onSettingsChanged);
+    AppThemeService.currentPalette.removeListener(_onThemeChanged);
     MyListService.items.removeListener(_onSettingsChanged);
     ContinueWatchingService.activeItems.removeListener(_onSettingsChanged);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Repaint only — a palette switch changes no catalog data, so it must not
+  /// trigger the four recommendation fetches in [_refreshSimilarSections].
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onSettingsChanged() {
@@ -277,12 +318,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _playIntro() async {
-    // Show intro for 1.8 seconds so it feels fast and allows full dock shader pre-warming
-    await Future.delayed(const Duration(milliseconds: 1800));
-
-    // If still loading critical data, wait a bit longer (up to a timeout or until ready)
-    while (_loading && mounted) {
-      await Future.delayed(const Duration(milliseconds: 100));
+    // A brand beat, not a loading gate. The splash leaves as soon as the
+    // first home data lands; the ceiling keeps a slow network from turning
+    // launch into a two-second stare at a logo.
+    const minBeat = Duration(milliseconds: 250);
+    const maxBeat = Duration(milliseconds: 600);
+    final started = DateTime.now();
+    while (mounted) {
+      final elapsed = DateTime.now().difference(started);
+      if (elapsed >= maxBeat) break;
+      if (!_loading && elapsed >= minBeat) break;
+      await Future.delayed(const Duration(milliseconds: 40));
     }
 
     if (mounted) {
@@ -295,12 +341,24 @@ class _HomePageState extends State<HomePage> {
 
   Future<MovieSection?> _fetchTrendingSection() async {
     try {
+      // `fresh` is the self-updating home rail: rolling release window,
+      // Hindi and English interleaved 1:1, no manual curation.
       final cards = await CatalogService.fetchFeed(
-        feed: 'trending',
+        feed: 'fresh',
         type: 'all',
       );
       if (cards == null || cards.isEmpty) return null;
       return buildTrendingSection(cards);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<MovieSection?> _fetchForYouSection() async {
+    try {
+      final cards = await RecommendService.fetch();
+      if (cards == null || cards.isEmpty) return null;
+      return buildForYouSection(cards);
     } catch (_) {
       return null;
     }
@@ -322,6 +380,7 @@ class _HomePageState extends State<HomePage> {
       final traktFuture = HomePageSettings.fetchTraktRecommendationsSection();
       final simklFuture = HomePageSettings.fetchSimklRecommendationsSection();
       final trendingFuture = _fetchTrendingSection();
+      final forYouFuture = _fetchForYouSection();
 
       await for (final section in _manager.streamHomeSections()) {
         if (!mounted) return;
@@ -346,12 +405,17 @@ class _HomePageState extends State<HomePage> {
         traktFuture,
         simklFuture,
         trendingFuture,
+        forYouFuture,
       ]);
       if (mounted) {
-        // Trending (warm catalog edge feed) goes FIRST — above everything.
+        // Fresh rail first, then the personal rail above it once warm.
         final trending = results[4];
+        final forYou = results[5];
         if (trending != null) {
           setState(() => _sections.insert(0, trending));
+        }
+        if (forYou != null) {
+          setState(() => _sections.insert(0, forYou));
         }
         _injectSimilarSections(
           listSection: results[0],
@@ -427,11 +491,13 @@ class _HomePageState extends State<HomePage> {
     final palette = AppThemeService.currentPalette.value;
 
     final backgroundContent = Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [DizzyColors.bg, DizzyVoid.voidA],
+          colors: palette.isLight
+              ? [PrismLight.bg, PrismLight.bg]
+              : [PrismDark.bg, PrismDark.sunken],
         ),
       ),
       child: Stack(
@@ -460,7 +526,9 @@ class _HomePageState extends State<HomePage> {
                   if (index == 0) return const HomeNoticeBanner();
                   if (index == 1) {
                     if (!HomePageSettings.enableSpotlight.value) {
-                      return SizedBox(height: topPadding + 76);
+                      return SizedBox(
+                        height: PrismLayout.homeAppBarClearance(context),
+                      );
                     }
                     return HomeHeroCarousel(movies: _featuredMovies);
                   }
@@ -468,9 +536,7 @@ class _HomePageState extends State<HomePage> {
                     return const ContinueWatchingSlider(typeFilter: 'main');
                   }
                   if (index == _sections.length + 3) {
-                    return SizedBox(
-                      height: 110.0 + MediaQuery.paddingOf(context).bottom,
-                    );
+                    return SizedBox(height: PrismLayout.dockClearance(context));
                   }
                   final sectionIdx = index - 3;
                   final isLastTwo = sectionIdx >= (_sections.length - 2);
@@ -531,7 +597,7 @@ class _HomePageState extends State<HomePage> {
         left: 0,
         right: 0,
         child: Center(
-          child: AppLiquidDock(
+          child: PrismDock(
             currentDestination: DockItemKey.home,
             onSettingsTap: () => _navigateToSettings(null),
             onSearchTap: () => _navigateToSearch(null),
@@ -544,7 +610,9 @@ class _HomePageState extends State<HomePage> {
     ];
 
     return Container(
-      color: DizzyVoid.voidA,
+      color: AppThemeService.currentPalette.value.isLight
+          ? PrismLight.bg
+          : PrismDark.bg,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -566,7 +634,7 @@ class _HomePageState extends State<HomePage> {
       ignoring: !_showIntro,
       child: AnimatedOpacity(
         opacity: _showIntro ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 800),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         child: Container(
           color: palette.scaffoldBackgroundColor,
@@ -621,12 +689,19 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 32),
                     ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
-                        colors: [
-                          Colors.white,
-                          palette.silverAccent,
-                          const Color(0xFFCBD5E1),
-                          palette.primaryColor.withValues(alpha: 0.85),
-                        ],
+                        colors: palette.isLight
+                            ? const [
+                                PrismLight.ink,
+                                PrismLight.ink,
+                                PrismLight.ink,
+                                PrismAccent.accentTextLight,
+                              ]
+                            : [
+                                Colors.white,
+                                palette.silverAccent,
+                                const Color(0xFFCBD5E1),
+                                palette.primaryColor.withValues(alpha: 0.85),
+                              ],
                         stops: const [0.0, 0.35, 0.70, 1.0],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,

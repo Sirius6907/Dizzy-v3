@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import '../../services/adult/adult_section_gate.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
-import '../../widgets/tactile/dizzy_tactile_card.dart';
+import '../../widgets/prism/prism_card.dart';
 
 import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/heartbeat/heartbeat_service.dart';
@@ -33,17 +33,23 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
     return OfflineAwareScaffold(
-      backgroundColor: DizzyVoid.voidA,
+      backgroundColor: palette.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DizzyVoid.voidB,
+        backgroundColor: palette.appBarBackgroundColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
+          tooltip: 'Back',
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Privacy & Account',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+        title: const Text(
+          'Privacy & Account',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -56,15 +62,21 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 valueListenable: CloudAuthService.signedIn,
                 builder: (context, signedIn, _) => GestureDetector(
                   onTap: () => HapticFeedback.selectionClick(),
-                  child: DizzyTactileCard(
+                  child: PrismCard(
                     margin: EdgeInsets.zero,
                     padding: EdgeInsets.zero,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.devices_rounded,
-                              color: palette.primaryColor, size: 22),
+                          Icon(
+                            Icons.devices_rounded,
+                            color: palette.primaryColor,
+                            size: 22,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -72,16 +84,17 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                               children: [
                                 Text(
                                   signedIn ? 'Cloud connected' : 'Offline mode',
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
+                                  style: TextStyle(color: ink, fontSize: 14),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   signedIn
                                       ? 'Sync, backup & watch parties active. ${_shortDeviceId(CloudAuthService.anonId)}'
                                       : 'All features work offline. Sync disabled.',
-                                  style: const TextStyle(
-                                      color: Colors.white60, fontSize: 12),
+                                  style: TextStyle(
+                                    color: inkSoft,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ],
                             ),
@@ -94,37 +107,47 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ),
               const SizedBox(height: 8),
               if (!CloudClient.isConfigured)
-                const ListTile(
-                  leading: Icon(Icons.cloud_off_rounded,
-                      color: Colors.orangeAccent),
-                  title: Text('Cloud not configured in this build',
-                      style: TextStyle(color: Colors.white)),
+                ListTile(
+                  leading: const Icon(
+                    Icons.cloud_off_rounded,
+                    color: Colors.orangeAccent,
+                  ),
+                  title: Text(
+                    'Cloud not configured in this build',
+                    style: TextStyle(color: ink),
+                  ),
                   subtitle: Text(
-                      'Sync & watch parties need a cloud-enabled build.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    'Sync & watch parties need a cloud-enabled build.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                 ),
               _sectionTitle('What Dizzy may collect'),
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.consentTelemetry,
                 builder: (context, v, _) => SwitchListTile(
-                  title: const Text('App experience data',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                      'Install, version, platform. No watch titles.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  title: Text(
+                    'App experience data',
+                    style: TextStyle(color: ink),
+                  ),
+                  subtitle: Text(
+                    'Install, version, platform. No watch titles.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   value: v,
-                  onChanged: (nv) =>
-                      CloudAuthService.setConsent(telemetry: nv),
+                  onChanged: (nv) => CloudAuthService.setConsent(telemetry: nv),
                 ),
               ),
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.consentGenrePrefs,
                 builder: (context, v, _) => SwitchListTile(
-                  title: const Text('Taste preferences',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                      'Genre scores (action:0.8). Never raw history.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  title: Text(
+                    'Taste preferences',
+                    style: TextStyle(color: ink),
+                  ),
+                  subtitle: Text(
+                    'Genre scores (action:0.8). Never raw history.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   value: v,
                   onChanged: (nv) =>
                       CloudAuthService.setConsent(genrePrefs: nv),
@@ -133,36 +156,41 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.consentCrash,
                 builder: (context, v, _) => SwitchListTile(
-                  title: const Text('Crash counts',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text('Counts only. No personal data.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  title: Text('Crash counts', style: TextStyle(color: ink)),
+                  subtitle: Text(
+                    'Counts only. No personal data.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   value: v,
-                  onChanged: (nv) =>
-                      CloudAuthService.setConsent(crash: nv),
+                  onChanged: (nv) => CloudAuthService.setConsent(crash: nv),
                 ),
               ),
               ValueListenableBuilder<bool>(
                 valueListenable: HeartbeatService.instance.consentNotifier,
                 builder: (context, v, _) => SwitchListTile(
-                  title: const Text('Live activity for admins',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                      'Online now, what you\'re playing (watch / listen / read), and voice presence. Off keeps only last-seen time. Never titles, names or files.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  title: Text(
+                    'Live activity for admins',
+                    style: TextStyle(color: ink),
+                  ),
+                  subtitle: Text(
+                    'Online now, what you\'re playing (watch / listen / read), and voice presence. Off keeps only last-seen time. Never titles, names or files.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   value: v,
-                  onChanged: (nv) =>
-                      HeartbeatService.instance.setConsent(nv),
+                  onChanged: (nv) => HeartbeatService.instance.setConsent(nv),
                 ),
               ),
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.consentWatchParty,
                 builder: (context, v, _) => SwitchListTile(
-                  title: const Text('Watch Party voice & rooms',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                      'Mic via LiveKit + room membership. Needed for party voice.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  title: Text(
+                    'Watch Party voice & rooms',
+                    style: TextStyle(color: ink),
+                  ),
+                  subtitle: Text(
+                    'Mic via LiveKit + room membership. Needed for party voice.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   value: v,
                   onChanged: (nv) =>
                       CloudAuthService.setConsent(watchParty: nv),
@@ -173,11 +201,14 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ValueListenableBuilder<bool>(
                 valueListenable: AdultSectionGate.localConfirmed,
                 builder: (context, v, _) => SwitchListTile(
-                  title: const Text('I am 18+ — unlock adult section',
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                      'Needs admin allow for this device too. Kids profiles stay locked.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  title: Text(
+                    'I am 18+ — unlock adult section',
+                    style: TextStyle(color: ink),
+                  ),
+                  subtitle: Text(
+                    'Needs admin allow for this device too. Kids profiles stay locked.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   value: v,
                   onChanged: (nv) async {
                     if (nv) {
@@ -186,14 +217,17 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                         builder: (c) => AlertDialog(
                           title: const Text('Confirm you are 18+?'),
                           content: const Text(
-                              'This unlocks the 18+ Heaven section on THIS device only. Your admin must also allow this device.'),
+                            'This unlocks the 18+ Heaven section on THIS device only. Your admin must also allow this device.',
+                          ),
                           actions: [
                             TextButton(
-                                onPressed: () => Navigator.pop(c, false),
-                                child: const Text('Cancel')),
+                              onPressed: () => Navigator.pop(c, false),
+                              child: const Text('Cancel'),
+                            ),
                             FilledButton(
-                                onPressed: () => Navigator.pop(c, true),
-                                child: const Text('I am 18+')),
+                              onPressed: () => Navigator.pop(c, true),
+                              child: const Text('I am 18+'),
+                            ),
                           ],
                         ),
                       );
@@ -205,9 +239,12 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                       final open = AdultSectionGate.visible.value;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text(open
+                          content: Text(
+                            open
                                 ? '18+ Heaven unlocked ✓'
-                                : 'Saved. Waiting for admin allow on this device.')),
+                                : 'Saved. Waiting for admin allow on this device.',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -217,18 +254,27 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 valueListenable: AdultSectionGate.adminAllowed,
                 builder: (context, allowed, _) => ListTile(
                   leading: Icon(
-                      allowed
-                          ? Icons.verified_user_rounded
-                          : Icons.hourglass_empty_rounded,
-                      color: allowed ? Colors.greenAccent : Colors.orangeAccent),
-                  title: const Text('Admin allow status',
-                      style: TextStyle(color: Colors.white)),
+                    allowed
+                        ? Icons.verified_user_rounded
+                        : Icons.hourglass_empty_rounded,
+                    color: allowed
+                        ? (isLight
+                              ? PrismAccent.successTextLight
+                              : Colors.greenAccent)
+                        : (isLight
+                              ? PrismAccent.starTextLight
+                              : Colors.orangeAccent),
+                  ),
+                  title: Text(
+                    'Admin allow status',
+                    style: TextStyle(color: ink),
+                  ),
                   subtitle: Text(
-                      allowed
-                          ? 'This device is allowed by your admin.'
-                          : 'Not allowed yet — ask your admin to allow this device.',
-                      style: const TextStyle(
-                          color: Colors.white60, fontSize: 12)),
+                    allowed
+                        ? 'This device is allowed by your admin.'
+                        : 'Not allowed yet — ask your admin to allow this device.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
                   trailing: TextButton(
                     onPressed: () =>
                         unawaited(AdultSectionGate.refreshFromServer()),
@@ -239,21 +285,25 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               const SizedBox(height: 8),
               _sectionTitle('Danger zone'),
               ListTile(
-                leading: const Icon(Icons.delete_forever_rounded,
-                    color: Colors.redAccent),
-                title: const Text('Delete my cloud data',
-                    style: TextStyle(color: Colors.white)),
-                subtitle: const Text(
-                    'Removes installs, consents, scores, backups, profiles, rooms & chat. Local app untouched.',
-                    style:
-                        TextStyle(color: Colors.white60, fontSize: 12)),
+                leading: Icon(
+                  Icons.delete_forever_rounded,
+                  color: isLight ? PrismAccent.text(isLight) : Colors.redAccent,
+                ),
+                title: Text(
+                  'Delete my cloud data',
+                  style: TextStyle(color: ink),
+                ),
+                subtitle: Text(
+                  'Removes installs, consents, scores, backups, profiles, rooms & chat. Local app untouched.',
+                  style: TextStyle(color: inkSoft, fontSize: 12),
+                ),
                 trailing: _deleting
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.chevron_right_rounded,
-                        color: Colors.white60),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.chevron_right_rounded, color: inkSoft),
                 onTap: _deleting
                     ? null
                     : () async {
@@ -262,28 +312,33 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                           builder: (c) => AlertDialog(
                             title: const Text('Delete cloud data?'),
                             content: const Text(
-                                'This cannot be undone. Your local app keeps working.'),
+                              'This cannot be undone. Your local app keeps working.',
+                            ),
                             actions: [
                               TextButton(
-                                  onPressed: () => Navigator.pop(c, false),
-                                  child: const Text('Cancel')),
+                                onPressed: () => Navigator.pop(c, false),
+                                child: const Text('Cancel'),
+                              ),
                               FilledButton(
-                                  onPressed: () => Navigator.pop(c, true),
-                                  child: const Text('Delete')),
+                                onPressed: () => Navigator.pop(c, true),
+                                child: const Text('Delete'),
+                              ),
                             ],
                           ),
                         );
                         if (ok != true) return;
                         setState(() => _deleting = true);
-                        final done =
-                            await CloudAuthService.deleteCloudData();
+                        final done = await CloudAuthService.deleteCloudData();
                         setState(() => _deleting = false);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                                content: Text(done
+                              content: Text(
+                                done
                                     ? 'Cloud data deleted.'
-                                    : 'Delete failed — try later.')),
+                                    : 'Delete failed — try later.',
+                              ),
+                            ),
                           );
                         }
                       },
@@ -295,14 +350,20 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     );
   }
 
-  Widget _sectionTitle(String t) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
-        child: Text(t,
-            style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w700,
-                fontSize: 13)),
-      );
+  Widget _sectionTitle(String t) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
+      child: Text(
+        t,
+        style: TextStyle(
+          color: isLight ? PrismLight.inkSoft : Colors.white70,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
 
   /// Short device tag for the status line. Crash-safe: never throws on
   /// short/unexpected ids (old substring(0,8) assumed ≥8 chars).

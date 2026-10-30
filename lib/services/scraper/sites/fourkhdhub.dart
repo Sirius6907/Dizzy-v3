@@ -19,7 +19,8 @@ class FourKHDHubScraper extends StreamScraper {
   DateTime? _resolvedBaseUrlExpiry;
 
   static const _headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   };
 
   // ── getBaseUrl ──
@@ -42,7 +43,9 @@ class FourKHDHubScraper extends StreamScraper {
 
       final client = http.Client();
       try {
-        final response = await client.send(request).timeout(const Duration(seconds: 10));
+        final response = await client
+            .send(request)
+            .timeout(const Duration(seconds: 10));
         if (response.statusCode >= 300 && response.statusCode < 400) {
           final location = response.headers['location'];
           if (location != null && location.isNotEmpty) {
@@ -77,7 +80,9 @@ class FourKHDHubScraper extends StreamScraper {
     String? imdbId,
   }) async {
     final sources = <StreamSource>[];
-    AppLog.d('[4KHDHub] Starting scrape for title="$title", type=$type, year=$year, S${season}E$episode');
+    AppLog.d(
+      '[4KHDHub] Starting scrape for title="$title", type=$type, year=$year, S${season}E$episode',
+    );
 
     try {
       final pageUrl = await _fetchPageUrl(
@@ -104,7 +109,9 @@ class FourKHDHubScraper extends StreamScraper {
           if (!episodeTitleText.contains('S$seasonStr')) continue;
 
           dom.Element? downloadItem;
-          for (final dl in episodeItem.querySelectorAll('.episode-download-item')) {
+          for (final dl in episodeItem.querySelectorAll(
+            '.episode-download-item',
+          )) {
             if (dl.text.contains('Episode-$episodeStr')) {
               downloadItem = dl;
               break;
@@ -127,7 +134,9 @@ class FourKHDHubScraper extends StreamScraper {
       AppLog.d('[4KHDHub ERROR] Scrape failed: $e\n$stack');
     }
 
-    AppLog.d('[4KHDHub] Scrape completed. Found ${sources.length} active sources for "$title"');
+    AppLog.d(
+      '[4KHDHub] Scrape completed. Found ${sources.length} active sources for "$title"',
+    );
     return sources;
   }
 
@@ -163,7 +172,8 @@ class FourKHDHubScraper extends StreamScraper {
         cardTitle = cardTitle.replaceAll(RegExp(r'\[.*?\]'), '').trim();
 
         final diff = _levenshtein(cardTitle.toLowerCase(), name.toLowerCase());
-        final titleMatch = diff < 5 ||
+        final titleMatch =
+            diff < 5 ||
             (cardTitle.toLowerCase().contains(name.toLowerCase()) && diff < 16);
 
         if (!titleMatch) continue;
@@ -193,7 +203,9 @@ class FourKHDHubScraper extends StreamScraper {
       final heightMatch = RegExp(r'\d{3,}p').firstMatch(localHtml);
       final heightStr = heightMatch?.group(0);
 
-      final titleEl = el.querySelector('.file-title') ?? el.querySelector('.episode-file-title');
+      final titleEl =
+          el.querySelector('.file-title') ??
+          el.querySelector('.episode-file-title');
       final fileTitle = titleEl?.text.trim() ?? 'Unknown';
 
       final displayParts = <String>[fileTitle];
@@ -227,14 +239,18 @@ class FourKHDHubScraper extends StreamScraper {
           final isValid = await _validateStreamUrl(safeUrl);
           if (isValid) {
             AppLog.d('[4KHDHub SUCCESS] Added valid stream source: $safeUrl');
-            sources.add(StreamSource(
-              name: '4KHDHub',
-              addonName: 'fourkhdhub',
-              title: displayParts.join('\n'),
-              url: safeUrl,
-            ));
+            sources.add(
+              StreamSource(
+                name: '4KHDHub',
+                addonName: 'fourkhdhub',
+                title: displayParts.join('\n'),
+                url: safeUrl,
+              ),
+            );
           } else {
-            AppLog.d('[4KHDHub FILTERED] Skipped invalid/quota-exceeded stream URL: $safeUrl');
+            AppLog.d(
+              '[4KHDHub FILTERED] Skipped invalid/quota-exceeded stream URL: $safeUrl',
+            );
           }
         }
       } catch (e) {
@@ -265,15 +281,24 @@ class FourKHDHubScraper extends StreamScraper {
       req.headers['Range'] = 'bytes=0-1024';
 
       final client = http.Client();
-      final response = await client.send(req).timeout(const Duration(seconds: 4));
+      final response = await client
+          .send(req)
+          .timeout(const Duration(seconds: 4));
       client.close();
 
-      final contentType = (response.headers['content-type'] ?? '').toLowerCase();
-      final isSuccess = (response.statusCode >= 200 && response.statusCode < 300) || response.statusCode == 206;
-      final isHtmlOrJsonError = contentType.contains('text/html') || contentType.contains('application/json');
+      final contentType = (response.headers['content-type'] ?? '')
+          .toLowerCase();
+      final isSuccess =
+          (response.statusCode >= 200 && response.statusCode < 300) ||
+          response.statusCode == 206;
+      final isHtmlOrJsonError =
+          contentType.contains('text/html') ||
+          contentType.contains('application/json');
 
       if (!isSuccess || isHtmlOrJsonError) {
-        AppLog.d('[4KHDHub HEALTH CHECK] Stream URL returned HTTP ${response.statusCode} (content-type: $contentType) -> INVALID');
+        AppLog.d(
+          '[4KHDHub HEALTH CHECK] Stream URL returned HTTP ${response.statusCode} (content-type: $contentType) -> INVALID',
+        );
         return false;
       }
       return true;
@@ -294,10 +319,12 @@ class FourKHDHubScraper extends StreamScraper {
   Future<String?> _resolveRedirectUrl(String redirectUrl) async {
     try {
       final html = await _fetchText(redirectUrl);
-      
+
       // Look for the "Generate Direct Download Link" button or script var url
       var nextUrl = '';
-      final downloadMatch = RegExp(r'<a id="download" href="(.*?)"').firstMatch(html);
+      final downloadMatch = RegExp(
+        r'<a id="download" href="(.*?)"',
+      ).firstMatch(html);
       if (downloadMatch != null) {
         nextUrl = downloadMatch.group(1)!;
       } else {
@@ -326,9 +353,11 @@ class FourKHDHubScraper extends StreamScraper {
 
       // We found the intermediate gamerxyt.com URL, let's fetch it
       final intermediateHtml = await _fetchText(nextUrl);
-      
+
       // Look for the final direct download button: class="btn btn-success ... Download File
-      final finalLinkMatch = RegExp(r'<a href="([^"]+)"[^>]*class="[^"]*btn-success').firstMatch(intermediateHtml);
+      final finalLinkMatch = RegExp(
+        r'<a href="([^"]+)"[^>]*class="[^"]*btn-success',
+      ).firstMatch(intermediateHtml);
       if (finalLinkMatch != null) {
         return finalLinkMatch.group(1)!;
       }
@@ -366,7 +395,10 @@ class FourKHDHubScraper extends StreamScraper {
 
     final la = a.length;
     final lb = b.length;
-    final d = List<List<int>>.generate(la + 1, (_) => List<int>.filled(lb + 1, 0));
+    final d = List<List<int>>.generate(
+      la + 1,
+      (_) => List<int>.filled(lb + 1, 0),
+    );
 
     for (int i = 0; i <= la; i++) {
       d[i][0] = i;
@@ -379,8 +411,8 @@ class FourKHDHubScraper extends StreamScraper {
       for (int j = 1; j <= lb; j++) {
         final cost = a[i - 1] == b[j - 1] ? 0 : 1;
         d[i][j] = [
-          d[i - 1][j] + 1,       // deletion
-          d[i][j - 1] + 1,       // insertion
+          d[i - 1][j] + 1, // deletion
+          d[i][j - 1] + 1, // insertion
           d[i - 1][j - 1] + cost, // substitution
         ].reduce((a, b) => a < b ? a : b);
       }
@@ -391,10 +423,9 @@ class FourKHDHubScraper extends StreamScraper {
 
   // ── HTTP helper ──
   Future<String> _fetchText(String url) async {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: _headers,
-    ).timeout(const Duration(seconds: 15));
+    final response = await http
+        .get(Uri.parse(url), headers: _headers)
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode} for $url');

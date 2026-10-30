@@ -16,11 +16,15 @@ class TraktItemTransformer {
   /// The watched endpoint returns `{ "movie": { ... } }` or `{ "show": { ... } }` without `type`.
   ///
   /// [inferredType] is used as a fallback when `type` is absent (recommendations, watched).
-  static StremioMeta? transformItem(Map<String, dynamic> raw, {String? inferredType}) {
+  static StremioMeta? transformItem(
+    Map<String, dynamic> raw, {
+    String? inferredType,
+  }) {
     final type = raw['type'] as String?;
     Map<String, dynamic>? content;
     if (type != null) {
-      content = (raw[type] ?? raw['movie'] ?? raw['show']) as Map<String, dynamic>?;
+      content =
+          (raw[type] ?? raw['movie'] ?? raw['show']) as Map<String, dynamic>?;
     } else if (raw.containsKey('ids')) {
       // Flat format from recommendations endpoint — the item IS the content
       content = raw;
@@ -63,11 +67,14 @@ class TraktItemTransformer {
     // Resolve genres (Trakt uses lowercase hyphenated, e.g. "science-fiction")
     final genres = (content['genres'] as List<dynamic>?)
         ?.cast<String>()
-        .map((g) => g
-            .split('-')
-            .map((w) =>
-                w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-            .join(' '))
+        .map(
+          (g) => g
+              .split('-')
+              .map(
+                (w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}',
+              )
+              .join(' '),
+        )
         .toList();
 
     // Round rating to 1 decimal place
@@ -137,7 +144,10 @@ class TraktItemTransformer {
   ///
   /// [inferredType] is used as a fallback type for items without a `type` field
   /// (e.g. from the recommendations endpoint). Pass `'movie'` or `'show'`.
-  static List<StremioMeta> transformList(List<dynamic> items, {String? inferredType}) {
+  static List<StremioMeta> transformList(
+    List<dynamic> items, {
+    String? inferredType,
+  }) {
     final result = <StremioMeta>[];
     for (final raw in items) {
       if (raw is! Map<String, dynamic>) continue;

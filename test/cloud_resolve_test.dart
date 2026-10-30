@@ -13,27 +13,29 @@ void main() {
 
     test('unconfigured cloud → null (fail-soft to next chain rung)', () async {
       // Test env ships no Supabase URL → CloudClient.isReady is false.
-      expect(await CloudResolveService.resolveIds(title: 'Fight Club'),
-          isNull);
+      expect(await CloudResolveService.resolveIds(title: 'Fight Club'), isNull);
       expect(
-          await CloudResolveService.resolveIds(
-              title: '', imdbId: 'tt0137523'),
-          isNull);
+        await CloudResolveService.resolveIds(title: '', imdbId: 'tt0137523'),
+        isNull,
+      );
     });
 
-    test('titlesMatch: exact, case/punct-insensitive; mismatch rejected',
-        () {
+    test('titlesMatch: exact, case/punct-insensitive; mismatch rejected', () {
       expect(CloudResolveService.titlesMatch('Inception', 'Inception'), isTrue);
       expect(
-          CloudResolveService.titlesMatch(
-              'The Dark Knight', 'the dark knight!'), isTrue);
-      expect(CloudResolveService.titlesMatch('Dune: Part Two', 'dune part 2'),
-          isFalse);
+        CloudResolveService.titlesMatch('The Dark Knight', 'the dark knight!'),
+        isTrue,
+      );
+      expect(
+        CloudResolveService.titlesMatch('Dune: Part Two', 'dune part 2'),
+        isFalse,
+      );
       // THE regression: server echoing a DIFFERENT video must not resolve.
       expect(CloudResolveService.titlesMatch('The', 'The Odyssey'), isFalse);
       expect(
-          CloudResolveService.titlesMatch(
-              'Janam Janam', 'The Odyssey'), isFalse);
+        CloudResolveService.titlesMatch('Janam Janam', 'The Odyssey'),
+        isFalse,
+      );
     });
   });
 }

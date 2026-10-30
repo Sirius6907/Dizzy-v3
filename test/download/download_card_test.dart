@@ -52,7 +52,6 @@ DownloadTask task({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-
   // ── 7. Card parity across engines ─────────────────────────────────────
   group('F2 card parity — torrent, HLS and HTTP look the same', () {
     const engines = [
@@ -64,13 +63,18 @@ void main() {
     test('every engine offers the identical buttons for the same status', () {
       for (final status in DownloadStatus.values) {
         final sets = engines
-            .map((e) => DownloadTaskActions.actionsFor(
-                  task(status: status, sourceType: e),
-                ).actions)
+            .map(
+              (e) => DownloadTaskActions.actionsFor(
+                task(status: status, sourceType: e),
+              ).actions,
+            )
             .toList();
         for (final actions in sets) {
-          expect(actions, sets.first,
-              reason: 'engine cards drifted apart on $status');
+          expect(
+            actions,
+            sets.first,
+            reason: 'engine cards drifted apart on $status',
+          );
         }
       }
     });
@@ -79,10 +83,16 @@ void main() {
       // Proves the claim structurally: swapping the engine argument
       // changes nothing about which buttons appear.
       final http = DownloadTaskActions.actionsFor(
-        task(status: DownloadStatus.downloading, sourceType: DownloadSourceType.http),
+        task(
+          status: DownloadStatus.downloading,
+          sourceType: DownloadSourceType.http,
+        ),
       );
       final torrent = DownloadTaskActions.actionsFor(
-        task(status: DownloadStatus.downloading, sourceType: DownloadSourceType.p2p),
+        task(
+          status: DownloadStatus.downloading,
+          sourceType: DownloadSourceType.p2p,
+        ),
       );
       expect(http.actions, torrent.actions);
     });
@@ -96,7 +106,9 @@ void main() {
     });
 
     test('a queued download offers no pause — the pump owns it', () {
-      final plan = DownloadTaskActions.actionsFor(task(status: DownloadStatus.queued));
+      final plan = DownloadTaskActions.actionsFor(
+        task(status: DownloadStatus.queued),
+      );
       expect(plan.has(DownloadAction.pause), isFalse);
       expect(plan.has(DownloadAction.resume), isFalse);
       expect(plan.has(DownloadAction.cancel), isTrue);
@@ -141,9 +153,15 @@ void main() {
       );
       final plan = DownloadTaskActions.actionsFor(failed);
       expect(plan.has(DownloadAction.retry), isTrue);
-      expect(plan.has(DownloadAction.resume), isFalse,
-          reason: 'calling a broken download "Resume" is a lie');
-      expect(DownloadTaskActions.failureLine(failed), 'Slow internet. Trying again…');
+      expect(
+        plan.has(DownloadAction.resume),
+        isFalse,
+        reason: 'calling a broken download "Resume" is a lie',
+      );
+      expect(
+        DownloadTaskActions.failureLine(failed),
+        'Slow internet. Trying again…',
+      );
     });
 
     test('a failure with no stored line still says something in English', () {
@@ -170,7 +188,10 @@ void main() {
         receivedBytes: 700,
         totalBytes: 1000,
       );
-      final retried = failed.copyWith(status: DownloadStatus.downloading, error: null);
+      final retried = failed.copyWith(
+        status: DownloadStatus.downloading,
+        error: null,
+      );
       expect(retried.receivedBytes, 700);
       expect(retried.progressPercent, closeTo(0.7, 0.0001));
       expect(retried.error, isNull);
@@ -187,48 +208,58 @@ void main() {
 
   // ── 9. The delete is a move, and the bytes prove it ───────────────────
   group('F2 delete is undoable because the file survives', () {
-    test('a trashed file can be moved back and the content is intact', () async {
-      // The reason undo works at all: the bytes are relocated, never
-      // unlinked. If this ever became a real unlink, undo would have to
-      // re-download — which is not undo.
-      final dir = await Directory.systemTemp.createTemp('dizzy_f2_trash_');
-      addTearDown(() => dir.delete(recursive: true));
+    test(
+      'a trashed file can be moved back and the content is intact',
+      () async {
+        // The reason undo works at all: the bytes are relocated, never
+        // unlinked. If this ever became a real unlink, undo would have to
+        // re-download — which is not undo.
+        final dir = await Directory.systemTemp.createTemp('dizzy_f2_trash_');
+        addTearDown(() => dir.delete(recursive: true));
 
-      final trashDir = Directory('${dir.path}/$kDownloadTrashFolderName');
-      await trashDir.create(recursive: true);
+        final trashDir = Directory('${dir.path}/$kDownloadTrashFolderName');
+        await trashDir.create(recursive: true);
 
-      final source = File('${dir.path}/episode.mp4');
-      final payload = List<int>.generate(4096, (i) => i % 256);
-      await source.writeAsBytes(payload);
+        final source = File('${dir.path}/episode.mp4');
+        final payload = List<int>.generate(4096, (i) => i % 256);
+        await source.writeAsBytes(payload);
 
-      final moved = File('${trashDir.path}/episode.mp4');
-      await source.rename(moved.path);
+        final moved = File('${trashDir.path}/episode.mp4');
+        await source.rename(moved.path);
 
-      expect(await source.exists(), isFalse, reason: 'left the downloads dir');
-      expect(await moved.exists(), isTrue, reason: 'bytes still on disk');
-      expect(await moved.length(), 4096);
+        expect(
+          await source.exists(),
+          isFalse,
+          reason: 'left the downloads dir',
+        );
+        expect(await moved.exists(), isTrue, reason: 'bytes still on disk');
+        expect(await moved.length(), 4096);
 
-      // …and back again, inside the window.
-      await moved.rename(source.path);
-      expect(await source.readAsBytes(), payload);
-    });
+        // …and back again, inside the window.
+        await moved.rename(source.path);
+        expect(await source.readAsBytes(), payload);
+      },
+    );
 
-    test('a completed task is never removed by a storage check alone', () async {
-      // No code path goes from "disk is full" to "file gone": the sweep
-      // only ranks, and DownloadTrash only runs from a tap. This test
-      // pins the ranking half — the non-destructive one.
-      final completed = task(status: DownloadStatus.completed, episode: 1);
-      final ranked = rankStorageSweepCandidates(
-        tasks: [completed],
-        watchedKeys: {'show1|1|1'},
-        sizeBytesById: const {'dl_1': 999},
-      );
-      expect(ranked, isNotEmpty);
-      expect(
-        Directory(completed.targetFilePath).existsSync(),
-        isFalse,
-        reason: 'ranking is a read-only operation, by construction',
-      );
-    });
+    test(
+      'a completed task is never removed by a storage check alone',
+      () async {
+        // No code path goes from "disk is full" to "file gone": the sweep
+        // only ranks, and DownloadTrash only runs from a tap. This test
+        // pins the ranking half — the non-destructive one.
+        final completed = task(status: DownloadStatus.completed, episode: 1);
+        final ranked = rankStorageSweepCandidates(
+          tasks: [completed],
+          watchedKeys: {'show1|1|1'},
+          sizeBytesById: const {'dl_1': 999},
+        );
+        expect(ranked, isNotEmpty);
+        expect(
+          Directory(completed.targetFilePath).existsSync(),
+          isFalse,
+          reason: 'ranking is a read-only operation, by construction',
+        );
+      },
+    );
   });
 }

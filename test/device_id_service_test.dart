@@ -31,18 +31,11 @@ void main() {
 
     test('pickUniqueCode skips taken + invalid, null when exhausted', () {
       expect(
-        DeviceIdService.pickUniqueCode(
-            ['1111111', '2222222'], {'1111111'}),
+        DeviceIdService.pickUniqueCode(['1111111', '2222222'], {'1111111'}),
         '2222222',
       );
-      expect(
-        DeviceIdService.pickUniqueCode(['1111111'], {'1111111'}),
-        isNull,
-      );
-      expect(
-        DeviceIdService.pickUniqueCode(['abc', '0820193'], {}),
-        isNull,
-      );
+      expect(DeviceIdService.pickUniqueCode(['1111111'], {'1111111'}), isNull);
+      expect(DeviceIdService.pickUniqueCode(['abc', '0820193'], {}), isNull);
     });
   });
 }

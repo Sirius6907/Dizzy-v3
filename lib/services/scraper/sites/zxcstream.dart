@@ -18,7 +18,8 @@ class ZxcStreamScraper extends StreamScraper {
   String get name => 'zxcstream';
 
   static const _baseUrl = 'https://player.zxcstream.xyz';
-  static const _aesKey = '7f4c9e2a81d63b05c4f7a9e8126d3b50e1a8c7f23d9465ab0c6e9f1d4a7b832c';
+  static const _aesKey =
+      '7f4c9e2a81d63b05c4f7a9e8126d3b50e1a8c7f23d9465ab0c6e9f1d4a7b832c';
   static const _servers = ['berkas', 'orion', 'aquarius', 'resshin'];
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -39,7 +40,10 @@ class ZxcStreamScraper extends StreamScraper {
         final key = md5.convert(utf8.encode(passphrase)).bytes;
         final iv = Uint8List(16);
         final cipher = CBCBlockCipher(AESEngine());
-        cipher.init(false, ParametersWithIV(KeyParameter(Uint8List.fromList(key)), iv));
+        cipher.init(
+          false,
+          ParametersWithIV(KeyParameter(Uint8List.fromList(key)), iv),
+        );
         final decrypted = Uint8List(buf.length);
         var offset = 0;
         for (var i = 0; i < buf.length; i += 16) {
@@ -55,10 +59,20 @@ class ZxcStreamScraper extends StreamScraper {
       var keyAndIv = <int>[];
       while (keyAndIv.length < 48) {
         final passBytes = utf8.encode(passphrase);
-        final combined = Uint8List(hash.length + passBytes.length + salt.length);
+        final combined = Uint8List(
+          hash.length + passBytes.length + salt.length,
+        );
         combined.setRange(0, hash.length, hash);
-        combined.setRange(hash.length, hash.length + passBytes.length, passBytes);
-        combined.setRange(hash.length + passBytes.length, combined.length, salt);
+        combined.setRange(
+          hash.length,
+          hash.length + passBytes.length,
+          passBytes,
+        );
+        combined.setRange(
+          hash.length + passBytes.length,
+          combined.length,
+          salt,
+        );
 
         hash = md5.convert(combined).bytes;
         keyAndIv.addAll(hash);
@@ -114,7 +128,9 @@ class ZxcStreamScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[ZxcStreamScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[ZxcStreamScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -122,24 +138,25 @@ class ZxcStreamScraper extends StreamScraper {
       try {
         final futures = _servers.map((server) async {
           try {
-            final tokenRes = await client.post(
-              Uri.parse('$_baseUrl/backend/you-are-gay'),
-              headers: {
-                ..._headers,
-                'Content-Type': 'application/json',
-              },
-              body: jsonEncode({
-                'id': tmdbId,
-                'media_type': mediaType,
-                'path': server,
-                if (isTv) 'season': season ?? 1,
-                if (isTv) 'episode': episode ?? 1,
-              }),
-            ).timeout(const Duration(seconds: 8));
+            final tokenRes = await client
+                .post(
+                  Uri.parse('$_baseUrl/backend/you-are-gay'),
+                  headers: {..._headers, 'Content-Type': 'application/json'},
+                  body: jsonEncode({
+                    'id': tmdbId,
+                    'media_type': mediaType,
+                    'path': server,
+                    if (isTv) 'season': season ?? 1,
+                    if (isTv) 'episode': episode ?? 1,
+                  }),
+                )
+                .timeout(const Duration(seconds: 8));
 
             if (tokenRes.statusCode != 200) return <Map<String, dynamic>>[];
             final tokenData = jsonDecode(tokenRes.body);
-            if (tokenData is! Map || tokenData['token'] == null) return <Map<String, dynamic>>[];
+            if (tokenData is! Map || tokenData['token'] == null) {
+              return <Map<String, dynamic>>[];
+            }
 
             final queryParams = {
               'id': tmdbId.toString(),
@@ -153,14 +170,21 @@ class ZxcStreamScraper extends StreamScraper {
               if (isTv) 'episode': (episode ?? 1).toString(),
             };
 
-            final sourcesUri = Uri.parse('$_baseUrl/backend_/sources/$server').replace(queryParameters: queryParams);
-            final sourcesRes = await client.get(sourcesUri, headers: _headers).timeout(const Duration(seconds: 8));
+            final sourcesUri = Uri.parse(
+              '$_baseUrl/backend_/sources/$server',
+            ).replace(queryParameters: queryParams);
+            final sourcesRes = await client
+                .get(sourcesUri, headers: _headers)
+                .timeout(const Duration(seconds: 8));
 
             if (sourcesRes.statusCode != 200) return <Map<String, dynamic>>[];
             dynamic sourcesData = jsonDecode(sourcesRes.body);
 
             if (sourcesData is String) {
-              final dec = await compute(_decryptCryptoJSRunner, [sourcesData, _aesKey]);
+              final dec = await compute(_decryptCryptoJSRunner, [
+                sourcesData,
+                _aesKey,
+              ]);
               if (dec != null) {
                 try {
                   sourcesData = jsonDecode(dec);
@@ -172,10 +196,7 @@ class ZxcStreamScraper extends StreamScraper {
             if (sourcesData is List) {
               for (final it in sourcesData) {
                 if (it is Map && it['url'] != null) {
-                  list.add({
-                    'url': it['url'].toString(),
-                    'server': server,
-                  });
+                  list.add({'url': it['url'].toString(), 'server': server});
                 }
               }
             } else if (sourcesData is Map) {
@@ -188,10 +209,7 @@ class ZxcStreamScraper extends StreamScraper {
               if (sourcesData['sources'] is List) {
                 for (final it in sourcesData['sources']) {
                   if (it is Map && it['url'] != null) {
-                    list.add({
-                      'url': it['url'].toString(),
-                      'server': server,
-                    });
+                    list.add({'url': it['url'].toString(), 'server': server});
                   }
                 }
               }
@@ -218,9 +236,7 @@ class ZxcStreamScraper extends StreamScraper {
               headers: _headers,
               behaviorHints: {
                 'notWebReady': false,
-                'proxyHeaders': {
-                  'request': _headers,
-                },
+                'proxyHeaders': {'request': _headers},
               },
             );
           }

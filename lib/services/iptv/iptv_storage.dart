@@ -38,16 +38,18 @@ class IptvStore {
   static Future<void> save(List<VerifiedPortal> list) async {
     final prefs = await SharedPreferences.getInstance();
     final arr = list
-        .map((v) => {
-              'url': v.portal.url,
-              'username': v.portal.username,
-              'password': v.portal.password,
-              'source': v.portal.source,
-              'name': v.name,
-              'expiry': v.expiry,
-              'max': v.maxConnections,
-              'active': v.activeConnections,
-            })
+        .map(
+          (v) => {
+            'url': v.portal.url,
+            'username': v.portal.username,
+            'password': v.portal.password,
+            'source': v.portal.source,
+            'name': v.name,
+            'expiry': v.expiry,
+            'max': v.maxConnections,
+            'active': v.activeConnections,
+          },
+        )
         .toList();
     await prefs.setString(_key, json.encode(arr));
   }
@@ -153,19 +155,21 @@ class IptvChannelResultsStore {
   static Future<void> save(String channelId, List<StoredHit> hits) async {
     final prefs = await SharedPreferences.getInstance();
     final arr = hits
-        .map((h) => {
-              'pu': h.portalUrl,
-              'uu': h.portalUser,
-              'pp': h.portalPass,
-              'pn': h.portalName,
-              'sid': h.streamId,
-              'sn': h.streamName,
-              'si': h.streamIcon,
-              'scid': h.streamCategoryId,
-              'sce': h.streamContainerExt,
-              'sk': h.streamKind,
-              'url': h.streamUrl,
-            })
+        .map(
+          (h) => {
+            'pu': h.portalUrl,
+            'uu': h.portalUser,
+            'pp': h.portalPass,
+            'pn': h.portalName,
+            'sid': h.streamId,
+            'sn': h.streamName,
+            'si': h.streamIcon,
+            'scid': h.streamCategoryId,
+            'sce': h.streamContainerExt,
+            'sk': h.streamKind,
+            'url': h.streamUrl,
+          },
+        )
         .toList();
     await prefs.setString(_key(channelId), json.encode(arr));
   }
@@ -237,4 +241,3 @@ class IptvPortalFavoritesStore {
     await prefs.setStringList(_key(key), ids.toList());
   }
 }
-

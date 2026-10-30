@@ -50,7 +50,9 @@ class FrameScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[FrameScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[FrameScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -69,15 +71,19 @@ class FrameScraper extends StreamScraper {
           };
 
           try {
-            final uri = Uri.parse('$_baseUrl/api/search').replace(queryParameters: queryParams);
-            final res = await client.get(
-              uri,
-              headers: {
-                'User-Agent': _ua,
-                'Accept': 'application/json',
-                'Referer': 'https://peestream.in/',
-              },
-            ).timeout(const Duration(seconds: 8));
+            final uri = Uri.parse(
+              '$_baseUrl/api/search',
+            ).replace(queryParameters: queryParams);
+            final res = await client
+                .get(
+                  uri,
+                  headers: {
+                    'User-Agent': _ua,
+                    'Accept': 'application/json',
+                    'Referer': 'https://peestream.in/',
+                  },
+                )
+                .timeout(const Duration(seconds: 8));
 
             if (res.statusCode == 200) {
               final data = jsonDecode(res.body);
@@ -94,7 +100,9 @@ class FrameScraper extends StreamScraper {
                       'url': sUrl,
                       'server': 'FRAME $pName',
                       'quality': stream['quality']?.toString() ?? '1080p',
-                      'isHls': (stream['type']?.toString() == 'm3u8' || sUrl.contains('.m3u8')),
+                      'isHls':
+                          (stream['type']?.toString() == 'm3u8' ||
+                          sUrl.contains('.m3u8')),
                     });
                   }
                 }
@@ -113,9 +121,7 @@ class FrameScraper extends StreamScraper {
             final quality = item['quality'] as String;
             final isHls = item['isHls'] as bool;
 
-            final reqHeaders = {
-              'User-Agent': _ua,
-            };
+            final reqHeaders = {'User-Agent': _ua};
 
             yield StreamSource(
               name: 'Frame',
@@ -126,9 +132,7 @@ class FrameScraper extends StreamScraper {
               headers: reqHeaders,
               behaviorHints: {
                 'notWebReady': false,
-                'proxyHeaders': {
-                  'request': reqHeaders,
-                },
+                'proxyHeaders': {'request': reqHeaders},
               },
             );
           }

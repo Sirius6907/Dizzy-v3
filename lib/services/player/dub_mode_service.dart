@@ -14,8 +14,9 @@ enum AudioDubMode { english, hindi }
 class DubModeService {
   static const String _prefsKey = 'audio_dub_mode';
 
-  static final ValueNotifier<AudioDubMode> mode =
-      ValueNotifier<AudioDubMode>(AudioDubMode.english);
+  static final ValueNotifier<AudioDubMode> mode = ValueNotifier<AudioDubMode>(
+    AudioDubMode.english,
+  );
   static bool _initialized = false;
 
   /// Whether Hindi Dub mode is active (source filtering enabled).

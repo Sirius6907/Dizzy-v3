@@ -1,5 +1,1 @@
-enum ProfileFeature {
-  trackersAndDiscovery,
-  mediaPlayback,
-  settings,
-}
+enum ProfileFeature { trackersAndDiscovery, mediaPlayback, settings }

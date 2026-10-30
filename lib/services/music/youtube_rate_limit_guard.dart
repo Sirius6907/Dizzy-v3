@@ -103,7 +103,10 @@ class YoutubeRateLimitGuard {
         text.contains('bot detection');
   }
 
-  static void record(Object error, {Duration duration = const Duration(minutes: 5)}) {
+  static void record(
+    Object error, {
+    Duration duration = const Duration(minutes: 5),
+  }) {
     _lastReason = error.toString();
     _cooldownUntil = DateTime.now().add(duration);
   }

@@ -11,7 +11,8 @@ class AnimeMedia {
   final String? coverColor;
   final String bannerImage;
   final String format; // TV, MOVIE, OVA, ONA, SPECIAL
-  final String status; // RELEASING, FINISHED, NOT_YET_RELEASED, CANCELLED, HIATUS
+  final String
+  status; // RELEASING, FINISHED, NOT_YET_RELEASED, CANCELLED, HIATUS
   final int totalEpisodes;
   final int durationMinutes;
   final List<String> genres;
@@ -141,7 +142,8 @@ class AnimeMedia {
     final cover = json['coverImage'] is Map<String, dynamic>
         ? json['coverImage'] as Map<String, dynamic>
         : {};
-    final studioNodes = json['studios'] is Map<String, dynamic> &&
+    final studioNodes =
+        json['studios'] is Map<String, dynamic> &&
             json['studios']['nodes'] is List
         ? (json['studios']['nodes'] as List)
         : [];
@@ -185,8 +187,11 @@ class AnimeMedia {
       for (final rec in json['recommendations']['nodes'] as List) {
         if (rec is Map<String, dynamic> &&
             rec['mediaRecommendation'] is Map<String, dynamic>) {
-          recList.add(AnimeMedia.fromAnilistJson(
-              rec['mediaRecommendation'] as Map<String, dynamic>));
+          recList.add(
+            AnimeMedia.fromAnilistJson(
+              rec['mediaRecommendation'] as Map<String, dynamic>,
+            ),
+          );
         }
       }
     }
@@ -236,60 +241,60 @@ class AnimeMedia {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'idMal': idMal,
-        'titleRomaji': titleRomaji,
-        'titleEnglish': titleEnglish,
-        'titleNative': titleNative,
-        'titleUserPreferred': titleUserPreferred,
-        'coverImageExtraLarge': coverImageExtraLarge,
-        'coverImageLarge': coverImageLarge,
-        'coverImageMedium': coverImageMedium,
-        'coverColor': coverColor,
-        'bannerImage': bannerImage,
-        'format': format,
-        'status': status,
-        'totalEpisodes': totalEpisodes,
-        'durationMinutes': durationMinutes,
-        'genres': genres,
-        'averageScore': averageScore,
-        'meanScore': meanScore,
-        'popularity': popularity,
-        'favourites': favourites,
-        'season': season,
-        'seasonYear': seasonYear,
-        'description': description,
-        'studioName': studioName,
-      };
+    'id': id,
+    'idMal': idMal,
+    'titleRomaji': titleRomaji,
+    'titleEnglish': titleEnglish,
+    'titleNative': titleNative,
+    'titleUserPreferred': titleUserPreferred,
+    'coverImageExtraLarge': coverImageExtraLarge,
+    'coverImageLarge': coverImageLarge,
+    'coverImageMedium': coverImageMedium,
+    'coverColor': coverColor,
+    'bannerImage': bannerImage,
+    'format': format,
+    'status': status,
+    'totalEpisodes': totalEpisodes,
+    'durationMinutes': durationMinutes,
+    'genres': genres,
+    'averageScore': averageScore,
+    'meanScore': meanScore,
+    'popularity': popularity,
+    'favourites': favourites,
+    'season': season,
+    'seasonYear': seasonYear,
+    'description': description,
+    'studioName': studioName,
+  };
 
   factory AnimeMedia.fromJson(Map<String, dynamic> json) => AnimeMedia(
-        id: json['id'] as int? ?? 0,
-        idMal: json['idMal'] as int?,
-        titleRomaji: json['titleRomaji']?.toString() ?? '',
-        titleEnglish: json['titleEnglish']?.toString() ?? '',
-        titleNative: json['titleNative']?.toString() ?? '',
-        titleUserPreferred: json['titleUserPreferred']?.toString() ?? '',
-        coverImageExtraLarge: json['coverImageExtraLarge']?.toString() ?? '',
-        coverImageLarge: json['coverImageLarge']?.toString() ?? '',
-        coverImageMedium: json['coverImageMedium']?.toString() ?? '',
-        coverColor: json['coverColor']?.toString(),
-        bannerImage: json['bannerImage']?.toString() ?? '',
-        format: json['format']?.toString() ?? 'TV',
-        status: json['status']?.toString() ?? 'FINISHED',
-        totalEpisodes: json['totalEpisodes'] as int? ?? 0,
-        durationMinutes: json['durationMinutes'] as int? ?? 24,
-        genres: json['genres'] is List
-            ? (json['genres'] as List).map((e) => e.toString()).toList()
-            : const [],
-        averageScore: json['averageScore'] as int? ?? 0,
-        meanScore: json['meanScore'] as int? ?? 0,
-        popularity: json['popularity'] as int? ?? 0,
-        favourites: json['favourites'] as int? ?? 0,
-        season: json['season']?.toString() ?? '',
-        seasonYear: json['seasonYear'] as int? ?? 0,
-        description: json['description']?.toString() ?? '',
-        studioName: json['studioName']?.toString() ?? '',
-      );
+    id: json['id'] as int? ?? 0,
+    idMal: json['idMal'] as int?,
+    titleRomaji: json['titleRomaji']?.toString() ?? '',
+    titleEnglish: json['titleEnglish']?.toString() ?? '',
+    titleNative: json['titleNative']?.toString() ?? '',
+    titleUserPreferred: json['titleUserPreferred']?.toString() ?? '',
+    coverImageExtraLarge: json['coverImageExtraLarge']?.toString() ?? '',
+    coverImageLarge: json['coverImageLarge']?.toString() ?? '',
+    coverImageMedium: json['coverImageMedium']?.toString() ?? '',
+    coverColor: json['coverColor']?.toString(),
+    bannerImage: json['bannerImage']?.toString() ?? '',
+    format: json['format']?.toString() ?? 'TV',
+    status: json['status']?.toString() ?? 'FINISHED',
+    totalEpisodes: json['totalEpisodes'] as int? ?? 0,
+    durationMinutes: json['durationMinutes'] as int? ?? 24,
+    genres: json['genres'] is List
+        ? (json['genres'] as List).map((e) => e.toString()).toList()
+        : const [],
+    averageScore: json['averageScore'] as int? ?? 0,
+    meanScore: json['meanScore'] as int? ?? 0,
+    popularity: json['popularity'] as int? ?? 0,
+    favourites: json['favourites'] as int? ?? 0,
+    season: json['season']?.toString() ?? '',
+    seasonYear: json['seasonYear'] as int? ?? 0,
+    description: json['description']?.toString() ?? '',
+    studioName: json['studioName']?.toString() ?? '',
+  );
 }
 
 class AnimeNextAiring {
@@ -345,20 +350,21 @@ class AnimeCharacter {
         : {};
     return AnimeCharacter(
       id: json['id'] as int? ?? 0,
-      nameFull: name['userPreferred']?.toString() ??
+      nameFull:
+          name['userPreferred']?.toString() ??
           name['full']?.toString() ??
           'Unknown',
       nameNative: name['native']?.toString() ?? '',
-      imageLarge: image['large']?.toString() ??
-          image['medium']?.toString() ??
-          '',
+      imageLarge:
+          image['large']?.toString() ?? image['medium']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
     );
   }
 }
 
 class AnimeRelation {
-  final String relationType; // ADAPTATION, PREQUEL, SEQUEL, SIDE_STORY, SPIN_OFF
+  final String
+  relationType; // ADAPTATION, PREQUEL, SEQUEL, SIDE_STORY, SPIN_OFF
   final int id;
   final String title;
   final String format;
@@ -386,7 +392,8 @@ class AnimeRelation {
     return AnimeRelation(
       relationType: json['relationType']?.toString() ?? 'RELATED',
       id: node['id'] as int? ?? 0,
-      title: titleObj['english']?.toString() ??
+      title:
+          titleObj['english']?.toString() ??
           titleObj['userPreferred']?.toString() ??
           titleObj['romaji']?.toString() ??
           '',
@@ -472,12 +479,7 @@ class AnimeStreamResult {
   });
 }
 
-enum AnimeWatchStatus {
-  watching,
-  planToWatch,
-  completed,
-  dropped,
-}
+enum AnimeWatchStatus { watching, planToWatch, completed, dropped }
 
 class AnimeWatchlistItem {
   final AnimeMedia anime;
@@ -502,13 +504,13 @@ class AnimeWatchlistItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'anime': anime.toJson(),
-        'status': status.name,
-        'lastWatchedEpisode': lastWatchedEpisode,
-        'lastWatchedPositionSeconds': lastWatchedPositionSeconds,
-        'totalDurationSeconds': totalDurationSeconds,
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'anime': anime.toJson(),
+    'status': status.name,
+    'lastWatchedEpisode': lastWatchedEpisode,
+    'lastWatchedPositionSeconds': lastWatchedPositionSeconds,
+    'totalDurationSeconds': totalDurationSeconds,
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory AnimeWatchlistItem.fromJson(Map<String, dynamic> json) =>
       AnimeWatchlistItem(
@@ -521,7 +523,8 @@ class AnimeWatchlistItem {
         lastWatchedPositionSeconds:
             json['lastWatchedPositionSeconds'] as int? ?? 0,
         totalDurationSeconds: json['totalDurationSeconds'] as int? ?? 0,
-        updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+        updatedAt:
+            DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
             DateTime.now(),
       );
 }

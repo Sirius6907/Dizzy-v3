@@ -29,7 +29,10 @@ class VidApiScraper extends StreamScraper {
   void _extractStreamUrls(dynamic obj, Set<String> urls) {
     if (obj == null) return;
     if (obj is String) {
-      if (obj.startsWith('http') && (obj.contains('.m3u8') || obj.contains('.mp4') || obj.contains('.mpd'))) {
+      if (obj.startsWith('http') &&
+          (obj.contains('.m3u8') ||
+              obj.contains('.mp4') ||
+              obj.contains('.mpd'))) {
         urls.add(obj);
       }
     } else if (obj is List) {
@@ -64,7 +67,9 @@ class VidApiScraper extends StreamScraper {
       );
 
       if (tmdbId == null) {
-        if (kDebugMode) AppLog.d('[VidApiScraper] Could not resolve TMDB ID for "$title"');
+        if (kDebugMode) {
+          AppLog.d('[VidApiScraper] Could not resolve TMDB ID for "$title"');
+        }
         return;
       }
 
@@ -79,15 +84,17 @@ class VidApiScraper extends StreamScraper {
 
         final uri = Uri.parse(_apiBase).replace(queryParameters: queryParams);
 
-        final res = await client.get(
-          uri,
-          headers: {
-            'Accept': '*/*',
-            'Origin': _embedOrigin,
-            'Referer': '$_embedOrigin/',
-            'User-Agent': _ua,
-          },
-        ).timeout(const Duration(seconds: 8));
+        final res = await client
+            .get(
+              uri,
+              headers: {
+                'Accept': '*/*',
+                'Origin': _embedOrigin,
+                'Referer': '$_embedOrigin/',
+                'User-Agent': _ua,
+              },
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (res.statusCode != 200) return;
         final data = jsonDecode(res.body);
@@ -98,7 +105,11 @@ class VidApiScraper extends StreamScraper {
         for (final sUrl in streamUrls) {
           final isHls = sUrl.contains('.m3u8');
           final isDash = sUrl.contains('.mpd');
-          final format = isHls ? 'HLS' : isDash ? 'DASH' : 'MP4';
+          final format = isHls
+              ? 'HLS'
+              : isDash
+              ? 'DASH'
+              : 'MP4';
 
           yield StreamSource(
             name: 'VidAPI',
@@ -109,9 +120,7 @@ class VidApiScraper extends StreamScraper {
             headers: _verifyHeaders,
             behaviorHints: {
               'notWebReady': false,
-              'proxyHeaders': {
-                'request': _verifyHeaders,
-              },
+              'proxyHeaders': {'request': _verifyHeaders},
             },
           );
         }
