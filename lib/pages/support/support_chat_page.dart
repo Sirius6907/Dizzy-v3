@@ -57,6 +57,10 @@ class _SupportChatPageState extends State<SupportChatPage> {
     final text = (preset ?? _input.text).trim();
     if (text.isEmpty || _busy) return;
     _input.clear();
+    final history = [
+      for (final m in _msgs)
+        SupportTurn(m.fromUser ? 'user' : 'assistant', m.text),
+    ];
     setState(() {
       _msgs.add(_Msg(text: text, fromUser: true));
       _busy = true;
@@ -68,7 +72,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
       _lang = SupportAgentService.detectLanguage(text);
     }
 
-    final answer = await SupportAgentService.ask(text);
+    final answer = await SupportAgentService.ask(text, history: history);
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -95,7 +99,7 @@ class _SupportChatPageState extends State<SupportChatPage> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _ticketSent = true;
+      _ticketSent = id != null;
       _msgs.add(_Msg(
         text: id == null
             ? _t(

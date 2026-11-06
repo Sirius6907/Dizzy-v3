@@ -102,20 +102,19 @@ class SupportAgentService {
     final q = queryTokens.join(' ');
     var s = 0.0;
     for (final trigger in e.triggers) {
-      final t = trigger.toLowerCase();
-      if (t.contains(q) && q.isNotEmpty) {
+      final t = ' ${tokenize(trigger).join(' ')} ';
+      if (q.isNotEmpty && t.contains(' $q ')) {
         s += 3.0;
         break;
       }
     }
-    final triggerText = e.triggers.join(' ').toLowerCase();
+    final triggerTokens = tokenize(e.triggers.join(' ')).toSet();
     for (final tok in queryTokens) {
-      if (triggerText.contains(tok)) s += 1.0;
+      if (triggerTokens.contains(tok)) s += 1.0;
     }
-    final answerText =
-        '${e.answerEn} ${e.answerHi ?? ''}'.toLowerCase();
+    final answerTokens = tokenize('${e.answerEn} ${e.answerHi ?? ''}').toSet();
     for (final tok in queryTokens) {
-      if (tok.length >= 4 && answerText.contains(tok)) s += 0.35;
+      if (tok.length >= 4 && answerTokens.contains(tok)) s += 0.35;
     }
     return s;
   }
@@ -162,18 +161,55 @@ class SupportAgentService {
     return e.answerEn;
   }
 
+  /// Wire body for the online tier. Recent turns only, user/assistant only,
+  /// capped so a long chat cannot balloon the paid request.
+  @visibleForTesting
+  static Map<String, dynamic> buildAskBody({
+    required String message,
+    required String lang,
+    List<SupportTurn> history = const [],
+    bool logQuestion = true,
+  }) {
+    final turns = <Map<String, String>>[];
+    for (final turn in history) {
+      if (turn.role != 'user' && turn.role != 'assistant') continue;
+      final content = turn.content.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (content.isEmpty) continue;
+      turns.add({
+        'role': turn.role,
+        'content': content.length > 500 ? content.substring(0, 500) : content,
+      });
+    }
+    return {
+      'question': message,
+      'lang': lang,
+      'history': turns.length > 6 ? turns.sublist(turns.length - 6) : turns,
+      'log_question': logQuestion,
+    };
+  }
+
   /// Full three-tier ask. Tier 1 answers offline and instantly; only a weak
   /// local score costs a network round-trip. Never throws — a total failure
   /// returns a ticket-style result so the UI always has something to show.
   ///
   /// [logQuestion] must be false when telemetry consent is off: the server
   /// already treats an empty question as "log the match only".
+  /// A single generic word ("video", "help", "hi") is not an issue
+  /// description. Matching it offline returns canned copy and never asks the
+  /// clarifying question the assistant should ask.
+  static bool isVague(String message) {
+    final trimmed = message.trim();
+    if (trimmed.length < 8) return true;
+    return tokenize(trimmed).length < 2;
+  }
+
   static Future<SupportAnswer> ask(
     String message, {
     bool logQuestion = true,
+    List<SupportTurn> history = const [],
   }) async {
     final lang = detectLanguage(message);
-    final local = localMatch(message);
+    final local = isVague(message) ? null : localMatch(message);
 
     if (local != null) {
       final scored = scoreAll(message);
@@ -193,17 +229,21 @@ class SupportAgentService {
       );
     }
 
-    // Tier 2 — server KB (+LLM phrasing when a key is configured).
+    // Tier 2 — grounded online answer (Groq when configured).
     try {
       if (CloudClient.isReady) {
         final res = await CloudClient.db.functions.invoke(
           'support-answer',
           body: {
-            'question': logQuestion ? message : '',
-            'lang': lang,
+            ...buildAskBody(
+              message: message,
+              lang: lang,
+              history: history,
+              logQuestion: logQuestion,
+            ),
             'trail': SessionTrail.wire(),
           },
-        );
+        ).timeout(const Duration(seconds: 15));
         final data = res.data;
         if (data is Map) {
           final text = (data['answer'] ?? '').toString().trim();
@@ -290,6 +330,14 @@ class SupportAgentService {
     if (kIsWeb) return 'web';
     return defaultTargetPlatform.name;
   }
+}
+
+/// One earlier chat turn sent as conversation context.
+class SupportTurn {
+  const SupportTurn(this.role, this.content);
+
+  final String role;
+  final String content;
 }
 
 /// Which tier produced the answer.

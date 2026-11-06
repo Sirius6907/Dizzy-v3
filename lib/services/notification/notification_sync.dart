@@ -13,6 +13,7 @@ class NotificationSync {
   NotificationSync._();
 
   static Future<bool> Function(Map<String, dynamic> params)? _sender;
+  static Future<bool> Function(String tone)? _toneSender;
 
   /// RPC argument names and value clamping live here so the server can stay
   /// strict (checks + range constraints) without rejecting a client bug.
@@ -46,6 +47,26 @@ class NotificationSync {
     }
   }
 
+  /// Message style is its own RPC so the existing sync signature (and its
+  /// deployed callers) never has to change.
+  static Future<void> pushTone(NotificationTone tone) async {
+    try {
+      final sender = _toneSender ?? _rpcTone;
+      await sender(tone.wire);
+    } catch (e) {
+      AppLog.d('[NotifySync] tone push failed (soft): $e');
+    }
+  }
+
+  static Future<bool> _rpcTone(String tone) async {
+    if (!CloudClient.isReady) return false;
+    final res = await CloudClient.db.rpc(
+      'set_notification_tone',
+      params: {'p_tone': tone},
+    );
+    return res is Map && res['success'] == true;
+  }
+
   static Future<bool> _rpc(Map<String, dynamic> params) async {
     if (!CloudClient.isReady) return false;
     final res = await CloudClient.db.rpc(
@@ -63,7 +84,13 @@ class NotificationSync {
   }
 
   @visibleForTesting
+  static void configureToneForTest(Future<bool> Function(String tone) sender) {
+    _toneSender = sender;
+  }
+
+  @visibleForTesting
   static void resetForTest() {
     _sender = null;
+    _toneSender = null;
   }
 }

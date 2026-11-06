@@ -23,6 +23,22 @@ class AddonManager {
 
   static const String _storageKey = 'installed_addons_v4';
 
+  /// Verified public stream addons shipped enabled for every install.
+  /// Catalogs/search stay off — these exist only to answer /stream.
+  static const List<String> defaultStreamAddonUrls = [
+    'https://torrentio.strem.fun',
+    'https://torrentsdb.com',
+    'https://acuanime.pages.dev',
+  ];
+
+  /// Which defaults still need installing, by normalized base URL.
+  static List<String> missingDefaultStreamAddons(Iterable<String> baseUrls) {
+    final have = baseUrls.map(_normAddonBase).toSet();
+    return defaultStreamAddonUrls
+        .where((url) => !have.contains(_normAddonBase(url)))
+        .toList();
+  }
+
   List<InstalledAddon> _addons = [];
   bool _initialized = false;
 
@@ -214,6 +230,8 @@ class AddonManager {
       await _save();
     }
 
+    await _ensureDefaultStreamAddons();
+
     // Sync P2P state — the builtin addon entry is the single source of truth.
     // A stored Settings-switch choice (older builds wrote it without touching
     // the addon) wins once, then both stay in lockstep via toggleAddon.
@@ -234,6 +252,26 @@ class AddonManager {
   }
 
   // ── Add / Remove / Toggle / Reorder ───────────────────────────────────
+
+  /// Installs any missing verified stream addons. Offline installs retry on
+  /// the next launch because the manifest fetch fails quietly.
+  Future<void> _ensureDefaultStreamAddons() async {
+    final missing = missingDefaultStreamAddons(
+      _addons.map((a) => a.baseUrl),
+    );
+    for (final url in missing) {
+      try {
+        final addon = await addAddon(url);
+        addon.enableStreams = true;
+        addon.enableCatalogs = false;
+        addon.enableSearch = false;
+        addon.enableSubtitles = false;
+      } catch (_) {
+        // Offline or manifest down — retried on the next initialize().
+      }
+    }
+    if (missing.isNotEmpty) await _save();
+  }
 
   /// Reorder addons by index and persist to storage.
   Future<void> reorderAddons(int oldIndex, int newIndex) async {

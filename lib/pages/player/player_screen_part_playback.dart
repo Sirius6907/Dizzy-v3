@@ -265,9 +265,47 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
             target.episode != current.episode)) {
       return null;
     }
-    return _failoverChain.isNotEmpty
+    final seed = _failoverChain.isNotEmpty
         ? [_currentSource, ..._failoverChain]
         : widget.failoverSources;
+    final episode = target ?? current;
+    return seed?.where((s) => _relevantForEpisode(s, episode)).toList();
+  }
+
+  /// True when [source] plausibly belongs to [episode] of this title.
+  /// Missing metadata never disqualifies a source; a conflicting year or
+  /// SxxEyy does.
+  bool _relevantForEpisode(StreamSource source, Video? episode) {
+    final detail = widget.detail;
+    return StreamRelevance.isRelevant(
+      source: source,
+      title: detail?.name ?? widget.title,
+      year: int.tryParse(detail?.year ?? ''),
+      season: episode?.season,
+      episode: episode?.episode,
+    );
+  }
+
+  /// Rebuild the ranked backups for a new episode: the old chain still
+  /// points at the previous episode's files, which is how S1E2 ended up
+  /// offering S01E01 links in the picker.
+  void _rebuildFailoverChain(Video? episode) {
+    final all = widget.failoverSources;
+    if (all == null || all.isEmpty) return;
+    final primaryFp = SourceRanker.fingerprint(_currentSource);
+    final candidates = all
+        .where((s) => SourceRanker.fingerprint(s) != primaryFp)
+        .where((s) => _relevantForEpisode(s, episode))
+        .toList();
+    _failoverChain = SourceRanker.order(
+      candidates,
+      RankerContext(failedThisSession: _failedFingerprints),
+    );
+    AppLog.d(
+      '[Failover] chain rebuilt for '
+      'S${episode?.season ?? 1}E${episode?.episode ?? 1}: '
+      '${_failoverChain.length} backups',
+    );
   }
 
   void _openSourcesPanelWithError(String? message) {
@@ -350,6 +388,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // Cleanup previous torrent engine if was P2P
     TorrentStreamService().cleanup();
 
+    _rebuildFailoverChain(newEpisode);
     _initStream();
 
     // Episode changed via panel — re-arm the gated prefetch for THIS
@@ -404,8 +443,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         // next-episode hand-off); previews NEVER auto-skip. The policy lives
         // in `AutoSkipPolicy` so the rule is unit-tested, not inline.
         final t = matched.type.toLowerCase();
-        final autoOn = AutoSkipPolicy.shouldAutoSkip(
+        final autoOn = AutoSkipPolicy.shouldAutoSkipAt(
           t,
+          pos,
           autoSkipIntro: PlayerSettings.autoSkipIntro.value,
           autoSkipRecap: PlayerSettings.autoSkipRecap.value,
           autoSkipCredits: PlayerSettings.skipIntroHeuristics.value,
@@ -548,6 +588,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
   /// Arms the stall watchdog + last-good recorder once playback starts.
   /// Called from _initStream success and after every successful source switch.
   void _armPlaybackGuards() {
+    _guardOpeningTail();
     _lastProgressPosition = Duration.zero;
     _maybeFetchRenditions(); // P9: HLS master → attach ladder in background
     _lastProgressAt = DateTime.now();
@@ -598,6 +639,29 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     }
   }
 
+  /// A source can open "successfully" yet report its position on the closing
+  /// tail — the player then shows a black last frame. Six seconds is enough
+  /// for mpv to report a real duration; anything sitting in the tail without
+  /// having played is restarted from zero.
+  void _guardOpeningTail() {
+    _openTailGuard?.cancel();
+    _openTailGuard = Timer(const Duration(seconds: 6), () {
+      if (!mounted) return;
+      final state = _player.state;
+      if (state.duration <= Duration.zero) return;
+      if (!PlaybackStartPolicy.isAtTail(state.position, state.duration)) {
+        return;
+      }
+      AppLog.d(
+        '[PlayerScreen] opened on the closing tail '
+        '(${state.position.inSeconds}s / ${state.duration.inSeconds}s) '
+        '— restarting at 0:00',
+      );
+      _onUserSeek(Duration.zero);
+      _player.seek(Duration.zero);
+    });
+  }
+
   void _recordLastGoodSource() {
     final detail = widget.detail;
     if (detail == null) return;
@@ -633,7 +697,15 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     }
 
     _failoverInProgress = true;
-    final savedPos = _player.state.position;
+    // A half-open source (codec/format failure) often reports a bogus tail
+    // position. Carrying that to the backup made the next source open on its
+    // last frame (black screen). Resume only after real progress happened.
+    final current = _player.state;
+    final savedPos = PlaybackStartPolicy.resumeAfterFailover(
+      position: current.position,
+      confirmedPlayback: _lastProgressPosition > const Duration(seconds: 2),
+      duration: current.duration,
+    );
 
     AppLog.d(
       '[Failover] $reason → switching to ${next.name ?? next.addonName} '
@@ -649,10 +721,10 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         _autoEffective = null;
         // Reopen via the standard init path, resuming AT the saved position
         // via Media(start:) — atomic open (no seek-after-open race).
-        _resumeAtOverride = savedPos > Duration.zero ? savedPos : null;
+        _resumeAtOverride = savedPos;
         await _initStream();
         _resumeAtOverride = null;
-        await _ensureResumePosition(savedPos);
+        await _ensureResumePosition(savedPos ?? Duration.zero);
         if (mounted) {
           // F1: one Easy-English line, no source names / no tech words.
           // The real reason went to the admin log above.
@@ -961,6 +1033,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // Cleanup previous torrent engine if was P2P
     TorrentStreamService().cleanup();
 
+    _rebuildFailoverChain(nextEp);
     _initStream();
 
     // v1.2.0-P2: host episode change (incl. auto next-ep) re-announces.

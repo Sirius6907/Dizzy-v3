@@ -76,64 +76,64 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
           isLight: AppThemeService.currentPalette.value.isLight,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: DizzySpace.sm),
-          Center(
-            child: Container(
-              width: 44,
-              height: 5,
-              decoration: BoxDecoration(
-                gradient: PrismShadows.pressedGradient(
-                  AppThemeService.currentPalette.value.isLight,
-                ),
-                borderRadius: BorderRadius.circular(3),
-                boxShadow: PrismShadows.pressed(
-                  isLight: AppThemeService.currentPalette.value.isLight,
-                  scale: 0.5,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: DizzySpace.sm),
+            Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  gradient: PrismShadows.pressedGradient(
+                    AppThemeService.currentPalette.value.isLight,
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                  boxShadow: PrismShadows.pressed(
+                    isLight: AppThemeService.currentPalette.value.isLight,
+                    scale: 0.5,
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(DizzySpace.md),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.notifications_none_rounded,
-                  color: DizzyGlow.beam,
-                ),
-                const SizedBox(width: DizzySpace.sm),
-                Text(
-                  'Notifications',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: ink,
-                    fontWeight: FontWeight.w700,
+            Padding(
+              padding: const EdgeInsets.all(DizzySpace.md),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    color: DizzyGlow.beam,
                   ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () async {
-                    await NotificationInbox.clear();
-                    setState(() {});
-                  },
-                  child: const Text('Clear all'),
-                ),
-              ],
+                  const SizedBox(width: DizzySpace.sm),
+                  Text(
+                    'Notifications',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () async {
+                      await NotificationInbox.clear();
+                      setState(() {});
+                    },
+                    child: const Text('Clear all'),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // ── Controls ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DizzySpace.md),
-            child: _controls(),
-          ),
-          const SizedBox(height: DizzySpace.sm),
+            // ── Controls ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DizzySpace.md),
+              child: _controls(),
+            ),
+            const SizedBox(height: DizzySpace.sm),
 
-          // ── History ───────────────────────────────────────────────────
-          Expanded(
-            child: ValueListenableBuilder<List<InboxItem>>(
+            // ── History ───────────────────────────────────────────────────
+            ValueListenableBuilder<List<InboxItem>>(
               valueListenable: NotificationInbox.items,
               builder: (context, items, _) {
                 final merged = NotificationHistory.merge(
@@ -157,6 +157,8 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                   );
                 }
                 return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(
                     DizzySpace.md,
                     0,
@@ -237,8 +239,8 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -272,102 +274,152 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
             ? PrismLight.borderSubtle
             : DizzyVoid.surface3.withValues(alpha: 0.5);
 
-        return Container(
-          decoration: BoxDecoration(
-            color: well,
-            borderRadius: BorderRadius.circular(DizzyRadius.md),
-            border: Border.all(color: hairline),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: DizzySpace.sm,
-            vertical: 4,
-          ),
-          child: Column(
-            children: [
-              for (final kind in NotificationKind.values)
+        // Material owns the fill so ListTile ink and hover paint stay
+        // visible; the Container below only draws the hairline border.
+        return Material(
+          color: well,
+          borderRadius: BorderRadius.circular(DizzyRadius.md),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(DizzyRadius.md),
+              border: Border.all(color: hairline),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DizzySpace.sm,
+              vertical: 4,
+            ),
+            child: Column(
+              children: [
+                for (final kind in NotificationKind.values)
+                  SwitchListTile.adaptive(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      _channelLabel(kind),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: ink),
+                    ),
+                    value: gate.kindEnabled(kind),
+                    onChanged: (v) async {
+                      await NotificationService.setKindEnabled(kind, v);
+                      _gateNotifier.value = NotificationService.gate;
+                    },
+                  ),
+                const Divider(height: DizzySpace.sm),
                 SwitchListTile.adaptive(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    _channelLabel(kind),
+                    'Quiet hours (no banners at night)',
                     style: Theme.of(
                       context,
                     ).textTheme.bodyMedium?.copyWith(color: ink),
                   ),
-                  value: gate.kindEnabled(kind),
+                  subtitle: Text(
+                    gate.quietEnabled
+                        ? '${NotificationGate.hhmm(gate.quietStartMinute)} → '
+                              '${NotificationGate.hhmm(gate.quietEndMinute)}'
+                        : 'Off',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: inkSoft),
+                  ),
+                  value: gate.quietEnabled,
                   onChanged: (v) async {
-                    await NotificationService.setKindEnabled(kind, v);
+                    await NotificationService.setQuietEnabled(v);
                     _gateNotifier.value = NotificationService.gate;
+                    setState(() {});
                   },
                 ),
-              const Divider(height: DizzySpace.sm),
-              SwitchListTile.adaptive(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Quiet hours (no banners at night)',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: ink),
-                ),
-                subtitle: Text(
-                  gate.quietEnabled
-                      ? '${NotificationGate.hhmm(gate.quietStartMinute)} → '
-                            '${NotificationGate.hhmm(gate.quietEndMinute)}'
-                      : 'Off',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: inkSoft),
-                ),
-                value: gate.quietEnabled,
-                onChanged: (v) async {
-                  await NotificationService.setQuietEnabled(v);
-                  _gateNotifier.value = NotificationService.gate;
-                  setState(() {});
-                },
-              ),
-              if (gate.quietEnabled)
+                if (gate.quietEnabled)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: DizzySpace.sm),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _pickTime(gate.quietStartMinute, (
+                              m,
+                            ) async {
+                              await NotificationService.setQuietWindow(
+                                m,
+                                gate.quietEndMinute,
+                              );
+                              _gateNotifier.value = NotificationService.gate;
+                              setState(() {});
+                            }),
+                            child: Text(
+                              'From ${NotificationGate.hhmm(gate.quietStartMinute)}',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: DizzySpace.sm),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _pickTime(gate.quietEndMinute, (
+                              m,
+                            ) async {
+                              await NotificationService.setQuietWindow(
+                                gate.quietStartMinute,
+                                m,
+                              );
+                              _gateNotifier.value = NotificationService.gate;
+                              setState(() {});
+                            }),
+                            child: Text(
+                              'To ${NotificationGate.hhmm(gate.quietEndMinute)}',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const Divider(height: DizzySpace.sm),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: DizzySpace.sm),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              _pickTime(gate.quietStartMinute, (m) async {
-                                await NotificationService.setQuietWindow(
-                                  m,
-                                  gate.quietEndMinute,
-                                );
-                                _gateNotifier.value = NotificationService.gate;
-                                setState(() {});
-                              }),
-                          child: Text(
-                            'From ${NotificationGate.hhmm(gate.quietStartMinute)}',
-                          ),
-                        ),
+                      Text(
+                        'Recommendation style',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: ink),
                       ),
-                      const SizedBox(width: DizzySpace.sm),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              _pickTime(gate.quietEndMinute, (m) async {
-                                await NotificationService.setQuietWindow(
-                                  gate.quietStartMinute,
-                                  m,
-                                );
+                      const SizedBox(height: 2),
+                      Text(
+                        'Same picks, a different voice.',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(color: inkSoft),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final tone in NotificationTone.values)
+                            ChoiceChip(
+                              label: Text(
+                                tone == NotificationTone.warm
+                                    ? 'Warm'
+                                    : 'Playful',
+                              ),
+                              selected: gate.tone == tone,
+                              onSelected: (_) async {
+                                await NotificationService.setTone(tone);
                                 _gateNotifier.value = NotificationService.gate;
                                 setState(() {});
-                              }),
-                          child: Text(
-                            'To ${NotificationGate.hhmm(gate.quietEndMinute)}',
-                          ),
-                        ),
+                              },
+                            ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         );
       },

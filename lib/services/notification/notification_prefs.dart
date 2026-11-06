@@ -24,12 +24,26 @@ enum NotificationKind {
   }
 }
 
+/// Voice of recommendation pushes. Recommendation selection and frequency
+/// are unchanged; this only decides how the line reads.
+enum NotificationTone {
+  warm('warm'),
+  playful('playful');
+
+  const NotificationTone(this.wire);
+  final String wire;
+
+  static NotificationTone fromWire(String? raw) =>
+      raw == 'warm' ? NotificationTone.warm : NotificationTone.playful;
+}
+
 class NotificationGate {
   const NotificationGate({
     this.off = const <String>{},
     this.quietEnabled = false,
     this.quietStartMinute = 22 * 60,
     this.quietEndMinute = 7 * 60,
+    this.tone = NotificationTone.playful,
   });
 
   /// Keys of the kinds the user switched OFF (everything else defaults on).
@@ -38,6 +52,7 @@ class NotificationGate {
   final bool quietEnabled;
   final int quietStartMinute;
   final int quietEndMinute;
+  final NotificationTone tone;
 
   /// Pure: is `at` inside the quiet window? Handles a window that wraps
   /// midnight (22:00 → 07:00) without any date arithmetic.
@@ -76,12 +91,14 @@ class NotificationGate {
     bool? quietEnabled,
     int? quietStartMinute,
     int? quietEndMinute,
+    NotificationTone? tone,
   }) {
     return NotificationGate(
       off: off ?? this.off,
       quietEnabled: quietEnabled ?? this.quietEnabled,
       quietStartMinute: quietStartMinute ?? this.quietStartMinute,
       quietEndMinute: quietEndMinute ?? this.quietEndMinute,
+      tone: tone ?? this.tone,
     );
   }
 
@@ -90,6 +107,7 @@ class NotificationGate {
     'quietEnabled': quietEnabled,
     'quietStartMinute': quietStartMinute,
     'quietEndMinute': quietEndMinute,
+    'tone': tone.wire,
   };
 
   factory NotificationGate.fromJson(Map<String, dynamic> json) {
@@ -100,6 +118,7 @@ class NotificationGate {
       quietEnabled: json['quietEnabled'] == true,
       quietStartMinute: (json['quietStartMinute'] as num?)?.toInt() ?? 22 * 60,
       quietEndMinute: (json['quietEndMinute'] as num?)?.toInt() ?? 7 * 60,
+      tone: NotificationTone.fromWire(json['tone']?.toString()),
     );
   }
 

@@ -206,8 +206,13 @@ class StreamSource {
     caseSensitive: false,
   );
 
-  static final RegExp _hindiIndianRegex = RegExp(
-    r'\b(hindi|hindiv3|hindicast|tamil|telugu|malayalam|kannada|punjabi|marathi|bengali|bollywood)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+  static final RegExp _hindiRegex = RegExp(
+    r'\b(hindi|hindiv3|hindicast)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    caseSensitive: false,
+  );
+
+  static final RegExp _indianRegionalRegex = RegExp(
+    r'\b(tamil|telugu|malayalam|kannada|punjabi|marathi|bengali)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
@@ -247,12 +252,13 @@ class StreamSource {
   );
 
   static final RegExp _englishRegex = RegExp(
-    r'\b(eng|english|original audio)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
+    r'\b(eng|english)\b(?![- ]?(?:sub|subbed|subs|subtitles))',
     caseSensitive: false,
   );
 
-  /// Returns detected audio languages for this stream.
-  /// Standard keys: 'multi', 'english', 'hindi', 'german', 'french', 'spanish', 'russian', 'japanese', 'italian'.
+  /// Returns explicitly detected audio languages; unknown audio stays untagged.
+  /// Regional languages keep their own keys (e.g. 'tamil', not 'hindi').
+  /// 'multi' describes multiplicity, not proof of Hindi or English audio.
   Set<String> getAudioLanguages({String? mediaTitle}) {
     final tags = <String>{};
     var fullText = '${title ?? ''} ${name ?? ''} ${description ?? ''}';
@@ -276,18 +282,17 @@ class StreamSource {
     );
 
     if (_multiAudioRegex.hasMatch(fullText)) tags.add('multi');
-    if (_hindiIndianRegex.hasMatch(fullText)) tags.add('hindi');
+    if (_hindiRegex.hasMatch(fullText)) tags.add('hindi');
+    for (final match in _indianRegionalRegex.allMatches(fullText)) {
+      tags.add(match.group(1)!.toLowerCase());
+    }
     if (_germanRegex.hasMatch(fullText)) tags.add('german');
     if (_frenchRegex.hasMatch(fullText)) tags.add('french');
     if (_spanishRegex.hasMatch(fullText)) tags.add('spanish');
     if (_russianRegex.hasMatch(fullText)) tags.add('russian');
     if (_japaneseRegex.hasMatch(fullText)) tags.add('japanese');
     if (_italianRegex.hasMatch(fullText)) tags.add('italian');
-
-    final hasRegional = tags.any((t) => t != 'multi');
-    if (_englishRegex.hasMatch(fullText) || !hasRegional) {
-      tags.add('english');
-    }
+    if (_englishRegex.hasMatch(fullText)) tags.add('english');
 
     return tags;
   }
@@ -303,16 +308,14 @@ class StreamSource {
   String? getAudioBadge({String? mediaTitle}) {
     final langs = getAudioLanguages(mediaTitle: mediaTitle);
     if (langs.contains('multi')) return '🌐 MULTI';
-    if (langs.contains('hindi')) {
-      final text = '${title ?? ''} ${name ?? ''} ${description ?? ''}'
-          .toLowerCase();
-      if (text.contains('telugu')) return '🇮🇳 TELUGU';
-      if (text.contains('tamil')) return '🇮🇳 TAMIL';
-      if (text.contains('malayalam')) return '🇮🇳 MALAYALAM';
-      if (text.contains('kannada')) return '🇮🇳 KANNADA';
-      if (text.contains('punjabi')) return '🇮🇳 PUNJABI';
-      return '🇮🇳 HINDI';
-    }
+    if (langs.contains('hindi')) return '🇮🇳 HINDI';
+    if (langs.contains('telugu')) return '🇮🇳 TELUGU';
+    if (langs.contains('tamil')) return '🇮🇳 TAMIL';
+    if (langs.contains('malayalam')) return '🇮🇳 MALAYALAM';
+    if (langs.contains('kannada')) return '🇮🇳 KANNADA';
+    if (langs.contains('punjabi')) return '🇮🇳 PUNJABI';
+    if (langs.contains('marathi')) return 'MARATHI';
+    if (langs.contains('bengali')) return 'BENGALI';
     if (langs.contains('german')) return '🇩🇪 GER';
     if (langs.contains('french')) return '🇫🇷 FRE';
     if (langs.contains('spanish')) return '🇪🇸 SPA';
@@ -320,10 +323,7 @@ class StreamSource {
     if (langs.contains('japanese')) return '🇯🇵 JPN';
     if (langs.contains('italian')) return '🇮🇹 ITA';
 
-    final text = '${title ?? ''} ${name ?? ''} ${description ?? ''}';
-    if (RegExp(r'\b(eng|english)\b', caseSensitive: false).hasMatch(text)) {
-      return '🇺🇸 ENG';
-    }
+    if (langs.contains('english')) return '🇺🇸 ENG';
     return null;
   }
 

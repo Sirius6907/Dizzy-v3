@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../cloud/remote_config_service.dart';
+import '../stream/stream_addon_service.dart';
 import '../../models/anime/anime_media.dart';
 import '../../models/movie/movie_detail.dart';
 import '../../models/movie/video.dart';
 import '../../models/stream/stream_model.dart';
+import 'kitsu_resolver.dart';
 import 'extractors/anidb_extractor.dart';
 import 'extractors/megaplay_extractor.dart';
 import 'extractors/recloud_extractor.dart';
@@ -630,6 +632,32 @@ class AnimeScraperService {
         );
       }
 
+      // 13. Stremio addons through Kitsu — Torrentio / AcuAnime. A provider
+      // changing its response shape kills one native extractor; the addon
+      // pool keeps the episode playable.
+      addTask(
+        'kitsu_addons',
+        () async {
+          final kitsuId = await KitsuResolver.instance.kitsuIdFor(
+            anilistId: anime.id,
+            titles: titleCandidates,
+            year: anime.seasonYear > 0 ? anime.seasonYear : null,
+          );
+          if (kitsuId == null) return;
+          await for (final source in StreamAddonService.fetchAll(
+            type: 'anime',
+            id: 'kitsu:$kitsuId',
+            season: 1,
+            episode: episodeNumber,
+          )) {
+            final key = source.url ?? source.infoHash ?? source.title ?? '';
+            if (key.isNotEmpty && seenUrls.add(key) && !controller.isClosed) {
+              controller.add(source);
+            }
+          }
+        },
+      );
+
       await Future.wait(tasks);
       if (!controller.isClosed) {
         controller.close();
@@ -1233,6 +1261,29 @@ class AnimeScraperService {
               .catchError((_) {}),
         );
       }
+
+      // 13. Stremio addons through Kitsu — Torrentio / AcuAnime.
+      addTask(
+        'kitsu_addons',
+        () async {
+          final kitsuId = await KitsuResolver.instance.kitsuIdFor(
+            anilistId: anilistId,
+            titles: titleCandidates,
+          );
+          if (kitsuId == null) return;
+          await for (final source in StreamAddonService.fetchAll(
+            type: 'anime',
+            id: 'kitsu:$kitsuId',
+            season: 1,
+            episode: episodeNumber,
+          )) {
+            final key = source.url ?? source.infoHash ?? source.title ?? '';
+            if (key.isNotEmpty && seenUrls.add(key) && !controller.isClosed) {
+              controller.add(source);
+            }
+          }
+        },
+      );
 
       await Future.wait(tasks);
       if (!controller.isClosed) {

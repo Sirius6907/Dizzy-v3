@@ -8,6 +8,7 @@ import '../../models/movie/movie_detail.dart';
 import '../../models/movie/video.dart';
 import '../../models/stream/stream_model.dart';
 import '../../services/stream/stream_service.dart';
+import '../../services/stream/stream_relevance.dart';
 import '../../services/player/dub_mode_service.dart';
 import '../../services/anime/anime_scraper_service.dart';
 import '../../services/anime_arabic/anime_arabic_service.dart';
@@ -53,6 +54,8 @@ class PlayerSourcesPanel extends StatefulWidget {
 
 class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
   final List<StreamSource> _sources = [];
+  final List<StreamSource> _incoming = [];
+  Timer? _flushTimer;
   bool _isLoading = false;
   StreamSubscription<StreamSource>? _streamSub;
   int? _hoveredIndex;
@@ -64,16 +67,27 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
   void initState() {
     super.initState();
 
-    if (widget.cachedSources != null && widget.cachedSources!.isNotEmpty) {
-      _sources.addAll(widget.cachedSources!);
+    final cached = widget.cachedSources;
+    final seed = widget.seedSources;
+    if (cached != null && cached.isNotEmpty) {
+      _sources.addAll(cached.where(_relevantToThisEpisode));
       _isLoading = false;
-    } else if (widget.seedSources != null && widget.seedSources!.isNotEmpty) {
-      _sources.addAll(widget.seedSources!);
+    } else if (seed != null && seed.isNotEmpty) {
+      _sources.addAll(seed.where(_relevantToThisEpisode));
       _isLoading = false;
     } else {
       _startScraping();
     }
   }
+
+  bool _relevantToThisEpisode(StreamSource source) =>
+      StreamRelevance.isRelevant(
+        source: source,
+        title: widget.detail?.name ?? widget.episode.title,
+        year: int.tryParse(widget.detail?.year ?? ''),
+        season: widget.episode.season,
+        episode: widget.episode.episode,
+      );
 
   void _startScraping() {
     setState(() {
@@ -193,16 +207,8 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
           .listen(
             (source) {
               if (!mounted) return;
-              setState(() {
-                final exists = _sources.any(
-                  (s) =>
-                      (source.url != null && s.url == source.url) ||
-                      (s.name == source.name && s.title == source.title),
-                );
-                if (!exists) {
-                  _sources.add(source);
-                }
-              });
+              if (!_relevantToThisEpisode(source)) return;
+              _queueSource(source);
             },
             onError: (_) {
               if (mounted) setState(() => _isLoading = false);
@@ -229,6 +235,7 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
         ).listen(
           (source) {
             if (!mounted) return;
+            if (!_relevantToThisEpisode(source)) return;
             // Dub-mode gate: Hindi mode ON pe sirf hindi-tagged sources hi
             // list mein aate hain. Non-hindi sources fallback pool mein —
             // zero hindi mila to onDone pe English release + banner.
@@ -237,19 +244,7 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
               _nonHindiPool.add(source);
               return;
             }
-            setState(() {
-              // Deduplicate by URL / infoHash / title
-              final exists = _sources.any(
-                (s) =>
-                    (source.infoHash != null &&
-                        s.infoHash == source.infoHash) ||
-                    (source.url != null && s.url == source.url) ||
-                    (s.name == source.name && s.title == source.title),
-              );
-              if (!exists) {
-                _sources.add(source);
-              }
-            });
+            _queueSource(source);
           },
           onError: (_) {
             if (mounted) setState(() => _isLoading = false);
@@ -286,8 +281,28 @@ class _PlayerSourcesPanelState extends State<PlayerSourcesPanel> {
 
   @override
   void dispose() {
+    _flushTimer?.cancel();
     _streamSub?.cancel();
     super.dispose();
+  }
+
+  /// One rebuild per 150ms instead of one per stream row.
+  void _queueSource(StreamSource source) {
+    final exists = _sources.any(
+      (s) =>
+          (source.infoHash != null && s.infoHash == source.infoHash) ||
+          (source.url != null && s.url == source.url) ||
+          (s.name == source.name && s.title == source.title),
+    );
+    if (exists) return;
+    _incoming.add(source);
+    _flushTimer ??= Timer(const Duration(milliseconds: 150), () {
+      _flushTimer = null;
+      if (!mounted || _incoming.isEmpty) return;
+      final batch = List<StreamSource>.of(_incoming);
+      _incoming.clear();
+      setState(() => _sources.addAll(batch));
+    });
   }
 
   @override

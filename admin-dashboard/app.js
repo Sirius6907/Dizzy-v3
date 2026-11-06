@@ -131,7 +131,7 @@ function show(name) {
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
   if (name === 'admins' && MY_ROLE === 'owner') loadAdmins();
-  if (name === 'support') { loadTickets(); loadSupportStats(); }
+  if (name === 'support') { loadTickets(); loadSupportStats(); loadSupportAnswers(); }
   if (name === 'curated') loadCurated();
 }
 
@@ -160,14 +160,16 @@ const RT_MAP = {
   curated_playlists: ['curated'],
   rooms: ['rooms'],
   push_send_log: ['push'],
+  usernames: ['users'],
+  identity_history: ['users'],
 };
 const RT_LOADERS = {
   overview: () => loadUsage(),
-  users: () => { loadFleetLive(); loadDevices(); },
+  users: () => { loadFleetLive(); loadDevices(); loadIdentity(); },
   devicelogs: () => loadDeviceLogs(),
   moderation: () => { loadUserReports(); loadAppeals(); },
   rooms: () => loadRooms(),
-  support: () => { loadTickets(); loadSupportStats(); },
+  support: () => { loadTickets(); loadSupportStats(); loadSupportAnswers(); },
   push: () => { loadAnn(); loadPushLog(); },
   config: () => loadCfg(),
   scrapers: () => loadScrapers(),
@@ -831,6 +833,27 @@ async function loadSupportStats() {
       ['AI solved', solved], ['Deflection', rate + '%'],
     ].map(([l, v]) => `<div class="stat"><div class="stat-v">${esc(String(v))}</div><div class="stat-l">${esc(l)}</div></div>`).join('');
   } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Stats failed', e.message); }
+}
+async function loadSupportAnswers() {
+  const box = $('supportAnswers');
+  if (box) box.innerHTML = skLines(4);
+  try {
+    const rows = await rpc('admin_support_answers', { p_limit: 100 }) || [];
+    if (!box) return;
+    box.innerHTML = rows.length
+      ? rows.map((r) => `<div class="rep-card">
+          <div class="rep-top">
+            <span class="pill ${r.tier === 'llm' ? 'p-live' : r.tier === 'kb' ? 'p-lobby' : 'p-closed'}">${esc(r.tier || 'none')}</span>
+            <span class="mut mono">@${esc(r.username || '—')}</span>
+            <span class="mut mono">${esc(r.lang || 'en')}</span>
+            <span class="mut mono">${Number(r.latency_ms) || 0} ms</span>
+            <span class="mut" title="${esc(fmtAbs(r.created_at))}">${ago(r.created_at)}</span>
+          </div>
+          <div class="rep-meta"><b>Q:</b> ${esc(r.question || '—')}</div>
+          <div class="rep-meta"><b>A:</b> ${esc((r.answer || '—').slice(0, 400))}</div>
+        </div>`).join('')
+      : emptyState('💬', 'No assistant answers yet', 'Rows appear when telemetry is on.');
+  } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Answers failed', e.message); }
 }
 async function loadTickets() {
   const box = $('ticketList');

@@ -49,10 +49,29 @@ void main() {
       expect(out, isEmpty);
     });
 
-    test('bollywood-tagged source counts as hindi', () {
+    test('Bollywood alone is not proof of Hindi audio', () {
       final sources = [mkSrc('Classic Bollywood Collection 720p')];
       final out = filterByDubMode(sources, hindi: true, mediaTitle: 'Movie');
-      expect(out.length, 1);
+      expect(out, isEmpty);
+    });
+
+    test('Hindi filter rejects regional and unspecified audio', () {
+      final hindi = mkSrc('Hindi English Dual Audio');
+      final sources = [
+        mkSrc('Tamil'),
+        mkSrc('Telugu'),
+        mkSrc('Malayalam Kannada Punjabi Marathi Bengali'),
+        mkSrc('Multi Audio'),
+        mkSrc('Dual Audio'),
+        mkSrc('Original audio'),
+        mkSrc('Unknown'),
+        mkSrc('English'),
+        hindi,
+      ];
+      expect(
+        filterByDubMode(sources, hindi: true, mediaTitle: 'Movie'),
+        [hindi],
+      );
     });
 
     test('hindi tag in description is detected', () {
@@ -66,7 +85,9 @@ void main() {
     test('mediaTitle containing "hindi" does not tag all sources', () {
       // The media title is stripped from detection text, so a movie named
       // e.g. "Hindi Medium" must not make every source count as hindi.
-      final sources = [mkSrc('VidSrc Pro 1080p')];
+      final sources = [
+        mkSrc('VidSrc Pro 1080p', title: 'Hindi Medium 1080p'),
+      ];
       final out = filterByDubMode(
         sources,
         hindi: true,

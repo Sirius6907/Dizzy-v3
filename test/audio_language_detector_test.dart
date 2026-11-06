@@ -3,15 +3,111 @@ import 'package:dizzy/models/stream/stream_model.dart';
 
 void main() {
   group('Audio Language & Dub Detection in StreamSource', () {
-    test('Purstream Multi detected as multi and english', () {
+    for (final language in [
+      'tamil',
+      'telugu',
+      'malayalam',
+      'kannada',
+      'punjabi',
+      'marathi',
+      'bengali',
+    ]) {
+      test('$language keeps its own audio tag and badge, not Hindi', () {
+        final s = StreamSource(
+          addonName: 'Test',
+          title: 'Movie.1080p.${language.toUpperCase()}.AAC',
+        );
+        expect(s.getAudioLanguages(), {language});
+        expect(s.hasAudioLanguage('hindi'), isFalse);
+        expect(s.hasAudioLanguage('english'), isFalse);
+        expect(s.getAudioBadge(), endsWith(language.toUpperCase()));
+      });
+    }
+
+    for (final label in [
+      '',
+      'Unknown',
+      'Bollywood',
+      'Original audio',
+      'Korean audio',
+      'Englishman',
+    ]) {
+      test('$label alone is not Hindi or English evidence', () {
+        final s = StreamSource(addonName: 'Test', title: label);
+        expect(s.getAudioLanguages(), isEmpty);
+        expect(s.getAudioBadge(), isNull);
+      });
+    }
+
+    for (final label in ['MULTI', 'Dual Audio']) {
+      test('$label alone identifies multiplicity, not languages', () {
+        final s = StreamSource(addonName: 'Test', title: label);
+        expect(s.getAudioLanguages(), {'multi'});
+        expect(s.hasAudioLanguage('hindi'), isFalse);
+        expect(s.hasAudioLanguage('english'), isFalse);
+      });
+    }
+
+    for (final label in ['Hindi', 'English', 'Eng', 'Tamil']) {
+      test('$label subtitle mentions do not produce tags or badges', () {
+        final s = StreamSource(
+          addonName: 'Test',
+          title: 'Movie [$label-Sub]',
+          description: 'Subs: Hindi, English, Tamil',
+        );
+        expect(s.getAudioLanguages(), isEmpty);
+        expect(s.getAudioBadge(), isNull);
+      });
+    }
+
+    for (final label in ['Hindi', 'English', 'Tamil']) {
+      test('$label in mediaTitle is removed from tags and badges', () {
+        final s = StreamSource(
+          addonName: 'Test',
+          title: '$label Medium 1080p',
+          description: '$label Medium WEB-DL',
+        );
+        expect(s.getAudioLanguages(mediaTitle: '$label Medium'), isEmpty);
+        expect(s.getAudioBadge(mediaTitle: '$label Medium'), isNull);
+      });
+    }
+
+    test('Hindi badge takes precedence over another regional audio', () {
+      final s = StreamSource(
+        addonName: 'Test',
+        title: 'Movie Hindi Tamil English',
+      );
+      expect(s.getAudioLanguages(), {'hindi', 'tamil', 'english'});
+      expect(s.getAudioBadge(), endsWith('HINDI'));
+    });
+
+    test('English audio survives subtitle exclusions', () {
+      final s = StreamSource(
+        addonName: 'Test',
+        title: 'Movie.ENG.AAC [Hindi-Subs]',
+        description: 'Subtitles: Hindi, Tamil',
+      );
+      expect(s.getAudioLanguages(), {'english'});
+      expect(s.getAudioBadge(), endsWith('ENG'));
+    });
+
+    test('original audio does not add English to a foreign release', () {
+      final s = StreamSource(
+        addonName: 'Test',
+        title: 'Movie French original audio',
+      );
+      expect(s.getAudioLanguages(), {'french'});
+    });
+
+    test('Purstream Multi does not imply English audio', () {
       final s = StreamSource(
         addonName: 'PlayTorrioHTTP',
         title: 'Purstream · pulse · 1080p · MULTI',
         description: 'Purstream Multi-Audio HLS Stream',
       );
       final langs = s.getAudioLanguages();
-      expect(langs.contains('multi'), isTrue);
-      expect(langs.contains('english'), isTrue);
+      expect(langs, {'multi'});
+      expect(langs.contains('english'), isFalse);
       expect(s.getAudioBadge(), '🌐 MULTI');
       expect(s.hasAudioLanguage('multi'), isTrue);
     });
@@ -68,17 +164,15 @@ void main() {
       expect(s.hasAudioLanguage('spanish'), isTrue);
     });
 
-    test('Movy Miami detected as English / Original', () {
+    test('Movy Miami original audio is not proof of English', () {
       final s = StreamSource(
         addonName: 'PlayTorrioHTTP',
         title: '[Movy - Miami] 1080p',
         description: 'Original audio • HLS',
       );
-      final langs = s.getAudioLanguages();
-      expect(langs, contains('english'));
-      expect(langs.contains('hindi'), isFalse);
-      expect(langs.contains('multi'), isFalse);
-      expect(s.hasAudioLanguage('english'), isTrue);
+      expect(s.getAudioLanguages(), isEmpty);
+      expect(s.getAudioBadge(), isNull);
+      expect(s.hasAudioLanguage('english'), isFalse);
     });
 
     test('Vuflix Hindi Audio stream', () {
@@ -134,7 +228,7 @@ void main() {
             'Inception.2010.720p.AMZN.WEB-DL.TELUGU.DDP2.0.H.265-GTM.mkv [a11 970.6 MB]',
       );
       final langs = s.getAudioLanguages();
-      expect(langs, contains('hindi'));
+      expect(langs, {'telugu'});
       expect(s.getAudioBadge(), '🇮🇳 TELUGU');
     });
 
@@ -163,7 +257,7 @@ void main() {
         isFalse,
         reason: 'Multi-CDN must not trigger multi-audio',
       );
-      expect(langs, contains('english'));
+      expect(langs, isEmpty);
       expect(s.getAudioBadge(), isNull);
     });
 
@@ -175,7 +269,7 @@ void main() {
       );
       final langs = s.getAudioLanguages();
       expect(langs.contains('multi'), isFalse);
-      expect(langs, contains('english'));
+      expect(langs, isEmpty);
       expect(s.getAudioBadge(), isNull);
     });
 
@@ -187,7 +281,7 @@ void main() {
       );
       final langs = s.getAudioLanguages();
       expect(langs.contains('multi'), isFalse);
-      expect(langs, contains('english'));
+      expect(langs, isEmpty);
       expect(s.getAudioBadge(), isNull);
     });
 
@@ -207,7 +301,7 @@ void main() {
           isFalse,
           reason: 'Movie title Indiana Jones must not trigger Indian',
         );
-        expect(langs, contains('english'));
+        expect(langs, isEmpty);
       },
     );
 
@@ -225,7 +319,7 @@ void main() {
       );
       expect(langs.contains('french'), isFalse);
       expect(langs.contains('spanish'), isFalse);
-      expect(langs, contains('english'));
+      expect(langs, isEmpty);
     });
 
     test('ZERO JUNK: Multi-Sub does NOT trigger multi-audio', () {
@@ -239,7 +333,7 @@ void main() {
         isFalse,
         reason: 'Multi-Sub is subtitles, not audio',
       );
-      expect(langs, contains('english'));
+      expect(langs, isEmpty);
     });
 
     test('French VF / Truefrench triggers French audio', () {
@@ -252,15 +346,15 @@ void main() {
       expect(s.getAudioBadge(), '🇫🇷 FRE');
     });
 
-    test('Standard LookMovie / VidSrc defaults to English / Original', () {
+    test('Standard LookMovie / VidSrc audio remains unknown', () {
       final s = StreamSource(
         addonName: 'PlayTorrioHTTP',
         title: 'LookMovie · 1080p',
         description: 'LookMovie HLS Stream · 1080p',
       );
       final langs = s.getAudioLanguages();
-      expect(langs, contains('english'));
-      expect(s.hasAudioLanguage('english'), isTrue);
+      expect(langs, isEmpty);
+      expect(s.hasAudioLanguage('english'), isFalse);
       expect(s.hasAudioLanguage('hindi'), isFalse);
       expect(s.hasAudioLanguage('all'), isTrue);
     });
@@ -348,9 +442,8 @@ void main() {
         title: 'Miami Vice S1E1 1080p',
         description: 'Crime • WEB-DL',
       );
-      // Default-english fallback still applies (no regional tag), but the
-      // city word itself must not be what triggers detection.
-      expect(s.getAudioLanguages(), contains('english'));
+      // A city or provider name is not evidence of an audio language.
+      expect(s.getAudioLanguages(), isEmpty);
     });
 
     test('Esparto town title is NOT spanish (esp guard)', () {

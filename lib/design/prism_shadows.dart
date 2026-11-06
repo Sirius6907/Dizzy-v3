@@ -11,41 +11,41 @@ import 'prism_tokens.dart';
 /// Zero shaders, zero BackdropFilter — 60-120 FPS safe.
 /// ─────────────────────────────────────────────────────────────────────────────
 abstract final class PrismShadows {
-  /// Resting elevation: -6/-6/14 light + 6/6/14 dark.
-  static List<BoxShadow> resting({required bool isLight, double scale = 1.0}) {
-    final light = isLight ? PrismLight.neuLight : PrismDark.neuLight;
-    final dark = isLight ? PrismLight.neuDark : PrismDark.neuDark;
+  /// One light source (top-left), three layers: a crisp rim highlight, a
+  /// wide ambient shadow, and a short contact shadow. The old pair of
+  /// heavy ±10/22 shadows read as a blue smudge at both corners instead of
+  /// a raised object, because the plateau between them was flat.
+  static List<BoxShadow> _depth(bool isLight, double scale) {
+    final rim = isLight ? const Color(0xFFFFFFFF) : const Color(0x14FFFFFF);
+    final ambient = isLight ? const Color(0x1FA0AEC2) : const Color(0x59000000);
+    final contact = isLight ? const Color(0x338C99AA) : const Color(0x99000000);
     return [
       BoxShadow(
-        color: light,
-        blurRadius: 14 * scale,
-        offset: Offset(-6 * scale, -6 * scale),
+        color: rim,
+        blurRadius: 5 * scale,
+        offset: Offset(-2 * scale, -2 * scale),
       ),
       BoxShadow(
-        color: dark,
-        blurRadius: 14 * scale,
-        offset: Offset(6 * scale, 6 * scale),
+        color: ambient,
+        blurRadius: 30 * scale,
+        spreadRadius: -4 * scale,
+        offset: Offset(0, 12 * scale),
+      ),
+      BoxShadow(
+        color: contact,
+        blurRadius: 9 * scale,
+        offset: Offset(0, 4 * scale),
       ),
     ];
   }
 
-  /// Raised elevation: -10/-10/22 + 10/10/22. Default card depth.
-  static List<BoxShadow> raised({required bool isLight, double scale = 1.0}) {
-    final light = isLight ? PrismLight.neuLight : PrismDark.neuLight;
-    final dark = isLight ? PrismLight.neuDark : PrismDark.neuDark;
-    return [
-      BoxShadow(
-        color: light,
-        blurRadius: 22 * scale,
-        offset: Offset(-10 * scale, -10 * scale),
-      ),
-      BoxShadow(
-        color: dark,
-        blurRadius: 22 * scale,
-        offset: Offset(10 * scale, 10 * scale),
-      ),
-    ];
-  }
+  /// Resting elevation: the same light model, shallower.
+  static List<BoxShadow> resting({required bool isLight, double scale = 1.0}) =>
+      _depth(isLight, scale * 0.7);
+
+  /// Raised elevation: default card depth.
+  static List<BoxShadow> raised({required bool isLight, double scale = 1.0}) =>
+      _depth(isLight, scale);
 
   /// Floating elevation (dock, dialogs, sheets): raised + accent halo.
   static List<BoxShadow> floating({
@@ -64,56 +64,54 @@ abstract final class PrismShadows {
     ];
   }
 
-  /// Pressed (inset illusion): tighter reversed pair + gradient flip
-  /// (see [pressedGradient]). Reads carved-in.
+  /// Pressed (inset illusion): contact shadow inside the top-left edge and
+  /// a rim below the bottom-right edge, plus the gradient flip.
   static List<BoxShadow> pressed({required bool isLight, double scale = 1.0}) {
-    final light = isLight ? PrismLight.neuLight : PrismDark.neuLight;
-    final dark = isLight ? PrismLight.neuDark : PrismDark.neuDark;
+    final rim = isLight ? const Color(0xE6FFFFFF) : const Color(0x14FFFFFF);
+    final inset = isLight ? const Color(0x2E8C99AA) : const Color(0x99000000);
     return [
       BoxShadow(
-        color: dark,
-        blurRadius: 12 * scale,
-        spreadRadius: 2 * scale,
-        offset: Offset(3 * scale, 3 * scale),
+        color: inset,
+        blurRadius: 7 * scale,
+        offset: Offset(2 * scale, 2 * scale),
       ),
       BoxShadow(
-        color: light,
-        blurRadius: 12 * scale,
-        offset: Offset(-3 * scale, -3 * scale),
+        color: rim,
+        blurRadius: 6 * scale,
+        offset: Offset(-2 * scale, -2 * scale),
       ),
     ];
   }
 
   /// Soft elevation for tiny elements (chips at rest, dots).
   static List<BoxShadow> soft({required bool isLight, double scale = 1.0}) {
-    final light = isLight ? PrismLight.neuLight : PrismDark.neuLight;
-    final dark = isLight ? PrismLight.neuDark : PrismDark.neuDark;
+    final rim = isLight ? const Color(0xE6FFFFFF) : const Color(0x0FFFFFFF);
+    final contact = isLight ? const Color(0x1F8C99AA) : const Color(0x59000000);
     return [
       BoxShadow(
-        color: light,
-        blurRadius: 6 * scale,
-        offset: Offset(-2 * scale, -2 * scale),
+        color: rim,
+        blurRadius: 3 * scale,
+        offset: Offset(-1 * scale, -1 * scale),
       ),
       BoxShadow(
-        color: dark,
+        color: contact,
         blurRadius: 6 * scale,
-        offset: Offset(2 * scale, 2 * scale),
+        offset: Offset(0, 2 * scale),
       ),
     ];
   }
 
-  /// 1px inner top highlight — the third shadow part (SPEC §1.1).
-  /// Lay over the surface via [PrismCard]'s highlight overlay.
+  /// Hairline top catch — the third shadow part (SPEC §1.1).
+  /// Kept to ~2% of the height: a taller band reads as a grey seam on
+  /// light clay cards.
   static LinearGradient topHighlight(bool isLight) => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.center,
     colors: [
-      (isLight ? const Color(0xFFFFFFFF) : const Color(0xFFFFFFFF)).withValues(
-        alpha: isLight ? 0.9 : 0.07,
-      ),
+      Colors.white.withValues(alpha: isLight ? 0.35 : 0.05),
       Colors.transparent,
     ],
-    stops: const [0.0, 0.12],
+    stops: const [0.0, 0.02],
   );
 
   /// Clay surface gradient (subtle top-catch → base).

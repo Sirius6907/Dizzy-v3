@@ -137,12 +137,17 @@ class DizzySocialService {
   }
 
   /// Instant GIN Trigram Search for @usernames and friends.
+  /// Throws on unavailable cloud or lookup failure; [] means no matches.
   static Future<List<DizzyUserMatch>> searchUsers(String query) async {
-    if (!CloudClient.isReady || query.trim().length < 2) return [];
+    final normalizedQuery = query.trim().replaceFirst(RegExp(r'^@'), '').trim();
+    if (normalizedQuery.length < 2) return [];
+    if (!CloudClient.isReady) {
+      throw StateError('User search is unavailable');
+    }
 
     try {
       final res = await CloudClient.db.rpc('search_users', params: {
-        'p_query': query.trim(),
+        'p_query': normalizedQuery,
         'p_limit': 15,
       });
 
@@ -152,10 +157,10 @@ class DizzySocialService {
                 DizzyUserMatch.fromJson(Map<String, dynamic>.from(item)))
             .toList();
       }
-      return [];
+      throw const FormatException('Invalid user search response');
     } catch (e) {
       AppLog.d('searchUsers: $e');
-      return [];
+      rethrow;
     }
   }
 

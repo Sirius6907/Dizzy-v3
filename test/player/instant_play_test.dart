@@ -389,7 +389,7 @@ void main() {
       expect(AudioTrackPreference.pick(tracks: const [], hindi: true), isNull);
     });
 
-    test('an unlabelled track is the original audio in English mode', () {
+    test('English mode does not claim unlabelled audio is English', () {
       expect(
         AudioTrackPreference.pick(
           tracks: [
@@ -398,20 +398,160 @@ void main() {
           ],
           hindi: false,
         ),
-        1,
+        isNull,
       );
-      // …but Hindi mode stays hands-off rather than guessing.
+    });
+
+    test('Hindi mode falls back to an explicit English tag', () {
+      expect(
+        AudioTrackPreference.pick(
+          tracks: [t(1), t(2, lang: ' ENG_us ')],
+          hindi: true,
+        ),
+        2,
+      );
+    });
+
+    test('Hindi mode falls back to an explicit English label', () {
+      expect(
+        AudioTrackPreference.pick(
+          tracks: [t(1, lang: 'jpn'), t(2, title: 'English 5.1')],
+          hindi: true,
+        ),
+        2,
+      );
+    });
+
+    test('Hindi label takes precedence over an English tag', () {
+      expect(
+        AudioTrackPreference.pick(
+          tracks: [t(1, lang: 'eng'), t(2, title: 'Hindi Dub')],
+          hindi: true,
+        ),
+        2,
+      );
+    });
+
+    test('explicit Hindi tag takes precedence over a Hindi label', () {
+      expect(
+        AudioTrackPreference.pick(
+          tracks: [t(1, title: 'Hindi'), t(2, lang: ' HI-in ')],
+          hindi: true,
+        ),
+        2,
+      );
+    });
+
+    for (final tag in ['tam', 'te-IN', 'jpn', 'fr', 'eng']) {
+      test('$tag tag overrides a misleading Hindi label', () {
+        expect(
+          AudioTrackPreference.pick(
+            tracks: [
+              t(1, lang: tag, title: 'Hindi Dub'),
+              t(2, title: 'Hindi'),
+              t(3, lang: 'eng'),
+            ],
+            hindi: true,
+          ),
+          2,
+        );
+      });
+    }
+
+    test('foreign tag cannot supply the English label fallback', () {
+      for (final hindi in [true, false]) {
+        expect(
+          AudioTrackPreference.pick(
+            tracks: [t(1, lang: 'tam', title: 'English')],
+            hindi: hindi,
+          ),
+          isNull,
+        );
+      }
+    });
+
+    test('foreign Hindi label is skipped in favor of real English', () {
       expect(
         AudioTrackPreference.pick(
           tracks: [
-            t(1),
+            t(1, lang: 'tel', title: 'Hindi'),
             t(2, lang: 'eng'),
           ],
           hindi: true,
         ),
-        isNull,
+        2,
       );
     });
+
+    for (final tag in [null, '', 'und', 'unknown', 'mul']) {
+      test('unspecified tag $tag permits an explicit Hindi label', () {
+        expect(
+          AudioTrackPreference.pick(
+            tracks: [t(1, lang: 'eng'), t(2, lang: tag, title: 'Hindi')],
+            hindi: true,
+          ),
+          2,
+        );
+      });
+    }
+
+    test('English fallback prefers a tag over a label', () {
+      expect(
+        AudioTrackPreference.pick(
+          tracks: [t(1, title: 'English'), t(2, lang: 'eng')],
+          hindi: true,
+        ),
+        2,
+      );
+    });
+
+    for (final label in ['Hindi', 'HIN 5.1', '[hi] Dub']) {
+      test('recognizes explicit Hindi label $label', () {
+        expect(
+          AudioTrackPreference.pick(
+            tracks: [t(1, lang: 'eng'), t(2, title: label)],
+            hindi: true,
+          ),
+          2,
+        );
+      });
+    }
+
+    for (final label in ['English', 'ENG 5.1', '[en] Dub']) {
+      test('recognizes explicit English fallback label $label', () {
+        expect(
+          AudioTrackPreference.pick(
+            tracks: [t(1), t(2, title: label)],
+            hindi: true,
+          ),
+          2,
+        );
+      });
+    }
+
+    for (final label in [
+      '',
+      'Unknown',
+      'Original audio',
+      'Multi Audio',
+      'Dual Audio',
+      'Bollywood',
+      'Hindipop',
+      'Englishman',
+      'Enhanced ending',
+    ]) {
+      test('$label is not an explicit track language', () {
+        for (final hindi in [true, false]) {
+          expect(
+            AudioTrackPreference.pick(
+              tracks: [t(1, title: label), t(2, lang: 'und')],
+              hindi: hindi,
+            ),
+            isNull,
+          );
+        }
+      });
+    }
   });
 
   group('F1 · auto-skip is ON by default, previews never', () {

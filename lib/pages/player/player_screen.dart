@@ -29,6 +29,7 @@ import '../../services/player/playback_brain.dart';
 import '../../services/player/quality_service.dart';
 import '../../services/player/smart_quality_policy.dart';
 import '../../services/player/auto_skip_policy.dart';
+import '../../services/player/playback_start_policy.dart';
 import '../../services/taste/taste_event_service.dart';
 import '../../services/player/audio_track_preference.dart';
 import '../../services/player/dub_mode_service.dart';
@@ -65,6 +66,7 @@ import '../../services/download/download_service.dart';
 import '../../utils/download/download_path_helper.dart';
 import '../../services/stream/next_episode_engine.dart';
 import '../../services/stream/source_ranker.dart';
+import '../../services/stream/stream_relevance.dart';
 import '../../services/stream/instant_play_gate.dart';
 import '../../services/stream/last_good_source_store.dart';
 import '../../services/watchparty/party_session.dart';
@@ -260,6 +262,10 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// slow networks where mpv would drop the seek fired before media load).
   Duration? _resumeAtOverride;
 
+  /// Watches the first seconds after a source opens: a source that lands on
+  /// its closing tail (black last frame) is restarted from 0:00.
+  Timer? _openTailGuard;
+
   /// 30s of stable playback on current source → record last-good + start prefetch
   Timer? _lastGoodTimer;
   bool _lastGoodRecorded = false;
@@ -317,6 +323,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         final primaryFp = SourceRanker.fingerprint(widget.source);
         final candidates = widget.failoverSources!
             .where((s) => SourceRanker.fingerprint(s) != primaryFp)
+            .where((s) => _relevantForEpisode(s, widget.episode))
             .toList();
         _failoverChain = SourceRanker.order(
           candidates,
@@ -497,6 +504,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     _stallWatchdog?.cancel();
     _lastGoodTimer?.cancel();
     _autoQualityTimer?.cancel();
+    _openTailGuard?.cancel();
     // v1.2.0-T2.8: stop party heartbeat / guest listener.
     unawaited(_partySession?.stop());
     _partySession = null;

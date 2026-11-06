@@ -67,27 +67,97 @@ function clip(s: string, max: number) {
   return s.replace(/\s+/g, " ").trim().slice(0, max);
 }
 
-function copyFor(c: Candidate) {
+export type PushTone = "warm" | "playful";
+
+/** Same title, same message. A per-run random choice would make a retry
+ *  look like a different notification in the log. */
+function stableVariant(seed: string, count: number): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return h % count;
+}
+
+export function copyFor(c: Candidate, tone: PushTone | string = "warm") {
+  const playful = tone === "playful";
+  const hinglish = c.lang === "hi";
   const lang = LANG_LABEL[c.lang] ?? (c.lang || "").toUpperCase();
   const rating = Number(c.rating ?? 0);
   const year = c.year ? String(c.year) : "";
-  if (c.media_type === "tv") {
-    const title = clip(`Now streaming: ${c.title}`, 120);
-    const bits = [year, lang, rating > 0 ? `★ ${rating.toFixed(1)}` : ""]
-      .filter(Boolean)
-      .join(" · ");
+  const genre = (c.genres ?? []).map((g) => String(g).trim()).find(Boolean) ?? "";
+  const meta = [
+    year,
+    lang,
+    rating > 0 ? `${rating.toFixed(1)}/10` : "",
+  ].filter(Boolean).join(" · ");
+  const variant = stableVariant(`${c.media_type}:${c.tmdb_id}:${c.title}`, 3);
+
+  if (playful && c.media_type === "tv") {
+    if (hinglish) {
+      const titles = [
+        `Aaj raat: ${c.title}`,
+        `${c.title} — episode mood?`,
+        `Aaj ka pick: ${c.title}`,
+      ];
+      const bodies = [
+        `${genre ? `${genre} ka ` : ""}episode, tumhare liye. ${meta}`,
+        `Ek episode se mood set karein? ${meta}`,
+        `Aaj ${c.title}? Ek episode, jab time mile. ${meta}`,
+      ];
+      return { title: clip(titles[variant], 120), body: clip(bodies[variant], 240) };
+    }
     return {
-      title,
-      body: clip(`New episodes are out${bits ? ` — ${bits}` : ""}`, 240),
+      title: clip(`Tonight: ${c.title}`, 120),
+      body: clip(`An episode of your ${genre || "show"}? ${meta}`, 240),
     };
   }
-  const title = clip(`New on Dizzy: ${c.title}`, 120);
-  const bits = [year, lang, rating > 0 ? `★ ${rating.toFixed(1)}` : ""]
-    .filter(Boolean)
-    .join(" · ");
+
+  if (playful) {
+    if (hinglish) {
+      const titles = [
+        `Aaj raat: ${c.title}`,
+        `${c.title} — tumhare liye`,
+        `Psst… ${c.title}`,
+      ];
+      const bodies = [
+        `${genre ? `${genre} + ` : ""}tumhara taste = match. ${meta}`,
+        `Movie night banti hai. ${meta}`,
+        `Ek tap, ek movie. ${meta}`,
+      ];
+      return { title: clip(titles[variant], 120), body: clip(bodies[variant], 240) };
+    }
+    const titles = [
+      `${c.title} just found you`,
+      `Psst — ${c.title}`,
+      `${c.title} is waiting`,
+    ];
+    const bodies = [
+      `Aaj ${genre || "watch"} mood? ${meta}`,
+      `Exactly your kind of ${genre || "story"}. One tap?`,
+      `One tap. One movie night. ${meta}`,
+    ];
+    return { title: clip(titles[variant], 120), body: clip(bodies[variant], 240) };
+  }
+
+  if (c.media_type === "tv") {
+    return {
+      title: clip(hinglish ? `${c.title} — aaj dekh lein?` : `Tonight: ${c.title}`, 120),
+      body: clip(
+        hinglish
+          ? `Ek ${lang} episode, jab time mile. ${meta}`
+          : `An ${lang} episode when you have time. ${meta}`,
+        240,
+      ),
+    };
+  }
+
   return {
-    title,
-    body: clip(`Now streaming${bits ? ` — ${bits}` : ""}. Tap to watch.`, 240),
+    title: clip(hinglish ? `${c.title} ab Dizzy par` : `New on Dizzy: ${c.title}`, 120),
+    body: clip(
+      hinglish
+        ? `Naya ${lang} movie. Jab man kare, tap karo. ${meta}`
+        : `A new ${lang} movie is ready when you are. ${meta}`,
+      240,
+    ),
   };
 }
 
@@ -198,7 +268,7 @@ serve(async (req) => {
     const { data: settingsRows } = await db
       .from("notification_settings")
       .select(
-        "user_id, off_kinds, quiet_enabled, quiet_start_minute, quiet_end_minute, tz_offset_minutes",
+        "user_id, off_kinds, quiet_enabled, quiet_start_minute, quiet_end_minute, tz_offset_minutes, tone",
       )
       .in("user_id", users);
     const settings = new Map<string, Record<string, unknown>>();
@@ -247,7 +317,7 @@ serve(async (req) => {
         let sent = 0;
         const logIds: number[] = [];
         for (const c of list) {
-          const text = copyFor(c);
+          const text = copyFor(c, s?.tone === "warm" ? "warm" : "playful");
           const dedupe = `rel_${c.media_type}_${c.tmdb_id}`;
 
           if (dryRun) {

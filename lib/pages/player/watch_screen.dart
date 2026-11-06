@@ -162,7 +162,7 @@ class _WatchScreenState extends State<WatchScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Is content ka Hindi dub nahi mila — English (default) play kar raha hoon',
+              'Hindi audio abhi nahi mila — English/default source try kar rahe hain.',
             ),
             duration: Duration(seconds: 4),
           ),

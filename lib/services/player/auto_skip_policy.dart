@@ -21,6 +21,31 @@ abstract final class AutoSkipPolicy {
   static const String _recap = 'recap';
   static const String _credits = 'credits';
 
+  /// Credits cannot auto-jump during the opening minute. A provider that
+  /// omits a start time would otherwise match at 0:00 and seek to the end,
+  /// which looks like "the episode started at the ending".
+  static const Duration creditsMinPosition = Duration(seconds: 60);
+
+  /// Position-aware variant used by the player tick.
+  static bool shouldAutoSkipAt(
+    String type,
+    Duration position, {
+    required bool autoSkipIntro,
+    required bool autoSkipRecap,
+    required bool autoSkipCredits,
+  }) {
+    if (type.trim().toLowerCase() == _credits &&
+        position < creditsMinPosition) {
+      return false;
+    }
+    return shouldAutoSkip(
+      type,
+      autoSkipIntro: autoSkipIntro,
+      autoSkipRecap: autoSkipRecap,
+      autoSkipCredits: autoSkipCredits,
+    );
+  }
+
   /// True when a segment of [type] should jump without user input.
   ///
   /// Only three types are ever auto-skipped. A preview, a trailer, or any

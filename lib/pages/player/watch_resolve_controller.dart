@@ -4,7 +4,9 @@ import '../../../models/stream/stream_model.dart';
 import '../../../services/player/dub_mode_service.dart';
 import '../../../services/stream/dub_filter.dart';
 import '../../../services/stream/instant_play_gate.dart';
+import '../../../services/stream/stream_health_checker.dart';
 import '../../../services/stream/stream_probe_race.dart';
+import '../../../services/stream/stream_relevance.dart';
 import '../../../services/stream/stream_service.dart';
 
 /// P17 — source-resolve pipeline extracted verbatim from `watch_screen.dart`
@@ -31,6 +33,8 @@ class WatchResolveController {
     required this.onInstantOpen,
     required this.onEnglishFallback,
     this.scrapeOverride,
+    this.hindiFirstWindow = const Duration(seconds: 4),
+    this.probeFn,
   });
 
   // ── Resolve inputs (were `widget.*` reads) ──────────────────────────
@@ -56,12 +60,24 @@ class WatchResolveController {
   /// (identical behavior to the old inline code).
   final Stream<StreamSource>? scrapeOverride;
 
+  /// How long a Hindi candidate gets to prove playable before explicit /
+  /// default-English sources are released. Discovery itself may run 20s;
+  /// a dead Hindi entry must not starve a working stream that whole time.
+  final Duration hindiFirstWindow;
+
+  /// Test seam for the health probe. Null uses the real checker.
+  final Future<bool> Function(StreamSource source)? probeFn;
+
   // ── Moved state (was `_pendingSources` / `_nonHindiPool` /
   // `_sourceBatchTimer` / `_autoplayRace` on the screen) ──────────────
   final List<StreamSource> _pending = [];
   final List<StreamSource> _nonHindiPool = [];
+  final List<StreamSource> _torrentCandidates = [];
   Timer? _batchTimer;
+  Timer? _fallbackTimer;
   StreamProbeRace? _race;
+  bool _hindiWon = false;
+  bool _fallbackReleased = false;
 
   /// First exposure waits for this window so a fast HTTP source that lands a
   /// few hundred ms later can outrank an early torrent that would stall.
@@ -84,7 +100,7 @@ class WatchResolveController {
     // verified alive auto-opens the player (unless the user has already
     // picked a source or autoplay is disabled in settings).
     if (shouldAutoOpen()) {
-      final race = StreamProbeRace();
+      final race = StreamProbeRace(probeFn: probeFn ?? StreamHealthChecker.isAlive);
       _race = race;
 
       // Embedded debrid streams are offered further below (after the
@@ -92,6 +108,7 @@ class WatchResolveController {
 
       race.winner.then((src) {
         if (!isMounted() || src == null) return;
+        if (DubModeService.isHindi && !_fallbackReleased) _hindiWon = true;
         if (!shouldAutoOpen()) return;
         // F1: the gate takes the first valid source; later winners are
         // ignored so a slow-but-alive source can never cut in.
@@ -102,16 +119,20 @@ class WatchResolveController {
 
     // 1. Immediately inject any embedded streams from the video (e.g. Torbox/Debrid direct streams)
     if (embeddedStreams.isNotEmpty) {
-      // Dub-mode gate: Hindi mode pe embedded debrid links bhi hindi-tagged honi
-      // chahiye (strict same-language playback). Non-hindi embedded links
-      // fallback pool mein jayengi — zero hindi mila to release ho jayengi.
-      if (DubModeService.isHindi) {
+      final embedded = embeddedStreams.where(_isRelevant).toList();
+      if (embedded.isEmpty) {
+        // Everything embedded belongs to another show/episode — fall through
+        // to the scraped stream instead of playing the wrong content.
+      } else if (DubModeService.isHindi) {
+        // Dub-mode gate: Hindi mode pe embedded debrid links bhi hindi-tagged honi
+        // chahiye (strict same-language playback). Non-hindi embedded links
+        // fallback pool mein jayengi — zero hindi mila to release ho jayengi.
         final embeddedHindi = filterByDubMode(
-          embeddedStreams,
+          embedded,
           hindi: true,
           mediaTitle: mediaTitle,
         );
-        final embeddedOther = embeddedStreams
+        final embeddedOther = embedded
             .where((s) => !embeddedHindi.contains(s))
             .toList();
         _pending.addAll(embeddedHindi);
@@ -122,9 +143,10 @@ class WatchResolveController {
         }
         _nonHindiPool.addAll(embeddedOther);
         if (embeddedHindi.isNotEmpty) flush();
+        _armFallbackDeadline();
       } else {
-        _pending.addAll(embeddedStreams);
-        for (final s in embeddedStreams) {
+        _pending.addAll(embedded);
+        for (final s in embedded) {
           _race?.offerEmbedded(s);
         }
         flush();
@@ -144,6 +166,11 @@ class WatchResolveController {
           );
       await for (final source in scrape) {
         if (!isMounted()) return;
+        // Wrong show / wrong episode / conflicting year → never offer it to
+        // autoplay or the picker. A provider answering "Nocturne (2026)" with
+        // "Castlevania Nocturne (2023)" must not get a green light.
+        if (!_isRelevant(source)) continue;
+        if (source.isTorrent) _torrentCandidates.add(source);
         // ── Dub-mode gate ────────────────────────────────────────────
         // Hindi mode ON: sirf hindi-tagged sources UI list aur autoplay
         // race dono ko jaate hain (health probe bhi sirf unhi pe).
@@ -153,6 +180,7 @@ class WatchResolveController {
         if (DubModeService.isHindi &&
             !source.hasAudioLanguage('hindi', mediaTitle: mediaTitle)) {
           _nonHindiPool.add(source);
+          _armFallbackDeadline();
           continue;
         }
         _pending.add(source);
@@ -172,19 +200,74 @@ class WatchResolveController {
     if (DubModeService.isHindi && _nonHindiPool.isNotEmpty) {
       // NOTE: hindi-count is computed by the screen (it owns `_sources`);
       // the screen reports back through [reportHindiCount].
-      if (_screenHindiCount == 0) {
-        for (final s in _nonHindiPool) {
-          _pending.add(s);
-          _race?.offer(s);
-        }
-        flush();
-        if (isMounted()) onEnglishFallback();
-      }
+      if (_screenHindiCount == 0) _releaseEnglishFallback(notify: true);
       _nonHindiPool.clear();
     }
 
+    _fallbackTimer?.cancel();
+    _maybeAutoplayTorrent();
     _race?.closeDrain();
     if (isMounted()) onLoadingDone();
+  }
+
+  /// Torrents cannot be HTTP-probed, so a torrent-only title used to stop at
+  /// the picker even with autoplay on. Once discovery is done and no HTTP
+  /// source opened, the best-seeded torrent goes straight to the player
+  /// (TorrServer pre-warms the first megabytes).
+  void _maybeAutoplayTorrent() {
+    if (!shouldAutoOpen() || _torrentCandidates.isEmpty) return;
+    final ranked = List<StreamSource>.of(_torrentCandidates);
+    ranked.sort((a, b) => (b.seeders ?? 0).compareTo(a.seeders ?? 0));
+    for (final torrent in ranked.take(3)) {
+      if (_autoplayGate.offer(torrent) == InstantPlayDecision.playNow) {
+        onInstantOpen(torrent);
+        return;
+      }
+    }
+  }
+
+  bool _isRelevant(StreamSource source) => StreamRelevance.isRelevant(
+    source: source,
+    title: title,
+    year: year,
+    season: season,
+    episode: episode,
+  );
+
+  /// Starts the one-shot playable-Hindi deadline. Armed only when autoplay
+  /// is racing: without a race there is no "winner" to wait for, and the
+  /// discovery-end check stays the only fallback trigger.
+  void _armFallbackDeadline() {
+    if (_fallbackTimer != null || _fallbackReleased || _race == null) return;
+    _fallbackTimer = Timer(hindiFirstWindow, () {
+      if (!isMounted() || _fallbackReleased || _hindiWon) return;
+      _releaseEnglishFallback(notify: true);
+    });
+  }
+
+  /// Releases held non-Hindi sources to the list and the race. Explicit
+  /// English is offered first; untagged/default-audio and other languages
+  /// follow so a mislabelled pool still has something playable.
+  void _releaseEnglishFallback({required bool notify}) {
+    if (_fallbackReleased) return;
+    _fallbackReleased = true;
+    _fallbackTimer?.cancel();
+    _fallbackTimer = null;
+    if (_nonHindiPool.isEmpty) return;
+
+    final ranked = List<StreamSource>.of(_nonHindiPool);
+    _sortForExposure(ranked);
+    final explicitEnglish = ranked
+        .where((s) => s.hasAudioLanguage('english', mediaTitle: mediaTitle))
+        .toList();
+    final rest = ranked.where((s) => !explicitEnglish.contains(s));
+    for (final s in [...explicitEnglish, ...rest]) {
+      _pending.add(s);
+      _race?.offer(s);
+    }
+    _nonHindiPool.clear();
+    flush();
+    if (notify && isMounted()) onEnglishFallback();
   }
 
   /// Last reader-seen hindi count in the screen's visible list
@@ -284,6 +367,7 @@ class WatchResolveController {
 
   void dispose() {
     _batchTimer?.cancel();
+    _fallbackTimer?.cancel();
     _race?.dispose();
   }
 }

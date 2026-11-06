@@ -11,10 +11,15 @@ import '../../services/theme/app_theme_service.dart';
 import 'direct_message_page.dart';
 import '../../widgets/common/notify.dart';
 
+typedef UserLookup = Future<List<DizzyUserMatch>> Function(String query);
+
 /// Friends — find by @username, send requests, accept/reject, chat.
 /// Three tabs: Search / Requests (badge) / Friends. Fail-soft, Easy English.
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({super.key});
+  const FriendsPage({super.key, this.lookup});
+
+  /// Override for tests and alternative identity backends.
+  final UserLookup? lookup;
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -22,11 +27,17 @@ class FriendsPage extends StatefulWidget {
 
 class _FriendsPageState extends State<FriendsPage>
     with SingleTickerProviderStateMixin {
+  static const _debounceDelay = Duration(milliseconds: 400);
+  static const _lookupTimeout = Duration(seconds: 8);
+
   late TabController _tabs;
   final TextEditingController _search = TextEditingController();
   Timer? _debounce;
   List<DizzyUserMatch> _results = [];
   bool _searching = false;
+  bool _searchFailed = false;
+  bool _hasSearched = false;
+  int _generation = 0;
   final Set<String> _busyIds = {};
 
   @override
@@ -38,29 +49,72 @@ class _FriendsPageState extends State<FriendsPage>
 
   @override
   void dispose() {
+    _generation++;
     _tabs.dispose();
     _search.dispose();
     _debounce?.cancel();
     super.dispose();
   }
 
+  /// Handles an @handle the same as its bare form.
+  static String _normalize(String raw) =>
+      raw.trim().replaceFirst(RegExp(r'^@'), '').trim();
+
   void _onSearchChanged(String q) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () => _runSearch(q));
+    // Every edit invalidates the in-flight answer before the new debounce
+    // even fires, so a slow old lookup can never repaint this screen.
+    _generation++;
+    setState(() {
+      _searching = false;
+      _searchFailed = false;
+      _hasSearched = false;
+      _results = [];
+    });
+    if (_normalize(q).length < 2) return;
+    _debounce = Timer(_debounceDelay, () => _runSearch(q));
   }
 
-  Future<void> _runSearch(String q) async {
-    if (q.trim().length < 2) {
-      if (mounted) setState(() => _results = []);
+  Future<void> _runSearch(String raw) async {
+    _debounce?.cancel();
+    _debounce = null;
+    final query = _normalize(raw);
+    final generation = ++_generation;
+    if (query.length < 2) {
+      if (mounted) {
+        setState(() {
+          _searching = false;
+          _searchFailed = false;
+          _hasSearched = false;
+          _results = [];
+        });
+      }
       return;
     }
-    setState(() => _searching = true);
-    final res = await DizzySocialService.searchUsers(q);
-    if (!mounted) return;
     setState(() {
-      _results = res;
-      _searching = false;
+      _searching = true;
+      _searchFailed = false;
     });
+    try {
+      final res = await Future.sync(
+        () => (widget.lookup ?? DizzySocialService.searchUsers)(query),
+      ).timeout(_lookupTimeout);
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _results = res;
+        _searching = false;
+        _searchFailed = false;
+        _hasSearched = true;
+      });
+    } catch (_) {
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _results = [];
+        _searching = false;
+        _searchFailed = true;
+        _hasSearched = false;
+      });
+    }
   }
 
   Future<void> _send(String uid, String name) async {
@@ -191,7 +245,7 @@ class _FriendsPageState extends State<FriendsPage>
             onChanged: _onSearchChanged,
             style: TextStyle(color: ink),
             decoration: InputDecoration(
-              hintText: 'Type @username... (min 2 letters)',
+              hintText: 'Search a name or @username',
               hintStyle: TextStyle(color: inkSoft, fontSize: 13),
               prefixIcon: Icon(Icons.search_rounded, color: inkSoft),
               filled: true,
@@ -209,10 +263,29 @@ class _FriendsPageState extends State<FriendsPage>
             child: CircularProgressIndicator(color: DizzyGlow.red),
           ),
         Expanded(
-          child: _results.isEmpty && !_searching
+          child: _searchFailed
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Couldn't search right now.",
+                        style: TextStyle(color: inkSoft, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: () => _runSearch(_search.text),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : !_searching && _results.isEmpty
               ? Center(
                   child: Text(
-                    'Search any @username to add friends.',
+                    _hasSearched
+                        ? 'No users found.'
+                        : 'Search any @username to add friends.',
                     style: TextStyle(color: inkSoft, fontSize: 13),
                   ),
                 )
@@ -395,15 +468,18 @@ class _FriendsPageState extends State<FriendsPage>
     final isLight = AppThemeService.currentPalette.value.isLight;
     final labelColor = ghost && isLight ? PrismLight.ink : Colors.white;
     return DizzyTactileButton(
-      height: 34,
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       onTap: onTap,
       gradient: ghost ? null : DizzyGradients.emberButton,
       child: Text(
         label,
+        textAlign: TextAlign.center,
         style: TextStyle(
           color: labelColor,
           fontWeight: FontWeight.bold,
           fontSize: 12,
+          height: 1.2,
         ),
       ),
     );

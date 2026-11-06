@@ -35,7 +35,7 @@ void main() {
       });
     });
 
-    group('searchUsers (fail-soft + guard)', () {
+    group('searchUsers (errors + guard)', () {
       test('returns empty for short query', () async {
         final results = await DizzySocialService.searchUsers('a');
         expect(results, isEmpty);
@@ -46,14 +46,22 @@ void main() {
         expect(results, isEmpty);
       });
 
-      test('returns empty when cloud unavailable', () async {
-        final results = await DizzySocialService.searchUsers('testuser');
-        expect(results, isEmpty);
+      test('exposes unavailable cloud instead of reporting no matches', () async {
+        await expectLater(
+          DizzySocialService.searchUsers('testuser'),
+          throwsStateError,
+        );
       });
 
       test('handles whitespace-only query', () async {
         final results = await DizzySocialService.searchUsers('   ');
         expect(results, isEmpty);
+      });
+
+      test('ignores an optional leading @ when checking minimum length', () async {
+        for (final query in ['@', '@a', '  @a  ', ' @  ']) {
+          expect(await DizzySocialService.searchUsers(query), isEmpty);
+        }
       });
     });
 

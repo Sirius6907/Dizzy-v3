@@ -7,8 +7,8 @@
 /// which is regularly the English track even in Hindi mode.
 ///
 /// Pure policy (no mpv, no BuildContext) so it unit-tests in milliseconds.
-/// Null means "keep the player's own pick", which is always safe: this
-/// never forces a wrong-language track onto someone.
+/// Hindi preference selects explicit Hindi first, then explicit English.
+/// Null means "keep the player's own pick", not proof of its language.
 library;
 
 /// One selectable audio track, flattened from whatever the player reports.
@@ -30,43 +30,36 @@ abstract final class AudioTrackPreference {
   static const Set<String> _hindiTags = {'hin', 'hi', 'hindi'};
   static const Set<String> _englishTags = {'eng', 'en', 'english'};
 
-  /// Pick the track to auto-select, or null to keep the player's own choice.
-  ///
-  /// Signal order (strongest first):
-  ///   1. an explicit language tag on the track;
-  ///   2. the language named in the track label;
-  ///   3. English mode only — an entirely unlabelled track, which in
-  ///      practice is the original audio rather than a dub.
+  static final RegExp _hindiLabel = RegExp(
+    r'\b(?:hi|hin|hindi)\b',
+    caseSensitive: false,
+  );
+  static final RegExp _englishLabel = RegExp(
+    r'\b(?:en|eng|english)\b',
+    caseSensitive: false,
+  );
+
+  /// Pick explicit Hindi first (when preferred), then explicit English.
+  /// Within each language, tags outrank labels. A conflicting language tag
+  /// blocks label inference; unknown/original/multi alone never prove English.
+  /// Returns null when neither language is evidenced.
   static int? pick({
     required List<AudioTrackOption> tracks,
     required bool hindi,
   }) {
-    if (tracks.isEmpty) return null;
-
-    // 1. Explicit language tag wins — no guessing.
-    final wanted = hindi ? _hindiTags : _englishTags;
-    for (final t in tracks) {
-      final tag = _normalize(t.language);
-      if (tag != null && wanted.contains(tag)) return t.index;
-    }
-
-    // 2. Fall back to the label when the container carries no tag.
-    for (final t in tracks) {
-      final label = (t.title ?? '').toLowerCase();
-      if (label.isEmpty) continue;
-      final hit = hindi
-          ? label.contains('hindi')
-          : (label.contains('english') || _hasEnglishToken(label));
-      if (hit) return t.index;
-    }
-
-    // 3. Untagged + unlabelled track in English mode is the safest default
-    //    (the original audio). Hindi mode stays hands-off here: an untagged
-    //    track is exactly the case where guessing wrong is most likely.
-    if (!hindi) {
+    for (final wanted in [if (hindi) _hindiTags, _englishTags]) {
       for (final t in tracks) {
-        final untagged = (t.language ?? '').isEmpty && (t.title ?? '').isEmpty;
-        if (untagged) return t.index;
+        if (wanted.contains(_normalize(t.language))) return t.index;
+      }
+
+      final pattern = wanted == _hindiTags ? _hindiLabel : _englishLabel;
+      for (final t in tracks) {
+        // Only absent or unspecified tags permit a label-based inference.
+        final tag = _normalize(t.language);
+        if (tag != null && tag != 'und' && tag != 'unknown' && tag != 'mul') {
+          continue;
+        }
+        if (pattern.hasMatch(t.title ?? '')) return t.index;
       }
     }
 
@@ -80,8 +73,4 @@ abstract final class AudioTrackPreference {
     final base = v.split(RegExp('[_-]')).first;
     return base.isEmpty ? null : base;
   }
-
-  /// Bare 'en' token, but not 'end credits' / 'enhanced'.
-  static bool _hasEnglishToken(String label) =>
-      RegExp(r'\ben\b').hasMatch(label);
 }

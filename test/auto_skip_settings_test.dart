@@ -102,5 +102,53 @@ void main() {
         isFalse,
       );
     });
+
+    test('credits never auto-skip during the opening minute', () {
+      // A provider can return a credits segment without a start time; a
+      // position-0 match seeked the player straight to the end.
+      expect(
+        AutoSkipPolicy.shouldAutoSkipAt(
+          'credits',
+          Duration.zero,
+          autoSkipIntro: true,
+          autoSkipRecap: true,
+          autoSkipCredits: true,
+        ),
+        isFalse,
+      );
+      expect(
+        AutoSkipPolicy.shouldAutoSkipAt(
+          'credits',
+          const Duration(seconds: 20),
+          autoSkipIntro: true,
+          autoSkipRecap: true,
+          autoSkipCredits: true,
+        ),
+        isFalse,
+      );
+      expect(
+        AutoSkipPolicy.shouldAutoSkipAt(
+          'credits',
+          const Duration(seconds: 60),
+          autoSkipIntro: true,
+          autoSkipRecap: true,
+          autoSkipCredits: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('intros still auto-skip from the first second', () {
+      expect(
+        AutoSkipPolicy.shouldAutoSkipAt(
+          'intro',
+          Duration.zero,
+          autoSkipIntro: true,
+          autoSkipRecap: true,
+          autoSkipCredits: true,
+        ),
+        isTrue,
+      );
+    });
   });
 }

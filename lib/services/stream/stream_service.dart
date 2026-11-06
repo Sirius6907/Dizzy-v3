@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import '../../models/addon/addon.dart';
 import '../../models/stream/stream_model.dart';
 import '../addon/addon_manager.dart';
+import 'stream_addon_service.dart';
 import '../scraper/stream_scraper.dart';
 import '../scraper/sites/knaben.dart';
 import '../scraper/sites/torrent_galaxy.dart';
@@ -53,70 +53,95 @@ import '../scraper/sites/a111477.dart';
 import '../scraper/sites/vadapav.dart';
 import '../scraper/sites/hindmoviez.dart';
 import '../anime/anime_scraper_service.dart';
+import '../anime/kitsu_resolver.dart';
 import '../anime_arabic/anime_arabic_service.dart';
 import '../anime_arabic/anime_arabic_extractor.dart';
-import '../net/dizzy_net.dart';
-import '../errors/app_log.dart';
 
 /// Service that fetches playback streams from all installed Stremio addons
 /// and built-in scrapers.
 class StreamService {
   StreamService._();
 
+  /// Scrapers whose upstream hosts are gone (2026-11-06 audit: DNS/timeout).
+  /// Keeping them registered only burns the resolve budget; the verified
+  /// default stream addons cover the same content.
+  static const Set<String> retiredScrapers = {
+    'bcine',
+    'cinesrc',
+    'cinesu',
+    'downloadeverything',
+    'hindmoviez',
+    'lookmovie',
+    'torrentgalaxy',
+    'vidgod',
+    'vidrock',
+    'vidsrc',
+    'vidvault',
+    'vuflix',
+    'vixsrc',
+    'fsonline',
+    'movy',
+  };
+
+  static void _reg(StreamScraper scraper) {
+    if (retiredScrapers.contains(scraper.name.toLowerCase())) return;
+    ScraperManager.instance.registerScraper(scraper);
+  }
+
   static void _registerBuiltInScrapers() {
     // Source of truth = builtin addon entry (kept in lockstep with the
     // Settings switch via AddonManager.toggleAddon). isP2pEnabled mirrors it.
     if (AddonManager.instance.isDizzyActive) {
       ScraperManager.instance.registerScraper(KnabenScraper());
-      ScraperManager.instance.registerScraper(TorrentGalaxyScraper());
+      _reg(TorrentGalaxyScraper());
     } else {
       ScraperManager.instance.unregisterTorrentScrapers();
     }
-    ScraperManager.instance.registerScraper(A111477Scraper());
-    ScraperManager.instance.registerScraper(VadapavScraper());
-    ScraperManager.instance.registerScraper(HindMoviezScraper());
-    ScraperManager.instance.registerScraper(FourKHDHubScraper());
-    ScraperManager.instance.registerScraper(XDownloaderScraper());
-    ScraperManager.instance.registerScraper(VideasyScraper());
-    ScraperManager.instance.registerScraper(VidSrcScraper());
-    ScraperManager.instance.registerScraper(MultiEmbedScraper());
-    ScraperManager.instance.registerScraper(VidCoreScraper());
-    ScraperManager.instance.registerScraper(FlyStreamScraper());
-    ScraperManager.instance.registerScraper(MovieNightScraper());
-    ScraperManager.instance.registerScraper(DownloadEverythingScraper());
-    ScraperManager.instance.registerScraper(MovyScraper());
-    ScraperManager.instance.registerScraper(VuflixScraper());
-    ScraperManager.instance.registerScraper(RiveStreamScraper());
-    ScraperManager.instance.registerScraper(CinejoyScraper());
-    ScraperManager.instance.registerScraper(DuloScraper());
-    ScraperManager.instance.registerScraper(VidUpScraper());
-    ScraperManager.instance.registerScraper(FlaxMoviesScraper());
-    ScraperManager.instance.registerScraper(VidGodScraper());
-    ScraperManager.instance.registerScraper(VidFastScraper());
-    ScraperManager.instance.registerScraper(PeeStreamScraper());
-    ScraperManager.instance.registerScraper(LookMovieScraper());
-    ScraperManager.instance.registerScraper(HexaScraper());
-    ScraperManager.instance.registerScraper(BcineScraper());
-    ScraperManager.instance.registerScraper(MappleScraper());
-    ScraperManager.instance.registerScraper(NovaScraper());
-    ScraperManager.instance.registerScraper(MegaSourceScraper());
-    ScraperManager.instance.registerScraper(PurstreamScraper());
-    ScraperManager.instance.registerScraper(VidApiScraper());
-    ScraperManager.instance.registerScraper(VidRockScraper());
-    ScraperManager.instance.registerScraper(VidVaultScraper());
-    ScraperManager.instance.registerScraper(VidZeeScraper());
-    ScraperManager.instance.registerScraper(CineSrcScraper());
-    ScraperManager.instance.registerScraper(CineSuScraper());
-    ScraperManager.instance.registerScraper(FrameScraper());
-    ScraperManager.instance.registerScraper(FshareTvScraper());
-    ScraperManager.instance.registerScraper(FSonicScraper());
-    ScraperManager.instance.registerScraper(FSOnlineScraper());
-    ScraperManager.instance.registerScraper(KissKhScraper());
-    ScraperManager.instance.registerScraper(LMScriptScraper());
-    ScraperManager.instance.registerScraper(MeowTvScraper());
-    ScraperManager.instance.registerScraper(VidLinkScraper());
-    ScraperManager.instance.registerScraper(VixSrcScraper());
-    ScraperManager.instance.registerScraper(XPassScraper());
+    _reg(A111477Scraper());
+    _reg(VadapavScraper());
+    _reg(HindMoviezScraper());
+    _reg(FourKHDHubScraper());
+    _reg(XDownloaderScraper());
+    _reg(VideasyScraper());
+    _reg(VidSrcScraper());
+    _reg(MultiEmbedScraper());
+    _reg(VidCoreScraper());
+    _reg(FlyStreamScraper());
+    _reg(MovieNightScraper());
+    _reg(DownloadEverythingScraper());
+    _reg(MovyScraper());
+    _reg(VuflixScraper());
+    _reg(RiveStreamScraper());
+    _reg(CinejoyScraper());
+    _reg(DuloScraper());
+    _reg(VidUpScraper());
+    _reg(FlaxMoviesScraper());
+    _reg(VidGodScraper());
+    _reg(VidFastScraper());
+    _reg(PeeStreamScraper());
+    _reg(LookMovieScraper());
+    _reg(HexaScraper());
+    _reg(BcineScraper());
+    _reg(MappleScraper());
+    _reg(NovaScraper());
+    _reg(MegaSourceScraper());
+    _reg(PurstreamScraper());
+    _reg(VidApiScraper());
+    _reg(VidRockScraper());
+    _reg(VidVaultScraper());
+    _reg(VidZeeScraper());
+    _reg(CineSrcScraper());
+    _reg(CineSuScraper());
+    _reg(FrameScraper());
+    _reg(FshareTvScraper());
+    _reg(FSonicScraper());
+    _reg(FSOnlineScraper());
+    _reg(KissKhScraper());
+    _reg(LMScriptScraper());
+    _reg(MeowTvScraper());
+    _reg(VidLinkScraper());
+    _reg(VixSrcScraper());
+    _reg(XPassScraper());
   }
 
   /// Fetches streams from all active stream-capable addons for the given
@@ -208,7 +233,13 @@ class StreamService {
 
       Future<void> runAddon(InstalledAddon addon) async {
         try {
-          final sources = await _fetchFromAddon(addon, type, id);
+          final sources = await _fetchFromAddon(
+            addon,
+            type,
+            id,
+            season: season,
+            episode: episode,
+          );
           if (!disposed && !controller.isClosed) {
             for (final source in sources) {
               controller.add(source);
@@ -426,18 +457,36 @@ class StreamService {
 
     if (matchingAddons.isNotEmpty) {
       final matchingAddon = matchingAddons.first;
-      _fetchFromAddon(matchingAddon, type, id)
-          .then((sources) {
-            if (!controller.isClosed) {
-              for (final source in sources) {
-                controller.add(source);
-              }
-            }
-          })
-          .catchError((_) {})
-          .whenComplete(() {
-            if (!controller.isClosed) controller.close();
-          });
+      () async {
+        var fetchType = type;
+        var fetchId = id;
+        // Anime pages carry an AniList id; addons understand Kitsu. Resolve
+        // once so the panel keeps working instead of showing "No streams".
+        if (id.startsWith('anilist:')) {
+          final kitsuId = await KitsuResolver.instance.kitsuIdFor(
+            anilistId: int.tryParse(id.substring('anilist:'.length)),
+            titles: [title],
+            year: year,
+          );
+          if (kitsuId != null) {
+            fetchType = 'anime';
+            fetchId = 'kitsu:$kitsuId';
+          }
+        }
+        final sources = await _fetchFromAddon(
+          matchingAddon,
+          fetchType,
+          fetchId,
+          season: season,
+          episode: episode,
+        );
+        if (!controller.isClosed) {
+          for (final source in sources) {
+            controller.add(source);
+          }
+          await controller.close();
+        }
+      }();
     } else {
       // Fallback: If no exact addon match found, run general fetch
       return fetchStreams(
@@ -453,62 +502,34 @@ class StreamService {
     return controller.stream;
   }
 
+  /// Stremio stream path for an addon call.
+  ///
+  /// Series and anime addons need the episode in the ID itself
+  /// (`series/tt123:1:2`, `anime/kitsu:123:53`); calling with the bare title
+  /// ID returns nothing or the wrong episode.
+  static String buildAddonStreamPath({
+    required String type,
+    required String id,
+    int? season,
+    int? episode,
+  }) => StreamAddonService.buildPath(
+    type: type,
+    id: id,
+    season: season,
+    episode: episode,
+  );
+
   static Future<List<StreamSource>> _fetchFromAddon(
     InstalledAddon addon,
     String type,
-    String id,
-  ) async {
-    try {
-      // Check idPrefixes filtering if declared by addon
-      if (addon.manifest.idPrefixes.isNotEmpty) {
-        final matchesPrefix = addon.manifest.idPrefixes.any(
-          (p) => id.startsWith(p),
-        );
-        if (!matchesPrefix) return [];
-      }
-
-      // Check types filtering if declared by addon
-      if (addon.manifest.types.isNotEmpty) {
-        final matchesType = addon.manifest.types.contains(type);
-        if (!matchesType) return [];
-      }
-
-      final pathId = Uri.encodeComponent(id);
-      final url = '${addon.baseUrl}/stream/$type/$pathId.json';
-
-      final response = await DizzyNet.instance
-          .get(
-            Uri.parse(url),
-            headers: {
-              'User-Agent':
-                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode != 200) return [];
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final streams = data['streams'] as List<dynamic>?;
-
-      if (streams == null || streams.isEmpty) return [];
-
-      return streams
-          .whereType<Map>()
-          .map(
-            (json) => StreamSource.fromJson(
-              Map<String, dynamic>.from(json),
-              addon.manifest.name,
-            ),
-          )
-          .where(
-            (s) => s.url != null || s.infoHash != null || s.externalUrl != null,
-          )
-          .toList();
-    } catch (e) {
-      AppLog.d('Addon ${addon.manifest.name} stream fetch failed: $e');
-      return [];
-    }
-  }
+    String id, {
+    int? season,
+    int? episode,
+  }) => StreamAddonService.fetchFrom(
+    addon,
+    type,
+    id,
+    season: season,
+    episode: episode,
+  );
 }

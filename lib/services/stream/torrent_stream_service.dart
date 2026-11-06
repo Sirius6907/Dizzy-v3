@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:torrserver_flutter/torrserver_flutter.dart';
 
 import '../../models/download/download_task_model.dart';
 import '../download/download_service.dart';
 import '../debrid/utils/debrid_media_matcher.dart';
 import '../errors/app_log.dart';
+import 'torrent_file_guard.dart';
+import 'torrent_warmup_policy.dart';
 
 /// Rich torrent statistics object.
 class TorrentStats {
@@ -162,9 +165,19 @@ class TorrentStreamService {
         return null;
       }
 
+      // Decoy releases carry a 1-2 GB `.exe` as the only file. Selecting it
+      // hands Windows malware to the player and black-screens the user.
+      final videoFiles = files
+          .where((f) => TorrentFileGuard.isVideo(f.path))
+          .toList();
+      if (videoFiles.isEmpty) {
+        _log('Torrent has no playable video file (decoy payload only)');
+        return null;
+      }
+
       // Auto file picker
       final selectedFileId = _selectFile(
-        files,
+        videoFiles,
         season: season,
         episode: episode,
         episodeTitle: episodeTitle,
@@ -176,9 +189,9 @@ class TorrentStreamService {
         return null;
       }
 
-      final selectedFile = files.firstWhere(
+      final selectedFile = videoFiles.firstWhere(
         (f) => f.id == selectedFileId,
-        orElse: () => files.first,
+        orElse: () => videoFiles.first,
       );
       _log(
         'Selected file #${selectedFile.id}: "${selectedFile.path}" (${_formatBytes(selectedFile.length)})',
@@ -187,10 +200,57 @@ class TorrentStreamService {
       final streamUri = _controller.streamUrl(hash, fileIndex: selectedFile.id);
       _log('HTTP Stream URL generated: $streamUri');
 
+      await _warmUpStream(streamUri, hash);
+
       return streamUri.toString();
     } catch (e, st) {
       _log('streamTorrent error: $e\n$st');
       return null;
+    }
+  }
+
+  /// Kick-starts the exact file mpv will request and waits for a small
+  /// initial buffer. Without this, a cold swarm makes mpv sit 45s+ and
+  /// report "Failed to open" even though the torrent is healthy.
+  Future<void> _warmUpStream(Uri url, String hash) async {
+    final clock = Stopwatch()..start();
+
+    unawaited(() async {
+      http.Client? client;
+      StreamSubscription<List<int>>? sub;
+      try {
+        client = http.Client();
+        final request = http.Request('GET', url)
+          ..headers['Range'] = 'bytes=0-1048575';
+        final response = await client
+            .send(request)
+            .timeout(const Duration(seconds: 8));
+        sub = response.stream.listen((_) {}, onError: (_) {});
+        await Future<void>.delayed(const Duration(seconds: 2));
+      } catch (_) {
+      } finally {
+        await sub?.cancel();
+        client?.close();
+      }
+    }());
+
+    while (clock.elapsed < TorrentWarmupPolicy.maxWait) {
+      try {
+        final info = await _controller.getTorrent(hash);
+        _latestUpdates[hash] = info;
+        if (TorrentWarmupPolicy.isReady(
+          loadedBytes: info.loadedSize,
+          preloadedBytes: info.preloadedBytes,
+          elapsed: clock.elapsed,
+        )) {
+          _log(
+            'Torrent warm-up ready: ${info.loadedSize ~/ 1048576} MB buffered, '
+            'peers ${info.activePeers}',
+          );
+          return;
+        }
+      } catch (_) {}
+      await Future<void>.delayed(const Duration(milliseconds: 400));
     }
   }
 

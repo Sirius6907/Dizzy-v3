@@ -12,25 +12,35 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PrismShadows', () {
-    test('resting returns dual shadows (light + dark)', () {
+    test('resting keeps a top-left rim and a downward shadow', () {
       final shadows = PrismShadows.resting(isLight: true);
-      expect(shadows, hasLength(2));
+      expect(shadows.length, greaterThanOrEqualTo(2));
+      expect(
+        shadows.any((s) => s.offset.dx < 0 && s.offset.dy < 0),
+        isTrue,
+        reason: 'the light source is top-left, never flipped',
+      );
+      expect(
+        shadows.any((s) => s.offset.dy > 0 && s.color.a > 0),
+        isTrue,
+        reason: 'a raised object casts below itself',
+      );
     });
 
-    test('raised returns dual shadows', () {
-      expect(PrismShadows.raised(isLight: false), hasLength(2));
+    test('raised keeps the same light model in dark mode', () {
+      final shadows = PrismShadows.raised(isLight: false);
+      expect(shadows.length, greaterThanOrEqualTo(2));
+      expect(shadows.any((s) => s.offset.dy > 0), isTrue);
+      expect(shadows.any((s) => s.color.a > 0), isTrue);
     });
 
-    test('floating adds halo (3 shadows)', () {
-      final shadows = PrismShadows.floating(
+    test('floating adds exactly one halo when a halo is passed', () {
+      final plain = PrismShadows.floating(isLight: true);
+      final halo = PrismShadows.floating(
         isLight: true,
         halo: PrismAccent.accent,
       );
-      expect(shadows, hasLength(3));
-    });
-
-    test('floating without halo returns 2 shadows', () {
-      expect(PrismShadows.floating(isLight: true), hasLength(2));
+      expect(halo.length, plain.length + 1);
     });
 
     test('pressed returns dual shadows', () {
@@ -54,8 +64,7 @@ void main() {
         hovered: true,
         glow: PrismAccent.accent,
       );
-      expect(plain, hasLength(2));
-      expect(hovered, hasLength(3));
+      expect(hovered.length, plain.length + 1);
     });
   });
 

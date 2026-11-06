@@ -22,8 +22,9 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -34,26 +35,26 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: scheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '🔒 Your privacy, your call',
+            Text(
+              'Your privacy, your call',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Dizzy works 100% without an account. '
-              'Help improve the app by sharing privacy-safe data. '
-              'Everything is optional — change anytime in Settings → Privacy.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+            Text(
+              'Dizzy works without an account. Help improve it by sharing '
+              'privacy-safe data. Everything is optional — change it anytime '
+              'in Settings → Privacy.',
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
             ),
             const SizedBox(height: 12),
             _toggle(
@@ -111,23 +112,6 @@ class _ConsentOnboardingSheetState extends State<ConsentOnboardingSheet> {
                 onPressed: () async {
                   // v1.2.0-P1 (T1.6): explicit Decline All — all flags OFF,
                   // marked onboarded, sheet closes, never nags again.
-                  await CloudAuthService.setConsent(
-                    telemetry: false,
-                    genrePrefs: false,
-                    crash: false,
-                    watchParty: false,
-                  );
-                  await CloudAuthService.setOnboarded();
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
-            ),
-            const SizedBox(height: 4),
-            Center(
-              child: PrismButton(
-                label: 'Skip — keep everything off',
-                small: true,
-                onPressed: () async {
                   await CloudAuthService.setConsent(
                     telemetry: false,
                     genrePrefs: false,

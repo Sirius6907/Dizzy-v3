@@ -994,15 +994,10 @@ class _SettingsCategoryTile extends StatelessWidget {
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
       child: Container(
+        // The card itself owns the surface, radius and shadow. A second
+        // border here clipped against a different radius and drew a dark
+        // seam into the top-left corner.
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isLight
-                ? PrismLight.borderSubtle
-                : Colors.white.withValues(alpha: 0.08),
-          ),
-        ),
         child: Row(
           children: [
             // Icon Container with subtle tinted background

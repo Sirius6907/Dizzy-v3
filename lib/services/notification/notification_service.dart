@@ -145,6 +145,13 @@ class NotificationService {
     await _persistGate();
   }
 
+  static Future<void> setTone(NotificationTone tone) async {
+    if (_gate.tone == tone) return;
+    _gate = _gate.copyWith(tone: tone);
+    await _persistGate();
+    unawaited(NotificationSync.pushTone(tone));
+  }
+
   // ── permission (Android 13+) ─────────────────────────────────────────────
 
   /// Callers show the Easy English rationale first, then await this.

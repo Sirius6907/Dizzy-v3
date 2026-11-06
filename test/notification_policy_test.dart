@@ -108,6 +108,7 @@ void main() {
         quietEnabled: true,
         quietStartMinute: 1320,
         quietEndMinute: 420,
+        tone: NotificationTone.warm,
       );
       final restored = NotificationGate.fromJson(original.toJson());
 
@@ -115,6 +116,21 @@ void main() {
       expect(restored.quietEnabled, isTrue);
       expect(restored.quietStartMinute, 1320);
       expect(restored.quietEndMinute, 420);
+      expect(restored.tone, NotificationTone.warm);
+    });
+
+    test('message style defaults to playful and survives junk', () {
+      expect(const NotificationGate().tone, NotificationTone.playful);
+      expect(
+        NotificationGate.fromJson({'tone': 'nonsense'}).tone,
+        NotificationTone.playful,
+      );
+      expect(
+        const NotificationGate()
+            .copyWith(tone: NotificationTone.warm)
+            .tone,
+        NotificationTone.warm,
+      );
     });
 
     test('time helpers parse, format and reject junk', () {

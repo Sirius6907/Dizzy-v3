@@ -49,6 +49,9 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
   final AnimeLibraryService _library = AnimeLibraryService.instance;
 
   final List<StreamSource> _allSources = [];
+  final Set<String> _seenSourceKeys = {};
+  final List<StreamSource> _incoming = [];
+  Timer? _flushTimer;
   String _selectedCategory = 'all'; // 'all', 'sub', 'dub'
   bool _isScraping = true;
   bool _hasAutoPlayed = false;
@@ -63,28 +66,39 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
 
   @override
   void dispose() {
+    _flushTimer?.cancel();
     _streamSub?.cancel();
     super.dispose();
+  }
+
+  /// Bursts (a torrent addon returns 30+ rows at once) must not schedule one
+  /// rebuild per row on a phone — that froze input dispatch on the emulator.
+  void _queueSource(StreamSource source) {
+    final key = source.url ?? source.infoHash ?? source.title ?? '';
+    if (key.isEmpty || !_seenSourceKeys.add(key)) return;
+    _incoming.add(source);
+    _flushTimer ??= Timer(const Duration(milliseconds: 150), () {
+      _flushTimer = null;
+      if (!mounted || _incoming.isEmpty) return;
+      final batch = List<StreamSource>.of(_incoming);
+      _incoming.clear();
+      setState(() => _allSources.addAll(batch));
+    });
   }
 
   void _startScraping() {
     setState(() {
       _allSources.clear();
+      _seenSourceKeys.clear();
       _isScraping = true;
       _error = null;
     });
 
     // Parallel probe race: every source is health-checked concurrently.
-    // The FIRST source verified alive triggers autoplay instantly —
-    // a dead source can no longer block the queue (old serial await
-    // added up to 3s of delay per dead source).
-    final race = StreamProbeRace(
-      onVerifiedBatch: (batch) {
-        if (mounted) {
-          setState(() => _allSources.addAll(batch));
-        }
-      },
-    );
+    // The FIRST source verified alive triggers autoplay instantly.
+    // The list itself fills on arrival — torrents (Torrentio) carry no URL
+    // to probe, so waiting for "verified" used to hide every torrent.
+    final race = StreamProbeRace();
 
     race.winner.then((src) {
       if (!mounted || src == null) return;
@@ -101,6 +115,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
         )
         .listen(
           (source) {
+            _queueSource(source);
             race.offer(source);
           },
           onError: (e) {

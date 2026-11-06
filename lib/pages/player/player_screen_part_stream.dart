@@ -184,11 +184,14 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
         }
       }
 
+      final startAt = PlaybackStartPolicy.sanitize(
+        _resumeAtOverride ?? widget.initialPosition,
+      );
       await _player.open(
         Media(
           cleanUri.toString(),
           httpHeaders: isTorrentStream ? null : playerHeaders,
-          start: _resumeAtOverride ?? widget.initialPosition,
+          start: startAt,
         ),
         play: true,
       );

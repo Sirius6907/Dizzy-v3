@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Anime sections intentionally NOT affected — separate scrapers/flows.
 enum AudioDubMode { english, hindi }
 
-/// Holds the app-wide dub mode (English default / Hindi Dub).
+/// Holds the app-wide dub mode (Hindi default; saved English is respected).
 ///
 /// Pattern mirrors [PlayerSettings]: static ValueNotifier + async persist.
 /// Watch screen, NextEpisodeEngine and PlayerScreen episode-switch all
@@ -15,7 +15,7 @@ class DubModeService {
   static const String _prefsKey = 'audio_dub_mode';
 
   static final ValueNotifier<AudioDubMode> mode = ValueNotifier<AudioDubMode>(
-    AudioDubMode.english,
+    AudioDubMode.hindi,
   );
   static bool _initialized = false;
 
@@ -23,15 +23,16 @@ class DubModeService {
   static bool get isHindi => mode.value == AudioDubMode.hindi;
 
   /// Call once from main() alongside the other settings initializers.
+  /// Missing, invalid or unavailable preferences fall back to Hindi.
   static Future<void> initialize() async {
     if (_initialized) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getString(_prefsKey) == 'hindi') {
-        mode.value = AudioDubMode.hindi;
-      }
+      mode.value = prefs.getString(_prefsKey) == 'english'
+          ? AudioDubMode.english
+          : AudioDubMode.hindi;
     } catch (_) {
-      // Prefs unavailable — keep default english mode.
+      mode.value = AudioDubMode.hindi;
     }
     _initialized = true;
   }
@@ -48,7 +49,7 @@ class DubModeService {
   /// Tests only: reset static state between cases.
   @visibleForTesting
   static void resetForTest() {
-    mode.value = AudioDubMode.english;
+    mode.value = AudioDubMode.hindi;
     _initialized = false;
   }
 }
