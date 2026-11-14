@@ -35,6 +35,18 @@ void main() {
       expect(CloudClient.functionUrl('tmdb-proxy'), isEmpty);
     });
 
+    test('edge proxy request carries a bearer token, not only apikey', () {
+      // THE 401 regression: tmdb-proxy edge function requires JWT
+      // verification, so an apikey-only request comes back
+      // 401 UNAUTHORIZED_NO_AUTH_HEADER and the app silently lost its
+      // edge proxy rung on every title lookup.
+      final h = TmdbHelper.edgeHeaders();
+      expect(h.containsKey('Authorization'), isTrue);
+      expect(h['Authorization'], 'Bearer ${CloudClient.anonKey}');
+      expect(h.containsKey('apikey'), isTrue);
+      expect(h['apikey'], CloudClient.anonKey);
+    });
+
     test('numeric ids resolve offline (no network touched)', () async {
       expect(
         await TmdbHelper.resolveTmdbId(

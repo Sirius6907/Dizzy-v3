@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../config/env_service.dart';
 import '../../cloud/cloud_client.dart';
@@ -76,7 +77,14 @@ class TmdbHelper {
   }
 
   static bool get _edgeReady =>
-      CloudClient.isReady && CloudClient.functionUrl('tmdb-proxy').isNotEmpty;
+      CloudClient.isConfigured && CloudClient.functionUrl('tmdb-proxy').isNotEmpty;
+
+  @visibleForTesting
+  static Map<String, String> edgeHeaders() => {
+        ..._headers,
+        'apikey': CloudClient.anonKey,
+        'Authorization': 'Bearer ${CloudClient.anonKey}',
+      };
 
   /// GET the edge proxy: `?path=/movie/550&...` (allowlisted server-side).
   static Future<Map<String, dynamic>?> _edgeGet(
@@ -93,7 +101,7 @@ class TmdbHelper {
         Future.sync(() async {
           final r = await http.get(
             uri,
-            headers: {..._headers, 'apikey': CloudClient.anonKey},
+            headers: edgeHeaders(),
           );
           if (r.statusCode != 200) return null;
           return jsonDecode(r.body) as Map<String, dynamic>?;
@@ -307,10 +315,15 @@ class TmdbHelper {
     if (_cache.containsKey(cacheKey)) return _cache[cacheKey];
 
     // 0. P21: Cloud resolve API (server key, year-pinned) — first when ready.
+    // The year is the guard that keeps a generic title ("Game Over",
+    // "Angel") from resolving to a different film with the same name, so it
+    // has to travel with the request (it was dropped here until v1.3.5,
+    // which left the server matching on the NAME alone).
     final rawId = (imdbId ?? '').trim();
     if (_edgeReady && (rawId.isNotEmpty || title.isNotEmpty)) {
       final smart = await CloudResolveService.resolveIds(
         title: title,
+        year: year?.toString(),
         type: type == 'tv' ? 'tv' : 'movie',
         imdbId: rawId.startsWith('tt') ? rawId : null,
       );
@@ -335,9 +348,14 @@ class TmdbHelper {
     final edge = _edgeReady;
 
     List<int>? idsFromFind(Map<String, dynamic>? data) {
-      final results = isTv
+      final primary = isTv
           ? (data?['tv_results'] as List?)
           : (data?['movie_results'] as List?);
+      final fallback = isTv
+          ? (data?['movie_results'] as List?)
+          : (data?['tv_results'] as List?);
+      final results =
+          (primary != null && primary.isNotEmpty) ? primary : fallback;
       if (results == null || results.isEmpty) return null;
       return [
         for (final r in results) (r as Map)['id'] as int?,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloud_client.dart';
@@ -27,7 +28,9 @@ class CloudResolveService {
   /// Bump on gate changes so poisoned entries (resolved by older, looser
   /// logic) auto-expire instead of serving wrong videos for 30 days.
   /// v2 = 2026-10-10 exact-title lock (server + client).
-  static const _gateVersion = 'v2';
+  /// v3 = 2026-11-14 corpus-aware resolve (server-side title corpus, year
+  /// pinning, and the Authorization header the edge function requires).
+  static const _gateVersion = 'v3';
 
   /// Pure: cleaned-title comparison for the exact-title lock.
   /// Same normalization as the `resolve` edge fn + TmdbHelper._cleanString.
@@ -44,17 +47,63 @@ class CloudResolveService {
     return 'resolve:$_gateVersion:$type:${raw.hashCode}';
   }
 
+  /// The headers the `resolve` edge function needs.
+  ///
+  /// 2026-11-14: the function is deployed with JWT verification ON, so a
+  /// request that carries only `apikey` comes back
+  /// `401 UNAUTHORIZED_NO_AUTH_HEADER` — measured live, every call. The
+  /// app then silently fell through to the weaker local chain, which is
+  /// exactly why regional titles resolved to nothing (or to the wrong
+  /// film). The anon key IS a valid JWT (role=anon), so sending it as a
+  /// bearer token is enough.
+  @visibleForTesting
+  static Map<String, String> buildHeaders() => {
+        'apikey': CloudClient.anonKey,
+        'Authorization': 'Bearer ${CloudClient.anonKey}',
+        'Accept': 'application/json',
+      };
+
+  /// Does the edge answer count as "this is the film you asked for"?
+  ///
+  /// The old rule was "the echoed title must equal the requested title",
+  /// which existed because a wrong id plays the wrong video (poster A,
+  /// playback B) across ~40 scrapers. That rule is still right for a
+  /// plain exact match, but the resolver now also answers from the title
+  /// CORPUS, where the canonical title can differ from the request
+  /// ("Dahaan" for "Dahaan: The Evil Within") or sit one edit away
+  /// ("Minal" / "Minall").
+  ///
+  /// Those two cases are accepted only when the SERVER says it matched
+  /// that way (`source` + `matchQuality`), because the server applies the
+  /// year and language guards the client cannot see. Anything else stays
+  /// rejected.
+  static bool acceptsEcho({
+    required String requested,
+    required String echoed,
+    Map<String, dynamic>? payload,
+  }) {
+    if (titlesMatch(requested, echoed)) return true;
+    final source = (payload?['source'] ?? '').toString();
+    final quality = (payload?['matchQuality'] ?? '').toString();
+    if (source == 'corpus') {
+      return quality == 'exact' || quality == 'alias' || quality == 'fuzzy';
+    }
+    if (source == 'tmdb') return quality == 'fuzzy';
+    return false;
+  }
+
   /// title/year/type/imdbId → `{tmdbId, imdbId, year, title}` or null.
   static Future<Map<String, dynamic>?> resolveIds({
     required String title,
     String? year,
     String type = 'movie',
     String? imdbId,
+    String? lang,
   }) async {
     final t = title.trim();
     final imdb = (imdbId ?? '').trim();
     if (t.isEmpty && imdb.isEmpty) return null;
-    if (!CloudClient.isReady) return null;
+    if (!CloudClient.isConfigured) return null;
 
     final key = _cacheKey(type: type, imdbId: imdb, title: t, year: year);
     try {
@@ -77,11 +126,10 @@ class CloudResolveService {
         if ((year ?? '').trim().isNotEmpty) 'year': year!.trim(),
         'type': type == 'tv' ? 'tv' : 'movie',
         if (imdb.isNotEmpty) 'imdbId': imdb,
+        if ((lang ?? '').trim().isNotEmpty) 'lang': lang!.trim().toLowerCase(),
       });
-      final res = await DizzyNet.instance.get(uri, headers: {
-        'apikey': CloudClient.anonKey,
-        'Accept': 'application/json',
-      }).timeout(const Duration(seconds: 8));
+      final res = await DizzyNet.instance.get(uri, headers: buildHeaders())
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       final data = jsonDecode(res.body) as Map<String, dynamic>?;
       if (data == null || data['tmdbId'] == null) return null;
@@ -91,8 +139,14 @@ class CloudResolveService {
       // but belt-and-suspenders — a mismatched id plays the WRONG video
       // (poster A, playback B) across ~40 scrapers. Mismatch → null so the
       // chain falls through to its next rung instead of playing garbage.
+      // v3: the server's own guarded matches (a corpus alias, or a one-edit
+      // spelling) are accepted - it applies the year + language guards the
+      // client cannot see.
       final gotTitle = (data['title'] ?? '').toString();
-      if (gotTitle.isNotEmpty && !titlesMatch(t, gotTitle)) return null;
+      if (gotTitle.isNotEmpty &&
+          !acceptsEcho(requested: t, echoed: gotTitle, payload: data)) {
+        return null;
+      }
 
       // Write: cache for 30 days (titles don't change IDs).
       data['_at'] = DateTime.now().millisecondsSinceEpoch;
