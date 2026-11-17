@@ -161,9 +161,20 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const apiKeyHeader = req.headers.get("apikey") ?? "";
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    // The platform's SUPABASE_ANON_KEY is the project's PUBLISHABLE key
+    // (sb_publishable_...), but every shipped APK still carries the LEGACY
+    // anon JWT. Comparing the caller's key against only one of the two
+    // forms rejected the app with 401 "unauthorized" - which is what broke
+    // JioSaavn (and therefore all music) in the field.
+    const legacyAnonKey = Deno.env.get("DIZZY_LEGACY_ANON_KEY") ?? "";
 
-    // Allow if caller carries the project's anonKey OR a valid user JWT.
-    const isProjectKey = apiKeyHeader === anonKey || authHeader === `Bearer ${anonKey}`;
+    // Allow if caller carries a project key (either form) OR a valid user JWT.
+    const isProjectKey =
+      (anonKey.length > 0 &&
+        (apiKeyHeader === anonKey || authHeader === `Bearer ${anonKey}`)) ||
+      (legacyAnonKey.length > 0 &&
+        (apiKeyHeader === legacyAnonKey ||
+          authHeader === `Bearer ${legacyAnonKey}`));
     if (!isProjectKey) {
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
