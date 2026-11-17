@@ -331,6 +331,18 @@ void main() {
     // ignore: avoid_print
     print('=== AUDIT CORPUS | ${corpus.length} titles ===');
 
+    if (corpus.isEmpty) {
+      // No TMDB_API_KEY in this environment (CI) — there is no live corpus
+      // to audit, and the per-scraper summary divides avg_ms by the corpus
+      // size. Skip cleanly instead of crashing on an empty corpus.
+      _log('SKIP|empty corpus (TMDB_API_KEY missing) — audit skipped');
+      markTestSkipped(
+        'no audit corpus (TMDB_API_KEY missing) — run with '
+        '--dart-define-from-file=.env',
+      );
+      return;
+    }
+
     final listed = <String, int>{for (final k in scrapers.keys) k: 0};
     final playable = <String, int>{for (final k in scrapers.keys) k: 0};
     final embed = <String, int>{for (final k in scrapers.keys) k: 0};

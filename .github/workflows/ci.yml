@@ -27,11 +27,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Same env injection as build.yml: tests run with the real env (TMDB_API_KEY
+      # etc.) so live tests exercise the same inputs the release builds get.
+      - name: Setup .env from GitHub Secrets
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.ENV_FILE }}" ]; then
+            echo "${{ secrets.ENV_FILE }}" > .env
+          elif [ -n "${{ secrets.DOTENV }}" ]; then
+            echo "${{ secrets.DOTENV }}" > .env
+          else
+            touch .env
+          fi
+
       - name: Static analysis (zero issues)
         run: flutter analyze
 
       - name: Test suite
-        run: flutter test
+        run: flutter test --dart-define-from-file=.env
 
   secrets:
     name: Secret scan (gitleaks)
