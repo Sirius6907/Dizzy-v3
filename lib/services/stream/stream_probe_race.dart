@@ -3,6 +3,14 @@ import '../../models/stream/stream_model.dart';
 import 'stream_health_checker.dart';
 import '../errors/app_log.dart';
 
+/// A queued offer keeps its win-on-verify marker: a Hindi candidate held
+/// behind the concurrency cap must still win outright when it launches.
+class _QueuedProbe {
+  final StreamSource source;
+  final bool winOnVerify;
+  const _QueuedProbe(this.source, this.winOnVerify);
+}
+
 /// Races health probes of many sources **in parallel** (never serialized).
 ///
 /// The FIRST source that passes its health check wins the [winner] future —
@@ -28,6 +36,12 @@ class StreamProbeRace {
 
   /// How long a non-promoted winner waits for a promoted source to verify.
   static const Duration promotedWait = Duration(seconds: 3);
+
+  /// Effective hold for a verified non-promoted winner. Defaults to
+  /// [promotedWait]; callers with their own deadline (the hindi-first
+  /// resolve controller) shrink it so a verified live source can always
+  /// WIN before that deadline releases other sources.
+  final Duration promotedWaitOverride;
 
   /// Emits batches of newly-verified sources for UI list updates.
   final void Function(List<StreamSource> batch)? onVerifiedBatch;
@@ -68,7 +82,7 @@ class StreamProbeRace {
   Timer? _batchTimer;
   final List<StreamSource> _pendingUiBatch = [];
   int _inFlight = 0;
-  final List<StreamSource> _probeQueue = [];
+  final List<_QueuedProbe> _probeQueue = [];
 
   int get _maxConcurrent => _winnerFound ? 1 : maxConcurrentProbes;
 
@@ -77,7 +91,8 @@ class StreamProbeRace {
     this.isPromoted,
     this.onVerifiedBatch,
     this.batchDelay = const Duration(milliseconds: 80),
-  });
+    Duration? promotedWaitOverride,
+  }) : promotedWaitOverride = promotedWaitOverride ?? promotedWait;
 
   /// The first source that passed its health check, or null when [close]
   /// was called with no alive source. Never throws.
@@ -90,19 +105,25 @@ class StreamProbeRace {
   /// Probing CONTINUES after the winner so the manual sources list keeps
   /// filling for the user, but at concurrency 1 and only for a 3s tail —
   /// a 120-probe herd must never compete with the player's first bytes.
-  void offer(StreamSource source) {
+  ///
+  /// [winOnVerify] marks a source that must win OUTRIGHT the moment its
+  /// probe verifies — no promoted hold. Dub-mode: in Hindi mode every
+  /// scraped candidate is hindi-tagged, and a verified live Hindi must
+  /// beat the fallback deadline deterministically instead of sitting
+  /// verified-but-held while English is released around it.
+  void offer(StreamSource source, {bool winOnVerify = false}) {
     if (_closed || _draining) return;
     if (_inFlight >= _maxConcurrent) {
       if (_probeQueue.length >= maxQueueDepth) return; // shed load
-      _probeQueue.add(source);
+      _probeQueue.add(_QueuedProbe(source, winOnVerify));
       return;
     }
-    _launchProbe(source);
+    _launchProbe(source, winOnVerify);
   }
 
-  void _launchProbe(StreamSource source) {
+  void _launchProbe(StreamSource source, [bool winOnVerify = false]) {
     _inFlight++;
-    unawaited(_probeAndMaybeWin(source));
+    unawaited(_probeAndMaybeWin(source, winOnVerify));
   }
 
   void _onProbeDone() {
@@ -119,7 +140,8 @@ class StreamProbeRace {
       return;
     }
     while (_inFlight < _maxConcurrent && _probeQueue.isNotEmpty) {
-      _launchProbe(_probeQueue.removeAt(0));
+      final queued = _probeQueue.removeAt(0);
+      _launchProbe(queued.source, queued.winOnVerify);
     }
   }
 
@@ -141,7 +163,7 @@ class StreamProbeRace {
     _batchTimer ??= Timer(batchDelay, _flushUiBatch);
   }
 
-  Future<void> _probeAndMaybeWin(StreamSource source) async {
+  Future<void> _probeAndMaybeWin(StreamSource source, bool winOnVerify) async {
     bool alive;
     try {
       alive = await probeFn(source);
@@ -158,7 +180,8 @@ class StreamProbeRace {
       }
       verifiedSources.add(source);
       if (!_winnerCompleter.isCompleted) {
-        final promoted = isPromoted?.call(source) ?? false;
+        final promoted =
+            winOnVerify || (isPromoted?.call(source) ?? false);
         if (promoted) {
           // A promoted source wins outright, even over an earlier
           // non-promoted one that was already alive.
@@ -169,7 +192,7 @@ class StreamProbeRace {
           // Hold the non-promoted winner briefly: a promoted source may
           // still verify within the window.
           _promotedWinner = source;
-          _promotedWaitTimer = Timer(promotedWait, () {
+          _promotedWaitTimer = Timer(promotedWaitOverride, () {
             _promotedWaitTimer = null;
             final pending = _promotedWinner;
             _promotedWinner = null;

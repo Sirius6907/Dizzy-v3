@@ -112,6 +112,16 @@ class WatchResolveController {
       final race = StreamProbeRace(
         probeFn: probeFn ?? StreamHealthChecker.isAlive,
         isPromoted: SourceRanker.isPromoted,
+        // The promoted hold must never outlive the hindi-first deadline:
+        // a verified live source has to be able to WIN the race before the
+        // fallback releases English, otherwise hindi mode shows the fallback
+        // notice while a playable source sits verified but unresolved.
+        // Production default (4s window > 3s hold) is unchanged; short
+        // windows shrink the hold to match.
+        promotedWaitOverride:
+            hindiFirstWindow < StreamProbeRace.promotedWait
+            ? hindiFirstWindow
+            : StreamProbeRace.promotedWait,
       );
       _race = race;
 
@@ -208,7 +218,12 @@ class WatchResolveController {
             }),
           );
         } else {
-          _race?.offer(source);
+          // Hindi mode: everything reaching the race here is hindi-tagged
+          // (the dub gate holds non-hindi in the fallback pool), so a
+          // verified live Hindi must win outright — the promoted hold
+          // would leave it verified-but-unresolved while the fallback
+          // deadline releases English around it.
+          _race?.offer(source, winOnVerify: DubModeService.isHindi);
         }
       }
     } catch (_) {}
