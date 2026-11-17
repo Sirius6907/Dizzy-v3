@@ -9,6 +9,7 @@ import '../../services/iptv/hardcoded_channels.dart';
 import '../../services/iptv/iptv_controller.dart';
 import '../../services/iptv/iptv_settings.dart';
 import '../../services/discord/discord_rpc_service.dart';
+import '../../services/media/tap_gate.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/animated_ambient_background.dart';
 import '../../widgets/prism/prism_dock.dart';
@@ -31,6 +32,10 @@ class IptvPage extends StatefulWidget {
 class _IptvPageState extends State<IptvPage> {
   final IptvController _ctrl = IptvController.instance;
   final ScrollController _scrollController = ScrollController();
+
+  /// Phase L4 — one tap, one navigation. A second tap while the sheet is
+  /// animating in (or the player is pushing) would otherwise open it twice.
+  final TapGate _navGate = TapGate(window: const Duration(milliseconds: 600));
 
   List<HardcodedChannel> _featured = [];
   List<HardcodedChannel> _espnAndCollege = [];
@@ -59,6 +64,7 @@ class _IptvPageState extends State<IptvPage> {
     IptvSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     _scrollController.dispose();
+    _navGate.dispose();
     DiscordRpcService.instance.clearToIdle();
     super.dispose();
   }
@@ -118,27 +124,35 @@ class _IptvPageState extends State<IptvPage> {
     _kids = HardcodedChannels.byCategory('Kids');
   }
 
-  void _openChannel(HardcodedChannel channel) {
-    IptvChannelSheet.show(context, channel);
+  Future<void> _openChannel(HardcodedChannel channel) async {
+    await _navGate.run(
+      'channel:${channel.id}',
+      () => IptvChannelSheet.show(context, channel),
+    );
   }
 
-  void _watchChannelNow(HardcodedChannel channel) async {
+  Future<void> _watchChannelNow(HardcodedChannel channel) async {
     // If we have saved hits, launch immediately, otherwise open sheet to scan
     final results = _ctrl.channelResults;
-    if (_ctrl.activeHardcoded?.id == channel.id && results.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => IptvPlayerPage(
-            channel: channel,
-            hits: results,
-            initialHitIndex: 0,
+    final hasHits =
+        _ctrl.activeHardcoded?.id == channel.id && results.isNotEmpty;
+    await _navGate.run('watch:${channel.id}', () async {
+      if (!mounted) return;
+      if (hasHits) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => IptvPlayerPage(
+              channel: channel,
+              hits: results,
+              initialHitIndex: 0,
+            ),
           ),
-        ),
-      );
-    } else {
-      IptvChannelSheet.show(context, channel);
-    }
+        );
+      } else {
+        await IptvChannelSheet.show(context, channel);
+      }
+    });
   }
 
   void _navigateToSettings(Offset? tapPosition) {

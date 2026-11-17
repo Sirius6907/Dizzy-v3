@@ -11,6 +11,7 @@ import 'music_queue_ops.dart';
 import 'music_service.dart';
 import 'youtube_stream_http.dart';
 import '../discord/discord_rpc_service.dart';
+import '../media/tap_gate.dart';
 import '../player/player_settings.dart';
 import 'music_settings.dart';
 import 'music_equalizer_service.dart';
@@ -55,6 +56,15 @@ class MusicPlayerController extends ChangeNotifier {
   LyricsData _currentLyrics = LyricsData.empty();
   bool _isLoadingLyrics = false;
   int _activeLyricIndex = -1;
+
+  /// Phase L4 — ghost-tap guard for the transport buttons. One tap means one
+  /// action: a double press of play/pause can no longer fire twice.
+  final TapGate transportGate = TapGate(
+    window: const Duration(milliseconds: 300),
+  );
+
+  /// Visual pressed-state lock: true while a transport action is running.
+  ValueNotifier<bool> get actionLock => transportGate.busy;
 
   // Getters
   Player? get player => _player;
@@ -118,6 +128,9 @@ class MusicPlayerController extends ChangeNotifier {
     MusicTrack track, {
     List<MusicTrack>? playlistQueue,
   }) async {
+    // Phase L4 — ghost tap on a row: the same track is already resolving, so
+    // the second tap asks for exactly what is already happening.
+    if (_isLoading && _currentTrack?.id == track.id) return;
     if (playlistQueue != null && playlistQueue.isNotEmpty) {
       _originalPlaylist = List<MusicTrack>.from(playlistQueue);
       if (_isShuffle) {
@@ -477,7 +490,8 @@ class MusicPlayerController extends ChangeNotifier {
       seekTo(Duration.zero);
       play();
     } else if (hasNext) {
-      playNext();
+      // Automatic advance is not a tap: it must never be debounced away.
+      _playNextNow();
     } else if (_repeatMode == MusicRepeatMode.all && _playlist.isNotEmpty) {
       _currentIndex = 0;
       _loadAndPlayTrack(_playlist[0]);
@@ -521,13 +535,13 @@ class MusicPlayerController extends ChangeNotifier {
         await _player?.setVolume((startVol * (i / 6.0)) * 100.0);
         await Future.delayed(const Duration(milliseconds: 60));
       }
-      await playNext();
+      await _playNextNow();
       for (int i = 1; i <= 6; i++) {
         await _player?.setVolume((startVol * (i / 6.0)) * 100.0);
         await Future.delayed(const Duration(milliseconds: 50));
       }
     } catch (_) {
-      await playNext();
+      await _playNextNow();
     } finally {
       _isAutoAdvancing = false;
     }
@@ -591,11 +605,15 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> togglePlayPause() async {
-    if (_isPlaying) {
-      await pause();
-    } else {
-      await play();
-    }
+    // A double press must not pause and then immediately play again: the
+    // second tap is the same intent as the first, so it is swallowed.
+    await transportGate.run('toggle', () async {
+      if (_isPlaying) {
+        await pause();
+      } else {
+        await play();
+      }
+    });
   }
 
   Future<void> seekTo(Duration position) async {
@@ -659,6 +677,17 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> playNext() async {
+    // While the next track buffers, extra taps collapse into one more skip
+    // instead of stacking a queue of zombie switches.
+    await transportGate.run(
+      'next',
+      _playNextNow,
+      window: const Duration(milliseconds: 250),
+      coalesce: true,
+    );
+  }
+
+  Future<void> _playNextNow() async {
     if (_playlist.isEmpty) return;
 
     if (_currentIndex < _playlist.length - 1) {
@@ -671,6 +700,15 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> playPrevious() async {
+    await transportGate.run(
+      'previous',
+      _playPreviousNow,
+      window: const Duration(milliseconds: 250),
+      coalesce: true,
+    );
+  }
+
+  Future<void> _playPreviousNow() async {
     if (_playlist.isEmpty) return;
 
     if (_position.inSeconds > 3) {

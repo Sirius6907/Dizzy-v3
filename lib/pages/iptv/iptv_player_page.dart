@@ -14,6 +14,7 @@ import '../../services/player/player_settings.dart';
 import '../../services/window/window_service.dart';
 import '../../services/discord/discord_rpc_service.dart';
 import '../../services/media/global_media_coordinator.dart';
+import '../../services/media/tap_gate.dart';
 import '../../widgets/player/player_aspect_menu.dart';
 
 class IptvPlayerPage extends StatefulWidget {
@@ -65,6 +66,13 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
   Timer? _hideControlsTimer;
   Timer? _watchdogTimer;
   late final ScrollController _sourcesScrollController;
+
+  /// Phase L4 — a channel switch is one long job (open + buffer). Taps that
+  /// land while it runs are coalesced into the last one chosen, so impatient
+  /// tapping cannot stack zombie switches behind a buffering stream.
+  final TapGate _switchGate = TapGate(
+    window: const Duration(milliseconds: 500),
+  );
 
   BoxFit _videoFit = BoxFit.contain;
   bool _showAspectMenu = false;
@@ -162,6 +170,7 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
     _volumeHudTimer?.cancel();
     _aspectHudTimer?.cancel();
     _sourcesScrollController.dispose();
+    _switchGate.dispose();
     _positionNotifier.dispose();
     _bufferedNotifier.dispose();
     _player.dispose();
@@ -263,7 +272,16 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
       _activeHitIndex = index;
       _showSourcesDrawer = false;
     });
-    _initPlayer();
+    // Phase L4: opening a stream is one long job (open + buffer). Taps that
+    // land while it runs coalesce into a single extra attempt at whichever
+    // source is selected by then, so impatient tapping cannot stack zombie
+    // switches behind a buffering stream.
+    unawaited(
+      _switchGate.run('source', () async {
+        if (!mounted) return;
+        await _initPlayer();
+      }, coalesce: true),
+    );
   }
 
   void _openSourcesDrawer() {

@@ -332,79 +332,84 @@ class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> {
 
   Widget _controls() {
     final controller = widget.playerController;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          tooltip: 'Shuffle',
-          onPressed: controller.toggleShuffle,
-          icon: Icon(
-            Icons.shuffle_rounded,
-            color: controller.isShuffle
-                ? PrismAccent.text(_palette.isLight)
-                : _soft,
-          ),
-        ),
-        IconButton(
-          tooltip: 'Previous song',
-          onPressed: controller.playPrevious,
-          icon: Icon(Icons.skip_previous_rounded, color: _ink, size: 34),
-        ),
-        SizedBox(
-          width: 72,
-          height: 72,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: _palette.primaryColor,
-              borderRadius:
-                  MusicSettings.customPlayButtonStyle.value ==
-                      MusicPlayButtonStyle.neonSquare
-                  ? PrismRadius.lgAll
-                  : BorderRadius.circular(36),
-              boxShadow: PrismShadows.raised(isLight: _palette.isLight),
+    // Phase L4 — while one transport action runs, the three transport buttons
+    // are visibly locked so a double tap cannot fire the action twice.
+    return ValueListenableBuilder<bool>(
+      valueListenable: controller.actionLock,
+      builder: (context, locked, _) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            tooltip: 'Shuffle',
+            onPressed: controller.toggleShuffle,
+            icon: Icon(
+              Icons.shuffle_rounded,
+              color: controller.isShuffle
+                  ? PrismAccent.text(_palette.isLight)
+                  : _soft,
             ),
-            child: IconButton(
-              tooltip: controller.isPlaying ? 'Pause' : 'Play',
-              onPressed: controller.isLoading
-                  ? null
-                  : controller.togglePlayPause,
-              icon: controller.isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
+          ),
+          IconButton(
+            tooltip: 'Previous song',
+            onPressed: locked ? null : controller.playPrevious,
+            icon: Icon(Icons.skip_previous_rounded, color: _ink, size: 34),
+          ),
+          SizedBox(
+            width: 72,
+            height: 72,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _palette.primaryColor,
+                borderRadius:
+                    MusicSettings.customPlayButtonStyle.value ==
+                        MusicPlayButtonStyle.neonSquare
+                    ? PrismRadius.lgAll
+                    : BorderRadius.circular(36),
+                boxShadow: PrismShadows.raised(isLight: _palette.isLight),
+              ),
+              child: IconButton(
+                tooltip: controller.isPlaying ? 'Pause' : 'Play',
+                onPressed: controller.isLoading || locked
+                    ? null
+                    : controller.togglePlayPause,
+                icon: controller.isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: PrismAccent.onAccent,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(
+                        controller.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
                         color: PrismAccent.onAccent,
-                        strokeWidth: 2,
+                        size: 38,
                       ),
-                    )
-                  : Icon(
-                      controller.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      color: PrismAccent.onAccent,
-                      size: 38,
-                    ),
+              ),
             ),
           ),
-        ),
-        IconButton(
-          tooltip: 'Next song',
-          onPressed: controller.playNext,
-          icon: Icon(Icons.skip_next_rounded, color: _ink, size: 34),
-        ),
-        IconButton(
-          tooltip: 'Repeat',
-          onPressed: controller.toggleRepeat,
-          icon: Icon(
-            controller.repeatMode == MusicRepeatMode.one
-                ? Icons.repeat_one_rounded
-                : Icons.repeat_rounded,
-            color: controller.repeatMode == MusicRepeatMode.off
-                ? _soft
-                : PrismAccent.text(_palette.isLight),
+          IconButton(
+            tooltip: 'Next song',
+            onPressed: locked ? null : controller.playNext,
+            icon: Icon(Icons.skip_next_rounded, color: _ink, size: 34),
           ),
-        ),
-      ],
+          IconButton(
+            tooltip: 'Repeat',
+            onPressed: controller.toggleRepeat,
+            icon: Icon(
+              controller.repeatMode == MusicRepeatMode.one
+                  ? Icons.repeat_one_rounded
+                  : Icons.repeat_rounded,
+              color: controller.repeatMode == MusicRepeatMode.off
+                  ? _soft
+                  : PrismAccent.text(_palette.isLight),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

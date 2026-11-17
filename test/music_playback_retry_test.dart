@@ -136,6 +136,9 @@ void main() {
       expect(controller.isCurrentTrackLossless, isFalse);
       await controller.togglePlayPause();
       expect(controller.isPlaying, isFalse);
+      // Pausing then resuming is two separate intents; wait past the ghost-tap
+      // window so the second tap is not treated as a duplicate of the first.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
       await controller.togglePlayPause();
       expect(controller.isPlaying, isTrue);
       await backend.events.close();

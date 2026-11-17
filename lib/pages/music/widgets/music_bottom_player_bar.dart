@@ -370,21 +370,27 @@ class MusicBottomPlayerBar extends StatelessWidget {
     final hoverEffect = MusicSettings.customHoverEffect.value;
     final playBtnStyle = MusicSettings.customPlayButtonStyle.value;
 
-    return MusicInteractivePhysicsButton(
-      effect: hoverEffect,
-      glowColor: palette.primaryColor,
-      borderRadius: BorderRadius.circular(mini ? 16 : 22),
-      onTap: playerController.togglePlayPause,
-      child: playerController.isLoading
-          ? SizedBox(
-              width: mini ? 24 : 32,
-              height: mini ? 24 : 32,
-              child: CircularProgressIndicator(
-                color: palette.primaryColor,
-                strokeWidth: 2.5,
-              ),
-            )
-          : _buildPlayButtonIcon(playBtnStyle, palette, mini),
+    // Phase L4 — pressed-state lock: while one transport action is running the
+    // button cannot be pressed again, so a double tap cannot fire twice.
+    return ValueListenableBuilder<bool>(
+      valueListenable: playerController.actionLock,
+      builder: (context, locked, _) => MusicInteractivePhysicsButton(
+        effect: hoverEffect,
+        glowColor: palette.primaryColor,
+        borderRadius: BorderRadius.circular(mini ? 16 : 22),
+        enabled: !locked,
+        onTap: playerController.togglePlayPause,
+        child: playerController.isLoading
+            ? SizedBox(
+                width: mini ? 24 : 32,
+                height: mini ? 24 : 32,
+                child: CircularProgressIndicator(
+                  color: palette.primaryColor,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : _buildPlayButtonIcon(playBtnStyle, palette, mini),
+      ),
     );
   }
 
