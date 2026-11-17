@@ -3,30 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dizzy — Watch together. Your media, your rules.</title>
-<meta name="description" content="Dizzy is a free, open media player for Android, Windows and Linux — sync watch rooms with friends, voice chat, live TV (IPTV), offline downloads, lossless music, audiobooks and manga. No ads, no account needed.">
-<meta name="theme-color" content="#07060A">
+<title>Dizzy — one app for movies, music, manga, books and live TV</title>
+<meta name="description" content="Dizzy is the free, open-source app that replaces the stack: movies and series, music, manga, anime, audiobooks and India-first live TV — plus watch parties, friends and DMs. No ads, no account needed.">
+<meta name="theme-color" content="#070910">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://dizzy-by-sirius.netlify.app/">
-<link rel="icon" type="image/png" sizes="64x64" href="./assets/img/favicon.png?v=2">
-<link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="64x64" href="./assets/img/favicon.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png?v=3">
 <link rel="manifest" href="./site.webmanifest">
-<link rel="preload" href="./assets/fonts/cinzel-decorative-900.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="./assets/fonts/cinzel-decorative-700.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="./assets/fonts/yesteryear-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./assets/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/inter-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./assets/css/main.css">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Dizzy">
-<meta property="og:title" content="Dizzy — Watch together. Your media, your rules.">
-<meta property="og:description" content="Free and open media player for Android, Windows and Linux. Sync watch rooms, voice chat, offline downloads, music, audiobooks and manga.">
+<meta property="og:title" content="Dizzy — one app for movies, music, manga, books and live TV">
+<meta property="og:description" content="Movies, series, music, manga, anime, audiobooks and live TV in one app — with watch parties, friends and DMs. Free and open source.">
 <meta property="og:url" content="https://dizzy-by-sirius.netlify.app/">
 <meta property="og:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Dizzy — Watch together. Your media, your rules.">
-<meta name="twitter:description" content="Free and open media player for Android, Windows and Linux. Sync watch rooms, voice chat, offline downloads.">
+<meta name="twitter:title" content="Dizzy — one app for everything you watch, listen and read">
+<meta name="twitter:description" content="Movies, music, manga, audiobooks and live TV in one app, with watch parties built in.">
 <meta name="twitter:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.png">
 <script>document.documentElement.className += ' js';</script>
 <script type="application/ld+json">
@@ -36,13 +34,13 @@
   "name": "Dizzy",
   "operatingSystem": ["Android", "Windows", "Linux"],
   "applicationCategory": "MultimediaApplication",
-  "description": "Free and open media player with sync watch rooms, voice chat, offline downloads, music, audiobooks and manga.",
+  "description": "Free and open-source app for movies, series, music, manga, anime, audiobooks and live TV, with watch parties, friends and DMs.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "downloadUrl": "https://dizzy-by-sirius.netlify.app/#download",
+  "downloadUrl": "https://github.com/Sirius6907/Dizzy-v3/releases/latest",
   "codeRepository": "https://github.com/Sirius6907/Dizzy-v3",
   "license": "https://github.com/Sirius6907/Dizzy-v3/blob/main/LICENSE",
-  "featureList": "Watch Together, Voice rooms, Live IPTV with EPG, Offline downloads, Lossless music, Audiobooks, Manga reader, Real-Debrid and Stremio addon support",
-  "screenshot": "https://dizzy-by-sirius.netlify.app/assets/img/og.png"
+  "featureList": "Movies and series, Music, Manga and anime, Audiobooks, Live TV with EPG, Watch Party rooms, Voice rooms, Friends and DMs, Offline downloads, Real-Debrid and Stremio addons",
+  "screenshot": "https://dizzy-by-sirius.netlify.app/assets/img/shots/home.webp"
 }
 </script>
 <script type="application/ld+json">
@@ -50,12 +48,14 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    { "@type": "Question", "name": "Is Dizzy really free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Dizzy is free and open source. No paid tiers, no locked features, no ads in the app." } },
-    { "@type": "Question", "name": "Is it safe to install the Android APK?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The APK is built in the open by GitHub Actions from public source code and every release is signed with the same key. Android asks you to allow one install because it did not come from the Play Store." } },
-    { "@type": "Question", "name": "Which Android file should I download?", "acceptedAnswer": { "@type": "Answer", "text": "Almost every modern phone uses arm64-v8a, which is preselected for you. Older devices can use armeabi-v7a or x86_64. Universal works everywhere but is a bigger download." } },
-    { "@type": "Question", "name": "How do updates work?", "acceptedAnswer": { "@type": "Answer", "text": "The app checks for new versions itself and offers a one-tap update." } },
-    { "@type": "Question", "name": "Do I need an account?", "acceptedAnswer": { "@type": "Answer", "text": "No. Dizzy works without signing in. Accounts are optional and only needed for friends, messages and syncing across devices." } },
-    { "@type": "Question", "name": "Where does the content come from? Is this legal?", "acceptedAnswer": { "@type": "Answer", "text": "Dizzy plays content from third-party sources and does not host anything itself. Availability and legality depend on the source and where you live — use your own judgement and support official releases when you can." } }
+    { "@type": "Question", "name": "Is Dizzy really free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Dizzy is free and open source (GPL-3.0). No paid tiers, no locked features, no ads inside the app." } },
+    { "@type": "Question", "name": "Which Android file should I download?", "acceptedAnswer": { "@type": "Answer", "text": "Almost every modern phone uses arm64-v8a, which is preselected for you. Older devices can use armeabi-v7a, x86_64 covers some tablets and emulators, and Universal works everywhere but is a much bigger download." } },
+    { "@type": "Question", "name": "How do I install the APK?", "acceptedAnswer": { "@type": "Answer", "text": "Open the downloaded file and allow installs from that source once. Android or Play Protect may warn you because the app did not come from the Play Store — that warning appears for every app installed this way." } },
+    { "@type": "Question", "name": "How do updates work?", "acceptedAnswer": { "@type": "Answer", "text": "The app checks for new versions itself and offers a one-tap update. Release builds carry a versionCode floor, so a new build can never install as a downgrade." } },
+    { "@type": "Question", "name": "The update says package not valid. What now?", "acceptedAnswer": { "@type": "Answer", "text": "That only affects installs older than v1.3.1, where the signing key or versionCode did not line up. Fixed installs update in place since v1.3.1. If you hit it, uninstall once and install the latest APK from this page: your @username and history live on the server and come back." } },
+    { "@type": "Question", "name": "Do I need an account?", "acceptedAnswer": { "@type": "Answer", "text": "No. Everything plays without signing in. An @username is optional and only needed for friends, DMs, watch parties and syncing across devices." } },
+    { "@type": "Question", "name": "Does it work offline?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Downloads resume where they stopped, pause when the network drops, and are sorted into video, music and active tabs with a storage gauge." } },
+    { "@type": "Question", "name": "Where does the content come from? Is this legal?", "acceptedAnswer": { "@type": "Answer", "text": "Dizzy hosts nothing. It plays media from third-party sources and addons that you configure. Availability and legality depend on the source and where you live — use your own judgement and support official releases." } }
   ]
 }
 </script>
@@ -68,11 +68,12 @@
 <header class="nav" id="nav">
   <div class="wrap nav-in">
     <a class="brand" href="#top" aria-label="Dizzy home">
-      <img class="brand-mark" src="./assets/img/favicon.png?v=2" alt="" width="28" height="28">
+      <img class="brand-mark" src="./assets/img/favicon.png?v=3" alt="" width="28" height="28">
       <span class="brand-name">Dizzy</span>
     </a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#features" data-nav>Features</a>
+      <a href="#party" data-nav>Watch Party</a>
       <a href="#shots" data-nav>Screenshots</a>
       <a href="#download" data-nav>Download</a>
       <a href="#faq" data-nav>FAQ</a>
@@ -82,7 +83,7 @@
         <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
         <span class="stars" data-gh-stars hidden>★</span>
       </a>
-      <a class="btn btn-sm btn-gold" href="#download" data-dl-jump>Get Dizzy</a>
+      <a class="btn btn-red btn-sm" href="#download" data-dl-jump>Get Dizzy</a>
       <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mobileMenu" aria-label="Menu"><span></span></button>
     </div>
   </div>
@@ -90,6 +91,7 @@
     <div class="wrap">
       <ul>
         <li><a href="#features">Features</a></li>
+        <li><a href="#party">Watch Party</a></li>
         <li><a href="#how">How it works</a></li>
         <li><a href="#shots">Screenshots</a></li>
         <li><a href="#download">Download</a></li>
@@ -103,79 +105,46 @@
 
   <!-- ═══ HERO ═══ -->
   <section class="hero">
-    <div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
-    <div class="grid-bg" aria-hidden="true"></div>
-    <div class="grain" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow reveal"><span class="dot-live" aria-hidden="true"></span><span data-ver>latest</span><span class="sep">·</span>free &amp; open<span class="sep">·</span>no account</p>
+        <p class="eyebrow reveal"><span class="dot-live" aria-hidden="true"></span><b data-ver>latest</b><span class="sep">·</span>one app<span class="sep">·</span>free &amp; open</p>
         <h1>
-          <span class="line"><span class="script">Watch together.</span></span>
-          <span class="line"><span class="grad">Your media, your rules.</span></span>
+          <span class="line">Four apps became</span>
+          <span class="line"><span class="grad">one app.</span></span>
         </h1>
-        <p class="sub reveal">One app for <b>movies, shows, anime, live TV, music, audiobooks</b> and manga — with sync-perfect watch rooms, voice chat, lossless audio, offline downloads and background play that survives battery savers.</p>
+        <p class="sub reveal">Movies and series, music, manga, anime, audiobooks and live TV — one home row, one player, one identity. India-first, so a live cricket match sits at the top of Live TV when it matters. And when your people are in it, <b>Watch Party</b> keeps everyone on the same second.</p>
         <div class="cta-row reveal">
-          <a class="btn btn-gold btn-lg magnetic" href="#download" data-dl-jump>
+          <a class="btn btn-red btn-lg magnetic" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
             <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
-            <span data-dl-label>Download for your device</span>
+            <span data-dl-label>Download the latest release</span>
           </a>
-          <a class="btn btn-lg" href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">
-            <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-            Star on GitHub
-          </a>
+          <a class="btn btn-lg" href="#download" data-dl-jump>Pick the right file</a>
         </div>
         <p class="cta-note reveal">
           <span class="chk">✓</span> Free forever <span class="sep">·</span>
-          <span class="chk">✓</span> No ads, no paywalls <span class="sep">·</span>
+          <span class="chk">✓</span> No ads <span class="sep">·</span>
+          <span class="chk">✓</span> No account to start <span class="sep">·</span>
           <span class="chk">✓</span> <b data-total-dl>—</b>&nbsp;downloads
         </p>
-        <p class="micro reveal">
-          <span class="avatars" aria-hidden="true"><i></i><i></i><i></i></span>
-          Built in public on GitHub · <b data-ver>latest</b> ships Android, Windows &amp; Linux
-        </p>
+        <p class="micro reveal">Android · Windows · Linux — built in the open on GitHub, updated in place from inside the app.</p>
       </div>
 
-      <div class="hero-phones" id="heroPhones" aria-label="Dizzy app screenshots">
-        <figure class="phone p1" data-par="0.06">
-          <img src="./assets/img/shots/shot-02.webp" alt="Dizzy home screen with continue watching and trending rows" width="480" height="1040" fetchpriority="high">
+      <div class="hero-stage">
+        <figure class="phone">
+          <div class="phone-bar" aria-hidden="true"><i></i></div>
+          <img src="./assets/img/shots/home.webp" width="600" height="1258" fetchpriority="high" decoding="async"
+               alt="Dizzy home screen in dark Prism theme: a Ramayana: Rise of a Legend spotlight, Explore and Details buttons, a New &amp; Trending row and the dock with Home, Manga, Books, Audiobooks and Music">
         </figure>
-        <figure class="phone p2" data-par="-0.09">
-          <img src="./assets/img/shots/shot-06.webp" alt="Dizzy anime browsing screen" width="480" height="1040" loading="lazy">
-        </figure>
-        <div class="chip-float chip-sync" aria-hidden="true"><span class="dot"></span>Room in sync · <b>3 friends</b></div>
-        <div class="chip-float chip-voice" aria-hidden="true"><span class="dot"></span>Voice live · <b>0 ms drift</b></div>
+        <div class="chip chip-sync" aria-hidden="true"><span class="dot"></span>Room in sync · <b>3 friends</b></div>
+        <div class="chip chip-live" aria-hidden="true"><span class="dot"></span>Live TV · <b>cricket pinned</b></div>
       </div>
     </div>
-    <div class="hero-fade" aria-hidden="true"></div>
-  </section>
 
-  <!-- ═══ TICKER ═══ -->
-  <section class="strip" aria-label="Why people download Dizzy">
-    <div class="ticker" id="ticker">
-      <div class="ticker-track">
-        <span class="ticker-item"><span class="ticker-dot"></span><b data-total-dl>—</b> downloads</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>latest <b data-ver>—</b></span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Android · Windows · Linux</span>
-        <span class="ticker-item"><span class="ticker-dot"></span><span class="b">Watch rooms in perfect sync</span></span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Voice + chat built in</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Offline downloads</span>
-        <span class="ticker-item"><span class="ticker-dot"></span><span class="b">Live TV (IPTV) + EPG</span></span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Real-Debrid &amp; Stremio addons</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Zero ads, zero paywalls</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Open source (GPL)</span>
-      </div>
-      <div class="ticker-track" aria-hidden="true">
-        <span class="ticker-item"><span class="ticker-dot"></span><b data-total-dl>—</b> downloads</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>latest <b data-ver>—</b></span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Android · Windows · Linux</span>
-        <span class="ticker-item"><span class="ticker-dot"></span><span class="b">Watch rooms in perfect sync</span></span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Voice + chat built in</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Offline downloads</span>
-        <span class="ticker-item"><span class="ticker-dot"></span><span class="b">Live TV (IPTV) + EPG</span></span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Real-Debrid &amp; Stremio addons</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Zero ads, zero paywalls</span>
-        <span class="ticker-item"><span class="ticker-dot"></span>Open source (GPL)</span>
-      </div>
+    <div class="wrap">
+      <ul class="verticals-strip reveal" aria-label="Everything Dizzy covers">
+        <li>Movies</li><li>Series</li><li>Music</li><li>Manga</li><li>Anime</li><li>Audiobooks</li><li>Live TV</li><li>Friends</li>
+      </ul>
     </div>
   </section>
 
@@ -183,132 +152,121 @@
   <section class="section" id="features">
     <div class="wrap">
       <div class="section-head">
-        <p class="kicker reveal">Features</p>
-        <h2 class="reveal">Everything you watch, listen and read — in one place.</h2>
-        <p class="lede reveal">Not a remote control for five different apps. Dizzy does the whole pipeline: find it, watch it together, save it for later, keep the chat going.</p>
+        <p class="kicker reveal">One app</p>
+        <h2 class="reveal">Every vertical, at full strength.</h2>
+        <p class="lede reveal">Not five apps taped together. The same home row, the same player, the same account — whether you're starting a series, a song, a chapter or a match.</p>
       </div>
 
       <div class="bento">
         <article class="card card-flag span7 reveal" data-rev="left">
-          <div class="flag-stage" aria-hidden="true">
-            <span class="flag-phone"><i></i><i></i><i></i></span>
-            <span class="flag-mid">
-              <span class="flag-wave"><i></i><i></i><i></i><i></i><i></i><i></i></span>
-              <span class="flag-line"></span>
-              <span class="flag-lab">synced · one timeline</span>
+          <div class="sync-stage" aria-hidden="true">
+            <span class="sync-phone"><i></i><i></i><i></i></span>
+            <span class="sync-mid">
+              <span class="sync-wave"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="sync-line"></span>
+              <span class="sync-lab">1.5 s auto-fix</span>
             </span>
-            <span class="flag-phone"><i></i><i></i><i></i></span>
+            <span class="sync-phone"><i></i><i></i><i></i></span>
           </div>
           <span class="pill">Flagship</span>
-          <h3>Watch Together</h3>
-          <p>Start a room, drop the link, everyone hits play at the same second — pause, seek and next-episode stay locked for the whole group. Live chat rides along, so the reactions never miss the scene.</p>
+          <h3>Watch Party</h3>
+          <p>Host a room, share the six-character Room ID, and play, pause and seek stay locked for everyone in it. Drift corrects itself in about a second and a half. Chat and voice ride along — the stream never leaves anyone's own device.</p>
         </article>
 
         <article class="card span5 reveal" data-rev="right">
-          <span class="ico pink">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>
+          <span class="ico c-red">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg>
           </span>
-          <h3>Voice rooms</h3>
-          <p>Talk while you watch. Push-to-talk that just works — even with the screen off and your phone in your pocket.</p>
+          <h3>Live TV, cricket first</h3>
+          <p>India-first live rows: when a match is on, it's pinned to the front with a LIVE badge instead of buried on channel 47. EPG guide, category lists, and zapping that can't queue up a zombie channel.</p>
         </article>
 
         <article class="card span4 reveal">
-          <span class="ico cyan">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          <span class="ico c-gold">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M2 9h20"/><path d="m10 13 4 2.5-4 2.5z"/></svg>
           </span>
-          <h3>Offline downloads</h3>
-          <p>Save movies, episodes and songs for flights and dead zones. Pick the size — split APKs keep the install light.</p>
+          <h3>Movies &amp; series</h3>
+          <p>New and trending rows, latest releases per language, and resume that follows you across devices. One player for HLS, progressive files, torrents and debrid.</p>
         </article>
 
         <article class="card span4 reveal">
-          <span class="ico">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <span class="ico c-violet">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           </span>
-          <h3>Music &amp; audiobooks</h3>
-          <p>A full player with sleep timer, speed control, lock-screen controls and gapless playback for the long chapters.</p>
+          <h3>Music</h3>
+          <p>Home, Browse, Library, Radio and Search — plus queue, lyrics, equaliser, sleep timer and offline albums. Desi-first rows, with an exact-match search that never hands back a near-miss song.</p>
         </article>
 
         <article class="card span4 reveal">
-          <span class="ico mint">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span class="ico c-mint">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </span>
-          <h3>Manga &amp; many sources</h3>
-          <p>Anime, shows, movies and manga from multiple built-in sources — a community health system hides the dead ones.</p>
-        </article>
-
-        <article class="card span6 reveal">
-          <span class="ico">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
-          </span>
-          <h3>Friends, DMs &amp; rooms</h3>
-          <p>Add friends, send messages, then jump straight from a chat into a shared room. Optional accounts — everything else works without one.</p>
-        </article>
-
-        <article class="card span6 reveal">
-          <span class="ico cyan">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-          </span>
-          <h3>Easy for everyone</h3>
-          <p>Plain-language onboarding, big buttons, tech errors rewritten in friendly words and per-device logs. No tech degree needed — your parents can use it too.</p>
+          <h3>Manga &amp; anime</h3>
+          <p>A reader built for long nights — horizontal or vertical, pinch zoom, progress kept per title. Anime gets trending and airing rows, ratings and a one-tap next episode.</p>
         </article>
 
         <article class="card span4 reveal">
-          <span class="ico pink">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg>
+          <span class="ico c-violet">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5z"/><path d="M4 16.5h16"/><path d="M9 7h6"/></svg>
           </span>
-          <h3>Live TV (IPTV)</h3>
-          <p>M3U8 live channels with categories and an EPG guide, tuned for fast zapping — your matches and premieres in the same app.</p>
+          <h3>Audiobooks</h3>
+          <p>Chapters, speed and a sleep timer for the long ones. Bring your own MP3 or M4B, or put an EPUB through the built-in audio studio and listen to it instead of reading it.</p>
         </article>
 
         <article class="card span4 reveal">
-          <span class="ico">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg>
+          <span class="ico c-cyan">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
           </span>
-          <h3>Debrid &amp; Stremio ready</h3>
-          <p>Plug in Real-Debrid and your Stremio addons — Dizzy treats them like first-class sources next to the built-in ones.</p>
+          <h3>Friends &amp; DMs</h3>
+          <p>Real @usernames, live friend requests and message threads that show up the moment they arrive. Tap a friend's invite and you land in their room, not a second empty one.</p>
         </article>
 
         <article class="card span4 reveal">
-          <span class="ico mint">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          <span class="ico c-cyan">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
           </span>
-          <h3>Plays instantly</h3>
-          <p>Health probes drop dead links before you ever see them, skip-intro fires on its own, and playback starts in about a second.</p>
+          <h3>Offline that behaves</h3>
+          <p>Downloads resume where they stopped, pause when the network drops, and live in one hub with a storage gauge. Flights, trains and dead zones included.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- ═══ COMPARE ═══ -->
-  <section class="section" id="why">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="kicker reveal">Why switch</p>
-        <h2 class="reveal">The stuff you stopped expecting from a media app.</h2>
+  <!-- ═══ WATCH PARTY / SOCIAL PROOF ═══ -->
+  <section class="section party" id="party">
+    <div class="wrap party-grid">
+      <div class="party-copy reveal" data-rev="left">
+        <p class="kicker">Watch together</p>
+        <h2>No more “ok, press play… 3, 2, 1”.</h2>
+        <p class="lede">One person hosts. Everyone else just follows — pause, seek and next episode included. Private rooms take a six-digit pass, and a room holds up to 20 people before it stops accepting guests.</p>
+        <ul class="party-facts">
+          <li><b>1.5 s</b><span>drift before it silently re-syncs you</span></li>
+          <li><b>20</b><span>people in one room</span></li>
+          <li><b>Voice + chat</b><span>join muted, unmute when you have opinions</span></li>
+          <li><b>Listen Together</b><span>the same trick for a shared queue of music</span></li>
+        </ul>
+        <p class="party-next">Group chats and shared watch lists are next on the same roadmap.</p>
       </div>
-      <div class="compare">
-        <div class="col them reveal" data-rev="left">
-          <h3>Typical apps <span class="tagline">the usual</span></h3>
-          <ul>
-            <li><span class="mk">–</span><span>Sync-by-chat: “pause now! …ok, 3, 2, 1” and someone is still 4 seconds behind.</span></li>
-            <li><span class="mk">–</span><span>Ads between episodes, then a paywall for the good quality.</span></li>
-            <li><span class="mk">–</span><span>One job each: a player, a separate downloader, a separate chat app.</span></li>
-            <li><span class="mk">–</span><span>Account required before you can press play once.</span></li>
-            <li><span class="mk">–</span><span>Battery savers murder background playback.</span></li>
-            <li><span class="mk">–</span><span>“Something went wrong” and no way to tell what.</span></li>
-          </ul>
+
+      <div class="party-card reveal" data-rev="right" aria-label="Watch Party room example">
+        <div class="room-top">
+          <span class="room-live"><i></i>LIVE</span>
+          <span class="room-title">Watch Party</span>
         </div>
-        <div class="col us reveal" data-rev="right">
-          <h3>Dizzy <span class="tagline">open source</span></h3>
-          <ul>
-            <li><span class="mk">✓</span><span><b>One shared timeline.</b> Pause anywhere and the whole room pauses there.</span></li>
-            <li><span class="mk">✓</span><span><b>No ads, no tiers.</b> Every feature in the app is free, forever.</span></li>
-            <li><span class="mk">✓</span><span><b>One app:</b> player + watch rooms + voice + chat + downloads + reader.</span></li>
-            <li><span class="mk">✓</span><span><b>Play first</b> — accounts are optional, only for friends and sync.</span></li>
-            <li><span class="mk">✓</span><span><b>Background play</b> that survives battery optimisation, with an in-app nudge.</span></li>
-            <li><span class="mk">✓</span><span><b>Readable errors</b> in plain English + shareable per-device logs.</span></li>
-          </ul>
+        <div class="room-id">
+          <span class="room-label">Room ID</span>
+          <span class="room-code">K7M2QP</span>
         </div>
+        <div class="room-row">
+          <span class="room-avs" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="room-meta">3 watching · 0.4 s apart</span>
+        </div>
+        <div class="room-bar" aria-hidden="true"><i></i></div>
+        <ul class="room-log">
+          <li><span class="who">@sirius</span> paused at 00:41:12</li>
+          <li><span class="who">@meera</span> everyone followed</li>
+          <li><span class="who">@arjun</span> this episode is unfair</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -317,14 +275,14 @@
   <section class="section" id="how">
     <div class="wrap">
       <div class="section-head">
-        <p class="kicker reveal">How it works</p>
-        <h2 class="reveal">Three steps. Two minutes.</h2>
+        <p class="kicker reveal">Install</p>
+        <h2 class="reveal">Two minutes, one file.</h2>
       </div>
       <ol class="steps reveal" data-steps>
         <span class="steps-track" aria-hidden="true"><i></i></span>
-        <li><span class="n">1</span><b>Download</b><span>Pick your device below — the right file for your phone or PC is already selected.</span></li>
-        <li><span class="n">2</span><b>Install</b><span>Android: allow this one install. Windows: run the setup. Linux: run the AppImage.</span></li>
-        <li><span class="n">3</span><b>Play</b><span>Open Dizzy, pick something, press play. Updates arrive inside the app — one tap.</span></li>
+        <li><span class="n">1</span><b>Download</b><span>Press the button above. The file picker on this page already knows your device and architecture.</span></li>
+        <li><span class="n">2</span><b>Install</b><span>Android: allow this one install. Windows: run the setup. Linux: run the AppImage. No account, no sign-up wall.</span></li>
+        <li><span class="n">3</span><b>Play</b><span>Pick a title, a track or a match. From then on it updates itself in place — one tap, newest version.</span></li>
       </ol>
     </div>
   </section>
@@ -349,17 +307,18 @@
     </div>
     <div class="rail-wrap reveal">
       <div class="rail" id="rail" role="list" aria-label="App screenshots, drag to browse">
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-01.webp" alt="Dizzy welcome screen" width="480" height="1040" loading="lazy"><figcaption>Welcome</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-02.webp" alt="Dizzy home screen" width="480" height="1040" loading="lazy"><figcaption>Home</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-03.webp" alt="Dizzy home, more rows" width="480" height="1040" loading="lazy"><figcaption>Discover</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-04.webp" alt="Dizzy manga reader" width="480" height="1040" loading="lazy"><figcaption>Manga</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-05.webp" alt="Dizzy manga details" width="480" height="1040" loading="lazy"><figcaption>Manga details</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-06.webp" alt="Dizzy anime browser" width="480" height="1040" loading="lazy"><figcaption>Anime</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-07.webp" alt="Dizzy anime details" width="480" height="1040" loading="lazy"><figcaption>Anime details</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-08.webp" alt="Dizzy search" width="480" height="1040" loading="lazy"><figcaption>Search</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-09.webp" alt="Dizzy search results" width="480" height="1040" loading="lazy"><figcaption>Results</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-10.webp" alt="Dizzy audiobooks" width="480" height="1040" loading="lazy"><figcaption>Audiobooks</figcaption></figure>
-        <figure class="shot" role="listitem"><img src="./assets/img/shots/shot-11.webp" alt="Dizzy settings" width="480" height="1040" loading="lazy"><figcaption>Settings</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/home.webp" alt="Home: spotlight title with Explore and Details, then New &amp; Trending" width="600" height="1258" loading="lazy" decoding="async"><figcaption>Home</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music.webp" alt="Music home: chart hit banner, mood chips and Made For You mixes" width="480" height="1008" loading="lazy" decoding="async"><figcaption>Music</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-player.webp" alt="Full-screen music player with cover art, seek bar and controls" width="480" height="1007" loading="lazy" decoding="async"><figcaption>Player</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-queue.webp" alt="Music queue drawer showing the next tracks" width="480" height="1007" loading="lazy" decoding="async"><figcaption>Queue</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/manga.webp" alt="Manga home with featured series and chapter rows" width="480" height="1000" loading="lazy" decoding="async"><figcaption>Manga</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/manga-reader.webp" alt="Manga reader showing a full page with progress" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Reader</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/anime.webp" alt="Anime details with rating, episode count and Watch Ep 1, plus Trending Anime and Airing Now rows" width="480" height="1000" loading="lazy" decoding="async"><figcaption>Anime</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/audiobook.webp" alt="Audiobook hub with genre filters, a spotlight book and featured titles" width="480" height="1007" loading="lazy" decoding="async"><figcaption>Audiobooks</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/watch-party.webp" alt="Watch Party screen with create a room, join a room and live public rooms" width="480" height="1003" loading="lazy" decoding="async"><figcaption>Watch Party</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/social.webp" alt="Social Hub sheet with Listen Together, Start a jam room and join with code" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Social Hub</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/downloads.webp" alt="Downloads hub with active, video and music tabs" width="480" height="1003" loading="lazy" decoding="async"><figcaption>Downloads</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/settings.webp" alt="Settings with My Dizzy Wrap, Privacy &amp; Account, Profiles and Social Hub entries" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Settings</figcaption></figure>
       </div>
     </div>
     <p class="rail-hint">Drag, scroll, or tap a shot to enlarge</p>
@@ -368,15 +327,11 @@
   <!-- ═══ STATS ═══ -->
   <section class="section" id="numbers">
     <div class="wrap">
-      <div class="section-head">
-        <p class="kicker reveal">By the numbers</p>
-        <h2 class="reveal">Small app. Big surface area.</h2>
-      </div>
       <div class="stats">
-        <div class="stat reveal"><span class="num grad" data-count="3">0</span><span class="lab">platforms — Android, Windows, Linux</span></div>
-        <div class="stat reveal"><span class="num" data-count="0" data-suffix="">0</span><span class="lab">ads, paywalls or subscriptions</span></div>
-        <div class="stat reveal"><span class="num grad" data-count="60" data-prefix="&lt;" data-suffix=" MB">0</span><span class="lab">to install, then it updates itself</span></div>
-        <div class="stat reveal"><span class="num" data-count="100" data-suffix="%">0</span><span class="lab">open source, built in public</span></div>
+        <div class="stat reveal"><span class="num" data-count="6">0</span><span class="lab">verticals, one player and one home row</span></div>
+        <div class="stat reveal"><span class="num" data-count="0">0</span><span class="lab">ads, subscriptions or locked features</span></div>
+        <div class="stat reveal"><span class="num" data-count="20">0</span><span class="lab">people per watch room, private ones included</span></div>
+        <div class="stat reveal"><span class="num" data-count="100" data-suffix="%">0</span><span class="lab">open source — GPL-3.0, built in public</span></div>
       </div>
     </div>
   </section>
@@ -386,26 +341,25 @@
     <div class="wrap oss">
       <div class="reveal" data-rev="left">
         <p class="kicker">Built in the open</p>
-        <h2>Read the code. Build it yourself. Fork it.</h2>
-        <p class="lede">Every release is produced by GitHub Actions straight from the public repo — same artifacts for you and for us. No mystery binaries, no telemetry you didn't agree to.</p>
+        <h2>Read the code. Build it. Fork it.</h2>
+        <p class="lede">Every release comes out of GitHub Actions from the public repo — the same artifacts for you and for us. No mystery binaries, no telemetry you didn't agree to.</p>
         <div class="oss-facts">
           <span class="fact" data-gh-fact hidden>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.9 5.34.9 11.6c0 4.9 3.17 9.05 7.57 10.52.55.1.76-.24.76-.53l-.02-1.86c-3.08.67-3.73-1.49-3.73-1.49-.5-1.29-1.23-1.63-1.23-1.63-1.01-.69.08-.68.08-.68 1.11.08 1.7 1.15 1.7 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.7-1.49-2.46-.28-5.05-1.23-5.05-5.5 0-1.21.43-2.2 1.15-2.98-.12-.28-.5-1.41.11-2.94 0 0 .93-.3 3.05 1.14a10.5 10.5 0 0 1 5.56 0c2.12-1.44 3.05-1.14 3.05-1.14.61 1.53.23 2.66.11 2.94.72.78 1.15 1.77 1.15 2.98 0 4.28-2.6 5.21-5.07 5.49.4.35.76 1.03.76 2.08l-.01 3.08c0 .3.2.64.77.53 4.39-1.48 7.56-5.62 7.56-10.52C23.1 5.34 18.27.5 12 .5Z"/></svg>
             <b data-gh-stars>—</b>&nbsp;stars
           </span>
-          <span class="fact">GPL-3.0 licensed</span>
+          <span class="fact">GPL-3.0</span>
           <span class="fact">CI-built, signed releases</span>
-          <span class="fact">No trackers, no analytics</span>
+          <span class="fact">No trackers</span>
         </div>
       </div>
       <div class="oss-panel reveal" data-rev="right">
         <div class="oss-bar"><i></i><i></i><i></i><span>terminal</span></div>
         <div class="oss-body">
-<span class="c"># grab the source</span>
+<span class="c"># read it</span>
 <span class="g">$</span> <span class="y">git</span> clone <span class="v">https://github.com/Sirius6907/Dizzy-v3</span>
-<span class="c"># or just take the ready build</span>
-<span class="g">$</span> <span class="p">curl</span> -L <span class="v">https://dizzy-by-sirius.netlify.app</span> \
-    | <span class="p">sh</span>  <span class="c"># (kidding — use the button below)</span>
+<span class="c"># or take the build we signed</span>
+<span class="g">$</span> <span class="y">gh</span> release download <span class="p">-R</span> <span class="v">Sirius6907/Dizzy-v3</span>
         </div>
       </div>
     </div>
@@ -417,7 +371,7 @@
       <div class="section-head">
         <p class="kicker reveal">Download</p>
         <h2 class="reveal">Get Dizzy <span class="grad" data-ver>free</span></h2>
-        <p class="dl-meta reveal">Version <b data-ver>—</b> · released <b data-rel-date>—</b> · <b data-total-dl>—</b> downloads · picks the right file for your device</p>
+        <p class="dl-meta reveal"><b data-ver>—</b> · released <b data-rel-date>—</b> · <b data-total-dl>—</b> downloads · the right file for your device is already selected</p>
       </div>
 
       <div class="tabs reveal" role="tablist" aria-label="Choose your system">
@@ -436,24 +390,24 @@
         </button>
       </div>
 
-      <div class="dl-panel gborder reveal" id="panel-os" role="tabpanel" aria-live="polite">
+      <div class="dl-panel reveal" id="panel-os" role="tabpanel" aria-live="polite">
         <div class="abi-row" id="abiRow" hidden>
           <span class="abi-label" id="abiLabel">Your phone (recommended):</span>
           <div class="abi-btns" role="group" aria-label="Android version" id="abiBtns"></div>
         </div>
         <div class="file-list" id="fileList"></div>
-        <a class="btn btn-gold btn-lg magnetic" id="dlPrimary" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
+        <a class="btn btn-red btn-lg magnetic" id="dlPrimary" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
           <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
           <span id="dlPrimaryLabel">Download</span>
         </a>
-        <p class="alt">or <a href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" target="_blank" rel="noopener">grab it from GitHub</a></p>
+        <p class="alt">or <a href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" target="_blank" rel="noopener">open the latest release on GitHub</a></p>
       </div>
 
       <div class="dl-perks reveal">
         <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> One-tap in-app updates</span>
         <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Works offline</span>
         <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> No account to start</span>
-        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Signed builds, same key every release</span>
+        <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Same signing key every release</span>
       </div>
     </div>
   </section>
@@ -463,32 +417,44 @@
     <div class="wrap narrow">
       <div class="section-head">
         <p class="kicker reveal">FAQ</p>
-        <h2 class="reveal">Good questions.</h2>
+        <h2 class="reveal">Install, update, and the questions in between.</h2>
       </div>
       <div class="faq">
         <details class="qa reveal" open>
           <summary>Is Dizzy really free? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Yes. Dizzy is free and open source. There are no paid tiers, no locked features, and no ads inside the app.</div></div>
-        </details>
-        <details class="qa reveal">
-          <summary>Is it safe to install the Android APK? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Yes. The APK is built in the open by GitHub Actions from public source code, and every release is signed with the same key. Android will ask you to allow this one install because it did not come from the Play Store — that warning appears for every app installed this way.</div></div>
+          <div class="ans"><div>Yes — free and open source under GPL-3.0. There are no paid tiers, no locked features and no ads inside the app. It is not on the Play Store, so you install it directly.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Which Android file should I download? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Almost every modern phone uses <b>arm64-v8a</b> — it is preselected for you. Older or unusual devices can use armeabi-v7a (32-bit phones) or x86_64 (some tablets and emulators). Universal works everywhere but is a much bigger download.</div></div>
+          <div class="ans"><div>Almost every modern phone uses <b>arm64-v8a</b>, and it is already selected for you. Older or unusual devices can use armeabi-v7a (32-bit phones) or x86_64 (some tablets and emulators). Universal runs everywhere but is a much bigger download.</div></div>
+        </details>
+        <details class="qa reveal">
+          <summary>How do I install the APK? <span class="chev" aria-hidden="true">+</span></summary>
+          <div class="ans"><div>Open the downloaded file and let Android install from that source once. You may also see a Play Protect “unsafe app” prompt — that appears for every app installed outside the Play Store, including this one. The APK is built in the open by GitHub Actions and signed with the same key on every release.</div></div>
         </details>
         <details class="qa reveal">
           <summary>How do updates work? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>The app checks for new versions itself and offers a one-tap update. You never need to come back to this page unless you want a fresh install.</div></div>
+          <div class="ans"><div>The app checks for a new version itself and offers a one-tap update — you never have to come back to this page unless you want a fresh install. Release builds carry a versionCode floor, so a newer build can't install as a downgrade, and each download's checksum is verified before the installer opens it.</div></div>
+        </details>
+        <details class="qa reveal">
+          <summary>“Package not valid” — the update won't install. <span class="chev" aria-hidden="true">+</span></summary>
+          <div class="ans"><div>That message belongs to installs older than <b>v1.3.1</b>. Builds since then update in place, and legacy-key installs get a matching mirror automatically, so v1.3.5 and newer should never ask you to uninstall anything. If you are still stuck on an old build, uninstall Dizzy once and install the latest APK from this page. Your @username and history live on the server and come back with it.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Do I need an account? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>No. Dizzy works without signing in. Accounts are optional and only needed for friends, messages and syncing across devices.</div></div>
+          <div class="ans"><div>No. Everything plays without signing in. An @username is optional and only needed for friends, DMs, watch parties and syncing across devices — and it survives a reinstall.</div></div>
+        </details>
+        <details class="qa reveal">
+          <summary>Does it work offline? <span class="chev" aria-hidden="true">+</span></summary>
+          <div class="ans"><div>Yes. Downloads resume where they stopped, pause when the network drops, and sit in one hub with a storage gauge so you can see what is eating space before a trip.</div></div>
+        </details>
+        <details class="qa reveal">
+          <summary>Is there adult content? <span class="chev" aria-hidden="true">+</span></summary>
+          <div class="ans"><div>There is an optional 18+ section, and it is <b>off by default</b>. Turning it on needs a birth-year confirmation, it never appears in kids profiles, and it keeps its own categories so it cannot leak into the normal home row. If you are under 18, leave it alone.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Where does the content come from? Is this legal? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Dizzy plays content from third-party sources and does not host anything itself. Availability and legality of any specific title depend on the source and on where you live — use your own judgement, and respect creators by supporting official releases when you can.</div></div>
+          <div class="ans"><div>Dizzy hosts nothing. It plays media from third-party sources and addons that you configure, and availability or legality depends on the source and on where you live. Use your own judgement, and support official releases when you can. Rights holders can reach us through the GitHub issue tracker and we will remove a source.</div></div>
         </details>
       </div>
     </div>
@@ -497,14 +463,14 @@
   <!-- ═══ FINAL CTA ═══ -->
   <section class="section" id="get">
     <div class="wrap">
-      <div class="cta-band gborder reveal" data-rev="zoom">
+      <div class="cta-band reveal" data-rev="zoom">
         <p class="kicker" style="justify-content:center">Two minutes from now</p>
-        <h2>Your next watch party starts with one download.</h2>
-        <p>Install Dizzy, send the room link to whoever you'd watch with, and press play. That's the whole tutorial.</p>
+        <h2>One download. Every screen you already use.</h2>
+        <p>Install Dizzy, send a Room ID to whoever you'd watch with, and press play. That's the whole tutorial.</p>
         <div class="cta-row">
-          <a class="btn btn-gold btn-lg magnetic" href="#download" data-dl-jump>
+          <a class="btn btn-red btn-lg magnetic" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
             <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
-            <span data-dl-label>Download for your device</span>
+            <span data-dl-label>Download the latest release</span>
           </a>
           <a class="btn btn-lg" href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">Browse the source</a>
         </div>
@@ -518,39 +484,63 @@
   <div class="wrap">
     <div class="foot-in">
       <div>
-        <a class="brand" href="#top"><img class="brand-mark" src="./assets/img/favicon.png?v=2" alt="" width="24" height="24"><span class="brand-name">Dizzy</span></a>
-        <p>The free, open media player that turns "watch together" into one link — movies, shows, anime, music, audiobooks and manga across Android, Windows and Linux.</p>
+        <a class="brand" href="#top"><img class="brand-mark" src="./assets/img/favicon.png?v=3" alt="" width="24" height="24"><span class="brand-name">Dizzy</span></a>
+        <p>The free, open-source app for everything you watch, listen to and read — movies, series, music, manga, anime, audiobooks and live TV, with watch parties built in. Android, Windows and Linux.</p>
       </div>
       <div>
-        <h4>Product</h4>
+        <h3>Product</h3>
         <ul>
           <li><a href="#features">Features</a></li>
+          <li><a href="#party">Watch Party</a></li>
           <li><a href="#shots">Screenshots</a></li>
           <li><a href="#download">Download</a></li>
           <li><a href="#faq">FAQ</a></li>
         </ul>
       </div>
       <div>
-        <h4>Project</h4>
+        <h3>Project</h3>
         <ul>
           <li><a href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">GitHub repository</a></li>
           <li><a href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" target="_blank" rel="noopener">Release notes</a></li>
-          <li><a href="https://github.com/Sirius6907/Dizzy-v3/blob/main/LICENSE" target="_blank" rel="noopener">License</a></li>
+          <li><a href="https://github.com/Sirius6907/Dizzy-v3/blob/main/LICENSE" target="_blank" rel="noopener">License (GPL-3.0)</a></li>
           <li><a href="https://github.com/Sirius6907/Dizzy-v3/issues" target="_blank" rel="noopener">Report an issue</a></li>
         </ul>
       </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="https://github.com/Sirius6907/Dizzy-v3/issues/new" target="_blank" rel="noopener">DMCA &amp; takedown</a></li>
+          <li><a href="#legal">Disclaimer</a></li>
+          <li><a href="#legal">Age gate (18+)</a></li>
+          <li><a href="#legal">Privacy</a></li>
+        </ul>
+      </div>
     </div>
+
+    <div class="legal" id="legal">
+      <div class="legal-note age">
+        <span class="age-badge">18+</span>
+        <p><b>Age-gated section.</b> Dizzy includes an optional 18+ area. It is off by default, needs a birth-year confirmation to turn on, stays out of kids profiles and never mixes into the normal home rows. Under 18? Leave it off.</p>
+      </div>
+      <div class="legal-note">
+        <p><b>Disclaimer &amp; DMCA.</b> Dizzy is a media player. It hosts, stores and uploads no content of its own: everything you play comes from third-party sources and addons that you choose and configure. Availability and legality depend on those sources and on your country's rules — you are responsible for what you play. If you hold rights to something and believe a source should not be listed, open an issue at <a href="https://github.com/Sirius6907/Dizzy-v3/issues" target="_blank" rel="noopener">github.com/Sirius6907/Dizzy-v3/issues</a> and it will be removed.</p>
+      </div>
+      <div class="legal-note">
+        <p><b>Privacy.</b> This page sets no cookies, runs no analytics and has no ad scripts. The app stores nothing you do not ask it to, and cloud sync is opt-in.</p>
+      </div>
+    </div>
+
     <div class="foot-bottom">
-      <span>© 2026 Dizzy · Free &amp; open source</span>
-      <span>No ads · No trackers · No account required</span>
-      <span class="made">Built with <b data-ver>latest</b></span>
+      <span>© 2026 Dizzy · free &amp; open source</span>
+      <span>No ads · no trackers · no account required</span>
+      <span class="made">Built by <b>sirius</b> · <b data-ver>latest</b></span>
     </div>
   </div>
 </footer>
 
 <div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot preview">
   <button class="lb-x" id="lbClose" aria-label="Close preview">×</button>
-  <img id="lbImg" alt="">
+  <img id="lbImg" alt="" width="480" height="1008">
   <p class="lb-cap" id="lbCap"></p>
 </div>
 
