@@ -274,15 +274,28 @@ class NotificationService {
   /// system banner. When the data payload carries a poster URL the banner
   /// renders as an FCM big-picture style image card (failed downloads
   /// degrade to text).
+  ///
+  /// [banner] false records history only — used when the user is already
+  /// looking at the screen the push would open (the chat they are reading,
+  /// the title page they are on). The Center keeps the row; the shade stays
+  /// quiet.
   static Future<void> push(
     NotificationKind kind,
     String title,
     String body, {
     String? id,
     Map<String, String>? dataPayload,
+    bool banner = true,
   }) async {
     await initialize();
-    await NotificationInbox.add(title: title, body: body, kind: kind, id: id);
+    await NotificationInbox.add(
+      title: title,
+      body: body,
+      kind: kind,
+      id: id,
+      data: dataPayload ?? const <String, String>{},
+    );
+    if (!banner) return;
     if (!_gate.allows(kind, DateTime.now())) return;
     if (!_permGranted) return;
     final data = dataPayload;

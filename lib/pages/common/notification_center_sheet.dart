@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:dizzy/design/dizzy_tactile.dart';
@@ -9,6 +11,7 @@ import 'package:dizzy/services/notification/notification_history.dart';
 import 'package:dizzy/services/notification/notification_inbox.dart';
 import 'package:dizzy/services/notification/notification_prefs.dart';
 import 'package:dizzy/services/notification/notification_service.dart';
+import 'package:dizzy/services/push/push_service.dart';
 
 /// Phase J3 — the Notification Center: local history (capped at 50) plus
 /// the per-type / quiet-hours controls, all in one place.
@@ -43,17 +46,6 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
       if (!mounted) return;
       setState(() => _gateNotifier.value = NotificationService.gate);
     });
-  }
-
-  String _when(int ms) {
-    final d = DateTime.fromMillisecondsSinceEpoch(ms);
-    final now = DateTime.now();
-    final today =
-        now.year == d.year && now.month == d.month && now.day == d.day;
-    final hh = d.hour.toString().padLeft(2, '0');
-    final mm = d.minute.toString().padLeft(2, '0');
-    if (today) return 'Today $hh:$mm';
-    return '${d.day}/${d.month} $hh:$mm';
   }
 
   @override
@@ -168,74 +160,7 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
                   itemCount: merged.length,
                   separatorBuilder: (_, __) =>
                       const SizedBox(height: DizzySpace.sm),
-                  itemBuilder: (context, i) {
-                    final it = merged[i];
-                    final panel = isLight
-                        ? PrismLight.raisedTop
-                        : DizzyVoid.voidB.withValues(alpha: 0.85);
-                    final well = isLight
-                        ? PrismLight.raisedBottom
-                        : DizzyVoid.voidB.withValues(alpha: 0.45);
-                    final hairline = isLight
-                        ? PrismLight.borderSubtle
-                        : DizzyVoid.surface3.withValues(alpha: 0.35);
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: it.read ? well : panel,
-                        borderRadius: BorderRadius.circular(DizzyRadius.md),
-                        border: Border.all(
-                          color: it.read
-                              ? hairline
-                              : (isLight
-                                    ? PrismAccent.accent.withValues(alpha: 0.45)
-                                    : DizzyGlow.beam.withValues(alpha: 0.35)),
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(DizzySpace.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                _iconFor(it.kind),
-                                size: 15,
-                                color: it.read
-                                    ? inkSoft
-                                    : (isLight
-                                          ? PrismAccent.text(true)
-                                          : DizzyGlow.beam),
-                              ),
-                              const SizedBox(width: DizzySpace.sm),
-                              Expanded(
-                                child: Text(
-                                  it.title,
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(
-                                        color: it.read ? inkSoft : ink,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                              ),
-                              Text(
-                                _when(it.atMs),
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(color: inkSoft),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            it.body,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: inkSoft, height: 1.35),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  itemBuilder: (context, i) => _RowCard(item: merged[i]),
                 );
               },
             ),
@@ -243,21 +168,6 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
         ),
       ),
     );
-  }
-
-  static IconData _iconFor(NotificationKind kind) {
-    switch (kind) {
-      case NotificationKind.update:
-        return Icons.system_update_alt_rounded;
-      case NotificationKind.release:
-        return Icons.local_movies_rounded;
-      case NotificationKind.download:
-        return Icons.download_rounded;
-      case NotificationKind.social:
-        return Icons.forum_rounded;
-      case NotificationKind.announcement:
-        return Icons.campaign_rounded;
-    }
   }
 
   Widget _controls() {
@@ -457,3 +367,124 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
 /// Shared notifier so the toggles refresh without a global rebuild.
 final ValueNotifier<NotificationGate> _gateNotifier =
     ValueNotifier<NotificationGate>(NotificationService.gate);
+
+/// Relative stamp for a history row: `Today 14:05`, else `3/11 14:05`.
+String _when(int ms) {
+  final d = DateTime.fromMillisecondsSinceEpoch(ms);
+  final now = DateTime.now();
+  final today = now.year == d.year && now.month == d.month && now.day == d.day;
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  if (today) return 'Today $hh:$mm';
+  return '${d.day}/${d.month} $hh:$mm';
+}
+
+IconData _iconFor(NotificationKind kind) {
+  switch (kind) {
+    case NotificationKind.update:
+      return Icons.system_update_alt_rounded;
+    case NotificationKind.release:
+      return Icons.local_movies_rounded;
+    case NotificationKind.download:
+      return Icons.download_rounded;
+    case NotificationKind.social:
+      return Icons.forum_rounded;
+    case NotificationKind.announcement:
+      return Icons.campaign_rounded;
+  }
+}
+
+/// One history row. Rows that know where they came from are tappable: the tap
+/// marks the row read, closes the Center and lands on the exact screen the
+/// push was about (chat thread, room, title). Rows from the server backfill
+/// carry no route and stay inert, exactly as before.
+class _RowCard extends StatelessWidget {
+  const _RowCard({required this.item});
+
+  final InboxItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : DizzyVoid.bone;
+    final inkSoft = isLight ? PrismLight.inkSoft : DizzyVoid.ash;
+    final panel = isLight
+        ? PrismLight.raisedTop
+        : DizzyVoid.voidB.withValues(alpha: 0.85);
+    final well = isLight
+        ? PrismLight.raisedBottom
+        : DizzyVoid.voidB.withValues(alpha: 0.45);
+    final hairline = isLight
+        ? PrismLight.borderSubtle
+        : DizzyVoid.surface3.withValues(alpha: 0.35);
+
+    final card = Container(
+      decoration: BoxDecoration(
+        color: item.read ? well : panel,
+        borderRadius: BorderRadius.circular(DizzyRadius.md),
+        border: Border.all(
+          color: item.read
+              ? hairline
+              : (isLight
+                    ? PrismAccent.accent.withValues(alpha: 0.45)
+                    : DizzyGlow.beam.withValues(alpha: 0.35)),
+        ),
+      ),
+      padding: const EdgeInsets.all(DizzySpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _iconFor(item.kind),
+                size: 15,
+                color: item.read
+                    ? inkSoft
+                    : (isLight ? PrismAccent.text(true) : DizzyGlow.beam),
+              ),
+              const SizedBox(width: DizzySpace.sm),
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: item.read ? inkSoft : ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                _when(item.atMs),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: inkSoft),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.body,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: inkSoft, height: 1.35),
+          ),
+        ],
+      ),
+    );
+
+    final route = item.route;
+    if (!route.opens) return card;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        unawaited(NotificationInbox.markRead(item.id));
+        Navigator.of(context).maybePop();
+        unawaited(PushService.openFromData(item.data));
+      },
+      child: card,
+    );
+  }
+}
+

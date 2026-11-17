@@ -13,6 +13,7 @@ import 'package:dizzy/services/cloud/cloud_client.dart';
 import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
 import 'package:dizzy/services/messaging/dm_outbox.dart';
+import 'package:dizzy/services/push/active_thread.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../settings/watch_party_page.dart';
 import '../../widgets/common/notify.dart';
@@ -52,6 +53,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
   void initState() {
     super.initState();
     _myUid = DizzyFriendService.myUid;
+    ActiveThread.enter(widget.recipientUid);
     _threadId = (_myUid != null && widget.recipientUid.isNotEmpty)
         ? DizzySocialService.getThreadId(_myUid!, widget.recipientUid)
         : '';
@@ -113,6 +115,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
 
   @override
   void dispose() {
+    ActiveThread.leave(widget.recipientUid);
     final channel = _channel;
     _channel = null;
     if (channel != null && CloudClient.isReady) {

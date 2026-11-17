@@ -12,7 +12,9 @@
 //     title: string,              // ≤120 chars, required
 //     body?: string,              // ≤240 chars
 //     id?: string,                // inbox dedupe id
-//     data?: { entity_type, entity_id, poster, year, rating, lang },
+//     data?: { entity_type, entity_id, poster, year, rating, lang,
+//              sender_uid, sender_name, group_id, group_name, room_code,
+//              avatar },
 //     dry_run?: boolean
 //   }
 //   → { ok, tokens, sent, failed, disabled, errors }
@@ -236,8 +238,15 @@ serve(async (req) => {
       "year",
       "rating",
       "lang",
+      // v1.4 item 5 — social routing so a tap lands on the exact screen.
+      "sender_uid",
+      "sender_name",
+      "group_id",
+      "group_name",
+      "room_code",
+      "avatar",
     ]) {
-      const v = text(extra[k], k === "poster" ? 500 : 64);
+      const v = text(extra[k], k === "poster" || k === "avatar" ? 500 : 64);
       if (v) data[k] = v;
     }
 

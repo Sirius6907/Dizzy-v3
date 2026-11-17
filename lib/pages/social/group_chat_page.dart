@@ -12,6 +12,7 @@ import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/social/dizzy_friend_service.dart';
 import 'package:dizzy/services/social/dizzy_group_service.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
+import 'package:dizzy/services/push/active_thread.dart';
 import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 
@@ -80,6 +81,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   void initState() {
     super.initState();
     _myUid = DizzyFriendService.myUid;
+    ActiveThread.enter('group:${widget.groupId}');
     DizzySocialService.resolvedNames.addListener(_onNamesResolved);
     unawaited(_loadHistory());
     unawaited(_loadRoster());
@@ -148,6 +150,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   @override
   void dispose() {
+    ActiveThread.leave('group:${widget.groupId}');
     final channel = _channel;
     final roster = _rosterChannel;
     _channel = null;

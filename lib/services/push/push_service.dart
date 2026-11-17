@@ -9,6 +9,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/nav_key.dart';
 import '../../models/movie/movie.dart';
 import '../../pages/details/details_page.dart';
+import '../../pages/settings/watch_party_page.dart';
+import '../../pages/social/direct_message_page.dart';
+import '../../pages/social/group_chat_page.dart';
 import '../cloud/cloud_client.dart';
 import '../errors/app_log.dart';
 import '../metadata/metadata_service.dart';
@@ -16,8 +19,10 @@ import '../notification/notification_inbox.dart';
 import '../notification/notification_prefs.dart';
 import '../notification/notification_service.dart';
 import '../notification/notification_sync.dart';
+import '../notification/push_route.dart';
 import '../scraper/sites/tmdb_helper.dart';
 import '../taste/taste_event_service.dart';
+import 'active_thread.dart';
 
 /// FCM payload after normalisation. Pure value type so the mapping is
 /// unit-tested without a platform channel.
@@ -33,6 +38,12 @@ class PushPayload {
     this.poster = '',
     this.year = '',
     this.rating = '',
+    this.senderUid = '',
+    this.senderName = '',
+    this.avatar = '',
+    this.groupId = '',
+    this.groupName = '',
+    this.roomCode = '',
   });
 
   static const int maxTitle = 120;
@@ -48,6 +59,15 @@ class PushPayload {
   final String poster;
   final String year;
   final String rating;
+
+  /// Social routing fields. Empty for release/update pushes, so a single
+  /// payload shape serves both — [route] picks the destination.
+  final String senderUid;
+  final String senderName;
+  final String avatar;
+  final String groupId;
+  final String groupName;
+  final String roomCode;
 
   factory PushPayload.fromData(
     Map<String, dynamic>? data, {
@@ -72,8 +92,27 @@ class PushPayload {
       poster: clean(d['poster'], 500),
       year: clean(d['year'], 8),
       rating: clean(d['rating'], 8),
+      senderUid: clean(d['sender_uid'], 64),
+      senderName: clean(d['sender_name'], 80),
+      avatar: clean(d['avatar'], 500),
+      groupId: clean(d['group_id'], 64),
+      groupName: clean(d['group_name'], 80),
+      roomCode: clean(d['room_code'], 16),
     );
   }
+
+  /// Where a tap on this payload lands. Chat beats title: someone tapping a
+  /// message wants the conversation, not the film it mentions.
+  PushRoute get route => PushRoute.resolve(
+    senderUid: senderUid,
+    senderName: senderName,
+    avatar: avatar,
+    groupId: groupId,
+    groupName: groupName,
+    roomCode: roomCode,
+    entityId: entityId,
+    poster: poster,
+  );
 
   static String clean(Object? raw, int max) {
     if (raw == null) return '';
@@ -384,6 +423,7 @@ class PushService {
         payload.body,
         id: payload.id,
         dataPayload: tapDataFor(payload),
+        banner: !ActiveThread.isOpen(payload.route.threadKey),
       );
     } catch (e) {
       AppLog.d('[Push] dispatch failed (soft): $e');
@@ -391,10 +431,10 @@ class PushService {
   }
 
   /// Data carried in the local banner so a foreground banner tap can rebuild
-  /// the payload and open the title details screen. Everything round-trips:
-  /// the rebuilt payload must pass [PushPayload.fromData] with the same
-  /// content/openable result, otherwise `handleTap` would bail on
-  /// `hasContent` and the tap would do nothing. Pure: unit-tested.
+  /// the payload and open the same screen a system tap would. Everything
+  /// round-trips: the rebuilt payload must pass [PushPayload.fromData] with
+  /// the same content and the same [PushRoute], otherwise `handleTap` would
+  /// bail on `hasContent` and the tap would do nothing. Pure: unit-tested.
   static Map<String, String> tapDataFor(PushPayload payload) {
     final data = <String, String>{
       'kind': payload.kind.key,
@@ -409,6 +449,18 @@ class PushService {
     };
     final id = payload.id;
     if (id != null && id.isNotEmpty) data['id'] = id;
+    // Social routing fields ride along only when present, so a release push
+    // keeps exactly the blob it had before.
+    void put(String key, String value) {
+      if (value.isNotEmpty) data[key] = value;
+    }
+
+    put('sender_uid', payload.senderUid);
+    put('sender_name', payload.senderName);
+    put('avatar', payload.avatar);
+    put('group_id', payload.groupId);
+    put('group_name', payload.groupName);
+    put('room_code', payload.roomCode);
     return data;
   }
 
@@ -422,6 +474,7 @@ class PushService {
       body: payload.body,
       kind: payload.kind,
       id: payload.id,
+      data: tapDataFor(payload),
     );
   }
 
@@ -434,7 +487,7 @@ class PushService {
     }
   }
 
-  /// A tap is taste signal even when the payload cannot open a title.
+  /// A tap is taste signal even when the payload cannot open a screen.
   /// With no navigator yet (cold start) the payload waits for first frame.
   static Future<void> handleTap(PushPayload payload) async {
     if (!payload.hasContent) return;
@@ -448,25 +501,75 @@ class PushService {
         meta: {'source': 'push'},
       );
     } catch (_) {}
-    final movie = payload.toMovie();
-    if (movie == null) return;
+    final route = payload.route;
+    if (!route.opens) return;
     final nav = navigatorKey.currentState;
     if (nav == null) {
       _pendingTap = payload;
       return;
     }
-    final resolved = await openMovieFor(payload);
-    if (resolved == null) return;
-    // The navigator may have gone away while resolving (dispose during
-    // navigation away) — fall back to pending so nothing is silently lost.
-    final nav2 = navigatorKey.currentState;
-    if (nav2 == null) {
-      _pendingTap = payload;
-      return;
+    await openRoute(route, payload: payload);
+  }
+
+  /// Opens the screen [route] points at. Every tap funnels through here — a
+  /// system tap, a foreground banner tap and a Notification Center row all
+  /// take the same path, so they can never disagree about where a push goes.
+  static Future<void> openRoute(PushRoute route, {PushPayload? payload}) async {
+    if (!route.opens) return;
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    switch (route.target) {
+      case PushTarget.dm:
+        nav.push(
+          MaterialPageRoute(
+            builder: (_) => DirectMessagePage(
+              recipientUid: route.threadId,
+              recipientUsername: route.label.isEmpty ? 'Friend' : route.label,
+              recipientAvatar: route.avatar.isEmpty ? null : route.avatar,
+            ),
+          ),
+        );
+        break;
+      case PushTarget.group:
+        nav.push(
+          MaterialPageRoute(
+            builder: (_) => GroupChatPage(
+              groupId: route.threadId,
+              groupName: route.label.isEmpty ? 'Group' : route.label,
+            ),
+          ),
+        );
+        break;
+      case PushTarget.room:
+        nav.push(MaterialPageRoute(builder: (_) => const WatchPartyPage()));
+        break;
+      case PushTarget.title:
+        final source = payload;
+        if (source == null) return;
+        final resolved = await openMovieFor(source);
+        if (resolved == null) return;
+        // The navigator may have gone away while resolving (dispose during
+        // navigation away) — fall back to pending so nothing is silently lost.
+        final nav2 = navigatorKey.currentState;
+        if (nav2 == null) {
+          _pendingTap = source;
+          return;
+        }
+        nav2.push(
+          MaterialPageRoute(builder: (_) => DetailsPage(movie: resolved)),
+        );
+        break;
+      case PushTarget.none:
+        return;
     }
-    nav2.push(
-      MaterialPageRoute(builder: (_) => DetailsPage(movie: resolved)),
-    );
+  }
+
+  /// Rebuilds a payload from a stored or banner-carried data blob and opens
+  /// it. Used by the Notification Center rows, whose tap data outlives the
+  /// banner it came from.
+  static Future<void> openFromData(Map<String, dynamic>? data) async {
+    final payload = PushPayload.fromData(data);
+    await openRoute(payload.route, payload: payload);
   }
 
   /// Called after the first frame — flushes a tap that arrived before the
@@ -477,13 +580,7 @@ class PushService {
     final nav = navigatorKey.currentState;
     if (nav == null) return;
     _pendingTap = null;
-    final resolved = await openMovieFor(payload);
-    if (resolved == null) return;
-    final nav2 = navigatorKey.currentState;
-    if (nav2 == null) return;
-    nav2.push(
-      MaterialPageRoute(builder: (_) => DetailsPage(movie: resolved)),
-    );
+    await openRoute(payload.route, payload: payload);
   }
 
   /// Resolves the movie to open for a tap: swaps a numeric TMDB entity id for
