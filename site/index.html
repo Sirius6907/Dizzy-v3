@@ -11,6 +11,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./assets/img/favicon.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/apple-touch-icon.png?v=3">
 <link rel="manifest" href="./site.webmanifest">
+<link rel="preload" href="./assets/img/shots/home.webp" as="image" fetchpriority="high">
 <link rel="preload" href="./assets/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./assets/fonts/inter-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./assets/css/main.css">
@@ -19,13 +20,13 @@
 <meta property="og:title" content="Dizzy — one app for movies, music, manga, books and live TV">
 <meta property="og:description" content="Movies, series, music, manga, anime, audiobooks and live TV in one app — with watch parties, friends and DMs. Free and open source.">
 <meta property="og:url" content="https://dizzy-by-sirius.netlify.app/">
-<meta property="og:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.png">
+<meta property="og:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Dizzy — one app for everything you watch, listen and read">
 <meta name="twitter:description" content="Movies, music, manga, audiobooks and live TV in one app, with watch parties built in.">
-<meta name="twitter:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.png">
+<meta name="twitter:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.jpg">
 <script>document.documentElement.className += ' js';</script>
 <script type="application/ld+json">
 {
@@ -138,6 +139,7 @@
         </figure>
         <div class="chip chip-sync" aria-hidden="true"><span class="dot"></span>Room in sync · <b>3 friends</b></div>
         <div class="chip chip-live" aria-hidden="true"><span class="dot"></span>Live TV · <b>cricket pinned</b></div>
+        <div class="chip chip-now" aria-hidden="true"><span class="dot"></span>Now playing · <b>Kala Chashma</b></div>
       </div>
     </div>
 
@@ -268,6 +270,63 @@
           <li><span class="who">@arjun</span> this episode is unfair</li>
         </ul>
       </div>
+    </div>
+  </section>
+
+  <!-- ═══ ONE PLAYER ═══ -->
+  <section class="section player" id="player">
+    <div class="wrap player-grid">
+      <div class="player-copy reveal" data-rev="left">
+        <p class="kicker">One player</p>
+        <h2>The same player for an episode, a track and a match.</h2>
+        <p class="lede">Video and audio don't live in separate worlds here. One engine takes an HLS or DASH stream, a plain MP4 or MKV, a torrent and a debrid link — and subtitles, quality and the next episode all live on the same screen.</p>
+        <ul class="fmt" aria-label="Formats and sources">
+          <li>HLS</li><li>DASH</li><li>MP4 · MKV</li><li>Torrents</li><li>Debrid</li><li>External subtitles</li>
+        </ul>
+        <div class="player-facts">
+          <div><b>480p – 4K</b><span>manual quality, Auto included</span></div>
+          <div><b>&lt; 1 s</b><span>handoff when you zap a channel</span></div>
+          <div><b>Per device</b><span>quality choice is remembered</span></div>
+        </div>
+      </div>
+      <div class="player-stage reveal" data-rev="right">
+        <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <figure class="phone phone-sm">
+          <div class="phone-bar" aria-hidden="true"><i></i></div>
+          <img src="./assets/img/shots/music-player.webp" width="480" height="1007" loading="lazy" decoding="async"
+               alt="Full-screen music player in the Prism dark theme, with cover art, seek bar and transport controls">
+        </figure>
+        <div class="chip chip-auto" aria-hidden="true"><span class="dot"></span>Auto · <b>1080p</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ WHAT'S NEW ═══ -->
+  <section class="section" id="whatsnew">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker reveal">Release notes</p>
+        <h2 class="reveal">What actually landed in <span data-ver>latest</span>.</h2>
+        <p class="lede reveal">Every release is a working build, not a promise. Three things from the most recent one, in plain language.</p>
+      </div>
+      <div class="news">
+        <article class="news-card reveal">
+          <span class="news-tag">Friends &amp; DMs</span>
+          <h3>Chat that works both ways</h3>
+          <p>An accepted request turns into a Chat button the moment it happens, threads load their real history from the server, and your own messages finally render on your side.</p>
+        </article>
+        <article class="news-card reveal">
+          <span class="news-tag">Resolve</span>
+          <h3>The right film, not a same-name film</h3>
+          <p>Year and language are part of the answer now, so a Spanish “Game Over” can't stand in for a 2026 Odia request — and regional titles resolve at all.</p>
+        </article>
+        <article class="news-card reveal">
+          <span class="news-tag">Sources</span>
+          <h3>Ranked out loud</h3>
+          <p>Movies and episodes resolve through the verified pair, and every point of a source's score is attributable by name instead of being an opaque number.</p>
+        </article>
+      </div>
+      <p class="news-more reveal"><a href="https://github.com/Sirius6907/Dizzy-v3/releases" target="_blank" rel="noopener">Read the full release notes on GitHub →</a></p>
     </div>
   </section>
 
@@ -537,6 +596,11 @@
     </div>
   </div>
 </footer>
+
+<a class="dl-bar" id="dlBar" href="#download" data-dl-jump>
+  <span class="dl-bar-txt"><b data-ver>latest</b> · free &amp; open</span>
+  <span class="dl-bar-btn">Download</span>
+</a>
 
 <div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot preview">
   <button class="lb-x" id="lbClose" aria-label="Close preview">×</button>
