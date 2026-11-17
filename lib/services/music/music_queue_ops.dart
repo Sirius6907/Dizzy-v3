@@ -10,7 +10,9 @@ class MusicQueueOps {
 
   /// Tracks after the current one, in play order.
   static List<T> upcoming<T>(List<T> playlist, int currentIndex) {
-    if (playlist.isEmpty || currentIndex >= playlist.length - 1) return const [];
+    if (playlist.isEmpty || currentIndex >= playlist.length - 1) {
+      return const [];
+    }
     return playlist.sublist(currentIndex + 1);
   }
 

@@ -19,12 +19,17 @@ import 'music_stats_service.dart';
 enum MusicRepeatMode { off, all, one }
 
 class MusicPlayerController extends ChangeNotifier {
-  static final MusicPlayerController instance =
-      MusicPlayerController._internal();
-  MusicPlayerController._internal() {
+  static final MusicPlayerController instance = MusicPlayerController();
+  MusicPlayerController({
+    Player Function()? playerFactory,
+    MusicService? musicService,
+  }) : _playerFactory = playerFactory ?? Player.new,
+       _musicService = musicService ?? MusicService.instance {
     _initSettings();
   }
 
+  final Player Function() _playerFactory;
+  final MusicService _musicService;
   Player? _player;
   final List<StreamSubscription> _subscriptions = [];
 
@@ -44,8 +49,8 @@ class MusicPlayerController extends ChangeNotifier {
   MusicRepeatMode _repeatMode = MusicRepeatMode.off;
 
   MusicAudioSource _audioSource = MusicAudioSource.flac;
-  String _currentQualityLabel = 'FLAC Hi-Res';
-  bool _isCurrentTrackLossless = true;
+  String _currentQualityLabel = 'No audio loaded';
+  bool _isCurrentTrackLossless = false;
 
   LyricsData _currentLyrics = LyricsData.empty();
   bool _isLoadingLyrics = false;
@@ -82,15 +87,9 @@ class MusicPlayerController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('music_audio_source');
-      if (saved == 'youtube') {
-        _audioSource = MusicAudioSource.youtube;
-        _currentQualityLabel = 'YouTube HQ';
-        _isCurrentTrackLossless = false;
-      } else {
-        _audioSource = MusicAudioSource.flac;
-        _currentQualityLabel = 'FLAC Hi-Res';
-        _isCurrentTrackLossless = true;
-      }
+      _audioSource = saved == 'youtube'
+          ? MusicAudioSource.youtube
+          : MusicAudioSource.flac;
       notifyListeners();
     } catch (_) {}
   }
@@ -98,10 +97,6 @@ class MusicPlayerController extends ChangeNotifier {
   Future<void> setAudioSource(MusicAudioSource source) async {
     if (_audioSource == source) return;
     _audioSource = source;
-    _currentQualityLabel = source == MusicAudioSource.flac
-        ? 'FLAC Hi-Res'
-        : 'YouTube HQ';
-    _isCurrentTrackLossless = source == MusicAudioSource.flac;
     notifyListeners();
 
     try {
@@ -151,6 +146,20 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   int _loadGeneration = 0;
+  ({int generation, String quality, bool lossless})? _loadedAudio;
+
+  /// True when the native decoder is still advancing the current media even
+  /// though media_kit reported an error. Such errors are diagnostics, not a
+  /// dead stream, and the UI must not claim the audio is unavailable.
+  bool get _isNativePlaybackAlive {
+    final player = _player;
+    final audio = _loadedAudio;
+    if (player == null || audio == null) return false;
+    if (audio.generation != _loadGeneration) return false;
+    return player.state.playing &&
+        !player.state.buffering &&
+        _position > Duration.zero;
+  }
 
   /// One long-lived audio [Player] for the whole session. Track switches just
   /// call [Player.open] — constructing/disposing a Player per track churns
@@ -160,15 +169,34 @@ class MusicPlayerController extends ChangeNotifier {
     final existing = _player;
     if (existing != null) return existing;
 
-    final player = Player();
+    final player = _playerFactory();
     _player = player;
     _subscriptions.addAll([
+      player.stream.log.listen((log) {
+        debugPrint(
+          '[MusicNative] ${log.prefix}: ${log.text.replaceAll(RegExp(r'https?://\S+'), '[stream]')}',
+        );
+      }),
       player.stream.playing.listen((playing) {
+        if (playing && _errorMessage != null) return;
         _isPlaying = playing;
         _updateDiscordRpc(isPaused: !playing);
         notifyListeners();
       }),
       player.stream.position.listen((pos) {
+        final audio = _loadedAudio;
+        // media_kit also emits recoverable decoder logs on its error stream.
+        if (_errorMessage != null &&
+            audio?.generation == _loadGeneration &&
+            pos > _position &&
+            _isNativePlaybackAlive) {
+          _errorMessage = null;
+          _isPlaying = true;
+          _isLoading = false;
+          _currentQualityLabel = audio!.quality;
+          _isCurrentTrackLossless = audio.lossless;
+          _updateDiscordRpc(isPaused: false);
+        }
         _position = pos;
         _updateActiveLyricIndex();
         _checkCrossfadeTransition(pos, _duration);
@@ -194,12 +222,11 @@ class MusicPlayerController extends ChangeNotifier {
           debugPrint('[MusicPlayer] Ignored non-fatal error: $err');
           return;
         }
-        _isLoading = false;
-        _isPlaying = false;
-        _errorMessage = 'Could not load audio: $err';
-        debugPrint('Playback error for ${_currentTrack?.title}: $err');
-        DiscordRpcService.instance.clearToIdle();
-        notifyListeners();
+        final track = _currentTrack;
+        _applyStreamError(err, invalidateCache: false);
+        if (track != null) {
+          unawaited(_recoverFromRejectedStream(track, err));
+        }
       }),
     ]);
     return player;
@@ -212,8 +239,12 @@ class MusicPlayerController extends ChangeNotifier {
     final currentGen = ++_loadGeneration;
     _currentTrack = track;
     _isLoading = true;
+    _currentQualityLabel = 'Resolving audio';
+    _isCurrentTrackLossless = false;
     _errorMessage = null;
     _hasPrecachedNext = false;
+    _loadedAudio = null;
+    _streamRetries = 0;
     _position = startPosition ?? Duration.zero;
     _duration = track.durationSeconds > 0
         ? Duration(seconds: track.durationSeconds)
@@ -244,6 +275,7 @@ class MusicPlayerController extends ChangeNotifier {
           downloadedFile.lengthSync() > 100;
 
       final Media media;
+      String? streamUserAgent;
 
       if (isOffline && downloadedTrack != null) {
         _currentQualityLabel = downloadedTrack.quality.contains('FLAC')
@@ -252,6 +284,11 @@ class MusicPlayerController extends ChangeNotifier {
         _isCurrentTrackLossless =
             downloadedTrack.format.toLowerCase() == 'flac';
         media = Media(downloadedFile.path);
+        _loadedAudio = (
+          generation: currentGen,
+          quality: _currentQualityLabel,
+          lossless: _isCurrentTrackLossless,
+        );
       } else {
         final streamResult = await MusicService.instance.getAudioStream(
           track,
@@ -276,14 +313,21 @@ class MusicPlayerController extends ChangeNotifier {
               );
 
         media = Media(uri.toString(), httpHeaders: headers);
+        streamUserAgent = streamResult.userAgent;
+        _loadedAudio = (
+          generation: currentGen,
+          quality: _currentQualityLabel,
+          lossless: _isCurrentTrackLossless,
+        );
       }
 
       if (currentGen != _loadGeneration) return;
 
       final player = _ensurePlayer();
 
+      await _applyStreamHeaders(player, media, streamUserAgent);
       await player.open(media, play: false);
-      if (currentGen != _loadGeneration) return;
+      if (currentGen != _loadGeneration || _errorMessage != null) return;
 
       await player.setVolume(_volume * 100.0);
 
@@ -293,19 +337,107 @@ class MusicPlayerController extends ChangeNotifier {
 
       if (currentGen != _loadGeneration) return;
       await player.play();
+      if (currentGen != _loadGeneration || _errorMessage != null) return;
 
       _isLoading = false;
-      _isPlaying = true;
       MusicEqualizerService.instance.applyFilters();
       notifyListeners();
     } catch (e) {
       if (currentGen != _loadGeneration) return;
       _isLoading = false;
       _isPlaying = false;
+      _currentQualityLabel = 'Audio unavailable';
+      _isCurrentTrackLossless = false;
       _errorMessage = 'Could not load audio: ${e.toString()}';
       debugPrint('Playback error for ${track.title}: $e');
       notifyListeners();
     }
+  }
+
+  /// mpv applies per-media HTTP headers from an `on_load` hook, which fires
+  /// after the first request already left the device. YouTube answers such a
+  /// request with 403, so the client identity is set on the player before the
+  /// media is opened.
+  Future<void> _applyStreamHeaders(
+    Player player,
+    Media media,
+    String? userAgent,
+  ) async {
+    try {
+      final platform = player.platform as dynamic;
+      if (userAgent != null && userAgent.isNotEmpty) {
+        await platform.setProperty('user-agent', userAgent);
+      }
+      final url = media.uri;
+      if (url.contains('c=WEB')) {
+        await platform.setProperty('referer', 'https://www.youtube.com/');
+      }
+    } catch (_) {}
+  }
+
+  static const int _maxStreamRetries = 2;
+  int _streamRetries = 0;
+
+  /// The native player rejected the current URL. Another candidate for the
+  /// same track usually opens fine, so try it before telling the user the
+  /// audio is unavailable.
+  Future<void> _recoverFromRejectedStream(MusicTrack track, Object err) async {
+    if (_streamRetries < _maxStreamRetries) {
+      _streamRetries++;
+      final next = await _musicService.getNextAudioStream(track);
+      if (next != null && next.url.isNotEmpty) {
+        final gen = ++_loadGeneration;
+        _errorMessage = null;
+        _isLoading = true;
+        _isPlaying = false;
+        _currentQualityLabel = next.quality;
+        _isCurrentTrackLossless = next.isLossless;
+        _loadedAudio = (
+          generation: gen,
+          quality: next.quality,
+          lossless: next.isLossless,
+        );
+        notifyListeners();
+        try {
+          final uri = Uri.parse(next.url);
+          final headers = next.isLossless
+              ? (next.userAgent != null
+                    ? {'User-Agent': next.userAgent!}
+                    : <String, String>{})
+              : YoutubeStreamHttp.streamHeaders(
+                  next.url,
+                  userAgent: next.userAgent,
+                );
+          final retryMedia = Media(uri.toString(), httpHeaders: headers);
+          await _applyStreamHeaders(_player!, retryMedia, next.userAgent);
+          await _player!.open(retryMedia, play: false);
+          if (gen != _loadGeneration) return;
+          await _player!.play();
+          if (gen != _loadGeneration) return;
+          _isLoading = false;
+          notifyListeners();
+          return;
+        } catch (e) {
+          debugPrint('Playback retry failed for ${track.title}: $e');
+        }
+      }
+    }
+    // No alternative worked: drop the cached stream so the next attempt
+    // resolves a fresh URL. The error state is already on screen.
+    _musicService.invalidateAudio(track);
+  }
+
+  void _applyStreamError(Object err, {bool invalidateCache = true}) {
+    _isLoading = false;
+    _isPlaying = false;
+    _currentQualityLabel = 'Audio unavailable';
+    _isCurrentTrackLossless = false;
+    _errorMessage = 'Could not load audio: $err';
+    final track = _currentTrack;
+    if (track != null && invalidateCache) _musicService.invalidateAudio(track);
+    debugPrint('Playback error for ${track?.title}: $err');
+    DiscordRpcService.instance.clearToIdle();
+    notifyListeners();
   }
 
   Future<void> _fetchLyricsForTrack(MusicTrack track, [int? requestGen]) async {
@@ -402,11 +534,30 @@ class MusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> play() async {
+    if (_isLoading) return;
+    final track = _currentTrack;
+    if (_errorMessage != null && track != null) {
+      if (_isNativePlaybackAlive) {
+        _errorMessage = null;
+        _isPlaying = true;
+        _isLoading = false;
+        final audio = _loadedAudio;
+        if (audio != null) {
+          _currentQualityLabel = audio.quality;
+          _isCurrentTrackLossless = audio.lossless;
+        }
+        _updateDiscordRpc(isPaused: false);
+        notifyListeners();
+        return;
+      }
+      MusicService.instance.invalidateAudio(track);
+      await _loadAndPlayTrack(track, startPosition: _position);
+      return;
+    }
     if (_player != null) {
       try {
         await _player?.setVolume(_volume * 25.0);
         await _player!.play();
-        _isPlaying = true;
         _updateDiscordRpc(isPaused: false);
         notifyListeners();
         await Future.delayed(const Duration(milliseconds: 40));

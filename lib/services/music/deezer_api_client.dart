@@ -10,7 +10,8 @@ class DeezerApiClient {
   DeezerApiClient._internal();
 
   static const String _defaultBaseUrl = 'https://api.deezer.com';
-  static const String proxyUrl = 'https://wave-proxy.aymanisthedude1.workers.dev/proxy?url=';
+  static const String proxyUrl =
+      'https://wave-proxy.aymanisthedude1.workers.dev/proxy?url=';
   static bool useProxy = false;
   static bool _hasCheckedGeo = false;
   static Completer<void>? _geoCompleter;
@@ -29,11 +30,16 @@ class DeezerApiClient {
     _geoCompleter = Completer<void>();
     try {
       final res = await http
-          .get(Uri.parse('$_defaultBaseUrl/search?q=believer'), headers: _headers)
+          .get(
+            Uri.parse('$_defaultBaseUrl/search?q=believer'),
+            headers: _headers,
+          )
           .timeout(const Duration(seconds: 4));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        if (data is Map && (data['error'] != null || (data['data'] is List && (data['data'] as List).isEmpty))) {
+        if (data is Map &&
+            (data['error'] != null ||
+                (data['data'] is List && (data['data'] as List).isEmpty))) {
           debugPrint('Deezer API geo-restricted or error. Activating proxy.');
           useProxy = true;
         } else {
@@ -56,7 +62,10 @@ class DeezerApiClient {
     String fullUrl = '$_defaultBaseUrl$path';
     if (queryParams != null && queryParams.isNotEmpty) {
       final queryString = queryParams.entries
-          .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value.toString())}')
+          .map(
+            (e) =>
+                '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value.toString())}',
+          )
           .join('&');
       fullUrl += (fullUrl.contains('?') ? '&' : '?') + queryString;
     }
@@ -67,16 +76,22 @@ class DeezerApiClient {
     }
 
     try {
-      final res = await DizzyNet.instance.get(Uri.parse(requestUrl), headers: _headers).timeout(const Duration(seconds: 10));
+      final res = await DizzyNet.instance
+          .get(Uri.parse(requestUrl), headers: _headers)
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         // If not using proxy, verify we didn't get empty data due to a geo-restriction block
         if (!useProxy &&
             decoded is Map &&
-            (decoded['error'] != null || (decoded['data'] is List && (decoded['data'] as List).isEmpty))) {
+            (decoded['error'] != null ||
+                (decoded['data'] is List &&
+                    (decoded['data'] as List).isEmpty))) {
           useProxy = true;
           final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
-          final proxyRes = await DizzyNet.instance.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+          final proxyRes = await DizzyNet.instance
+              .get(Uri.parse(proxyReqUrl), headers: _headers)
+              .timeout(const Duration(seconds: 10));
           if (proxyRes.statusCode == 200) {
             return jsonDecode(proxyRes.body);
           }
@@ -86,7 +101,9 @@ class DeezerApiClient {
         // Retry with proxy
         useProxy = true;
         final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
-        final proxyRes = await DizzyNet.instance.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+        final proxyRes = await DizzyNet.instance
+            .get(Uri.parse(proxyReqUrl), headers: _headers)
+            .timeout(const Duration(seconds: 10));
         if (proxyRes.statusCode == 200) {
           return jsonDecode(proxyRes.body);
         }
@@ -96,7 +113,9 @@ class DeezerApiClient {
         useProxy = true;
         try {
           final proxyReqUrl = '$proxyUrl${Uri.encodeComponent(fullUrl)}';
-          final proxyRes = await DizzyNet.instance.get(Uri.parse(proxyReqUrl), headers: _headers).timeout(const Duration(seconds: 10));
+          final proxyRes = await DizzyNet.instance
+              .get(Uri.parse(proxyReqUrl), headers: _headers)
+              .timeout(const Duration(seconds: 10));
           if (proxyRes.statusCode == 200) {
             return jsonDecode(proxyRes.body);
           }
@@ -193,9 +212,15 @@ class DeezerApiClient {
     return [];
   }
 
-  Future<List<MusicArtist>> searchArtists(String query, {int limit = 20}) async {
+  Future<List<MusicArtist>> searchArtists(
+    String query, {
+    int limit = 20,
+  }) async {
     if (query.trim().isEmpty) return [];
-    final data = await _get('/search/artist', {'q': query.trim(), 'limit': limit});
+    final data = await _get('/search/artist', {
+      'q': query.trim(),
+      'limit': limit,
+    });
     if (data is Map && data['data'] is List) {
       return (data['data'] as List)
           .whereType<Map<String, dynamic>>()
@@ -207,7 +232,10 @@ class DeezerApiClient {
 
   Future<List<MusicAlbum>> searchAlbums(String query, {int limit = 20}) async {
     if (query.trim().isEmpty) return [];
-    final data = await _get('/search/album', {'q': query.trim(), 'limit': limit});
+    final data = await _get('/search/album', {
+      'q': query.trim(),
+      'limit': limit,
+    });
     if (data is Map && data['data'] is List) {
       return (data['data'] as List)
           .whereType<Map<String, dynamic>>()
@@ -217,9 +245,15 @@ class DeezerApiClient {
     return [];
   }
 
-  Future<List<MusicPlaylist>> searchPlaylists(String query, {int limit = 20}) async {
+  Future<List<MusicPlaylist>> searchPlaylists(
+    String query, {
+    int limit = 20,
+  }) async {
     if (query.trim().isEmpty) return [];
-    final data = await _get('/search/playlist', {'q': query.trim(), 'limit': limit});
+    final data = await _get('/search/playlist', {
+      'q': query.trim(),
+      'limit': limit,
+    });
     if (data is Map && data['data'] is List) {
       return (data['data'] as List)
           .whereType<Map<String, dynamic>>()
@@ -245,7 +279,11 @@ class DeezerApiClient {
       final albumsFuture = _get('/artist/$artistId/albums', {'limit': 50});
       final relatedFuture = _get('/artist/$artistId/related', {'limit': 20});
 
-      final results = await Future.wait([topTracksFuture, albumsFuture, relatedFuture]);
+      final results = await Future.wait([
+        topTracksFuture,
+        albumsFuture,
+        relatedFuture,
+      ]);
 
       List<MusicTrack> topTracks = [];
       if (results[0] is Map && results[0]['data'] is List) {
@@ -301,7 +339,11 @@ class DeezerApiClient {
             .map((json) {
               final trackMap = Map<String, dynamic>.from(json);
               if (trackMap['album'] == null) {
-                trackMap['album'] = {'id': album.id, 'title': album.title, 'cover_big': album.coverUrl};
+                trackMap['album'] = {
+                  'id': album.id,
+                  'title': album.title,
+                  'cover_big': album.coverUrl,
+                };
               }
               return MusicTrack.fromJson(trackMap);
             })
@@ -314,7 +356,11 @@ class DeezerApiClient {
               .map((json) {
                 final trackMap = Map<String, dynamic>.from(json);
                 if (trackMap['album'] == null) {
-                  trackMap['album'] = {'id': album.id, 'title': album.title, 'cover_big': album.coverUrl};
+                  trackMap['album'] = {
+                    'id': album.id,
+                    'title': album.title,
+                    'cover_big': album.coverUrl,
+                  };
                 }
                 return MusicTrack.fromJson(trackMap);
               })
@@ -347,7 +393,9 @@ class DeezerApiClient {
             .map((json) => MusicTrack.fromJson(json))
             .toList();
       } else {
-        final tracksData = await _get('/playlist/$playlistId/tracks', {'limit': 100});
+        final tracksData = await _get('/playlist/$playlistId/tracks', {
+          'limit': 100,
+        });
         if (tracksData is Map && tracksData['data'] is List) {
           tracks = (tracksData['data'] as List)
               .whereType<Map<String, dynamic>>()

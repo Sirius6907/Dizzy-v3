@@ -495,6 +495,58 @@ class AddonManager {
     return allSections;
   }
 
+  /// Fetches one addon catalog with one patient retry (Part A, 2026-11-12).
+  ///
+  /// The provider addon answers healthy when probed directly (~500-900 ms),
+  /// but on a cold session the device's flaky DNS kills `RetryPolicy.quick`
+  /// (2 attempts, 250 ms backoff) often enough that the previous
+  /// `catch (_) → null` dropped the row for the entire session. One extra
+  /// attempt after a real backoff window is enough in practice. An *empty*
+  /// result is treated like a failure worth one more go, because the addon's
+  /// catalogs always carry ~100 items when healthy. [fetch] and [delay] are
+  /// injectable so the retry logic stays unit-testable without a socket.
+  static Future<List<Movie>?> fetchCatalogResilient({
+    required String baseUrl,
+    required String type,
+    required String catalogId,
+    Future<List<Movie>> Function({
+      required String baseUrl,
+      required String type,
+      required String catalogId,
+    })? fetch,
+    Future<void> Function(Duration)? delay,
+    int attempts = 2,
+  }) async {
+    final doFetch =
+        fetch ??
+        ({required String baseUrl, required String type, required String catalogId}) =>
+            MetadataService.fetchCatalog(
+              baseUrl: baseUrl,
+              type: type,
+              catalogId: catalogId,
+            );
+    final doDelay = delay ?? (Duration d) => Future<void>.delayed(d);
+
+    List<Movie>? last;
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        final movies = await doFetch(
+          baseUrl: baseUrl,
+          type: type,
+          catalogId: catalogId,
+        );
+        if (movies.isNotEmpty) return movies;
+        last = movies;
+      } catch (_) {
+        last = null;
+      }
+      if (attempt < attempts) {
+        await doDelay(const Duration(milliseconds: 600));
+      }
+    }
+    return last;
+  }
+
   /// Streams home page sections one by one as they load, so the UI can populate dynamically.
   Stream<MovieSection> streamHomeSections() async* {
     final active = activeCatalogAddons
@@ -508,26 +560,21 @@ class AddonManager {
 
       for (final catalog in catalogsToFetch) {
         sectionFutures.add(() async {
-          try {
-            final movies = await MetadataService.fetchCatalog(
-              baseUrl: addon.baseUrl,
-              type: catalog.type,
-              catalogId: catalog.id,
-            );
+          final movies = await fetchCatalogResilient(
+            baseUrl: addon.baseUrl,
+            type: catalog.type,
+            catalogId: catalog.id,
+          );
+          if (movies == null || movies.isEmpty) return null;
 
-            if (movies.isEmpty) return null;
-
-            return MovieSection(
-              title: _catalogDisplayName(catalog),
-              subtitle: addon.manifest.name,
-              contentType: catalog.type,
-              addonBaseUrl: addon.baseUrl,
-              catalog: catalog,
-              movies: movies,
-            );
-          } catch (_) {
-            return null; // Gracefully handle failure
-          }
+          return MovieSection(
+            title: _catalogDisplayName(catalog),
+            subtitle: addon.manifest.name,
+            contentType: catalog.type,
+            addonBaseUrl: addon.baseUrl,
+            catalog: catalog,
+            movies: movies,
+          );
         }());
       }
     }

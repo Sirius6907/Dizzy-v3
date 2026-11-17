@@ -40,9 +40,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     // 3. Active playback protection:
     // Only routine non-fatal hiccups during ongoing playback (where media has actively loaded and progressed)
     // should be suppressed. Startup errors where media has not loaded must trigger error handling.
+    //
+    // The signal is REAL progress, not "position > 0 and duration > 0": a
+    // garbage container reported a plausible duration while decoding exactly
+    // one green frame, and that was enough to suppress every fatal error on
+    // the stream (2026-11-09 audit).
     final bool hasActivelyProgressed =
-        _duration > Duration.zero &&
-        (_position > Duration.zero || _player.state.position > Duration.zero) &&
+        PlaybackDurationGuard.hasRealProgress(_lastProgressPosition) &&
         (_isPlaying || _player.state.playing);
 
     final bool isFatalOpenFailure =
@@ -85,6 +89,15 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     AppLog.d(
       '[PlayerScreen ERROR] Critical player error on dead stream: $errorMsg',
     );
+
+    // A switch already owns recovery. Errors from the media being replaced
+    // arrive here after `_currentSource` was reassigned, so poisoning the
+    // chain now would kill the source we just opened (and queue a pointless
+    // extra hop). The switch's own guards re-arm on the new source.
+    if (_failoverInProgress) {
+      AppLog.d('[Failover] ignoring error from replaced media: $errorMsg');
+      return;
+    }
 
     // F1: poison the chain first, then let the gate pick the replacement.
     _playGate.markDead(_currentSource);
@@ -297,7 +310,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         .where((s) => SourceRanker.fingerprint(s) != primaryFp)
         .where((s) => _relevantForEpisode(s, episode))
         .toList();
-    _failoverChain = SourceRanker.order(
+    _failoverChain = SourceRanker.buildFailoverChain(
       candidates,
       RankerContext(failedThisSession: _failedFingerprints),
     );
@@ -410,7 +423,12 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         type: detail?.type ?? (_currentEpisode != null ? 'tv' : 'movie'),
         season: _currentEpisode?.season,
         episode: _currentEpisode?.episode,
-        durationMs: _player.state.duration.inMilliseconds,
+        durationMs:
+            PlaybackDurationGuard.trusted(
+              _player.state.duration,
+              reference: _runtimeReference,
+            )?.inMilliseconds ??
+            0,
       );
 
       if (skipData != null && mounted) {
@@ -426,7 +444,12 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
   void _onPlaybackTick(Duration pos) {
     if (_skipSegments.isEmpty) return;
 
-    final dur = _player.state.duration;
+    final dur =
+        PlaybackDurationGuard.trusted(
+          _player.state.duration,
+          reference: _runtimeReference,
+        ) ??
+        Duration.zero;
 
     MediaSkipSegment? matched;
     for (final seg in _skipSegments) {
@@ -583,7 +606,186 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     }
   }
 
+  // ── Bandwidth-aware START gate (2026-11-09) ─────────────────────────────
+  //
+  // Runs once per player session, before the first open. Measures the real
+  // throughput of the source that is about to play and steps it down when the
+  // link cannot sustain it. Manual quality always wins (never called then).
+  // A torrent is not measured here (its bytes come from the local engine);
+  // its swarm speed is checked during warm-up instead.
+  Future<void> _applyStartupQualityGate() async {
+    if (_startupCapDone) return;
+    _startupCapDone = true;
+    if (_qualityChoice != QualityChoice.auto) return;
+
+    final runtime = _runtimeReference;
+    final url = _currentSource.url ?? '';
+    final isTorrentSource =
+        (_currentSource.infoHash ?? '').isNotEmpty ||
+        url.startsWith('magnet:');
+
+    double? mbps;
+    if (!isTorrentSource && url.startsWith('http')) {
+      mbps = await ThroughputProbe.measureMbps(
+        url,
+        headers: PlayerSettings.resolveStreamHeaders(
+          url,
+          _currentSource.headers,
+        ),
+        maxBytes: PlayerSettings.dataSaver.value
+            ? 512 * 1024
+            : ThroughputProbe.defaultMaxBytes,
+      );
+    }
+    if (mbps != null) _startupMbps = mbps;
+    AppLog.d(
+      '[Quality] start gate: measured ${mbps?.toStringAsFixed(1) ?? "unknown"} '
+      'Mbps, source ${_currentSource.quality} (${_currentSource.addonName})',
+    );
+
+    if (mbps != null) {
+      final candidates = <StreamSource>[_currentSource];
+      for (final s in _failoverChain) {
+        if (SourceRanker.fingerprint(s) ==
+            SourceRanker.fingerprint(_currentSource)) {
+          continue;
+        }
+        if (_failedFingerprints.contains(SourceRanker.fingerprint(s))) continue;
+        candidates.add(s);
+      }
+      final picked = StartupBandwidthPolicy.pickStart(
+        current: _currentSource,
+        candidates: candidates,
+        mbps: mbps,
+        runtime: runtime,
+      );
+      if (!identical(picked, _currentSource)) {
+        AppLog.d(
+          '[Quality] start cap: ${_currentSource.quality} → '
+          '${picked.quality} (${picked.addonName}) for ${mbps.toStringAsFixed(1)} Mbps',
+        );
+        if (mounted) {
+          setState(() => _currentSource = picked);
+        } else {
+          _currentSource = picked;
+        }
+      } else if (StartupBandwidthPolicy.cannotSustain(
+        source: _currentSource,
+        mbps: mbps,
+        runtime: runtime,
+      )) {
+        // No affordable alternative exists at all: keeping the only source is
+        // better than a black screen, but say so in the log for triage.
+        AppLog.d(
+          '[Quality] no affordable alternative for '
+          '${_currentSource.quality} at ${mbps.toStringAsFixed(1)} Mbps — '
+          'keeping the only source',
+        );
+      }
+    }
+
+    // HLS masters adapt internally: cap the FIRST rendition by the measured
+    // link so mpv does not start on the 4K variant.
+    if (QualityService.isHlsUrl(_currentSource.url)) {
+      _startHlsCapBps = StartupBandwidthPolicy.hlsCapBps(mbps);
+    }
+  }
+
+  /// Torrent-only byte-growth watchdog.
+  ///
+  /// mpv reports `buffering`, not an error, while TorrServer is starved, so
+  /// the HTTP stall rules (which must never switch on a slow-but-flowing
+  /// link) are blind to it. TorrServer's own counters are ground truth: no
+  /// new cached bytes for [noGrowthLimit] while playing = dead swarm.
+  void _startTorrentStallGuard() {
+    _torrentStallWatchdog?.cancel();
+    _torrentStallWatchdog = null;
+
+    final hash = _currentSource.infoHash;
+    if (hash == null || hash.isEmpty) return;
+
+    var lastBytes = -1;
+    var lastGrowth = DateTime.now();
+    const noGrowthLimit = 14;
+
+    _torrentStallWatchdog = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!mounted || _failoverInProgress) return;
+      final stats = await TorrentStreamService().refreshStats(hash);
+      if (stats == null) return;
+      final now = DateTime.now();
+      if (stats.loadedBytes > lastBytes) {
+        lastBytes = stats.loadedBytes;
+        lastGrowth = now;
+        return;
+      }
+      if (!_isPlaying) return;
+      final noGrowth = now.difference(lastGrowth).inSeconds;
+      if (noGrowth < noGrowthLimit) return;
+      // Buffered headroom means the picture is still fed — leave it alone.
+      final headroom =
+          (_buffered?.inMilliseconds ?? 0) -
+          _player.state.position.inMilliseconds;
+      if (headroom > 8000) {
+        lastGrowth = now; // still plenty to watch; re-arm the window
+        return;
+      }
+      AppLog.d(
+        '[Failover] torrent starved: no new bytes for ${noGrowth}s '
+        '(${stats.peersLabel} peers, ${stats.speedLabel})',
+      );
+      // The await above can outlive a switch that just started: a starved
+      // OLD swarm must not queue a hop for the source replacing it.
+      if (_failoverInProgress) return;
+      _attemptSilentFailover(reason: 'torrent-starved');
+    });
+  }
+
   // ── Silent Failover (Phase 3.2) ────────────────────────────────────────
+
+  /// Fails a source that never delivers a first frame.
+  ///
+  /// Position — not `playing` and not buffering flags — is the signal: mpv
+  /// keeps reporting `playing: true` and `buffering: true` for a link that is
+  /// simply getting no bytes, which is exactly the state both other guards
+  /// ignore. Any real progress (>1s of media) disarms this for the session's
+  /// current source.
+  void _armStartupWatchdog(Duration limit) {
+    _startupWatchdog?.cancel();
+    _startupBegan = DateTime.now();
+    // The previous source's progress must not satisfy this guard.
+    _lastProgressPosition = Duration.zero;
+    _lastProgressAt = _startupBegan;
+    _startupProgress = Duration.zero;
+    _lastBufferedSeen = Duration.zero;
+    _lastBufferGrowthAt = _startupBegan;
+    _startupWatchdog = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        _startupWatchdog = null;
+        return;
+      }
+      // Seek-proof: a resume seek moves `position` without playback, so
+      // require real forward progress (or a buffered runway) instead.
+      final played =
+          _startupProgress >= const Duration(seconds: 1) ||
+          _lastBufferedSeen >= const Duration(seconds: 4);
+      if (played) {
+        timer.cancel();
+        _startupWatchdog = null;
+        return;
+      }
+      if (_failoverInProgress) return;
+      final waited = DateTime.now().difference(_startupBegan);
+      if (waited < limit) return;
+      timer.cancel();
+      _startupWatchdog = null;
+      AppLog.d(
+        '[Failover] startup timeout: no playable frame in ${waited.inSeconds}s '
+        '(${_currentSource.quality}, ${_currentSource.addonName})',
+      );
+      _attemptSilentFailover(reason: 'startup-timeout');
+    });
+  }
 
   /// Arms the stall watchdog + last-good recorder once playback starts.
   /// Called from _initStream success and after every successful source switch.
@@ -592,6 +794,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     _lastProgressPosition = Duration.zero;
     _maybeFetchRenditions(); // P9: HLS master → attach ladder in background
     _lastProgressAt = DateTime.now();
+    _lastBufferedSeen = _player.state.buffer;
+    _lastBufferGrowthAt = _lastProgressAt;
+    _startTorrentStallGuard();
 
     _stallWatchdog?.cancel();
     // P5: stall check every 5s — was 2s. Detection threshold is still a
@@ -612,14 +817,31 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       // with data still flowing must never trigger a source switch; only a
       // truly dead stream (no position progress AND no buffering activity)
       // justifies losing the buffered progress to switch sources.
-      final shouldPlay = _isPlaying && _duration > Duration.zero;
+      //
+      // A bogus/unknown duration must NOT be able to defeat this rule (the
+      // old `duration > 0` condition did exactly that for both dead links
+      // and garbage containers): "playing" is the only requirement, the
+      // progress timestamp is the real health signal.
+      final shouldPlay = _isPlaying || _isBuffering;
+      // A dead direct link can report "opened successfully" and then never
+      // deliver a duration: the UI sat at 0:00 / 0:00 with controls and no
+      // error forever (Cops, dl.vadapav.mov .avi). The same 10s rule now
+      // covers it, because it no longer requires a trusted duration.
       final seekGrace = DateTime.now().difference(_lastSeekAt).inSeconds < 8;
+      // Buffering alone is not a stall — a slow link legitimately sits in it.
+      // What matters is whether the demuxer is still gaining data: a spinner
+      // with a frozen buffer will never produce a frame, no matter how long
+      // it is left alone.
+      final bufferFrozen =
+          DateTime.now().difference(_lastBufferGrowthAt).inSeconds >= 15;
+      final limit = _isBuffering ? 15 : 10;
       if (shouldPlay &&
           !seekGrace &&
-          !_isBuffering &&
-          stalled.inSeconds >= 10) {
+          !(_isBuffering && !bufferFrozen) &&
+          stalled.inSeconds >= limit) {
         AppLog.d(
-          '[Failover] stall detected: ${stalled.inSeconds}s no progress, not buffering',
+          '[Failover] stall detected: ${stalled.inSeconds}s no progress, '
+          'buffering=$_isBuffering bufferFrozen=$bufferFrozen',
         );
         _attemptSilentFailover(reason: 'stall');
       }
@@ -648,8 +870,12 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     _openTailGuard = Timer(const Duration(seconds: 6), () {
       if (!mounted) return;
       final state = _player.state;
-      if (state.duration <= Duration.zero) return;
-      if (!PlaybackStartPolicy.isAtTail(state.position, state.duration)) {
+      final dur = PlaybackDurationGuard.trusted(
+        state.duration,
+        reference: _runtimeReference,
+      );
+      if (dur == null) return;
+      if (!PlaybackStartPolicy.isAtTail(state.position, dur)) {
         return;
       }
       AppLog.d(
@@ -679,15 +905,47 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     );
   }
 
+  /// Failover chain ordered by what the measured link can sustain.
+  ///
+  /// The ranker prefers the highest resolution, which is right for a fast
+  /// link and wrong for a slow one: after a 4K source is rejected for speed,
+  /// the next source must not be another 4K file. Sources at/below the
+  /// affordable rung come first (original order preserved inside each group).
+  List<StreamSource> _affordableChain() {
+    final mbps = _startupMbps;
+    if (mbps == null || mbps <= 0) return _failoverChain;
+    final affordable = StartupBandwidthPolicy.affordableFor(mbps);
+    if (affordable == null) return _failoverChain;
+    final fits = <StreamSource>[];
+    final rest = <StreamSource>[];
+    for (final s in _failoverChain) {
+      final rung = StartupBandwidthPolicy.rungOf(s);
+      if (rung != null && rung.index <= affordable.index) {
+        fits.add(s);
+      } else {
+        rest.add(s);
+      }
+    }
+    if (fits.isEmpty) return _failoverChain;
+    return [...fits, ...rest];
+  }
+
   /// Silently switches to the next best-ranked backup source.
   /// Saves position first, then reopens at the same position.
   void _attemptSilentFailover({String reason = 'error'}) {
-    if (!mounted || _failoverInProgress) return;
+    if (!mounted) return;
+    if (_failoverInProgress) {
+      // _initStream itself called us for a torrent rejection while its own
+      // failover switch is mid-flight. Queue the next hop instead of
+      // dropping it — otherwise the player hangs on the spinner forever.
+      _pendingFailoverRequest = true;
+      return;
+    }
 
     // F1: the gate decides whether we may switch and which source is next.
     // A dead chain (or the switch cap) hands the choice to the picker.
     final next = _playGate.advance(
-      chain: _failoverChain,
+      chain: _affordableChain(),
       failed: _currentSource,
     );
     if (next == null) {
@@ -697,6 +955,8 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     }
 
     _failoverInProgress = true;
+    _torrentStallWatchdog?.cancel();
+    _torrentStallWatchdog = null;
     // A half-open source (codec/format failure) often reports a bogus tail
     // position. Carrying that to the backup made the next source open on its
     // last frame (black screen). Resume only after real progress happened.
@@ -704,7 +964,10 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     final savedPos = PlaybackStartPolicy.resumeAfterFailover(
       position: current.position,
       confirmedPlayback: _lastProgressPosition > const Duration(seconds: 2),
-      duration: current.duration,
+      duration: PlaybackDurationGuard.trusted(
+        current.duration,
+        reference: _runtimeReference,
+      ),
     );
 
     AppLog.d(
@@ -743,6 +1006,11 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         _resumeAtOverride = null;
         _failoverInProgress = false;
         if (mounted) _armPlaybackGuards();
+        if (mounted && _pendingFailoverRequest) {
+          _pendingFailoverRequest = false;
+          // Bounded by the gate's switch cap inside _attemptSilentFailover.
+          _attemptSilentFailover(reason: 'torrent-unavailable');
+        }
       }
     }());
   }
@@ -780,9 +1048,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       if (!mounted) return;
     }
     final state = _player.state;
-    if (state.duration > Duration.zero &&
+    final trusted = PlaybackDurationGuard.trusted(
+      state.duration,
+      reference: _runtimeReference,
+    );
+    if (trusted != null &&
         state.position < savedPos &&
-        savedPos <= state.duration + const Duration(seconds: 5)) {
+        savedPos <= trusted + const Duration(seconds: 5)) {
       await _player.seek(savedPos);
     }
   }
@@ -852,6 +1124,11 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
       _showAudioHudToast(toast);
       return;
     }
+    // The switch is transactional: the player is stopped before the
+    // replacement is opened, so a replacement that never starts must put the
+    // old source back instead of leaving the user with a dead player
+    // ("Keep watching" used to be a lie - nothing was playing any more).
+    final previous = _currentSource;
     final savedPos = _player.state.position;
     unawaited(() async {
       try {
@@ -861,19 +1138,52 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         _currentSource = match;
         _bandwidthMeter.reset();
         _resumeAtOverride = savedPos > Duration.zero ? savedPos : null;
-        await _initStream();
+        final opened = await _initStream();
         _resumeAtOverride = null;
+        if (!opened) {
+          await _restoreSource(previous, savedPos);
+          return;
+        }
         if (mounted) _showAudioHudToast(toast);
       } catch (e) {
         AppLog.d('[Quality] switch failed: $e');
-        if (mounted) {
-          _showAudioHudToast('Could not switch quality. Keep watching.');
-        }
+        await _restoreSource(previous, savedPos);
       } finally {
         _resumeAtOverride = null;
         if (mounted) _armPlaybackGuards();
       }
     }());
+  }
+
+  /// Puts [source] back and reopens it at [position].
+  ///
+  /// Used when a quality switch could not start its replacement: the player
+  /// was already stopped at that point, so the previous source is the only
+  /// thing that can restore playback. If it cannot be reopened either, the
+  /// sources picker is the last resort.
+  Future<void> _restoreSource(StreamSource source, Duration position) async {
+    if (!mounted) return;
+    AppLog.d(
+      '[Quality] restoring ${source.name ?? source.addonName} after a failed '
+      'quality switch',
+    );
+    setState(() {
+      _currentSource = source;
+      _isLoading = true;
+    });
+    _resumeAtOverride = position > Duration.zero ? position : null;
+    try {
+      final opened = await _initStream();
+      _resumeAtOverride = null;
+      if (!opened) {
+        if (mounted) _openSourcesPanelWithError(null);
+        return;
+      }
+      if (mounted) _showAudioHudToast('Kept the previous quality.');
+    } catch (e) {
+      AppLog.d('[Quality] restore failed: $e');
+      if (mounted) _openSourcesPanelWithError(null);
+    }
   }
 
   // ── P9: rendition ladder lazy-fill ────────────────────────────────
@@ -911,18 +1221,20 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     }());
   }
 
-  // ── P8: 2s auto-quality probe ───────────────────────────────────────
+  // ── P8: auto-quality probe ──────────────────────────────────────────
   //
-  // Feeds the meter from demuxer cache-fill (no pings). Applies the stable
-  // target ONLY in Auto mode, steady playback, non-torrent sources.
+  // HTTP: feeds the meter from demuxer cache-fill (no pings).
+  // Applies the stable target ONLY in Auto mode, steady playback.
   // Manual choice always wins — the probe goes quiet.
   void _autoQualityTick() {
     if (!mounted) return;
     if (_qualityChoice != QualityChoice.auto) return;
     if (_isLoading || !_isPlaying) return;
+    // A torrent is a single file, so it has no quality ladder to walk
+    // (AutoQualityPolicy). Its speed is used before the player opens
+    // anything - see StartupBandwidthPolicy and the torrent failure path.
+    if (!AutoQualityPolicy.supportsQualitySwitch(_currentSource)) return;
     final url = _currentSource.url ?? '';
-    if (url.startsWith('magnet:')) return;
-    if ((_currentSource.infoHash ?? '').isNotEmpty) return;
     final buf = _buffered;
     if (buf == null) return;
     final aheadSec =
@@ -938,10 +1250,17 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     );
     // F1: the meter reports the RAW speed verdict; SmartQualityPolicy owns
     // the Data Saver ceiling so the cap has exactly one home.
-    final target = SmartQualityPolicy.autoLadderStep(
+    var target = SmartQualityPolicy.autoLadderStep(
       bandwidthTarget: _bandwidthMeter.stableTarget(dataSaver: false),
       dataSaver: PlayerSettings.dataSaver.value,
     );
+    // Auto must never step UP to 4K on a link that cannot feed it.
+    if (target != null) {
+      target = StartupBandwidthPolicy.capAutoTarget(
+        target,
+        _bandwidthMeter.estimatedMbps,
+      );
+    }
     if (target == null || target == _autoEffective) return;
     // Already watching at the target rendition → remember, don't toast.
     if (target == QualityChoice.fromBadge(_currentSource.quality) &&
@@ -1049,7 +1368,9 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     if (widget.detail == null) return;
 
     final pos = _player.state.position.inSeconds;
-    final dur = _player.state.duration.inSeconds;
+    // A bogus duration must never be written into Continue Watching: it would
+    // make the resume bar (and the "x min left" label) nonsense forever.
+    final dur = _trustedDuration?.inSeconds ?? 0;
     if (dur <= 0) return;
 
     // Taste log: 30s in means it was really watched, not a mis-tap.

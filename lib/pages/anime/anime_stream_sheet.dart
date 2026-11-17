@@ -11,6 +11,7 @@ import '../player/player_screen.dart';
 
 import '../../services/anime/extractors/anidb_extractor.dart';
 import '../../services/stream/stream_probe_race.dart';
+import '../../services/stream/dub_filter.dart';
 
 /// Theme-aware clay surface tokens for this sheet.
 abstract final class _Clay {
@@ -31,6 +32,12 @@ class AnimeStreamSheet extends StatefulWidget {
   final List<AniDbEpisode>? aniDbEpisodes;
   final int? totalEpisodes;
 
+  /// Which bucket opens first: 'sub' (original audio + English subs) or
+  /// 'dub' (English dub). Defaults to 'sub' - the owner's rule is that
+  /// anime is watched with the original Japanese audio and English
+  /// subtitles, or in the English dub, never in a Hindi dub.
+  final String initialCategory;
+
   const AnimeStreamSheet({
     super.key,
     required this.anime,
@@ -38,6 +45,7 @@ class AnimeStreamSheet extends StatefulWidget {
     this.autoPlay = false,
     this.aniDbEpisodes,
     this.totalEpisodes,
+    this.initialCategory = 'sub',
   });
 
   @override
@@ -52,7 +60,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
   final Set<String> _seenSourceKeys = {};
   final List<StreamSource> _incoming = [];
   Timer? _flushTimer;
-  String _selectedCategory = 'all'; // 'all', 'sub', 'dub'
+  String _selectedCategory = 'sub'; // 'all', 'sub', 'dub'
   bool _isScraping = true;
   bool _hasAutoPlayed = false;
   String? _error;
@@ -61,6 +69,7 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedCategory = widget.initialCategory;
     _startScraping();
   }
 
@@ -141,25 +150,35 @@ class _AnimeStreamSheetState extends State<AnimeStreamSheet> {
         );
   }
 
+  /// The anime source buckets.
+  ///
+  /// The owner's rule (2026-11-15): anime is watched either with the
+  /// ORIGINAL audio plus ENGLISH subtitles, or in the ENGLISH dub. A
+  /// Hindi dub is not an anime option, so those sources never appear -
+  /// not in "All", not in "Sub", not in "Dub".
+  ///
+  /// 'sub' = original audio (English subtitles may or may not be listed)
+  /// 'dub' = ENGLISH dub
   List<StreamSource> get _filteredSources {
+    final mediaTitle = widget.anime.displayTitle;
+    final bucketed = _allSources
+        .map((s) => (source: s, bucket: animeAudioBucket(s, mediaTitle: mediaTitle)))
+        .toList();
     if (_selectedCategory == 'sub') {
-      return _allSources
-          .where(
-            (s) =>
-                !(s.description?.toLowerCase().contains('dub') ?? false) &&
-                !(s.name?.toLowerCase().contains('dub') ?? false),
-          )
-          .toList();
+      return [
+        for (final e in bucketed)
+          if (e.bucket == AnimeAudioBucket.originalWithEnglishSubs) e.source,
+      ];
     } else if (_selectedCategory == 'dub') {
-      return _allSources
-          .where(
-            (s) =>
-                (s.description?.toLowerCase().contains('dub') ?? false) ||
-                (s.name?.toLowerCase().contains('dub') ?? false),
-          )
-          .toList();
+      return [
+        for (final e in bucketed)
+          if (e.bucket == AnimeAudioBucket.englishDub) e.source,
+      ];
     }
-    return _allSources;
+    return [
+      for (final e in bucketed)
+        if (e.bucket != AnimeAudioBucket.hindiDub) e.source,
+    ];
   }
 
   void _playSource(StreamSource source) {

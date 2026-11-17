@@ -1,3 +1,5 @@
+import '../../utils/text/html_entities.dart';
+
 class MusicTrack {
   final String id;
   final String title;
@@ -52,22 +54,27 @@ class MusicTrack {
 
     final explicitVal = json['explicit_lyrics'] ?? json['explicit'];
 
+    // Provider boundary (Part A, 2026-11-12): unescape HTML entities once
+    // here so "Vishal &amp; Shekhar"-style names never reach the UI.
     return MusicTrack(
       id: json['id']?.toString() ?? '',
-      title:
-          json['title']?.toString() ??
-          json['title_short']?.toString() ??
-          'Unknown Track',
-      artist:
-          artistData['name']?.toString() ??
-          json['artist']?.toString() ??
-          'Unknown Artist',
+      title: unescapeHtmlEntities(
+        json['title']?.toString() ??
+            json['title_short']?.toString() ??
+            'Unknown Track',
+      ),
+      artist: unescapeHtmlEntities(
+        artistData['name']?.toString() ??
+            json['artist']?.toString() ??
+            'Unknown Artist',
+      ),
       artistId:
           artistData['id']?.toString() ?? json['artistId']?.toString() ?? '',
-      album:
-          albumData['title']?.toString() ??
-          json['album']?.toString() ??
-          'Single',
+      album: unescapeHtmlEntities(
+        albumData['title']?.toString() ??
+            json['album']?.toString() ??
+            'Single',
+      ),
       albumId: albumData['id']?.toString() ?? json['albumId']?.toString() ?? '',
       coverUrl: cover,
       durationSeconds:

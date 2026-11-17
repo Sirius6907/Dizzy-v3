@@ -16,15 +16,18 @@ class MusicBrowseView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
     final genres = [
       {
         'title': 'Bollywood Romance',
-        'color': const Color(0xFF7C5CFF),
-        'query': 'Pritam Bollywood',
+        // Content hues (genre identity), not theme chrome — palette-invariant.
+        'color': const Color(0xFF9333EA),
+        'query': 'Romantic Bollywood Hits',
       },
       {
         'title': 'Dance & Party',
-        'color': const Color(0xFF7850FF),
+        'color': const Color(0xFF6366F1),
         'query': 'Bollywood Dance',
       },
       {
@@ -35,7 +38,7 @@ class MusicBrowseView extends StatelessWidget {
       {
         'title': 'Punjabi Party',
         'color': const Color(0xFF00D2EF),
-        'query': 'AP Dhillon',
+        'query': 'Punjabi Hits',
       },
       {
         'title': 'Desi Hip-Hop',
@@ -45,12 +48,12 @@ class MusicBrowseView extends StatelessWidget {
       {
         'title': 'Indie & Acoustic',
         'color': const Color(0xFFE12AFB),
-        'query': 'Anuv Jain',
+        'query': 'Indie Acoustic',
       },
       {
         'title': 'Ollywood DJ Mix',
         'color': const Color(0xFFFF6568),
-        'query': 'Sambalpuri DJ',
+        'query': 'Odia Hits',
       },
       {
         'title': 'Lofi Nights',
@@ -65,13 +68,16 @@ class MusicBrowseView extends StatelessWidget {
       {
         'title': '90s Evergreen',
         'color': const Color(0xFFFAC800),
-        'query': 'Kishore Kumar',
+        'query': '90s Hindi Classics',
       },
     ];
 
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.only(top: 80, left: 24, right: 24, bottom: 150),
+      // Header (58px + status inset) floats over the list; start below it.
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 150).copyWith(
+        top: 72 + MediaQuery.paddingOf(context).top,
+      ),
       children: [
         Text(
           'Browse Moods & Genres',
@@ -116,7 +122,9 @@ class MusicBrowseView extends StatelessWidget {
                         ],
                       ),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: isLight
+                            ? PrismLight.borderSubtle
+                            : PrismDark.borderSubtle,
                       ),
                     ),
                     padding: const EdgeInsets.all(16),
@@ -128,8 +136,8 @@ class MusicBrowseView extends StatelessWidget {
                           // Saturated tiles: pick ink by tile brightness so
                           // the label survives pale yellows and deep violets.
                           color: color.computeLuminance() > 0.5
-                              ? Colors.black
-                              : Colors.white,
+                              ? PrismLight.ink
+                              : PrismDark.ink,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.3,

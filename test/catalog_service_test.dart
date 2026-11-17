@@ -36,4 +36,49 @@ void main() {
       );
     });
   });
+
+  group('tmdb→imdb lookup parse', () {
+    test('extracts imdb_id from a well-formed edge response', () {
+      expect(
+        CatalogService.parseImdbLookup({
+          'items': [
+            {'id': 526848, 'imdb_id': 'tt27988879', 'title': 'Ramayana'},
+          ],
+        }),
+        'tt27988879',
+      );
+    });
+
+    test('missing/blank/invalid imdb_id → null, never throws', () {
+      expect(
+        CatalogService.parseImdbLookup({
+          'items': [
+            {'id': 1, 'imdb_id': ''},
+          ],
+        }),
+        isNull,
+      );
+      expect(
+        CatalogService.parseImdbLookup({
+          'items': [
+            {'id': 1},
+          ],
+        }),
+        isNull,
+      );
+      expect(CatalogService.parseImdbLookup({'items': []}), isNull);
+      expect(CatalogService.parseImdbLookup(null), isNull);
+    });
+
+    test('non-tt value is rejected (id safety)', () {
+      expect(
+        CatalogService.parseImdbLookup({
+          'items': [
+            {'id': 1, 'imdb_id': '526848'},
+          ],
+        }),
+        isNull,
+      );
+    });
+  });
 }

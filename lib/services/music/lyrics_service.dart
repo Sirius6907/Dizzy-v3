@@ -72,9 +72,15 @@ class LyricsService {
       }
 
       final uri = Uri.https('lrclib.net', '/api/get', query);
-      final res = await DizzyNet.instance.get(uri, headers: {
-        'User-Agent': 'Dizzy/1.0.0 (https://github.com/ayman708-UX/Dizzy v3)',
-      }).timeout(const Duration(seconds: 6));
+      final res = await DizzyNet.instance
+          .get(
+            uri,
+            headers: {
+              'User-Agent':
+                  'Dizzy/1.0.0 (https://github.com/ayman708-UX/Dizzy v3)',
+            },
+          )
+          .timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -105,9 +111,15 @@ class LyricsService {
   Future<LyricsData?> _searchLrcLib(String trackId, String query) async {
     try {
       final uri = Uri.https('lrclib.net', '/api/search', {'q': query});
-      final res = await DizzyNet.instance.get(uri, headers: {
-        'User-Agent': 'Dizzy/1.0.0 (https://github.com/ayman708-UX/Dizzy v3)',
-      }).timeout(const Duration(seconds: 6));
+      final res = await DizzyNet.instance
+          .get(
+            uri,
+            headers: {
+              'User-Agent':
+                  'Dizzy/1.0.0 (https://github.com/ayman708-UX/Dizzy v3)',
+            },
+          )
+          .timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final list = jsonDecode(res.body);

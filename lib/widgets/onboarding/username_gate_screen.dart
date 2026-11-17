@@ -31,7 +31,17 @@ class UsernameGateScreen extends StatefulWidget {
   State<UsernameGateScreen> createState() => _UsernameGateScreenState();
 }
 
-enum _Status { idle, checking, ok, taken, reserved, bad, rateLimited, offline }
+enum _Status {
+  idle,
+  checking,
+  ok,
+  taken,
+  reserved,
+  bad,
+  rateLimited,
+  offline,
+  reclaimable,
+}
 
 class _UsernameGateScreenState extends State<UsernameGateScreen> {
   late UsernameGateMode _mode = widget.mode;
@@ -95,6 +105,8 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
         return 'Too many tries. Wait a minute.';
       case _Status.offline:
         return "Can't check right now — tap Continue and we'll try.";
+      case _Status.reclaimable:
+        return 'This was your name on this device — tap to reclaim it.';
     }
   }
 
@@ -113,7 +125,9 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
   }
 
   Color get _hintColor {
-    if (_status == _Status.ok) return _accentText;
+    if (_status == _Status.ok || _status == _Status.reclaimable) {
+      return _accentText;
+    }
     if (_status == _Status.idle ||
         _status == _Status.checking ||
         _status == _Status.offline) {
@@ -132,14 +146,18 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
     }
     setState(() => _status = _Status.checking);
     _debounce = Timer(const Duration(milliseconds: 350), () async {
-      final available = await UsernameGateState.isAvailable(raw);
+      final reason = await UsernameGateState.availabilityReason(raw);
       if (!mounted) return;
-      if (available == null) {
+      if (reason == null || reason == 'rate_limited') {
         setState(() => _status = _Status.offline);
-      } else if (available) {
-        setState(() => _status = _Status.ok);
-      } else {
+      } else if (reason == 'reclaimable') {
+        setState(() => _status = _Status.reclaimable);
+      } else if (reason == 'reserved') {
+        setState(() => _status = _Status.reserved);
+      } else if (reason == 'taken' || reason == 'format') {
         setState(() => _status = _Status.taken);
+      } else {
+        setState(() => _status = _Status.ok);
       }
     });
   }
@@ -249,9 +267,9 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
   }
 
   Future<void> _openRestore() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RestorePage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const RestorePage()));
     if (!mounted) return;
     final phase = await UsernameGateState.resolve();
     if (!mounted) return;
@@ -263,8 +281,8 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
     return PopScope(
       canPop: _done,
       child: Scaffold(
-        backgroundColor: AppThemeService.currentPalette.value
-            .scaffoldBackgroundColor,
+        backgroundColor:
+            AppThemeService.currentPalette.value.scaffoldBackgroundColor,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -306,8 +324,12 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
           _done
               ? 'Everything you watch, save and share now has a home.'
               : 'This is how friends find you and how your watching stays '
-                  'yours. You can change it later, once a week.',
-          style: TextStyle(fontSize: PrismType.body, color: _inkSoft, height: 1.45),
+                    'yours. You can change it later, once a week.',
+          style: TextStyle(
+            fontSize: PrismType.body,
+            color: _inkSoft,
+            height: 1.45,
+          ),
         ),
         const SizedBox(height: PrismSpace.xl),
         Container(
@@ -371,7 +393,9 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
         ),
         const SizedBox(height: PrismSpace.xs),
         Text(
-          _serverLine ?? _hint ?? '3-20 characters. Letters, numbers and _ only.',
+          _serverLine ??
+              _hint ??
+              '3-20 characters. Letters, numbers and _ only.',
           style: TextStyle(fontSize: PrismType.caption, color: _hintColor),
         ),
         const SizedBox(height: PrismSpace.lg),
@@ -382,8 +406,8 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
               label: _busy
                   ? 'Saving…'
                   : _done
-                      ? 'Welcome'
-                      : 'Claim @${_name.text.trim().isEmpty ? 'name' : UsernameGatePolicy.normalize(_name.text)}',
+                  ? 'Welcome'
+                  : 'Claim @${_name.text.trim().isEmpty ? 'name' : UsernameGatePolicy.normalize(_name.text)}',
               icon: _done ? Icons.check_rounded : Icons.arrow_forward_rounded,
               accent: true,
               expanded: true,

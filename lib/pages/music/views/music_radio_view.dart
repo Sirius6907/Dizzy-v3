@@ -20,7 +20,7 @@ class MusicRadioView extends StatelessWidget {
       {
         'name': 'Bollywood Romance',
         'color': const Color(0xFF7C5CFF),
-        'query': 'Pritam Bollywood',
+        'query': 'Romantic Bollywood Hits',
       },
       {
         'name': 'Bollywood Party Mix',
@@ -35,7 +35,7 @@ class MusicRadioView extends StatelessWidget {
       {
         'name': 'Punjabi Radio',
         'color': const Color(0xFF00D2EF),
-        'query': 'AP Dhillon',
+        'query': 'Punjabi Hits',
       },
       {
         'name': 'Gully Hip-Hop',
@@ -45,12 +45,12 @@ class MusicRadioView extends StatelessWidget {
       {
         'name': 'Indie Feels',
         'color': const Color(0xFFE12AFB),
-        'query': 'Anuv Jain',
+        'query': 'Indie Acoustic',
       },
       {
         'name': 'Ollywood DJ',
         'color': const Color(0xFFFF6568),
-        'query': 'Sambalpuri DJ',
+        'query': 'Odia Hits',
       },
       {
         'name': 'Lofi Nights Radio',

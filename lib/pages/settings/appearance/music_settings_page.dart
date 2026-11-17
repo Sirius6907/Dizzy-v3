@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:dizzy/design/prism_tokens.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../services/home/home_page_settings.dart';
+import '../../../services/music/music_onboarding_service.dart';
+import '../../../services/music/music_mood_filter.dart';
 import '../../../services/music/music_settings.dart';
 import '../../../widgets/music/music_waveform_seekbar.dart';
+import '../../../pages/music/onboarding/music_onboarding_wizard.dart';
 import 'music_player_studio_page.dart';
 
 class MusicSettingsPage extends StatefulWidget {
@@ -45,6 +48,12 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
             children: [
               // 1. Enter Music Player Studio Banner
               _buildEnterPlayerStudioBanner(palette),
+              const SizedBox(height: 28),
+
+              // 2. Your Music Vibe (onboarding preferences, Part B)
+              _buildSectionHeader('YOUR MUSIC VIBE'),
+              const SizedBox(height: 12),
+              _buildVibeCard(palette),
               const SizedBox(height: 28),
 
               // 2. Ambient Moving Background Lights
@@ -98,6 +107,112 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
     );
   }
 
+  /// Your Music Vibe card (Part B, 2026-11-12): summary of the onboarding
+  /// picks with an edit entry that reopens the wizard in settings mode.
+  /// Editing never un-sets the `music_onboarding_done` flag.
+  Widget _buildVibeCard(AppThemePalette palette) {
+    final isLight = palette.isLight;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isLight ? PrismLight.raisedTop : PrismDark.raised,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (isLight
+              ? PrismLight.borderSubtle
+              : Colors.white.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: ValueListenableBuilder<int>(
+        valueListenable: MusicOnboardingService.changeNotifier,
+        builder: (context, _, __) {
+          final artists = MusicOnboardingService.favoriteArtists.value;
+          final styles = MusicOnboardingService.selectedStyles.value;
+          final mood = MusicOnboardingService.defaultMood.value;
+
+          String summary;
+          if (artists.isEmpty && styles.isEmpty && mood == MusicMood.any) {
+            summary =
+                'No preferences set yet — pick artists, styles and a '
+                'default mood so Made For You feels right.';
+          } else {
+            final parts = <String>[
+              if (artists.isNotEmpty)
+                '${artists.length} favorite artist${artists.length == 1 ? '' : 's'}',
+              if (styles.isNotEmpty) styles.map((s) => s.label).join(' · '),
+              'Default: ${mood.emoji.isEmpty ? '' : '${mood.emoji} '}${mood.label}',
+            ];
+            summary = parts.join('   •   ');
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 18,
+                    color: palette.primaryColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Your Music Vibe',
+                      style: TextStyle(
+                        color: isLight ? PrismLight.ink : Colors.white,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const MusicOnboardingWizard(settingsMode: true),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.tune_rounded,
+                      size: 16,
+                      color: isLight
+                          ? PrismLight.inkSoft
+                          : Colors.white.withValues(alpha: 0.6),
+                    ),
+                    label: Text(
+                      'Edit',
+                      style: TextStyle(
+                        color: isLight
+                            ? PrismLight.inkSoft
+                            : Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                summary,
+                style: TextStyle(
+                  color: isLight
+                      ? PrismLight.inkSoft
+                      : Colors.white.withValues(alpha: 0.45),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildAmbientLightsCard(AppThemePalette palette) {
     final isLight = palette.isLight;
     return Container(
@@ -117,28 +232,31 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
           ValueListenableBuilder<bool>(
             valueListenable: MusicSettings.enableAmbientLights,
             builder: (context, enabled, _) {
-              return SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Moving Background Ambient Lighting',
-                  style: TextStyle(
-                    color: isLight ? PrismLight.ink : Colors.white,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
+              return Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Moving Background Ambient Lighting',
+                    style: TextStyle(
+                      color: isLight ? PrismLight.ink : Colors.white,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  'Dynamic moving glowing orbs reacting with your theme accent colors',
-                  style: TextStyle(
-                    color: isLight
-                        ? PrismLight.inkSoft
-                        : Colors.white.withValues(alpha: 0.45),
-                    fontSize: 12,
+                  subtitle: Text(
+                    'Dynamic moving glowing orbs reacting with your theme accent colors',
+                    style: TextStyle(
+                      color: isLight
+                          ? PrismLight.inkSoft
+                          : Colors.white.withValues(alpha: 0.45),
+                      fontSize: 12,
+                    ),
                   ),
+                  value: enabled,
+                  activeColor: palette.primaryColor,
+                  onChanged: (val) => MusicSettings.setEnableAmbientLights(val),
                 ),
-                value: enabled,
-                activeColor: palette.primaryColor,
-                onChanged: (val) => MusicSettings.setEnableAmbientLights(val),
               );
             },
           ),
@@ -211,14 +329,14 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Glow Strength / Opacity',
-                        style: TextStyle(
-                          color: isLight
-                              ? PrismLight.ink
-                              : Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Text(
+                          'Glow Strength / Opacity',
+                          style: TextStyle(
+                            color: PrismInk.primary(isLight),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       Text(
@@ -275,26 +393,29 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
           ValueListenableBuilder<bool>(
             valueListenable: MusicSettings.enableSpotlight,
             builder: (context, enabled, _) {
-              return SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Show Hero Spotlight Showcase',
-                  style: TextStyle(
-                    color: isLight ? PrismLight.ink : Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+              return Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Show Hero Spotlight Showcase',
+                    style: TextStyle(
+                      color: isLight ? PrismLight.ink : Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  'Featured bestselling album & track showcase at the top of the music page',
-                  style: TextStyle(
-                    color: isLight ? PrismLight.inkSoft : Colors.white54,
-                    fontSize: 12,
+                  subtitle: Text(
+                    'Featured bestselling album & track showcase at the top of the music page',
+                    style: TextStyle(
+                      color: isLight ? PrismLight.inkSoft : Colors.white54,
+                      fontSize: 12,
+                    ),
                   ),
+                  value: enabled,
+                  activeColor: palette.primaryColor,
+                  onChanged: (val) => MusicSettings.setEnableSpotlight(val),
                 ),
-                value: enabled,
-                activeColor: palette.primaryColor,
-                onChanged: (val) => MusicSettings.setEnableSpotlight(val),
               );
             },
           ),
@@ -306,26 +427,29 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
           ValueListenableBuilder<bool>(
             valueListenable: MusicSettings.showLosslessBadge,
             builder: (context, enabled, _) {
-              return SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Show Lossless Hi-Res Audio Badges',
-                  style: TextStyle(
-                    color: isLight ? PrismLight.ink : Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+              return Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Show Lossless Hi-Res Audio Badges',
+                    style: TextStyle(
+                      color: isLight ? PrismLight.ink : Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  'Displays FLAC / Hi-Res lossless stream indicators on music cards and player',
-                  style: TextStyle(
-                    color: isLight ? PrismLight.inkSoft : Colors.white54,
-                    fontSize: 12,
+                  subtitle: Text(
+                    'Displays FLAC / Hi-Res lossless stream indicators on music cards and player',
+                    style: TextStyle(
+                      color: isLight ? PrismLight.inkSoft : Colors.white54,
+                      fontSize: 12,
+                    ),
                   ),
+                  value: enabled,
+                  activeColor: palette.primaryColor,
+                  onChanged: (val) => MusicSettings.setShowLosslessBadge(val),
                 ),
-                value: enabled,
-                activeColor: palette.primaryColor,
-                onChanged: (val) => MusicSettings.setShowLosslessBadge(val),
               );
             },
           ),
@@ -413,8 +537,10 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                   width: isSelected ? 1.8 : 1.0,
                 ),
               ),
-              child: ListTile(
-                onTap: () => MusicSettings.setSelectedMiniPreset(preset),
+              child: Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  onTap: () => MusicSettings.setSelectedMiniPreset(preset),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 6,
@@ -474,6 +600,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                         size: 22,
                       )
                     : null,
+                ),
               ),
             );
           }).toList(),
@@ -506,8 +633,10 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                   width: isSelected ? 1.8 : 1.0,
                 ),
               ),
-              child: ListTile(
-                onTap: () => MusicSettings.setSelectedFullscreenPreset(preset),
+              child: Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  onTap: () => MusicSettings.setSelectedFullscreenPreset(preset),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 6,
@@ -567,6 +696,7 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                         size: 22,
                       )
                     : null,
+                ),
               ),
             );
           }).toList(),
@@ -631,7 +761,10 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         'Custom Music Player Studio',
@@ -641,7 +774,6 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 7,
@@ -735,12 +867,16 @@ class _MusicSettingsPageState extends State<MusicSettingsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Live Waveform & Controls Preview',
-                style: TextStyle(
-                  color: palette.primaryColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  'Live Waveform & Controls Preview',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: palette.primaryColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               TextButton(

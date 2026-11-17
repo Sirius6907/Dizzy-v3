@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../design/prism_tokens.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/music/music_settings.dart';
 
@@ -376,7 +377,7 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar>
                 Text(
                   _formatDuration(posDuration),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: PrismInk.soft(palette.isLight),
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -385,7 +386,7 @@ class _MusicWaveformSeekbarState extends State<MusicWaveformSeekbar>
                 Text(
                   _formatDuration(widget.duration),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: PrismInk.soft(palette.isLight),
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -428,7 +429,9 @@ class _MusicWaveformPainter extends CustomPainter {
 
     final activePaint = Paint()..style = PaintingStyle.fill;
     final inactivePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.15)
+      ..color = PrismInk.primary(
+        AppThemeService.currentPalette.value.isLight,
+      ).withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < count; i++) {

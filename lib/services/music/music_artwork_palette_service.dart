@@ -61,8 +61,10 @@ class MusicArtworkPaletteService {
     final hue1 = (hash % 360).toDouble();
     final hue2 = ((hash ~/ 360) % 360).toDouble();
 
-    final c1 = HSLColor.fromAHSL(1.0, hue1, 0.70, 0.55).toColor();
-    final c2 = HSLColor.fromAHSL(1.0, hue2, 0.65, 0.60).toColor();
+    // Tuned (2026-11-09): richer bloom per creator brief — the fallback
+    // palette reads vivid, not pastel. Same hues/keys, same contracts.
+    final c1 = HSLColor.fromAHSL(1.0, hue1, 0.82, 0.55).toColor();
+    final c2 = HSLColor.fromAHSL(1.0, hue2, 0.75, 0.58).toColor();
     // Black-flash guard: the background lightness has a hard floor so the
     // first painted frame is always a tinted surface, never a black hole.
     final bg = _liftUntilVisible(
@@ -72,8 +74,8 @@ class MusicArtworkPaletteService {
     final accent = HSLColor.fromAHSL(
       1.0,
       (hue1 + 40) % 360,
-      0.80,
-      0.70,
+      0.88,
+      0.68,
     ).toColor();
 
     final palette = MusicTrackPalette(
@@ -210,7 +212,7 @@ class MusicArtworkPaletteService {
             final secondary = HSLColor.fromAHSL(
               1.0,
               (hslPrimary.hue + 45) % 360,
-              (hslPrimary.saturation * 0.9).clamp(0.4, 0.9),
+              (hslPrimary.saturation * 0.95).clamp(0.55, 0.92),
               (hslPrimary.lightness * 1.1).clamp(0.35, 0.75),
             ).toColor();
 

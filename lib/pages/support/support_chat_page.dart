@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/support/support_agent_service.dart';
 
 /// v1.3.3-T4 — in-app support chat.
@@ -72,12 +73,23 @@ class _SupportChatPageState extends State<SupportChatPage> {
       _lang = SupportAgentService.detectLanguage(text);
     }
 
-    final answer = await SupportAgentService.ask(text, history: history);
+    final answer = await SupportAgentService.ask(
+      text,
+      history: history,
+      logQuestion: CloudAuthService.consentTelemetry.value,
+    );
     if (!mounted) return;
     setState(() {
       _busy = false;
       if (answer.hasText) {
-        _msgs.add(_Msg(text: answer.text, fromUser: false));
+        // The server marks answers that need a human (refunds, account
+        // problems) with suggest_ticket; the copy says "I can forward your
+        // request" — without this the promise had no button behind it.
+        _msgs.add(_Msg(
+          text: answer.text,
+          fromUser: false,
+          offerTicket: answer.suggestTicket,
+        ));
       } else {
         _msgs.add(_Msg(
           text: _t(

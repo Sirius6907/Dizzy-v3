@@ -16,13 +16,38 @@ class MusicMatchPolicy {
   /// Latin digraphs commonly used to romanise Odia/Hindi.
   /// Applied to BOTH sides so "jhia" and "jhiya" converge.
   static const Map<String, String> _translit = {
-    'aa': 'a', 'ee': 'i', 'ii': 'i', 'oo': 'u', 'uu': 'u',
-    'ai': 'ai', 'au': 'au', 'ou': 'o', 'ea': 'i',
-    'kh': 'k', 'gh': 'g', 'ch': 'c', 'chh': 'c', 'jh': 'j',
-    'th': 't', 'dh': 'd', 'ph': 'f', 'bh': 'b', 'sh': 's',
-    'ss': 's', 'tt': 't', 'dd': 'd', 'nn': 'n', 'll': 'l',
-    'mm': 'm', 'yy': 'y', 'vv': 'v', 'zz': 'j',
-    'x': 'ks', 'q': 'k', 'z': 'j', 'w': 'v',
+    'aa': 'a',
+    'ee': 'i',
+    'ii': 'i',
+    'oo': 'u',
+    'uu': 'u',
+    'ai': 'ai',
+    'au': 'au',
+    'ou': 'o',
+    'ea': 'i',
+    'kh': 'k',
+    'gh': 'g',
+    'ch': 'c',
+    'chh': 'c',
+    'jh': 'j',
+    'th': 't',
+    'dh': 'd',
+    'ph': 'f',
+    'bh': 'b',
+    'sh': 's',
+    'ss': 's',
+    'tt': 't',
+    'dd': 'd',
+    'nn': 'n',
+    'll': 'l',
+    'mm': 'm',
+    'yy': 'y',
+    'vv': 'v',
+    'zz': 'j',
+    'x': 'ks',
+    'q': 'k',
+    'z': 'j',
+    'w': 'v',
   };
 
   /// Normalise for comparison: lowercase, strip punctuation, collapse
@@ -106,10 +131,18 @@ class MusicMatchPolicy {
     // Word-boundary token matching so 'bollywood' never matches substring 'ollywood'.
     final words = q.split(RegExp(r'[^a-z0-9]+')).toSet();
     const hints = {
-      'bollywood': 'hindi', 'ollywood': 'oriya', 'oliywood': 'oriya',
-      'sambalpuri': 'oriya', 'odia': 'oriya', 'oriya': 'oriya',
-      'hindi': 'hindi', 'punjabi': 'punjabi', 'bhangra': 'punjabi',
-      'tamil': 'tamil', 'telugu': 'telugu', 'bengali': 'bengali',
+      'bollywood': 'hindi',
+      'ollywood': 'oriya',
+      'oliywood': 'oriya',
+      'sambalpuri': 'oriya',
+      'odia': 'oriya',
+      'oriya': 'oriya',
+      'hindi': 'hindi',
+      'punjabi': 'punjabi',
+      'bhangra': 'punjabi',
+      'tamil': 'tamil',
+      'telugu': 'telugu',
+      'bengali': 'bengali',
       'english': 'english',
     };
     for (final e in hints.entries) {

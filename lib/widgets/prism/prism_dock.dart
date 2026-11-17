@@ -178,6 +178,7 @@ class PrismDock extends StatelessWidget {
                               accent: palette.primaryColor,
                               isLight: palette.isLight,
                               expanded: fits,
+                              compact: !fits,
                               onTap: () {
                                 if (PrismHaptics.enabled) {
                                   HapticFeedback.lightImpact();
@@ -188,10 +189,30 @@ class PrismDock extends StatelessWidget {
                         ],
                       );
                       if (fits) return row;
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: row,
+                      // 12 items × 64dp do not fit a phone: scroll, and make
+                      // the scroll obvious. Without the edge fade + end
+                      // padding the last label was cut mid-word ("Anim") and
+                      // nothing hinted that the dock could move.
+                      return ShaderMask(
+                        shaderCallback: (rect) => const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Colors.transparent,
+                            Colors.white,
+                            Colors.white,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.045, 0.955, 1.0],
+                        ).createShader(rect),
+                        blendMode: BlendMode.dstIn,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 10),
+                          child: row,
+                        ),
                       );
                     },
                   ),
@@ -209,6 +230,7 @@ class _PrismDockItem extends StatelessWidget {
   final Color accent;
   final bool isLight;
   final bool expanded;
+  final bool compact;
   final VoidCallback onTap;
 
   const _PrismDockItem({
@@ -218,6 +240,7 @@ class _PrismDockItem extends StatelessWidget {
     required this.accent,
     required this.isLight,
     this.expanded = true,
+    this.compact = false,
     required this.onTap,
   });
 
@@ -258,10 +281,15 @@ class _PrismDockItem extends StatelessWidget {
             height: 11,
             child: Text(
               item.label,
+              // The dock is fixed-height chrome with an 11dp label slot; at
+              // 200% system text the label grew past the slot and collided
+              // with the next item ("HomeMan"). Icons and semantics still
+              // carry the label, so keep this slot fixed.
+              textScaler: TextScaler.noScaling,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: compact ? 10 : 11,
                 height: 1.0,
                 fontWeight: active ? PrismType.wBold : PrismType.wMedium,
                 color: active ? ink : soft,

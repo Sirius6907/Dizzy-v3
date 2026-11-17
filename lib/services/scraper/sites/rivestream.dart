@@ -15,6 +15,15 @@ class RiveStreamScraper extends StreamScraper {
   @override
   String get name => 'rivestream';
 
+  /// Promoted provider: it resolves by TMDb id and answers with playable
+  /// HLS, so it runs FIRST in the scrape pool (its sources reach the
+  /// autoplay race before the slower providers answer).
+  @override
+  int get priority => 100;
+
+  @override
+  bool get indexesNewReleases => true;
+
   static const _apiBase = 'https://scrapper.rivestream.app';
   static const _referer = 'https://www.rivestream.app/';
   static const _origin = 'https://www.rivestream.app';
@@ -157,7 +166,11 @@ class RiveStreamScraper extends StreamScraper {
               final format = (src['format'] ?? 'hls').toString().toUpperCase();
               final size = src['size']?.toString();
 
-              final streamTitle = '[Rive - $srcName] $quality';
+              // The upstream `source` is the CDN/provider name ("Borealis",
+              // "Pulse"), never the show name. Carry the requested title so
+              // the row is identifiable in the list and by the relevance
+              // filter.
+              final streamTitle = '$title · $srcName · $quality';
               final desc = size != null
                   ? '$srcName • $quality • $format • ${_formatSize(size)}'
                   : '$srcName • $quality • $format';
@@ -217,6 +230,9 @@ class RiveStreamScraper extends StreamScraper {
       headers: {'User-Agent': _ua, 'Referer': _referer, 'Origin': _origin},
       behaviorHints: {
         'notWebReady': false,
+        // Resolved by TMDb id: the row label carries the CDN name, not the
+        // show name, so the relevance filter must not judge it by title.
+        'dizzyVerifiedById': true,
         'proxyHeaders': {
           'request': {
             'User-Agent': _ua,

@@ -81,67 +81,161 @@ class MusicTopHeader extends StatelessWidget {
             ),
             SizedBox(width: isMobile ? 8 : 12),
             Expanded(
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: PrismShadows.pressedGradient(isLight),
-                  boxShadow: PrismShadows.pressed(isLight: isLight, scale: 0.8),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search_rounded,
-                      color: isLight ? PrismLight.inkSoft : Colors.white54,
-                      size: isMobile ? 18 : 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: searchController,
-                        focusNode: searchFocusNode,
-                        onChanged: onSearchChanged,
-                        style: TextStyle(
-                          color: isLight ? PrismLight.ink : Colors.white,
-                          fontSize: isMobile ? 13 : 14,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop ? 520 : double.infinity,
+                  ),
+                  child: AnimatedBuilder(
+                    animation: searchFocusNode,
+                    builder: (context, _) {
+                      final focused = searchFocusNode.hasFocus;
+                      return Container(
+                        key: const ValueKey('music-search-field'),
+                        height: 42,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 8 : 12,
                         ),
-                        decoration: InputDecoration(
-                          hintText: isVeryNarrow
-                              ? 'Search…'
-                              : (isMobile
-                                    ? 'Search music…'
-                                    : 'Search songs, artists, albums, playlists...'),
-                          hintStyle: TextStyle(
-                            color: isLight
-                                ? PrismLight.inkSoft
-                                : Colors.white38,
-                            fontSize: isMobile ? 12 : 13,
+                        decoration: BoxDecoration(
+                          color: isLight ? PrismLight.sunken : PrismDark.sunken,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: focused
+                                ? palette.primaryColor.withValues(alpha: 0.55)
+                                : (isLight
+                                      ? PrismLight.borderSubtle
+                                      : Colors.white.withValues(alpha: 0.10)),
+                            width: focused ? 1.4 : 1.0,
                           ),
-                          border: InputBorder.none,
-                          isDense: true,
+                          boxShadow: focused
+                              ? [
+                                  BoxShadow(
+                                    color: palette.primaryColor.withValues(
+                                      alpha: 0.18,
+                                    ),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : PrismShadows.soft(isLight: isLight, scale: 0.7),
                         ),
-                      ),
-                    ),
-                    if (searchController.text.isNotEmpty)
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: isLight ? PrismLight.inkSoft : Colors.white54,
-                          size: 16,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.search_rounded,
+                              color: focused
+                                  ? palette.primaryColor
+                                  : (isLight
+                                        ? PrismLight.inkSoft
+                                        : Colors.white54),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: TextField(
+                                controller: searchController,
+                                focusNode: searchFocusNode,
+                                onChanged: onSearchChanged,
+                                textInputAction: TextInputAction.search,
+                                cursorColor: palette.primaryColor,
+                                style: TextStyle(
+                                  color: isLight
+                                      ? PrismLight.ink
+                                      : Colors.white,
+                                  fontSize: isMobile ? 13 : 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: isVeryNarrow
+                                      ? 'Search…'
+                                      : (isMobile
+                                            ? 'Search music…'
+                                            : 'Search songs, artists, albums, playlists'),
+                                  hintStyle: TextStyle(
+                                    color: isLight
+                                        ? PrismLight.inkFaint
+                                        : Colors.white38,
+                                    fontSize: isMobile ? 12.5 : 13.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (searchController.text.isNotEmpty)
+                              IconButton(
+                                tooltip: 'Clear search',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: isLight
+                                      ? PrismLight.inkSoft
+                                      : Colors.white54,
+                                  size: 16,
+                                ),
+                                onPressed: onClearSearch,
+                              ),
+                          ],
                         ),
-                        onPressed: onClearSearch,
-                      ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
             SizedBox(width: isMobile ? 6 : 12),
-            const MusicAudioSourceSelectorButton(),
-            if (!isMobile) ...[
-              SizedBox(width: isMobile ? 4 : 8),
+            if (isMobile)
+              PopupMenuButton<String>(
+                tooltip: 'Music options',
+                color: palette.scaffoldBackgroundColor,
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: PrismInk.primary(isLight),
+                ),
+                itemBuilder: (_) => [
+                  for (final label in [
+                    'Audio source',
+                    'Music Atmosphere Settings',
+                    'App Settings',
+                  ])
+                    PopupMenuItem(
+                      value: label,
+                      child: Text(
+                        label,
+                        style: TextStyle(color: PrismInk.primary(isLight)),
+                      ),
+                    ),
+                ],
+                onSelected: (value) {
+                  switch (value) {
+                    case 'Audio source':
+                      MusicAudioSourceSelectorButton.showAudioSourceDialog(
+                        context,
+                      );
+                    case 'Music Atmosphere Settings':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MusicSettingsPage(),
+                        ),
+                      );
+                    case 'App Settings':
+                      onSettingsTap();
+                  }
+                },
+              )
+            else ...[
+              const MusicAudioSourceSelectorButton(),
+              const SizedBox(width: 8),
               MusicHoverable(
                 scaleFactor: 1.1,
                 child: IconButton(
@@ -161,7 +255,7 @@ class MusicTopHeader extends StatelessWidget {
                   },
                 ),
               ),
-              SizedBox(width: isMobile ? 2 : 6),
+              const SizedBox(width: 6),
               MusicHoverable(
                 scaleFactor: 1.1,
                 child: IconButton(
@@ -181,20 +275,20 @@ class MusicTopHeader extends StatelessWidget {
                   },
                 ),
               ),
-            ],
-            SizedBox(width: isMobile ? 2 : 6),
-            MusicHoverable(
-              scaleFactor: 1.1,
-              child: IconButton(
-                tooltip: 'App Settings',
-                icon: Icon(
-                  Icons.settings_rounded,
-                  color: isLight ? PrismLight.inkSoft : Colors.white70,
-                  size: 20,
+              SizedBox(width: isMobile ? 2 : 6),
+              MusicHoverable(
+                scaleFactor: 1.1,
+                child: IconButton(
+                  tooltip: 'App Settings',
+                  icon: Icon(
+                    Icons.settings_rounded,
+                    color: isLight ? PrismLight.inkSoft : Colors.white70,
+                    size: 20,
+                  ),
+                  onPressed: onSettingsTap,
                 ),
-                onPressed: onSettingsTap,
               ),
-            ),
+            ],
           ],
         ),
       ),

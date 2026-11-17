@@ -15,6 +15,14 @@ class FlaxMoviesScraper extends StreamScraper {
   @override
   String get name => 'flaxmovies';
 
+  /// Promoted provider: it resolves by TMDb id and answers with playable
+  /// HLS, so it runs FIRST in the scrape pool.
+  @override
+  int get priority => 100;
+
+  @override
+  bool get indexesNewReleases => true;
+
   static const _baseUrl = 'https://flaxmovies.xyz';
   static const _ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -193,6 +201,10 @@ class FlaxMoviesScraper extends StreamScraper {
                 headers: streamHeaders,
                 behaviorHints: {
                   'notWebReady': false,
+                  // Resolved by TMDb id: the row label carries the CDN name,
+                  // not the show name, so the relevance filter must not
+                  // judge it by title.
+                  'dizzyVerifiedById': true,
                   'proxyHeaders': {'request': streamHeaders},
                 },
               );

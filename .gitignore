@@ -79,3 +79,18 @@ admin-dashboard/config.js
 
 # Session memory - LOCAL ONLY (leaked a password once, never again)
 /memory/
+
+# Stray one-line log fragments from a diagnostic monitoring run (artifacts/audit-dsh)
+/[0-9]*
+
+# Nested accidental supabase CLI folder
+/supabase/supabase/
+
+# Rust build outputs (source + Cargo.lock stay committed)
+rust/dizzy_adblock/target/
+
+# Scratch diagnostics
+/tmp_tmdb.json
+/.app-debug.apk
+/artifacts/
+.opencode-audit-brief.md

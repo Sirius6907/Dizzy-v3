@@ -1,0 +1,10 @@
+! Dizzy supplemental — measured on vidfast.vc 2026-11-16
+! DATA ONLY. Never move per-site blocking logic into Dart/UI code.
+||vinnyvower.cfd^
+||contain.remanpurflertawneys.cyou^
+||lpxu3ovf7r.fipjmbp8j2l9lf9he8e6y9oukzfg.cfd^
+googletagmanager.com$third-party
+google-analytics.com$third-party
+umami.vidfast.vc^
+cloudflareinsights.com$third-party
+flagsapi.com$third-party

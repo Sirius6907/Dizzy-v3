@@ -44,12 +44,40 @@ class _FriendsPageState extends State<FriendsPage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
-    DizzyFriendService.loadFriendships();
+    DizzyFriendService.loadFriendships().then((_) => _resolvePeerNames());
+    // Every friendship refresh (realtime event, accept, block …) re-resolves
+    // the peer names, so new friends never show the short-id fallback.
+    DizzyFriendService.friendships.addListener(_resolvePeerNames);
+    DizzySocialService.resolvedNames.addListener(_onNamesResolved);
+    // Live status: incoming requests and accepts repaint as they happen.
+    DizzyFriendService.startRealtime();
+  }
+
+  /// Resolve real @usernames for every peer in the friendship graph —
+  /// friends, incoming AND outgoing requests (the sender side needs names
+  /// too). Fail-soft: unresolved uids keep the short fallback label.
+  void _resolvePeerNames() {
+    final uids = <String>{};
+    for (final f in DizzyFriendService.friendships.value) {
+      uids.add(f.requesterId);
+      uids.add(f.addresseeId);
+    }
+    uids.remove(DizzyFriendService.myUid);
+    uids.removeWhere((u) => u.isEmpty);
+    if (uids.isNotEmpty) {
+      unawaited(DizzySocialService.resolveUsernames(uids));
+    }
+  }
+
+  void _onNamesResolved() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _generation++;
+    DizzyFriendService.friendships.removeListener(_resolvePeerNames);
+    DizzySocialService.resolvedNames.removeListener(_onNamesResolved);
     _tabs.dispose();
     _search.dispose();
     _debounce?.cancel();
@@ -159,15 +187,13 @@ class _FriendsPageState extends State<FriendsPage>
     );
   }
 
-  /// Username lookup for a uid: search cache → pending list → short id.
-  /// (No direct profiles read — RLS is owner-only; search_users is the
-  /// public path. Friend rows carry only uids, so we show a short id
-  /// until the friend search index covers them.)
+  /// Username for a uid: current search results first, then the shared
+  /// resolver cache (`resolve_usernames` RPC), then a short readable id.
   String _labelFor(String uid) {
     for (final m in _results) {
       if (m.userId == uid) return m.username;
     }
-    return 'friend_${uid.length > 6 ? uid.substring(0, 6) : uid}';
+    return DizzySocialService.displayNameFor(uid);
   }
 
   @override
@@ -285,7 +311,9 @@ class _FriendsPageState extends State<FriendsPage>
                   child: Text(
                     _hasSearched
                         ? 'No users found.'
-                        : 'Search any @username to add friends.',
+                        : _normalize(_search.text).isEmpty
+                            ? 'Search any @username to add friends.'
+                            : 'Type at least 2 letters to search.',
                     style: TextStyle(color: inkSoft, fontSize: 13),
                   ),
                 )
@@ -310,10 +338,15 @@ class _FriendsPageState extends State<FriendsPage>
                           : status == FriendStatus.accepted
                           ? _miniBtn('Chat', () => _chat(m.userId, m.username))
                           : status == FriendStatus.pending
-                          ? Text(
-                              'Sent ✓',
-                              style: TextStyle(color: inkSoft, fontSize: 12),
-                            )
+                          ? DizzyFriendService.isIncomingPending(m.userId)
+                                ? _miniBtn('Accept', () => _accept(m.userId))
+                                : Text(
+                                    'Sent ✓',
+                                    style: TextStyle(
+                                      color: inkSoft,
+                                      fontSize: 12,
+                                    ),
+                                  )
                           : _miniBtn('Add', () => _send(m.userId, m.username)),
                     );
                   },

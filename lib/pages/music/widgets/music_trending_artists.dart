@@ -10,16 +10,21 @@ class MusicTrendingArtists extends StatelessWidget {
   final List<MusicArtist> artists;
   final Function(MusicArtist) onArtistTap;
 
+  /// Rail title — defaults to global trending; the music home passes
+  /// '⭐ Your Artists' when onboarding produced a vibe (Part C).
+  final String title;
+
   const MusicTrendingArtists({
     super.key,
     required this.artists,
     required this.onArtistTap,
+    this.title = '🌟 Trending Artists',
   });
 
   @override
   Widget build(BuildContext context) {
     return MusicHorizontalScrollSection(
-      title: '🌟 Trending Artists',
+      title: title,
       height: 130,
       itemCount: artists.length,
       itemBuilder: (context, index) {

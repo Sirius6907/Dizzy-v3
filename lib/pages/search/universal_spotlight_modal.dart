@@ -13,6 +13,7 @@ import '../../services/addon/addon_manager.dart';
 import '../../services/anime/anilist_service.dart';
 import '../../services/music/music_player_controller.dart';
 import '../../services/music/music_service.dart';
+import '../../services/music/music_stats_service.dart';
 import '../../services/search/search_history_helper.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../widgets/prism/prism_card.dart';
@@ -60,13 +61,47 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
   List<String> _searchHistory = [];
   static const String _historyKey = 'spotlight_search_history';
 
+  /// Trending artist resolved asynchronously by [_bootstrapTopMusicQuery]
+  /// when neither the player nor the taste stats can supply a query yet.
+  String? _trendingMusicArtist;
+
   @override
   void initState() {
     super.initState();
     _loadSearchHistory();
+    _bootstrapTopMusicQuery();
     if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
       _searchController.text = widget.initialQuery!.trim();
       _performSearch(widget.initialQuery!.trim());
+    }
+  }
+
+  /// Audit follow-up 2026-11-10: the 'Top Music' quick tile used to hardcode
+  /// one artist. Derive the query from live context instead — the currently
+  /// playing track's artist first, then the user's top listened artist
+  /// (taste stats), then a trending artist (taste-nudged by the service).
+  /// The tile hides itself when no context resolves to anything.
+  String? get _topMusicQuery {
+    final playing = MusicPlayerController.instance.currentTrack?.artist;
+    if (playing != null && playing.trim().isNotEmpty) return playing.trim();
+    final topListened = MusicStatsService.instance.topArtists;
+    if (topListened.isNotEmpty && topListened.first.key.trim().isNotEmpty) {
+      return topListened.first.key.trim();
+    }
+    return _trendingMusicArtist;
+  }
+
+  Future<void> _bootstrapTopMusicQuery() async {
+    // Cheap sync paths first; only hit the network when they're empty.
+    if (_topMusicQuery != null) return;
+    try {
+      final trending = await MusicService.instance.fetchTrendingArtists();
+      final name = trending.isEmpty ? null : trending.first.name.trim();
+      if (!mounted || name == null || name.isEmpty) return;
+      setState(() => _trendingMusicArtist = name);
+    } catch (_) {
+      // Network/path failure: tile simply stays hidden — no hardcoded
+      // fallback artist reintroduced.
     }
   }
 
@@ -604,12 +639,13 @@ class _UniversalSpotlightModalState extends State<UniversalSpotlightModal> {
               query: 'Demon Slayer',
               theme: theme,
             ),
-            _quickTile(
-              icon: Icons.music_note_rounded,
-              label: 'Top Music',
-              query: 'Arijit Singh',
-              theme: theme,
-            ),
+            if (_topMusicQuery != null)
+              _quickTile(
+                icon: Icons.music_note_rounded,
+                label: 'Top Music',
+                query: _topMusicQuery!,
+                theme: theme,
+              ),
           ],
         ),
       ],

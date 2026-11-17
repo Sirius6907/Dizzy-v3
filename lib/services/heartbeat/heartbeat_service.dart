@@ -222,6 +222,13 @@ class HeartbeatService {
   }
 
   Future<void> _send(Activity activity) async {
+    // db.rpc asserts when Supabase was never initialized (failed cold
+    // start), so recover lazily first and stay pending until it lands.
+    if (!await CloudClient.retry()) {
+      _pending = true;
+      _pendingActivity = activity;
+      return;
+    }
     _sending = true;
     try {
       final reply = await CloudClient.db.rpc(

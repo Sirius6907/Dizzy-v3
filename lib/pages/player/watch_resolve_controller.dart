@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import '../../../models/stream/stream_model.dart';
+import '../../../services/errors/app_log.dart';
 import '../../../services/player/dub_mode_service.dart';
 import '../../../services/stream/dub_filter.dart';
 import '../../../services/stream/instant_play_gate.dart';
+import '../../../services/stream/source_ranker.dart';
 import '../../../services/stream/stream_health_checker.dart';
 import '../../../services/stream/stream_probe_race.dart';
 import '../../../services/stream/stream_relevance.dart';
@@ -76,6 +78,13 @@ class WatchResolveController {
   Timer? _batchTimer;
   Timer? _fallbackTimer;
   StreamProbeRace? _race;
+
+  /// v1.3.5: an embed source is "alive" the moment it exists (there is nothing
+  /// to probe), so offering it to the race immediately would make autoplay
+  /// open a webview even when a direct stream answered 200 ms later. Direct
+  /// sources get this head start; if none is alive, the embed still opens.
+  static const embedRaceHeadStart = Duration(seconds: 3);
+  final List<Timer> _embedRaceTimers = [];
   bool _hindiWon = false;
   bool _fallbackReleased = false;
 
@@ -100,7 +109,10 @@ class WatchResolveController {
     // verified alive auto-opens the player (unless the user has already
     // picked a source or autoplay is disabled in settings).
     if (shouldAutoOpen()) {
-      final race = StreamProbeRace(probeFn: probeFn ?? StreamHealthChecker.isAlive);
+      final race = StreamProbeRace(
+        probeFn: probeFn ?? StreamHealthChecker.isAlive,
+        isPromoted: SourceRanker.isPromoted,
+      );
       _race = race;
 
       // Embedded debrid streams are offered further below (after the
@@ -188,7 +200,16 @@ class WatchResolveController {
         // 3+ verified-looking HTTP hits are enough to expose immediately.
         if (_pending.where(_isHttpLike).length >= 3) flush();
         // Parallel health probe for the autoplay race (never blocks UI).
-        _race?.offer(source);
+        // Embeds wait for the direct-source head start (see [embedRaceHeadStart]).
+        if (source.isEmbedSource) {
+          _embedRaceTimers.add(
+            Timer(embedRaceHeadStart, () {
+              if (isMounted()) _race?.offer(source);
+            }),
+          );
+        } else {
+          _race?.offer(source);
+        }
       }
     } catch (_) {}
 
@@ -214,11 +235,23 @@ class WatchResolveController {
   /// the picker even with autoplay on. Once discovery is done and no HTTP
   /// source opened, the best-seeded torrent goes straight to the player
   /// (TorrServer pre-warms the first megabytes).
+  ///
+  /// Seeders are a hard gate now: a 0-seeder torrent can never start, so
+  /// autoplaying it just guarantees a spinner. Unknown-seeder entries are
+  /// tried only after every known-seeded one, and only as a last resort.
   void _maybeAutoplayTorrent() {
     if (!shouldAutoOpen() || _torrentCandidates.isEmpty) return;
     final ranked = List<StreamSource>.of(_torrentCandidates);
-    ranked.sort((a, b) => (b.seeders ?? 0).compareTo(a.seeders ?? 0));
-    for (final torrent in ranked.take(3)) {
+    final seeded = ranked.where((s) => (s.seeders ?? 0) > 0).toList()
+      ..sort((a, b) => (b.seeders ?? 0).compareTo(a.seeders ?? 0));
+    final unknown = ranked.where((s) => s.seeders == null).toList()
+      ..sort((a, b) => b.qualityRank.compareTo(a.qualityRank));
+    final candidates = <StreamSource>[...seeded, ...unknown];
+    if (candidates.isEmpty) {
+      AppLog.d('[Autoplay] no torrent candidate has a usable seed count');
+      return;
+    }
+    for (final torrent in candidates.take(3)) {
       if (_autoplayGate.offer(torrent) == InstantPlayDecision.playNow) {
         onInstantOpen(torrent);
         return;
@@ -338,6 +371,12 @@ class WatchResolveController {
   }
 
   static int _compareForExposure(StreamSource a, StreamSource b) {
+    // The promoted pair leads the list: they are the only providers the
+    // owner verified live, and their rows are what the user should see
+    // first for every title.
+    final byPromoted = SourceRanker.tierOf(a).compareTo(SourceRanker.tierOf(b));
+    if (byPromoted != 0) return byPromoted;
+
     final byProtocol = _protocolTier(b).compareTo(_protocolTier(a));
     if (byProtocol != 0) return byProtocol;
 
@@ -368,6 +407,10 @@ class WatchResolveController {
   void dispose() {
     _batchTimer?.cancel();
     _fallbackTimer?.cancel();
+    for (final timer in _embedRaceTimers) {
+      timer.cancel();
+    }
+    _embedRaceTimers.clear();
     _race?.dispose();
   }
 }

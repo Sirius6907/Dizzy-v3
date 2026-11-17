@@ -46,6 +46,24 @@ class StreamSource {
   /// Known renditions, best-first preferred (P9 — empty = single-shot).
   final List<Rendition> renditions;
 
+  /// True when [externalUrl] is a page to play in the ad-blocked embed
+  /// webview instead of a media URL mpv can open directly. The webview is the
+  /// liveness probe for these sources (see [StreamHealthChecker]).
+  bool get isEmbedSource => behaviorHints?['dizzyEmbed'] == true;
+
+  /// Set by the liveness probe when this source was proven dead. A dead
+  /// source must never be picked as a failover replacement — switching to a
+  /// source that is already known to be dead shows a black screen.
+  bool probeDead = false;
+
+  /// The real media URL when [url] is an HTML player page.
+  ///
+  /// Several upstream extractors stopped handing out direct media links and
+  /// now answer with a player page. The liveness probe (and the player)
+  /// extract the stream behind it with `HtmlStreamResolver`; the result is
+  /// stored here so the player opens the media directly.
+  String? resolvedMediaUrl;
+
   StreamSource({
     this.name,
     this.title,

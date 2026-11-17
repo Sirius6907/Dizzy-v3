@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 import '../../../design/prism_tokens.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/theme/app_theme_service.dart';
@@ -43,9 +42,16 @@ class MusicLibraryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    // Header (58px + status inset) floats over the list; start below it.
+    final topInset = MediaQuery.paddingOf(context).top;
+
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.only(top: 80, left: 24, right: 24, bottom: 150),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 150).copyWith(
+        top: 72 + topInset,
+      ),
       children: [
         Row(
           children: [
@@ -61,126 +67,158 @@ class MusicLibraryView extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            // Wrapped Chip
-            MusicHoverable(
-              scaleFactor: 1.05,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      AppThemeService.currentPalette.value.isLight
-                      ? PrismAccent.starTextLight
-                      : Colors.amberAccent,
-                  side: BorderSide(
-                    color:
-                        (AppThemeService.currentPalette.value.isLight
-                                ? PrismAccent.starTextLight
-                                : Colors.amberAccent)
-                            .withValues(alpha: 0.4),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                ),
-                onPressed: () => MusicWrappedModal.show(context),
-                icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                label: const Text(
-                  'Wrapped',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Listen Together Chip
-            MusicHoverable(
-              scaleFactor: 1.05,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppThemeService.currentPalette.value.isLight
-                      ? const Color(0xFF007A8C)
-                      : const Color(0xFF00D2EF),
-                  side: BorderSide(
-                    color:
-                        (AppThemeService.currentPalette.value.isLight
-                                ? const Color(0xFF007A8C)
-                                : const Color(0xFF00D2EF))
-                            .withValues(alpha: 0.4),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                ),
-                onPressed: () => MusicListenTogetherModal.show(context),
-                icon: const Icon(Icons.people_alt_rounded, size: 16),
-                label: const Text(
-                  'Jam Party',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Import Playlist Chip
-            MusicHoverable(
-              scaleFactor: 1.05,
-              child: IconButton(
-                tooltip: 'Import Playlist',
-                style: IconButton.styleFrom(
-                  backgroundColor:
-                      AppThemeService.currentPalette.value.isLight
-                      ? PrismLight.raisedTop
-                      : Colors.white.withValues(alpha: 0.08),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                      color:
-                          AppThemeService.currentPalette.value.isLight
-                          ? PrismLight.borderSubtle
-                          : Colors.white.withValues(alpha: 0.12),
+            // Chips strip — sized to the biggest chip and horizontally
+            // scrollable so the header never overflows on narrow screens.
+            Expanded(
+              child: SizedBox(
+                height: 40,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  reverse: true,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Wrapped Chip
+                          MusicHoverable(
+                            scaleFactor: 1.05,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor:
+                                    AppThemeService.currentPalette.value.isLight
+                                    ? PrismAccent.starTextLight
+                                    : Colors.amberAccent,
+                                side: BorderSide(
+                                  color:
+                                      (AppThemeService
+                                              .currentPalette
+                                              .value
+                                              .isLight
+                                          ? PrismAccent.starTextLight
+                                          : Colors.amberAccent)
+                                      .withValues(alpha: 0.4),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                              ),
+                              onPressed: () =>
+                                  MusicWrappedModal.show(context),
+                              icon: const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 16,
+                              ),
+                              label: const Text(
+                                'Wrapped',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Listen Together Chip
+                          MusicHoverable(
+                            scaleFactor: 1.05,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor:
+                                    AppThemeService.currentPalette.value.isLight
+                                    ? const Color(0xFF007A8C)
+                                    : const Color(0xFF00D2EF),
+                                side: BorderSide(
+                                  color:
+                                      (AppThemeService
+                                              .currentPalette
+                                              .value
+                                              .isLight
+                                          ? const Color(0xFF007A8C)
+                                          : const Color(0xFF00D2EF))
+                                      .withValues(alpha: 0.4),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                              ),
+                              onPressed: () =>
+                                  MusicListenTogetherModal.show(context),
+                              icon: const Icon(Icons.people_alt_rounded, size: 16),
+                              label: const Text(
+                                'Jam Party',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Import Playlist Chip
+                          MusicHoverable(
+                            scaleFactor: 1.05,
+                            child: IconButton(
+                              tooltip: 'Import Playlist',
+                              style: IconButton.styleFrom(
+                                backgroundColor: isLight
+                                    ? PrismLight.raisedTop
+                                    : PrismDark.ink.withValues(alpha: 0.08),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: BorderSide(
+                                    color: isLight
+                                        ? PrismLight.borderSubtle
+                                        : PrismDark.ink.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                              ),
+                              onPressed: () => _showImportDialog(context),
+                              icon: Icon(
+                                Icons.file_download_outlined,
+                                color: PrismInk.soft(
+                                  AppThemeService.currentPalette.value.isLight,
+                                ),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          MusicHoverable(
+                            scaleFactor: 1.05,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: palette.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: onCreatePlaylist,
+                              icon: const Icon(
+                                Icons.add_rounded,
+                                color: PrismAccent.onAccent,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'New Playlist',
+                                style: TextStyle(
+                                  color: PrismAccent.onAccent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                onPressed: () => _showImportDialog(context),
-                icon: Icon(
-                  Icons.file_download_outlined,
-                  color: PrismInk.soft(
-                    AppThemeService.currentPalette.value.isLight,
-                  ),
-                  size: 20,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            MusicHoverable(
-              scaleFactor: 1.05,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C5CFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: onCreatePlaylist,
-                icon: const Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                label: const Text(
-                  'New Playlist',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -196,14 +234,21 @@ class MusicLibraryView extends StatelessWidget {
                 height: 110,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5B36F5), Color(0xFF8F58FF)],
+                  gradient: LinearGradient(
+                    // Palette-derived: light banner keeps the page accent,
+                    // dark end is the same hue deepened for depth.
+                    colors: [
+                      palette.primaryColor,
+                      HSLColor.fromColor(palette.primaryColor)
+                          .withLightness(.45)
+                          .toColor(),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF5B36F5).withValues(alpha: 0.3),
+                      color: palette.primaryColor.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -216,12 +261,12 @@ class MusicLibraryView extends StatelessWidget {
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: PrismAccent.onAccent.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.favorite_rounded,
-                        color: Colors.white,
+                        color: PrismAccent.onAccent,
                         size: 28,
                       ),
                     ),
@@ -234,7 +279,7 @@ class MusicLibraryView extends StatelessWidget {
                           const Text(
                             'Liked Songs',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: PrismAccent.onAccent,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
@@ -242,8 +287,8 @@ class MusicLibraryView extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             '${likedTracks.length} favourite tracks',
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: PrismAccent.onAccent.withValues(alpha: 0.75),
                               fontSize: 12.5,
                             ),
                           ),
@@ -255,12 +300,12 @@ class MusicLibraryView extends StatelessWidget {
                         width: 44,
                         height: 44,
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: PrismAccent.onAccent,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.play_arrow_rounded,
-                          color: Color(0xFF5B36F5),
+                          color: palette.primaryColor,
                           size: 30,
                         ),
                       ),
@@ -292,14 +337,19 @@ class MusicLibraryView extends StatelessWidget {
                     height: 110,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0083B0), Color(0xFF00B4DB)],
+                      gradient: LinearGradient(
+                        colors: [
+                          palette.amberAccent,
+                          HSLColor.fromColor(palette.amberAccent)
+                              .withLightness(.52)
+                              .toColor(),
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00B4DB).withValues(alpha: 0.3),
+                          color: palette.amberAccent.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -312,12 +362,12 @@ class MusicLibraryView extends StatelessWidget {
                           width: 52,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: const Color(0xFF22331C).withValues(alpha: 0.25),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.download_done_rounded,
-                            color: Colors.white,
+                            color: PrismAccent.successTextLight,
                             size: 28,
                           ),
                         ),
@@ -332,7 +382,7 @@ class MusicLibraryView extends StatelessWidget {
                                   const Text(
                                     'Downloaded Songs',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: PrismAccent.successTextLight,
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -345,15 +395,15 @@ class MusicLibraryView extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.25,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
+                                        color: const Color(0xFF1E2B18)
+                                            .withValues(alpha: 0.28),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         'Queue (${queue.length})',
                                         style: const TextStyle(
-                                          color: Colors.white,
+                                          color: PrismAccent.successTextLight,
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -366,7 +416,7 @@ class MusicLibraryView extends StatelessWidget {
                               Text(
                                 '${downloaded.length} offline tracks • $sizeMb MB',
                                 style: const TextStyle(
-                                  color: Colors.white70,
+                                  color: PrismAccent.successTextLight,
                                   fontSize: 12.5,
                                 ),
                               ),
@@ -377,12 +427,12 @@ class MusicLibraryView extends StatelessWidget {
                           width: 44,
                           height: 44,
                           decoration: const BoxDecoration(
-                            color: Colors.white,
+                            color: PrismAccent.successTextLight,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.arrow_forward_rounded,
-                            color: Color(0xFF0083B0),
+                            color: PrismLight.raisedTop,
                             size: 24,
                           ),
                         ),
@@ -428,10 +478,12 @@ class MusicLibraryView extends StatelessWidget {
                   onTap: () => onOpenUserPlaylist(pl),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: DizzyVoid.surface1,
+                      color: palette.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: palette.isLight
+                            ? PrismLight.borderSubtle
+                            : PrismDark.borderSubtle,
                       ),
                     ),
                     padding: const EdgeInsets.all(14),
@@ -442,22 +494,20 @@ class MusicLibraryView extends StatelessWidget {
                           height: 70,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF7C5CFF,
-                            ).withValues(alpha: 0.2),
+                            color: palette.primaryColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.queue_music_rounded,
-                            color: Color(0xFF7C5CFF),
+                            color: palette.primaryColor,
                             size: 36,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           pl.title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: PrismInk.primary(palette.isLight),
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -466,8 +516,8 @@ class MusicLibraryView extends StatelessWidget {
                         ),
                         Text(
                           '${pl.tracks.length} tracks',
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: PrismInk.faint(palette.isLight),
                             fontSize: 12,
                           ),
                         ),
@@ -517,19 +567,23 @@ class MusicLibraryView extends StatelessWidget {
 
   void _showImportDialog(BuildContext context) {
     final controller = TextEditingController();
+    final palette = AppThemeService.currentPalette.value;
+    final isLight = palette.isLight;
+    final showLiveCount =
+        MusicDownloadService.instance.downloadedTracks.isNotEmpty;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DizzyVoid.surface1,
+        backgroundColor: palette.cardBackgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.download_rounded, color: Color(0xFF7C5CFF), size: 22),
-            SizedBox(width: 8),
+            Icon(Icons.download_rounded, color: palette.primaryColor, size: 22),
+            const SizedBox(width: 8),
             Text(
               'Import Playlist',
               style: TextStyle(
-                color: Colors.white,
+                color: PrismInk.primary(isLight),
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
@@ -540,42 +594,52 @@ class MusicLibraryView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Paste a Dizzy share code (DIZZY-PLAYLIST:...) or JSON exported from another device:',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(
+                color: PrismInk.soft(isLight),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: PrismInk.primary(isLight), fontSize: 13),
               maxLines: 4,
               decoration: InputDecoration(
                 hintText: 'Paste code or JSON here...',
-                hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                hintStyle: TextStyle(color: PrismInk.faint(isLight), fontSize: 12),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
+                fillColor: PrismInk.primary(isLight).withValues(alpha: 0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: PrismInk.primary(isLight).withValues(alpha: 0.1),
                   ),
                 ),
               ),
             ),
+            if (showLiveCount) ...[
+              const SizedBox(height: 10),
+              Text(
+                '${MusicDownloadService.instance.downloadedTracks.length} offline tracks • ${(MusicDownloadService.instance.totalDownloadedSizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
+                style: TextStyle(color: PrismInk.faint(isLight), fontSize: 10.5),
+              ),
+            ],
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: PrismInk.faint(isLight)),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C5CFF),
-              foregroundColor: Colors.white,
+              backgroundColor: palette.primaryColor,
+              foregroundColor: PrismAccent.onAccent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

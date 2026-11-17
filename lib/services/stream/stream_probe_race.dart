@@ -17,6 +17,18 @@ class StreamProbeRace {
   /// Injectable probe function (tests stub latencies/dead sources).
   final Future<bool> Function(StreamSource source) probeFn;
 
+  /// Marks the providers that must win the race.
+  ///
+  /// The first source that verifies alive normally wins, but a slower
+  /// source from a promoted provider (RiveStream / FlaxMovies - the only
+  /// two the owner verified live) must beat an earlier non-promoted one.
+  /// The promoted candidate wins as soon as it verifies; if none ever
+  /// verifies, the first non-promoted winner still wins.
+  final bool Function(StreamSource source)? isPromoted;
+
+  /// How long a non-promoted winner waits for a promoted source to verify.
+  static const Duration promotedWait = Duration(seconds: 3);
+
   /// Emits batches of newly-verified sources for UI list updates.
   final void Function(List<StreamSource> batch)? onVerifiedBatch;
 
@@ -62,6 +74,7 @@ class StreamProbeRace {
 
   StreamProbeRace({
     this.probeFn = StreamHealthChecker.isAlive,
+    this.isPromoted,
     this.onVerifiedBatch,
     this.batchDelay = const Duration(milliseconds: 80),
   });
@@ -145,8 +158,27 @@ class StreamProbeRace {
       }
       verifiedSources.add(source);
       if (!_winnerCompleter.isCompleted) {
-        _winnerCompleter.complete(source);
-        _onWinnerReported();
+        final promoted = isPromoted?.call(source) ?? false;
+        if (promoted) {
+          // A promoted source wins outright, even over an earlier
+          // non-promoted one that was already alive.
+          _cancelPromotedWait();
+          _winnerCompleter.complete(source);
+          _onWinnerReported();
+        } else if (_promotedWaitTimer == null) {
+          // Hold the non-promoted winner briefly: a promoted source may
+          // still verify within the window.
+          _promotedWinner = source;
+          _promotedWaitTimer = Timer(promotedWait, () {
+            _promotedWaitTimer = null;
+            final pending = _promotedWinner;
+            _promotedWinner = null;
+            if (pending != null && !_winnerCompleter.isCompleted) {
+              _winnerCompleter.complete(pending);
+              _onWinnerReported();
+            }
+          });
+        }
       }
       // Batch UI updates so rapid-fire verified sources don't spam setState.
       _pendingUiBatch.add(source);
@@ -158,6 +190,15 @@ class StreamProbeRace {
       );
     }
     _onProbeDone();
+  }
+
+  StreamSource? _promotedWinner;
+  Timer? _promotedWaitTimer;
+
+  void _cancelPromotedWait() {
+    _promotedWaitTimer?.cancel();
+    _promotedWaitTimer = null;
+    _promotedWinner = null;
   }
 
   void _flushUiBatch() {
@@ -190,10 +231,16 @@ class StreamProbeRace {
     _drainTimer = null;
     _postWinnerTimer?.cancel();
     _postWinnerTimer = null;
+    _promotedWaitTimer?.cancel();
+    _promotedWaitTimer = null;
     _probeQueue.clear();
     _flushUiBatch();
     if (!_winnerCompleter.isCompleted) {
-      _winnerCompleter.complete(null); // no alive source found
+      // A verified non-promoted source must not be lost when the scrape
+      // ends before the promoted wait expires.
+      final pending = _promotedWinner;
+      _promotedWinner = null;
+      _winnerCompleter.complete(pending);
     }
   }
 

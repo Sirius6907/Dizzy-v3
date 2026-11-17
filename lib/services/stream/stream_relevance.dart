@@ -44,10 +44,24 @@ abstract final class StreamRelevance {
       }
     }
 
-    if (!_titlePortionMatches(text, title, source.addonName)) return false;
+    if (!isIdResolved(source) &&
+        !_titlePortionMatches(text, title, source.addonName)) {
+      return false;
+    }
 
     return true;
   }
+
+  /// True when the source was resolved by a verified content id (TMDb id),
+  /// so its identity does not come from the row label.
+  ///
+  /// RiveStream and FlaxMovies label a row with the CDN/provider name
+  /// ("[Rive - Borealis]", "FlaxMovies - Airflix") - never with the show
+  /// name - so the title comparison below rejected 100 % of their rows
+  /// ("wrong show") even though the content was right. An id-resolved row
+  /// carries no title claim to check, so it must not be judged by one.
+  static bool isIdResolved(StreamSource source) =>
+      source.behaviorHints?['dizzyVerifiedById'] == true;
 
   static bool _titlePortionMatches(
     String text,
@@ -147,7 +161,9 @@ abstract final class StreamRelevance {
   );
 
   /// Parenthesised/bracketed years are always release years.
-  static final RegExp _bracketedYearRe = RegExp(r'[\(\[]((?:19|20)\d{2})[\)\]]');
+  static final RegExp _bracketedYearRe = RegExp(
+    r'[\(\[]((?:19|20)\d{2})[\)\]]',
+  );
 
   /// A bare year is only a release year when separated from other tokens
   /// (`Oppenheimer.2023.1080p`), never part of `1920x1080`.
@@ -182,10 +198,9 @@ abstract final class StreamRelevance {
     for (final m in _bracketedYearRe.allMatches(text)) {
       out.add(int.parse(m.group(1)!));
     }
-    final titleDigits = RegExp(r'\d{4}')
-        .allMatches(requestedTitle)
-        .map((m) => m.group(0)!)
-        .toSet();
+    final titleDigits = RegExp(
+      r'\d{4}',
+    ).allMatches(requestedTitle).map((m) => m.group(0)!).toSet();
     for (final m in _bareYearRe.allMatches(text)) {
       final token = m.group(1)!;
       if (titleDigits.contains(token)) continue;

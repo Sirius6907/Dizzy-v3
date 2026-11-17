@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show AssetBundle, rootBundle;
+import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
 
 import '../cloud/cloud_client.dart';
 import '../errors/session_trail.dart';
@@ -140,11 +141,13 @@ class SupportAgentService {
     // NON-raw strings: inside r'...' the \u escape stays literal and the
     // class would match the letters u/0/9/A/F instead of the script range.
     if (RegExp('[\u0900-\u097F]').hasMatch(m)) return 'hi';
+    // Ambiguous English words are deliberately absent: "do" ("how do I…")
+    // used to switch English users to a Hinglish answer on its own.
     const hindiRoman = [
       'nahi', 'nahin', 'kaise', 'kya', 'kyun', 'kyu', 'hai', 'hain', 'ho',
       'raha', 'rahi', 'gaya', 'gayi', 'karo', 'karna', 'chala', 'chal',
-      'nahi', 'mujhe', 'mera', 'meri', 'aap', 'tum', 'bhai', 'dost',
-      'kuch', 'bahut', 'thoda', 'achha', 'theek', 'kaam', 'bata', 'do',
+      'mujhe', 'mera', 'meri', 'aap', 'tum', 'bhai', 'dost',
+      'kuch', 'bahut', 'thoda', 'achha', 'theek', 'kaam', 'bata',
     ];
     for (final w in tokenize(m)) {
       if (hindiRoman.contains(w)) return 'hi';
@@ -267,6 +270,27 @@ class SupportAgentService {
         }
       }
     } catch (e) {
+      // v1.3.4: a throttled request (HTTP 429) is not "I don't know". Showing
+      // the ticket offer here told the user their question was unanswerable
+      // when they only needed to wait a moment.
+      if (e is FunctionException && e.status == 429) {
+        final data = e.details;
+        var retryAfter = 30;
+        if (data is Map && data['retry_after_seconds'] is num) {
+          retryAfter = (data['retry_after_seconds'] as num).toInt();
+        }
+        return SupportAnswer(
+          text: lang == 'hi'
+              ? 'Thoda ruk jao — abhi bahut sawaal aa rahe hain. $retryAfter second baad phir bhejo. 🙏'
+              : 'Give me a moment — I am getting a lot of questions right now. Try again in $retryAfter seconds. 🙏',
+          lang: lang,
+          tier: SupportTier.none,
+          matchedId: '',
+          suggestTicket: false,
+          throttled: true,
+          retryAfterSeconds: retryAfter,
+        );
+      }
       AppLogShim.d('[Support] online tier failed (soft): $e');
     }
 
@@ -350,6 +374,8 @@ class SupportAnswer {
   final SupportTier tier;
   final String matchedId;
   final bool suggestTicket;
+  final bool throttled;
+  final int retryAfterSeconds;
 
   const SupportAnswer({
     required this.text,
@@ -357,6 +383,8 @@ class SupportAnswer {
     required this.tier,
     required this.matchedId,
     required this.suggestTicket,
+    this.throttled = false,
+    this.retryAfterSeconds = 0,
   });
 
   bool get hasText => text.trim().isNotEmpty;

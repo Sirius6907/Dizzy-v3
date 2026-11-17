@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/dizzy_tokens.dart';
 import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
+import 'package:dizzy/services/social/dizzy_friend_service.dart';
+import 'package:dizzy/services/cloud/cloud_client.dart';
 import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
 import 'package:dizzy/services/messaging/dm_outbox.dart';
@@ -33,12 +38,24 @@ class DirectMessagePage extends StatefulWidget {
 class _DirectMessagePageState extends State<DirectMessagePage> {
   final TextEditingController _textController = TextEditingController();
   final List<DizzyDirectMessage> _messages = [];
+  /// Message identity dedupe — history load and realtime inserts can
+  /// overlap, and the outbox retry path can re-deliver the same row.
+  final Set<String> _knownIds = {};
   bool _isSending = false;
   bool _partyBusy = false;
+
+  String? _myUid;
+  String _threadId = '';
+  RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
+    _myUid = DizzyFriendService.myUid;
+    _threadId = (_myUid != null && widget.recipientUid.isNotEmpty)
+        ? DizzySocialService.getThreadId(_myUid!, widget.recipientUid)
+        : '';
+    unawaited(_loadHistory());
     // Phase E2: admin feature flag — DMs paused → Easy English line.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -50,23 +67,57 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
         );
       }
     });
-    // Pre-populate with sample welcome / interactive media card message
-    _messages.add(
-      DizzyDirectMessage(
-        id: 'msg_welcome',
-        threadId: 'local',
-        senderId: widget.recipientUid,
-        clientMsgId: 'welcome_1',
-        kind: 'media_card',
-        body: 'Check this out! Wanna watch together?',
-        mediaRef: 'tmdb:movie:550',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      ),
+  }
+
+  /// Loads the real conversation from the server. The page previously
+  /// showed only a hardcoded sample card — sends went to the DB but
+  /// neither side ever saw them.
+  Future<void> _loadHistory() async {
+    if (_threadId.isEmpty) return;
+    final history = await DizzySocialService.loadThreadMessages(_threadId);
+    if (!mounted || history.isEmpty) return;
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(history);
+      for (final m in _messages) {
+        _remember(m);
+      }
+    });
+    _subscribe();
+  }
+
+  /// Live thread updates. Sends and receives now share one source of
+  /// truth; dedupe keeps history + realtime + retries from doubling rows.
+  void _subscribe() {
+    if (_channel != null || _threadId.isEmpty || !CloudClient.isReady) return;
+    _channel = DizzySocialService.subscribeToThread(
+      _threadId,
+      onMessage: (m) {
+        if (_isDuplicate(m) || !mounted) return;
+        _remember(m);
+        setState(() => _messages.add(m));
+      },
     );
   }
 
+  void _remember(DizzyDirectMessage m) {
+    if (m.id.isNotEmpty) _knownIds.add('id:${m.id}');
+    if (m.clientMsgId.isNotEmpty) _knownIds.add('cmid:${m.clientMsgId}');
+  }
+
+  bool _isDuplicate(DizzyDirectMessage m) =>
+      (m.id.isNotEmpty && _knownIds.contains('id:${m.id}')) ||
+      (m.clientMsgId.isNotEmpty &&
+          _knownIds.contains('cmid:${m.clientMsgId}'));
+
   @override
   void dispose() {
+    final channel = _channel;
+    _channel = null;
+    if (channel != null && CloudClient.isReady) {
+      unawaited(CloudClient.db.removeChannel(channel));
+    }
     _textController.dispose();
     super.dispose();
   }
@@ -187,9 +238,11 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
     );
   }
 
-  /// DM media card → real Watch Together: create a room, send the invite
-  /// as a DM (kind 'media_card', mediaRef carries the room), then open
-  /// the party lobby. Fail-soft, Easy English only.
+  /// DM media card → real Watch Together.
+  ///
+  /// Room invite (`mediaRef: 'party:CODE'`) → join THAT room — tapping
+  /// your friend's invite must take you to their room, not spin up a new
+  /// one. Any other card → create a fresh room and send the invite back.
   Future<void> _watchTogetherFromCard(DizzyDirectMessage msg) async {
     if (_partyBusy) return;
     if (!WatchPartyService.isAvailable) {
@@ -206,6 +259,31 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
       final ref = (msg.mediaRef != null && msg.mediaRef!.isNotEmpty)
           ? msg.mediaRef!
           : 'dm:${widget.recipientUsername}';
+
+      // Friend's invite: join their live room.
+      if (ref.startsWith('party:')) {
+        final roomId = ref.substring('party:'.length).trim();
+        final room = await WatchPartyService.joinRoom(roomId: roomId);
+        if (!mounted) return;
+        if (room == null) {
+          DizzyNotify.show(
+            context,
+            "Couldn't join — the room may have ended.",
+            tone: NotifyTone.warn,
+          );
+          return;
+        }
+        DizzyNotify.show(
+          context,
+          'Joined room ${room.roomId} 🎬',
+          tone: NotifyTone.success,
+        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const WatchPartyPage()));
+        return;
+      }
+
       final room = await WatchPartyService.createRoom(
         title: 'Watching with @${widget.recipientUsername}',
         isPrivate: false,
@@ -252,6 +330,16 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
     final hairline = isLight
         ? PrismLight.borderSubtle
         : Colors.white.withValues(alpha: 0.08);
+    final ref = msg.mediaRef ?? '';
+    final isPartyInvite = ref.startsWith('party:');
+    final roomCode = isPartyInvite ? ref.substring('party:'.length).trim() : null;
+    final title = isPartyInvite
+        ? 'Watch Together'
+        : (msg.body.isNotEmpty ? msg.body : 'Media invite');
+    final sub = isPartyInvite
+        ? 'Room $roomCode — tap to join.'
+        : 'Tap to watch together.';
+    final buttonLabel = isPartyInvite ? 'Join room' : 'Watch Together';
     return Container(
       constraints: const BoxConstraints(maxWidth: 320),
       margin: const EdgeInsets.symmetric(vertical: DizzySpace.xs),
@@ -281,7 +369,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Fight Club (1999)',
+                        title,
                         style: TextStyle(
                           color: ink,
                           fontSize: 14,
@@ -292,7 +380,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        msg.body,
+                        sub,
                         style: TextStyle(color: inkSoft, fontSize: 12),
                       ),
                     ],
@@ -325,7 +413,7 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
                         ),
                   const SizedBox(width: 6),
                   Text(
-                    _partyBusy ? 'Starting...' : 'Watch Together',
+                    _partyBusy ? 'Working...' : buttonLabel,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -466,7 +554,8 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
               itemCount: _messages.length,
               itemBuilder: (ctx, index) {
                 final msg = _messages[index];
-                final isMe = msg.senderId == 'me';
+                final isMe =
+                    _myUid != null && msg.senderId == _myUid;
                 if (msg.kind == 'media_card') {
                   return Align(
                     alignment: isMe

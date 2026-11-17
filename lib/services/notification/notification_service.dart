@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,6 +49,18 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
+  /// Tap hook for local banner taps. PushService installs it during init
+  /// so this renderer stays free of a push-service import (avoids a cycle):
+  /// [onTapData] receives the decoded data blob that rode in the banner.
+  static void Function(Map<String, dynamic> data)? onTapData;
+
+  /// Test seam for the image-card leg: replaces the poster download and the
+  /// documents directory so `bigPictureStyleForTest` stays unit-testable.
+  @visibleForTesting
+  static Future<Uint8List?> Function(String url)? imageFetchForTest;
+  @visibleForTesting
+  static Future<Directory> Function()? directoryForTest;
+
   static NotificationGate _gate = const NotificationGate();
   static bool _init = false;
   static bool _permGranted = false;
@@ -68,11 +84,31 @@ class NotificationService {
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(),
         ),
+        onDidReceiveNotificationResponse: _onTapForeground,
       );
       await _createChannels();
       _permGranted = await Permission.notification.isGranted;
     } catch (e) {
       _note('init degraded (inbox only): $e');
+    }
+  }
+
+  /// Foreground local-banner tap: decode the data blob that rode in the
+  /// banner payload and hand it to the installed [onTapData] hook (PushService
+  /// rebuilds the payload and opens title details). Fail-soft by design.
+  static Future<void> _onTapForeground(NotificationResponse response) async {
+    final raw = response.payload;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        final hook = onTapData;
+        if (hook != null) {
+          hook(Map<String, dynamic>.from(decoded));
+        }
+      }
+    } catch (e) {
+      _note('tap decode failed (soft): $e');
     }
   }
 
@@ -176,18 +212,90 @@ class NotificationService {
 
   // ── the single entry point triggers call ─────────────────────────────────
 
+  /// Downloads [poster] to a stable local file so the banner can render an
+  /// image card. Anything failing (no url, no network, no storage) degrades
+  /// to `null` and the banner shows plain text — never a crash.
+  static Future<String?> _posterFilePath(String poster) async {
+    if (poster.isEmpty) return null;
+    try {
+      Uint8List? bytes;
+      final override = imageFetchForTest;
+      if (override != null) {
+        bytes = await override(poster);
+      } else {
+        final res = await http
+            .get(Uri.parse(poster))
+            .timeout(const Duration(seconds: 5));
+        bytes = res.statusCode == 200 ? res.bodyBytes : null;
+      }
+      if (bytes == null || bytes.isEmpty) return null;
+      final overrideDir = directoryForTest;
+      final String dirPath;
+      if (overrideDir != null) {
+        dirPath = (await overrideDir()).path;
+      } else {
+        dirPath = (await getApplicationDocumentsDirectory()).path;
+      }
+      final sep = Platform.pathSeparator;
+      final name =
+          'poster_${sha1.convert(utf8.encode(poster)).toString().substring(0, 12)}.jpg';
+      final file = File(
+        dirPath.endsWith(sep) ? '$dirPath$name' : '$dirPath$sep$name',
+      );
+      await file.create(recursive: true);
+      await file.writeAsBytes(bytes, flush: true);
+      return file.path;
+    } catch (e) {
+      _note('poster image skipped (soft): $e');
+      return null;
+    }
+  }
+
+  /// Big-picture ("image card") style for a release push with a poster URL.
+  /// Visible-through-test: [bigPictureStyleForTest] exposes it for unit
+  /// tests without a platform channel.
+  static Future<StyleInformation?> _bigPictureStyle(String? poster) async {
+    final path = await _posterFilePath(poster ?? '');
+    if (path == null || path.isEmpty) return null;
+    return BigPictureStyleInformation(
+      FilePathAndroidBitmap(path),
+      largeIcon: FilePathAndroidBitmap(path),
+      contentTitle: null,
+      summaryText: null,
+    );
+  }
+
+  @visibleForTesting
+  static Future<StyleInformation?> bigPictureStyleForTest(
+    String? poster,
+  ) => _bigPictureStyle(poster);
+
   /// Records the event in the Center and, when policy allows, shows the
-  /// system banner.
+  /// system banner. When the data payload carries a poster URL the banner
+  /// renders as an FCM big-picture style image card (failed downloads
+  /// degrade to text).
   static Future<void> push(
     NotificationKind kind,
     String title,
     String body, {
     String? id,
+    Map<String, String>? dataPayload,
   }) async {
     await initialize();
     await NotificationInbox.add(title: title, body: body, kind: kind, id: id);
     if (!_gate.allows(kind, DateTime.now())) return;
     if (!_permGranted) return;
+    final data = dataPayload;
+    final dataJson =
+        (data == null || data.isEmpty) ? null : jsonEncode(data);
+    StyleInformation? style;
+    if (data != null) {
+      try {
+        style = await _bigPictureStyle(data['poster']);
+      } catch (e) {
+        _note('style for poster failed (soft): $e');
+      }
+    }
     try {
       await _plugin.show(
         id: _nextId++,
@@ -200,9 +308,11 @@ class NotificationService {
             channelDescription: _channelDesc[kind.key],
             importance: Importance.high,
             priority: Priority.defaultPriority,
+            styleInformation: style,
           ),
           iOS: const DarwinNotificationDetails(),
         ),
+        payload: dataJson,
       );
     } catch (e) {
       _note('show failed (soft): $e');
@@ -215,6 +325,9 @@ class NotificationService {
     _gate = gate ?? const NotificationGate();
     _permGranted = false;
     _permAsked = false;
+    onTapData = null;
+    imageFetchForTest = null;
+    directoryForTest = null;
   }
 
   @visibleForTesting

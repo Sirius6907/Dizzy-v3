@@ -20,6 +20,7 @@ import './watch_resolve_controller.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/scraper/sites/tmdb_helper.dart';
 import '../../services/scraper/stream_scraper.dart';
+import '../../services/stream/source_ranker.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../widgets/prism/prism_chip.dart';
@@ -323,6 +324,10 @@ class _WatchScreenState extends State<WatchScreen>
       );
     } else {
       list.sort((a, b) {
+        // The promoted pair (RiveStream / FlaxMovies) leads the list for
+        // every title — they are the only providers verified live.
+        final byTier = SourceRanker.tierOf(a).compareTo(SourceRanker.tierOf(b));
+        if (byTier != 0) return byTier;
         final orderA = addonOrder[a.addonName.toLowerCase()] ?? 999;
         final orderB = addonOrder[b.addonName.toLowerCase()] ?? 999;
         if (orderA != orderB) {

@@ -37,12 +37,30 @@ class DizzyFriendService {
   // ── Core Operations ──────────────────────────────────────────
 
   /// Send a friend request to [recipientId].
+  ///
+  /// Mutual-safe: if [recipientId] already has a pending request toward us,
+  /// the two pending rows collapse into one accepted friendship instead of
+  /// leaving both users staring at "Sent ✓" forever.
   static Future<bool> sendRequest(String recipientId) async {
     if (!isReady) return false;
     final uid = myUid;
     if (uid == null || uid == recipientId) return false;
 
     try {
+      // Reverse pending row? Accept it — this is a mutual add.
+      final reverse = await CloudClient.db.from('friendships').select().eq(
+            'requester_id',
+            recipientId,
+          ).eq('addressee_id', uid).eq('status', 'pending');
+      if (reverse.isNotEmpty) {
+        await CloudClient.db.from('friendships').update({
+          'status': 'accepted',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('requester_id', recipientId).eq('addressee_id', uid);
+        refreshAndNotify();
+        return true;
+      }
+
       await CloudClient.db.from('friendships').upsert({
         'requester_id': uid,
         'addressee_id': recipientId,
@@ -58,6 +76,10 @@ class DizzyFriendService {
   }
 
   /// Accept a pending friend request from [senderId].
+  ///
+  /// Also settles our own outgoing pending row toward [senderId] when one
+  /// exists, so the other side never keeps seeing "Sent ✓" after a mutual
+  /// add.
   static Future<bool> acceptRequest(String senderId) async {
     if (!isReady) return false;
     final uid = myUid;
@@ -71,10 +93,23 @@ class DizzyFriendService {
 
       if (rows.isEmpty) return false;
 
+      final now = DateTime.now().toIso8601String();
       await CloudClient.db.from('friendships').update({
         'status': 'accepted',
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': now,
       }).eq('requester_id', senderId).eq('addressee_id', uid);
+
+      // Settle our own outgoing pending row toward the same user, if any.
+      final mine = await CloudClient.db.from('friendships').select().eq(
+            'requester_id',
+            uid,
+          ).eq('addressee_id', senderId).eq('status', 'pending');
+      if (mine.isNotEmpty) {
+        await CloudClient.db.from('friendships').update({
+          'status': 'accepted',
+          'updated_at': now,
+        }).eq('requester_id', uid).eq('addressee_id', senderId);
+      }
       refreshAndNotify();
       return true;
     } catch (e) {
@@ -161,22 +196,36 @@ class DizzyFriendService {
 
   /// Get the relationship status with another user from the current user's perspective.
   /// Returns null if no relationship exists.
+  ///
+  /// `accepted` wins over `pending`: after a mutual add there can be two
+  /// rows between the same pair, and the friendship must display as a
+  /// friendship, not as a stale request.
   static FriendStatus? getStatus(String otherUserId) {
     if (!isReady) return null;
     final uid = myUid;
     if (uid == null) return null;
+    return statusFor(uid, friendships.value, otherUserId);
+  }
 
-    for (final f in friendships.value) {
-      if (f.requesterId == uid && f.addresseeId == otherUserId) {
-        return f.status;
-      }
-      if (f.addresseeId == uid && f.requesterId == otherUserId) {
-        // Incoming request: from our perspective it's 'pending' (they sent to us)
-        if (f.status == FriendStatus.pending) return FriendStatus.pending;
-        return f.status;
-      }
+  /// Pure resolver — [FriendStatus.accepted] wins over `pending`: after a
+  /// mutual add there can be two rows between the same pair, and the
+  /// friendship must display as a friendship, not as a stale request.
+  /// Split from [getStatus] so it is unit-testable without a cloud session.
+  static FriendStatus? statusFor(
+    String uid,
+    List<Friendship> rows,
+    String otherUserId,
+  ) {
+    FriendStatus? fallback;
+    for (final f in rows) {
+      final involved =
+          (f.requesterId == uid && f.addresseeId == otherUserId) ||
+          (f.addresseeId == uid && f.requesterId == otherUserId);
+      if (!involved) continue;
+      if (f.status == FriendStatus.accepted) return FriendStatus.accepted;
+      fallback ??= f.status;
     }
-    return null;
+    return fallback;
   }
 
   /// List all accepted friends.
@@ -220,10 +269,69 @@ class DizzyFriendService {
         .toList();
   }
 
-  /// Subscribe to real-time friendship changes (insert events).
-  /// Returns null if user is not authenticated (fail-soft).
+  // ── Realtime ─────────────────────────────────────────────────
+
+  static RealtimeChannel? _realtimeChannel;
+  static Timer? _refetchDebounce;
+
+  /// Live friendship sync. Subscribes to INSERT **and** UPDATE events on
+  /// `friendships` (RLS already limits events to rows where we are a
+  /// participant) and re-fetches the full list on any change — the server
+  /// list is the single source of truth, so no client-side row merging
+  /// can drift. This is what makes "Sent ✓" flip to "Chat" the moment the
+  /// other user accepts.
+  ///
+  /// Safe to call repeatedly: an existing channel is reused.
+  static void startRealtime() {
+    if (!isReady) return;
+    final uid = myUid;
+    if (uid == null) return;
+    if (_realtimeChannel != null) return;
+
+    _realtimeChannel = CloudClient.db
+        .channel('friendships:$uid')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'friendships',
+          callback: (_) => _refetchSoon(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'friendships',
+          callback: (_) => _refetchSoon(),
+        )
+        .subscribe();
+  }
+
+  /// Stop the realtime channel (call when the session ends).
+  static Future<void> stopRealtime() async {
+    _refetchDebounce?.cancel();
+    _refetchDebounce = null;
+    final channel = _realtimeChannel;
+    _realtimeChannel = null;
+    if (channel == null || !CloudClient.isReady) return;
+    try {
+      await CloudClient.db.removeChannel(channel);
+    } catch (_) {}
+  }
+
+  /// Burst-safe refetch: many events in quick succession (accept + settle,
+  /// block + delete …) trigger exactly one network read.
+  static void _refetchSoon() {
+    _refetchDebounce?.cancel();
+    _refetchDebounce = Timer(const Duration(milliseconds: 300), () {
+      unawaited(loadFriendships());
+    });
+  }
+
+  /// Subscribe to raw friendship change events.
+  ///
+  /// Kept for tests and custom callers; prefer [startRealtime], which also
+  /// refetches the shared notifier on every event.
   static RealtimeChannel? subscribeToFriendshipChanges({
-    required void Function(Friendship) onChange,
+    void Function(Friendship)? onChange,
   }) {
     final uid = myUid;
     if (uid == null) {
@@ -231,17 +339,54 @@ class DizzyFriendService {
       return null;
     }
 
-    return CloudClient.db.channel('friendships:$uid').onPostgresChanges(
-      event: PostgresChangeEvent.insert,
-      schema: 'public',
-      table: 'friendships',
-      callback: (payload) {
-        final row = payload.newRecord;
-        if (row.isNotEmpty) {
-          onChange(Friendship.fromJson(row));
-        }
-      },
-    ).subscribe();
+    return CloudClient.db
+        .channel('friendships-raw:$uid')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'friendships',
+          callback: (payload) {
+            final row = payload.newRecord;
+            if (row.isNotEmpty) onChange?.call(Friendship.fromJson(row));
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'friendships',
+          callback: (payload) {
+            final row = payload.newRecord;
+            if (row.isNotEmpty) onChange?.call(Friendship.fromJson(row));
+          },
+        )
+        .subscribe();
+  }
+
+  // ── Perspective helpers (UI display logic) ─────────────────────
+
+  /// True when [otherUserId] has a pending request toward us — the search
+  /// tab must offer "Accept", not "Sent ✓".
+  static bool isIncomingPending(String otherUserId) {
+    if (!isReady) return false;
+    final uid = myUid;
+    if (uid == null) return false;
+    return incomingPendingFor(uid, friendships.value, otherUserId);
+  }
+
+  /// Pure resolver — true when [otherUserId] has a pending request toward
+  /// [uid]. Split from [isIncomingPending] so it is unit-testable without
+  /// a cloud session.
+  static bool incomingPendingFor(
+    String uid,
+    List<Friendship> rows,
+    String otherUserId,
+  ) {
+    return rows.any(
+      (f) =>
+          f.status == FriendStatus.pending &&
+          f.addresseeId == uid &&
+          f.requesterId == otherUserId,
+    );
   }
 
   // ── Internal ─────────────────────────────────────────────────

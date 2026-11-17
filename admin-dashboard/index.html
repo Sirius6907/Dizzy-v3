@@ -65,6 +65,7 @@
       <button class="nav-btn" role="tab" data-s="moderation" aria-selected="false" onclick="show('moderation')"><span class="ni">🚩</span><span class="nl">Moderation</span><span class="nav-badge" id="navReports" hidden>0</span></button>
       <button class="nav-btn" role="tab" data-s="scrapers" aria-selected="false" onclick="show('scrapers')"><span class="ni">🎬</span><span class="nl">Scrapers</span></button>
       <button class="nav-btn" role="tab" data-s="users" aria-selected="false" onclick="show('users')"><span class="ni">📡</span><span class="nl">Fleet</span></button>
+      <button class="nav-btn" role="tab" data-s="usernames" aria-selected="false" onclick="show('usernames')"><span class="ni">🔤</span><span class="nl">Usernames</span></button>
       <button class="nav-btn" role="tab" data-s="push" aria-selected="false" onclick="show('push')"><span class="ni">📣</span><span class="nl">Announcements</span></button>
       <button class="nav-btn" role="tab" data-s="config" aria-selected="false" onclick="show('config')"><span class="ni">⚙️</span><span class="nl">Config</span></button>
       <button class="nav-btn" role="tab" data-s="audit" aria-selected="false" onclick="show('audit')"><span class="ni">🧾</span><span class="nl">Audit</span></button>
@@ -304,6 +305,23 @@
             </div>
           </div>
           <div id="findUserList">Search a user to see their devices, sessions and identity trail.</div>
+        </div>
+      </section>
+
+      <!-- ── USERNAMES (v1.3.5) ── -->
+      <section id="s-usernames" role="tabpanel" aria-label="Usernames">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Username ownership</h3><p class="sub">Who holds each @name · a guest with no device row left the name behind · release or move it</p></div>
+            <div class="card-a">
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="unSearch" placeholder="@username…" onkeydown="if(event.key==='Enter')loadUsernames()"></div>
+              <button class="btn btn-primary btn-sm" onclick="loadUsernames()">Search</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table id="unamesTbl">
+            <thead><tr><th>Username</th><th>Owner</th><th>Session</th><th>Devices</th><th>Last seen</th><th>Action</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
         </div>
       </section>
 

@@ -347,7 +347,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
                     return Padding(
                       key: ValueKey(addon.manifest.id),
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _AddonCard(
+                      child: AddonCard(
                         index: index,
                         totalCount: addons.length,
                         addon: addon,
@@ -403,7 +403,7 @@ class _AddonsSettingsPageState extends State<AddonsSettingsPage> {
 // Addon Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _AddonCard extends StatelessWidget {
+class AddonCard extends StatelessWidget {
   final int index;
   final int totalCount;
   final InstalledAddon addon;
@@ -419,7 +419,8 @@ class _AddonCard extends StatelessWidget {
   onUpdateFeature;
   final VoidCallback onRemove;
 
-  const _AddonCard({
+  const AddonCard({
+    super.key,
     required this.index,
     required this.totalCount,
     required this.addon,
@@ -483,16 +484,25 @@ class _AddonCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header row
-          Row(
-            children: [
+          LayoutBuilder(
+            builder: (context, headerConstraints) {
+              // Very narrow phones (≤300dp of card width) cannot fit the
+              // drag handle, priority badge, icon, name, quick-move
+              // buttons and the enable switch in one row — the row
+              // overflowed by 25px (proven on-device, 2026-11-13). The
+              // quick-move buttons are dropped there; the drag handle
+              // still reorders.
+              final compact = headerConstraints.maxWidth < 300;
+              return Row(
+                children: [
               // Reorder Drag Handle
               ReorderableDragStartListener(
                 index: index,
                 child: MouseRegion(
                   cursor: SystemMouseCursors.grab,
                   child: Container(
-                    padding: const EdgeInsets.all(6),
-                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.all(4),
+                    margin: const EdgeInsets.only(right: 6),
                     decoration: BoxDecoration(
                       color: isLight
                           ? Colors.black.withValues(alpha: 0.04)
@@ -510,8 +520,8 @@ class _AddonCard extends StatelessWidget {
 
               // Priority Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                margin: const EdgeInsets.only(right: 6),
                 decoration: BoxDecoration(
                   color: providerColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -531,9 +541,9 @@ class _AddonCard extends StatelessWidget {
 
               // Addon Icon
               Container(
-                width: 38,
-                height: 38,
-                padding: const EdgeInsets.all(4),
+                width: 32,
+                height: 32,
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: providerColor.withValues(alpha: 0.14),
@@ -595,22 +605,30 @@ class _AddonCard extends StatelessWidget {
                         ),
                         if (isBuiltIn) ...[
                           const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: providerColor.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              isP2p ? 'BUILT-IN TORRENT' : 'BUILT-IN HTTP',
-                              style: TextStyle(
-                                fontSize: PrismType.micro,
-                                fontWeight: FontWeight.w800,
-                                color: isLight ? inkSoft : providerColor,
-                                letterSpacing: 0.5,
+                          // The badge must be able to shrink: on a 390dp
+                          // phone the name column is narrow and a fixed
+                          // badge overflowed the row by 72px (proven
+                          // on-device 2026-11-13).
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: providerColor.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(
+                                isP2p ? 'BUILT-IN TORRENT' : 'BUILT-IN HTTP',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: PrismType.micro,
+                                  fontWeight: FontWeight.w800,
+                                  color: isLight ? inkSoft : providerColor,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
                           ),
@@ -637,36 +655,37 @@ class _AddonCard extends StatelessWidget {
               ),
 
               // Up/Down Quick Move Buttons
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 22),
-                    color: onMoveUp != null ? inkSoft : inkFaint,
-                    onPressed: onMoveUp,
-                    tooltip: 'Move up in priority',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 28,
-                      minHeight: 28,
+              if (!compact)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 22),
+                      color: onMoveUp != null ? inkSoft : inkFaint,
+                      onPressed: onMoveUp,
+                      tooltip: 'Move up in priority',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 22,
+                    IconButton(
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 22,
+                      ),
+                      color: onMoveDown != null ? inkSoft : inkFaint,
+                      onPressed: onMoveDown,
+                      tooltip: 'Move down in priority',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
                     ),
-                    color: onMoveDown != null ? inkSoft : inkFaint,
-                    onPressed: onMoveDown,
-                    tooltip: 'Move down in priority',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 28,
-                      minHeight: 28,
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(width: 4),
 
               // Master Enable/Disable Switch
@@ -675,7 +694,9 @@ class _AddonCard extends StatelessWidget {
                 onChanged: onToggle,
                 activeColor: providerColor,
               ),
-            ],
+                ],
+              );
+            },
           ),
 
           // Description

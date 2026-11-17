@@ -3,6 +3,7 @@ import 'package:html/parser.dart' as parser;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import '../../../utils/torrent/parse_torrent_title.dart';
+import '../../../utils/torrent/title_core_match.dart';
 import '../../errors/app_log.dart';
 
 class KnabenScraper extends StreamScraper {
@@ -23,7 +24,12 @@ class KnabenScraper extends StreamScraper {
   }) async {
     final sources = <StreamSource>[];
 
-    String query = title.trim();
+    // Search the CORE name ("Dahaan"), not the full catalogue name
+    // ("Dahaan: The Evil Within"). The full string matches nothing in the
+    // index, so every subtitled title used to come back with ZERO
+    // torrents - a measured "sources kam" cause for regional titles.
+    final coreTitle = TitleCoreMatch.core(title);
+    String query = coreTitle.isEmpty ? title.trim() : coreTitle;
     if (type == 'movie' && year != null) {
       query += ' $year';
     } else if (type == 'series' && season != null) {
@@ -51,10 +57,6 @@ class KnabenScraper extends StreamScraper {
       final rows = document.querySelectorAll('table tbody tr');
 
       final titleParser = ParseTorrentTitle();
-      final searchTitleLower = title.toLowerCase().replaceAll(
-        RegExp(r'[^a-z0-9]'),
-        '',
-      );
 
       for (final row in rows) {
         final tdList = row.querySelectorAll('td');
@@ -86,14 +88,22 @@ class KnabenScraper extends StreamScraper {
 
         // Filter out bad matches using ParseTorrentTitle
         final parsed = titleParser.parse(torrentName);
-        final parsedTitle = (parsed['title'] ?? '').toString().toLowerCase();
-        final cleanParsedTitle = parsedTitle.replaceAll(
-          RegExp(r'[^a-z0-9]'),
-          '',
-        );
+        final parsedTitle = (parsed['title'] ?? '').toString();
 
         // 1. Exact show/movie match filter
-        if (cleanParsedTitle != searchTitleLower) {
+        // The release is indexed under its CORE name, and the catalogue
+        // title may carry a subtitle ("Dahaan: The Evil Within" vs
+        // "Dahaan (2026)"), so the two are compared on their cores. The
+        // year (when the release states one) has to agree too - that is
+        // what keeps a same-named older film out.
+        final releaseYear = parsed['year'];
+        final candidateYear = releaseYear is int ? releaseYear : null;
+        if (!TitleCoreMatch.matches(
+          requested: title,
+          candidate: parsedTitle,
+          year: year,
+          candidateYear: candidateYear,
+        )) {
           continue;
         }
 

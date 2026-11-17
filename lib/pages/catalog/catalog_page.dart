@@ -12,7 +12,13 @@ import '../../widgets/movie/movie_card.dart';
 class CatalogPage extends StatefulWidget {
   final MovieSection section;
 
-  const CatalogPage({super.key, required this.section});
+  /// Optional grouped sections of the SAME streaming brand (Netflix movies +
+  /// Netflix series …). When non-empty the page renders a Movies/Series
+  /// switcher and [section] is read from the active entry instead — so single
+  /// callers keep the exact prior behavior.
+  final List<MovieSection> sections;
+
+  const CatalogPage({super.key, required this.section, this.sections = const []});
 
   @override
   State<CatalogPage> createState() => _CatalogPageState();
@@ -35,6 +41,16 @@ class _CatalogPageState extends State<CatalogPage> {
   bool _canScrollGenresLeft = false;
   bool _canScrollGenresRight = true;
   bool _isHoveringGenres = false;
+
+  int _activeIndex = 0;
+
+  /// The section currently feeding the grid: the brand's active content type
+  /// when multiple were passed in, otherwise the single requested section.
+  MovieSection get _section => widget.sections.isEmpty
+      ? widget.section
+      : widget.sections[_activeIndex];
+
+  bool get _hasBrandSwitcher => widget.sections.length > 1;
 
   @override
   void initState() {
@@ -98,33 +114,48 @@ class _CatalogPageState extends State<CatalogPage> {
 
     if (!_hasMore) return;
 
+    // Part A (2026-11-12): this page used to clear and re-fetch from the
+    // network even though home had already handed us a full first page of
+    // movies, so one transient fetch failure rendered an empty page (the
+    // "no data" card report). Seed the grid with the carried first page;
+    // the skip-based pagination below naturally continues from the next
+    // page (skip = _items.length), and a failed fetch leaves the seeded
+    // grid visible instead of an error state.
+    if (refresh &&
+        !_isSearching &&
+        _selectedGenre == null &&
+        _items.isEmpty &&
+        _section.movies.isNotEmpty) {
+      _items.addAll(_section.movies);
+    }
+
     setState(() => _isLoading = true);
 
     try {
       List<Movie> newItems = [];
 
-      if (_isSearching && _searchQuery.isNotEmpty) {
-        // Search usually doesn't support pagination in Stremio natively in the same way,
-        // but we'll try to fetch it.
-        if (refresh) {
-          newItems = await MetadataService.search(
-            baseUrl: widget.section.addonBaseUrl,
-            type: widget.section.contentType,
-            catalogId: widget.section.catalog.id,
-            query: _searchQuery,
+        if (_isSearching && _searchQuery.isNotEmpty) {
+          // Search usually doesn't support pagination in Stremio natively in the same way,
+          // but we'll try to fetch it.
+          if (refresh) {
+            newItems = await MetadataService.search(
+              baseUrl: _section.addonBaseUrl,
+              type: _section.contentType,
+              catalogId: _section.catalog.id,
+              query: _searchQuery,
+            );
+            _hasMore =
+                false; // Usually search returns all relevant results or doesn't support skip
+          }
+        } else {
+          newItems = await MetadataService.fetchCatalog(
+            baseUrl: _section.addonBaseUrl,
+            type: _section.contentType,
+            catalogId: _section.catalog.id,
+            genre: _selectedGenre,
+            skip: _items.length,
           );
-          _hasMore =
-              false; // Usually search returns all relevant results or doesn't support skip
         }
-      } else {
-        newItems = await MetadataService.fetchCatalog(
-          baseUrl: widget.section.addonBaseUrl,
-          type: widget.section.contentType,
-          catalogId: widget.section.catalog.id,
-          genre: _selectedGenre,
-          skip: _items.length,
-        );
-      }
 
       if (!mounted) return;
 
@@ -166,6 +197,39 @@ class _CatalogPageState extends State<CatalogPage> {
       _searchController.clear();
     });
     _loadItems(refresh: true);
+  }
+
+  /// Switches between the same brand's content types (Netflix → Movies /
+  /// Series …). Resets filters/swipe state and reloads from the chosen
+  /// brand catalog.
+  void _onTypeSelected(int index) {
+    if (index >= widget.sections.length || index == _activeIndex) return;
+    setState(() {
+      _activeIndex = index;
+      _selectedGenre = null;
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+    _loadItems(refresh: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateGenreScrollButtons();
+    });
+  }
+
+  /// Chip label for a brand section: Movies / Series; other catalog types
+  /// keep their capitalized raw type.
+  String _contentLabel(MovieSection s) {
+    switch (s.contentType.toLowerCase()) {
+      case 'movie':
+        return 'Movies';
+      case 'series':
+      case 'tv':
+        return 'Series';
+      default:
+        if (s.contentType.isEmpty) return 'Catalog';
+        return '${s.contentType.characters.first.toUpperCase()}${s.contentType.substring(1)}';
+    }
   }
 
   void _onSearchSubmitted(String query) {
@@ -210,9 +274,13 @@ class _CatalogPageState extends State<CatalogPage> {
     final isDesktop = MediaQuery.sizeOf(context).width >= 800;
 
     // Calculate safe top padding for grid based on if genres are available
-    final hasGenres = widget.section.catalog.genres.isNotEmpty && !_isSearching;
+    final hasGenres = _section.catalog.genres.isNotEmpty && !_isSearching;
     final gridTopPadding =
-        topPadding + kToolbarHeight + (hasGenres ? 60 : 20) + 20;
+        topPadding +
+        kToolbarHeight +
+        (hasGenres ? 60 : 20) +
+        (_hasBrandSwitcher ? 44 : 0) +
+        20;
 
     return Scaffold(
       backgroundColor: palette.scaffoldBackgroundColor,
@@ -309,7 +377,7 @@ class _CatalogPageState extends State<CatalogPage> {
                             if (!_isSearching)
                               Expanded(
                                 child: Text(
-                                  widget.section.title,
+                                  _section.title,
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
@@ -347,7 +415,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                 ),
                               ),
                             if (!_isSearching &&
-                                widget.section.catalog.supportsSearch)
+                                _section.catalog.supportsSearch)
                               IconButton(
                                 icon: const Icon(Icons.search_rounded),
                                 color: inkSoft,
@@ -362,6 +430,28 @@ class _CatalogPageState extends State<CatalogPage> {
                           ],
                         ),
                       ),
+
+                      // Brand content-type switcher (Movies / Series) — one
+                      // logo, ALL of the brand's catalogs behind it.
+                      if (_hasBrandSwitcher)
+                        SizedBox(
+                          height: 44,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: widget.sections.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: 8),
+                            itemBuilder: (context, index) => _GenreChip(
+                              label: _contentLabel(widget.sections[index]),
+                              isSelected: index == _activeIndex,
+                              onTap: () => _onTypeSelected(index),
+                            ),
+                          ),
+                        ),
 
                       // Genres Row
                       if (hasGenres)
@@ -382,8 +472,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                     vertical: 8,
                                   ),
                                   physics: const BouncingScrollPhysics(),
-                                  itemCount:
-                                      widget.section.catalog.genres.length + 1,
+                                  itemCount: _section.catalog.genres.length + 1,
                                   separatorBuilder: (context, index) =>
                                       const SizedBox(width: 8),
                                   itemBuilder: (context, index) {
@@ -394,8 +483,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                         onTap: () => _onGenreSelected(null),
                                       );
                                     }
-                                    final genre = widget
-                                        .section
+                                    final genre = _section
                                         .catalog
                                         .genres[index - 1];
                                     return _GenreChip(

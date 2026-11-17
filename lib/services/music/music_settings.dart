@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home_page_settings.dart';
+import 'music_mood_filter.dart';
 
 enum MusicMiniPlayerPreset {
   floatingGlassIsland(
@@ -153,6 +154,12 @@ abstract final class MusicSettings {
   static const _keyEnableLiquidGlass = 'music_enable_liquid_glass';
   static const _keyShowLyricsDrawer = 'music_show_lyrics_drawer';
   static const _keyShowQueueDrawer = 'music_show_queue_drawer';
+  static const _keySelectedMood = 'music_selected_mood';
+
+  /// Set once the listener taps a mood chip themselves. While unset, the
+  /// music home follows the onboarding default mood (the wizard promises
+  /// "the mood Music opens with"); a manual chip pick always wins.
+  static const _keyMoodExplicit = 'music_selected_mood_explicit';
 
   // Atmosphere Notifiers
   static final ValueNotifier<bool> enableAmbientLights = ValueNotifier<bool>(
@@ -194,6 +201,9 @@ abstract final class MusicSettings {
   // Fullscreen Player Notifiers
   static final ValueNotifier<MusicFullscreenPreset> selectedFullscreenPreset =
       ValueNotifier<MusicFullscreenPreset>(MusicFullscreenPreset.vinylStudio);
+  static final ValueNotifier<MusicMood> selectedMood = ValueNotifier<MusicMood>(
+    MusicMood.any,
+  );
   static final ValueNotifier<MusicSeekbarStyle> customSeekbarStyle =
       ValueNotifier<MusicSeekbarStyle>(MusicSeekbarStyle.waveformEqualizer);
   static final ValueNotifier<MusicPlayButtonStyle> customPlayButtonStyle =
@@ -294,6 +304,13 @@ abstract final class MusicSettings {
     enableLiquidGlass.value = prefs.getBool(_keyEnableLiquidGlass) ?? true;
     showLyricsDrawer.value = prefs.getBool(_keyShowLyricsDrawer) ?? true;
     showQueueDrawer.value = prefs.getBool(_keyShowQueueDrawer) ?? true;
+
+    final moodStr = prefs.getString(_keySelectedMood);
+    selectedMood.value = MusicMood.values.firstWhere(
+      (m) => m.name == moodStr,
+      orElse: () => MusicMood.any,
+    );
+
     crossfadeSeconds.value = prefs.getDouble('music_crossfade_secs') ?? 3.0;
     enableGaplessPlayback.value = prefs.getBool('music_gapless') ?? true;
     enableSmartVolumeNormalization.value = prefs.getBool('music_norm') ?? true;
@@ -418,6 +435,36 @@ abstract final class MusicSettings {
     _notify();
   }
 
+  static Future<void> setSelectedMood(MusicMood mood) async {
+    if (selectedMood.value == mood) return;
+    selectedMood.value = mood;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keySelectedMood, mood.name);
+    await prefs.setBool(_keyMoodExplicit, true);
+    _notify();
+  }
+
+  /// Applies the onboarding default mood to the home chip unless the
+  /// listener has explicitly picked a chip. [force] is used right after
+  /// the wizard saves, where the choice IS the listener's intent.
+  static Future<void> applyDefaultMood(
+    MusicMood mood, {
+    bool force = false,
+  }) async {
+    if (mood == MusicMood.any) return;
+    final prefs = await SharedPreferences.getInstance();
+    final explicit = prefs.getBool(_keyMoodExplicit) ?? false;
+    if (explicit && !force) return;
+    if (selectedMood.value != mood) {
+      selectedMood.value = mood;
+      await prefs.setString(_keySelectedMood, mood.name);
+    }
+    if (force) {
+      await prefs.setBool(_keyMoodExplicit, false);
+    }
+    _notify();
+  }
+
   static Future<void> reorderMiniComponents(int oldIndex, int newIndex) async {
     var index = newIndex;
     if (oldIndex < index) {
@@ -470,6 +517,8 @@ abstract final class MusicSettings {
     await prefs.remove(_keyCustomArtworkStyle);
     await prefs.remove(_keyEnableLiquidGlass);
     await prefs.remove(_keyComponentOrderFullscreen);
+    await prefs.remove(_keySelectedMood);
+    await prefs.remove(_keyMoodExplicit);
 
     enableAmbientLights.value = true;
     ambientLightPattern.value = AmbientLightPattern.dualOrbs;
@@ -492,6 +541,7 @@ abstract final class MusicSettings {
     customHoverEffect.value = MusicHoverEffect.glassRipple;
     customArtworkStyle.value = MusicArtworkStyle.vinylSpinningDisc;
     enableLiquidGlass.value = true;
+    selectedMood.value = MusicMood.any;
     crossfadeSeconds.value = 3.0;
     enableGaplessPlayback.value = true;
     enableSmartVolumeNormalization.value = true;

@@ -2,7 +2,103 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
-## [1.3.3+1034] — 2026-10-29 — "Accounts, Support, Sound"
+## [1.3.5+1036] - 2026-11-17 - "The Two Sources"
+
+### The app answers from RiveStream and FlaxMovies only
+- **Every movie and episode resolves through the verified pair** — all
+  other built-in scrapers (plain HTTP, embed and torrent) are held back at
+  registration. Nothing is deleted: a scraper is re-enabled with a
+  one-line edit. Torrents stay available through the addons you turn on.
+- **The result is speed and completeness** — no more waiting on a race
+  between forty scrapers that mostly fail; the owner's manual test reports
+  all content playable and fast, without the previous multi-source
+  failure style failures.
+
+### A ranker you can interrogate
+- **One definition of a torrent, one text matcher, named weights** — the
+  ranking rules were rewritten so the same classification is used by the
+  tier order, the score and the failover chain (they previously carried
+  three separate copies that could drift).
+- **`explain()`** — every point of a source's score is now attributable by
+  name (addon history, debrid, instant-play, failure penalty …), so "why
+  did this source autoplay" is answerable without re-deriving arithmetic.
+
+### The probe tool plays everything
+- The source-probe exe (`tool/player_probe`) now plays every shape it
+  lists — mp4, mkv, HLS, extension-less FILE links, and embeds through the
+  app's own ad-blocked webview with automatic mpv handoff.
+
+### The resolver finally works (this is the "few sources" fix)
+- **The app reaches the resolver again** - the resolve call sent only an
+  `apikey` to an edge function that verifies JWTs, so every call came back
+  `401` and the app silently used the weaker fallback. The bearer token is
+  sent now.
+- **The right film, not a film with the same name** - the resolver matched
+  on the title name alone. On the 50 latest Odia movies that answered 30
+  titles, 10 were a completely different film (a Spanish "GAME OVER" for a
+  2026 Odia request, a Japanese "Monster", a Korean "Midnight"). The year
+  and the language are part of the answer now, and a wrong match is refused
+  instead of played.
+- **Regional titles resolve at all** - TMDB's search cannot see most
+  regional titles (18 of 20 sampled Odia films return zero hits), so a new
+  title corpus indexes the regional catalogue - Hindi, Telugu, Malayalam,
+  Kannada, Odia and anime - and the resolver reads it first. It is built
+  from the same feed the app already shows, so it needs no extra data.
+- **The year travels with the request** - the API always accepted it, the
+  call site dropped it.
+
+### More sources, not fewer wrong ones
+- **Torrent releases are matched on their real name** - a release is
+  indexed as "Dahaan (2026)", the catalogue calls it "Dahaan: The Evil
+  Within", and the old filter threw the correct release away. The name is
+  compared on its core now, with the release year as the guard, so a short
+  name can never be answered by a different film.
+
+### The catalogue
+- **A "latest releases" feed** - ordered by the day a title actually came
+  out, per language, instead of by popularity, with a nightly warm so the
+  rows are already there in the morning.
+
+### Friends and DMs finally work end to end
+- **Friend status updates live** — when someone accepts your request your
+  "Sent ✓" turns into a "Chat" button the moment it happens (the app only
+  listened for new requests, never for accepts, and no screen was even
+  attached to the listener). Resume also refetches the friend list.
+- **DMs are real now** — the chat page shows the actual conversation
+  history from the server, receives messages live, and your own messages
+  render on your side (they all used to render as incoming). The fake
+  sample card is gone.
+- **Tap a friend's Watch invite → you join their room** — inviting no
+  longer creates a second room on the other side.
+- **Real names instead of gibberish** — friends and pending requests show
+  the @username the person signed up with (a new server resolver replaces
+  the `friend_` + random letters fallback).
+- **Mutual adds settle themselves** — if you and a friend request each
+  other at the same time, one Accept makes both sides friends instead of
+  both sitting on "Sent ✓" forever.
+
+### Verified
+- `flutter analyze`: no issues. `flutter test`: 1606 passed, 26 skipped,
+  0 failed (the slow live bulk probe stays excluded).
+- The resolver change is measured against the deployed function on the
+  owner's own 50-title list: 20 right / 10 wrong / 20 unanswered before,
+  **22 right / 5 wrong / 23 unanswered** after - the wrong answers are
+  half, and the five that remain are titles the app's own search had
+  already matched to a different film.
+
+## [1.3.4+1035] - 2026-11-06 - "Verified Sources"
+
+### Sources that are actually the right episode
+- **A relevance gate** - a provider answering a different show, a
+  different year or a different episode is rejected instead of played.
+- **Verified stream addons by default** - Torrentio, TorrentsDB and
+  AcuAnime, with a Kitsu fallback for anime.
+- **Torrents warm up before playback** - a decoy-file guard, a 2 MB
+  warm-up, and torrent-only autoplay when there is no HTTP source.
+- **Assistant logs per user** - the support assistant records what it
+  answered, with a global cap on the model budget.
+
+## [1.3.3+1034] - 2026-10-29 - "Accounts, Support, Sound"
 
 ### Accounts that survive a reinstall
 - **First-run @username gate** — the name is asked once, right after the intro, with a live "is this free?" check. A reinstalled device offers the previous name ("Welcome back, @name?") instead of silently creating a second, duplicate account; a name is the server truth, never a local first-launch flag.

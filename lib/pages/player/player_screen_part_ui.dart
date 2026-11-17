@@ -83,6 +83,14 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                     ),
                   ],
                 )
+              : _embedActive
+              ? SizedBox.expand(
+                  child: EmbedWebviewPlayer(
+                    source: _currentSource,
+                    onMediaCaptured: _onEmbedMediaCaptured,
+                    onGiveUp: _onEmbedGaveUp,
+                  ),
+                )
               : SizedBox.expand(
                   child: ValueListenableBuilder<int>(
                     valueListenable: PlayerSettings.changeNotifier,
@@ -305,7 +313,7 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
                       return PlayerTransport(
                         isPlaying: _isPlaying,
                         position: _position,
-                        duration: _duration,
+                        duration: _uiDuration,
                         buffered: buffered,
                         positionListenable: _positionNotifier,
                         bufferedListenable: _bufferNotifier,
@@ -441,6 +449,7 @@ extension _PlayerScreenStateUiBuilders on _PlayerScreenState {
               selectedIndex: _selectedAudioTrackIndex,
               delaySec: _audioDelaySec,
               onTrackSelected: (idx) {
+                _audioUserPicked = true;
                 setState(() => _selectedAudioTrackIndex = idx);
                 try {
                   final matching = _player.state.tracks.audio.firstWhere(

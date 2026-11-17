@@ -12,10 +12,11 @@ const cors = {
 
 const ALLOW = [
   /^\/search\/(movie|tv|multi)$/,
+  /^\/discover\/(movie|tv)$/,
   /^\/movie\/\d+$/,
-  /^\/movie\/\d+\/(credits|videos|similar|recommendations)$/,
+  /^\/movie\/\d+\/(credits|videos|similar|recommendations|external_ids)$/,
   /^\/tv\/\d+$/,
-  /^\/tv\/\d+\/(credits|videos|similar|recommendations|season\/\d+)$/,
+  /^\/tv\/\d+\/(credits|videos|similar|recommendations|season\/\d+|external_ids)$/,
   /^\/find\/[^/]+$/,
   /^\/genre\/(movie|tv)\/list$/,
   /^\/trending\/(movie|tv|all)\/(day|week)$/,

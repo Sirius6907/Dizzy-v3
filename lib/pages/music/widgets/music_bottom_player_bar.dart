@@ -40,6 +40,10 @@ class MusicBottomPlayerBar extends StatelessWidget {
 
     return GestureDetector(
       onTap: onExpandTap,
+      // Audit follow-up 2026-11-10: default deferToChild behavior made taps
+      // on transparent gaps between the bar's children fall through and the
+      // expand tap felt dead. Opaque claims the whole bar rect.
+      behavior: HitTestBehavior.opaque,
       child: PerformanceLiquidLens(
         style: PerformanceGlassStyles.dock,
         child: _buildPresetContainer(preset, palette, isMobile, track),

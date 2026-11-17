@@ -149,9 +149,7 @@ class HomeHeroCarouselState extends State<HomeHeroCarousel> {
     } else if (screenWidth < 1100) {
       return (screenHeight * 0.70).clamp(520.0, 740.0);
     } else {
-      // Maximized / Widescreen Desktop: generous height
-      final targetHeight = screenHeight * 0.85;
-      return targetHeight.clamp(680.0, 920.0);
+      return (screenHeight * 0.68).clamp(380.0, 760.0);
     }
   }
 

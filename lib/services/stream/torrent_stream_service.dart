@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:torrserver_flutter/torrserver_flutter.dart';
 
 import '../../models/download/download_task_model.dart';
+import '../../utils/torrent/torrent_trackers.dart';
 import '../download/download_service.dart';
 import '../debrid/utils/debrid_media_matcher.dart';
 import '../errors/app_log.dart';
@@ -12,7 +13,10 @@ import 'torrent_warmup_policy.dart';
 
 /// Rich torrent statistics object.
 class TorrentStats {
-  final double speedMbps;
+  /// Download speed in **megabytes per second** (MB/s). Multiply by 8 for
+  /// Mbps — the name on purpose unlike [StartupBandwidthPolicy] which works
+  /// in Mbps.
+  final double speedMBps;
   final int activePeers;
   final int totalPeers;
   final double cachePercent;
@@ -22,7 +26,7 @@ class TorrentStats {
   final bool isConnected;
 
   const TorrentStats({
-    required this.speedMbps,
+    required this.speedMBps,
     required this.activePeers,
     required this.totalPeers,
     required this.cachePercent,
@@ -32,9 +36,9 @@ class TorrentStats {
     required this.isConnected,
   });
 
-  double get speedKbps => speedMbps * 1024;
-  String get speedLabel => speedMbps >= 1.0
-      ? '${speedMbps.toStringAsFixed(2)} MB/s'
+  double get speedKbps => speedMBps * 1024;
+  String get speedLabel => speedMBps >= 1.0
+      ? '${speedMBps.toStringAsFixed(2)} MB/s'
       : '${speedKbps.toStringAsFixed(0)} KB/s';
   String get peersLabel => '$activePeers / $totalPeers';
   String get cacheLabel => '${cachePercent.toStringAsFixed(1)}%';
@@ -73,6 +77,10 @@ class TorrentStreamService {
 
   /// Latest torrent update snapshots keyed by infohash.
   final Map<String, TorrentInfo> _latestUpdates = {};
+
+  /// Swarm throughput (Mbps) seen during the last warm-up. Exposed so the
+  /// player can cap the NEXT source when a torrent is rejected as too slow.
+  double? lastWarmupMbps;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Lifecycle
@@ -122,6 +130,7 @@ class TorrentStreamService {
     int? episode,
     String? episodeTitle,
     int? fileIdx,
+    int requiredBps = 0,
   }) async {
     if (!_controller.isRunning || _state != EngineState.ready) {
       final started = await start();
@@ -132,10 +141,15 @@ class TorrentStreamService {
     }
 
     final rawHash = _extractHash(magnetLink);
-    final formattedMagnet =
+    var formattedMagnet =
         (rawHash != null && !magnetLink.startsWith('magnet:?'))
         ? 'magnet:?xt=urn:btih:$rawHash'
         : magnetLink;
+
+    // Every magnet gets public trackers merged in. A DHT-only magnet makes
+    // the engine hunt for the first peer for tens of seconds (and often
+    // finds nobody), which the player used to report as "no working peers".
+    formattedMagnet = magnetWithTrackers(formattedMagnet);
 
     final displayName = _extractDisplayName(formattedMagnet);
 
@@ -200,7 +214,18 @@ class TorrentStreamService {
       final streamUri = _controller.streamUrl(hash, fileIndex: selectedFile.id);
       _log('HTTP Stream URL generated: $streamUri');
 
-      await _warmUpStream(streamUri, hash);
+      final healthy = await _warmUpStream(
+        streamUri,
+        hash,
+        requiredBps: requiredBps,
+      );
+      if (!healthy) {
+        // Never hand a starved swarm to mpv: it reports "opened" and then
+        // sits on a black frame forever (94s in the 2026-11-09 audit).
+        _log('Torrent rejected before opening the player (starved swarm).');
+        await removeTorrent(hash);
+        return null;
+      }
 
       return streamUri.toString();
     } catch (e, st) {
@@ -209,48 +234,165 @@ class TorrentStreamService {
     }
   }
 
-  /// Kick-starts the exact file mpv will request and waits for a small
-  /// initial buffer. Without this, a cold swarm makes mpv sit 45s+ and
-  /// report "Failed to open" even though the torrent is healthy.
-  Future<void> _warmUpStream(Uri url, String hash) async {
+  /// Kick-starts the exact file mpv will request and waits until the swarm
+  /// has proven it can feed it. Returns false when the torrent is hopeless —
+  /// the caller must then move on to another source instead of opening mpv.
+  ///
+  /// The decision is based on TorrServer counters plus the bytes actually
+  /// handed to a live reader ([TorrentWarmupPolicy]): buffered bytes, ACTIVE
+  /// peers (DHT `total_peers` lies), download speed and byte growth. The old
+  /// version returned "ready" at 0 bytes after a 2s preload grace, which is
+  /// what produced the endless spinner — and a later version cancelled its
+  /// reader after 3s, which made healthy torrents look starved.
+  Future<bool> _warmUpStream(
+    Uri url,
+    String hash, {
+    int requiredBps = 0,
+  }) async {
     final clock = Stopwatch()..start();
 
-    unawaited(() async {
-      http.Client? client;
-      StreamSubscription<List<int>>? sub;
-      try {
-        client = http.Client();
-        final request = http.Request('GET', url)
-          ..headers['Range'] = 'bytes=0-1048575';
-        final response = await client
-            .send(request)
-            .timeout(const Duration(seconds: 8));
-        sub = response.stream.listen((_) {}, onError: (_) {});
-        await Future<void>.delayed(const Duration(seconds: 2));
-      } catch (_) {
-      } finally {
-        await sub?.cancel();
-        client?.close();
-      }
-    }());
+    // Keep ONE reader alive for the whole warm-up window. TorrServer downloads
+    // on demand: the old version requested only 1 MB, cancelled the request
+    // after 3 s and then watched a frozen `loaded_size` — so a healthy swarm
+    // that needed a few seconds to open the piece looked "starved" and got
+    // rejected with "no working peers" (2026-11-15).
+    http.Client? reader;
+    StreamSubscription<List<int>>? subscription;
+    var servedBytes = 0;
+    var readerStopped = false;
 
-    while (clock.elapsed < TorrentWarmupPolicy.maxWait) {
-      try {
-        final info = await _controller.getTorrent(hash);
-        _latestUpdates[hash] = info;
-        if (TorrentWarmupPolicy.isReady(
-          loadedBytes: info.loadedSize,
-          preloadedBytes: info.preloadedBytes,
-          elapsed: clock.elapsed,
-        )) {
-          _log(
-            'Torrent warm-up ready: ${info.loadedSize ~/ 1048576} MB buffered, '
-            'peers ${info.activePeers}',
+    Future<void> pump() async {
+      while (!readerStopped) {
+        final client = http.Client();
+        try {
+          final request = http.Request('GET', url)
+            ..headers['Range'] = 'bytes=0-67108863';
+          final response = await client
+              .send(request)
+              .timeout(const Duration(seconds: 8));
+          if (readerStopped || response.statusCode >= 400) {
+            client.close();
+            if (readerStopped) return;
+            await Future<void>.delayed(const Duration(milliseconds: 400));
+            continue;
+          }
+          final sub = response.stream.listen(
+            (chunk) => servedBytes += chunk.length,
+            onError: (_) {},
+            cancelOnError: false,
           );
+          reader = client;
+          subscription = sub;
+          // Lost the race with the warm-up loop's finally block: the client
+          // was already closed, so close this one too instead of leaking it.
+          if (readerStopped) {
+            await sub.cancel();
+            client.close();
+          }
           return;
+        } catch (_) {
+          client.close();
+          if (readerStopped) return;
+          await Future<void>.delayed(const Duration(milliseconds: 400));
         }
-      } catch (_) {}
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
+    }
+
+    unawaited(pump());
+
+    try {
+      var lastBuffered = -1;
+      var lastGrowthAt = Duration.zero;
+      var lastLogAt = -1;
+      while (clock.elapsed < TorrentWarmupPolicy.maxWait) {
+        try {
+          final info = await _controller.getTorrent(hash);
+          _latestUpdates[hash] = info;
+
+          // Bytes actually handed to our reader prove the swarm is feeding
+          // the stream, whatever `loaded_size` says.
+          final buffered = info.loadedSize > servedBytes
+              ? info.loadedSize
+              : servedBytes;
+          if (buffered > lastBuffered) {
+            lastBuffered = buffered;
+            lastGrowthAt = clock.elapsed;
+          }
+          final sinceGrowth = clock.elapsed - lastGrowthAt;
+          if (info.downloadSpeed > 0) {
+            // TorrServer reports bytes/s; the player's start gate expects
+            // Mbps. Skipping the ×8 made a healthy 12 Mbps swarm look like
+            // 1.5 Mbps and capped the replacement source to 480p.
+            lastWarmupMbps = info.downloadSpeed * 8 / 1024 / 1024;
+          }
+
+          final verdict = TorrentWarmupPolicy.evaluate(
+            loadedBytes: info.loadedSize,
+            servedBytes: servedBytes,
+            activePeers: info.activePeers,
+            speedBps: info.downloadSpeed.round(),
+            sinceBytesGrew: sinceGrowth,
+            elapsed: clock.elapsed,
+          );
+
+          // One line per second — enough for logcat triage, not spam.
+          final sec = clock.elapsed.inSeconds;
+          if (sec != lastLogAt) {
+            lastLogAt = sec;
+            _log(
+              'Warm-up ${sec}s: ${(buffered / 1048576).toStringAsFixed(2)}MB '
+              'buffered of ${(info.torrentSize / 1048576).toStringAsFixed(0)}MB, '
+              'peers ${info.activePeers}/${info.totalPeers}, '
+              'speed ${(info.downloadSpeed / 1048576).toStringAsFixed(2)}MB/s, '
+              'growth ${sinceGrowth.inSeconds}s ago',
+            );
+          }
+
+          if (verdict == TorrentReadiness.ready) {
+            // A swarm that is moving but far below the file's bitrate will
+            // stall a few seconds into playback: reject it now and let the
+            // caller fall back to a smaller/HTTP source. Only when the buffer
+            // has actually stopped growing — a burst-fed swarm reports ~0
+            // speed for one poll between pieces.
+            final minimum = TorrentWarmupPolicy.minimumSustainableBps(
+              requiredBps,
+            );
+            if (requiredBps > 0 &&
+                info.downloadSpeed < minimum &&
+                sinceGrowth >= const Duration(seconds: 3) &&
+                buffered < 8 * 1024 * 1024) {
+              _log(
+                'Swarm too slow for this file: '
+                '${(info.downloadSpeed / 1048576).toStringAsFixed(2)}MB/s < '
+                '${(minimum / 1048576).toStringAsFixed(2)}MB/s needed '
+                '(${(requiredBps / 1000000).toStringAsFixed(1)}Mbps file).',
+              );
+              return false;
+            }
+            _log(
+              'Torrent warm-up ready: ${buffered ~/ 1048576} MB buffered, '
+              'peers ${info.activePeers} '
+              '(${(info.downloadSpeed / 1048576).toStringAsFixed(2)} MB/s)',
+            );
+            return true;
+          }
+          if (verdict == TorrentReadiness.hopeless) {
+            _log(
+              'Torrent hopeless after ${clock.elapsed.inSeconds}s: '
+              '${(buffered / 1048576).toStringAsFixed(2)}MB buffered, '
+              'peers ${info.activePeers}/${info.totalPeers} — rejecting.',
+            );
+            return false;
+          }
+        } catch (_) {}
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
+      _log('Torrent warm-up gave up after ${clock.elapsed.inSeconds}s');
+      return false;
+    } finally {
+      readerStopped = true;
+      await subscription?.cancel();
+      reader?.close();
     }
   }
 
@@ -294,9 +436,17 @@ class TorrentStreamService {
   // Metadata polling
   // ─────────────────────────────────────────────────────────────────────────
 
+  /// Waits for the magnet's file list — with an EARLY abort when the swarm is
+  /// not answering. A magnet for a dead torrent used to burn the full 45s
+  /// (2026-11-09 audit: player sat on "Gathering metadata & peers…" for 45s,
+  /// then dropped to the picker). DHT-only magnets routinely need 10-30s to
+  /// find the first peer, so the abort waits 16s AND requires peers,
+  /// seeders and throughput to all be zero — TorrServer reports
+  /// `active_peers = 0` between transfers even on a healthy swarm.
   Future<List<TorrentFileStat>?> _waitForMetadata(
     String hash, {
-    Duration timeout = const Duration(seconds: 45),
+    Duration timeout = const Duration(seconds: 30),
+    Duration noPeerAbort = const Duration(seconds: 16),
     Duration pollInterval = const Duration(milliseconds: 300),
   }) async {
     final stopwatch = Stopwatch()..start();
@@ -306,9 +456,34 @@ class TorrentStreamService {
         final info = await _controller.getTorrent(hash);
         _latestUpdates[hash] = info;
         if (info.fileStats.isNotEmpty) {
+          _log(
+            'Metadata ready in ${stopwatch.elapsed.inMilliseconds}ms '
+            '(${info.fileStats.length} files, ${info.activePeers} active peers)',
+          );
           return info.fileStats;
         }
+        if (stopwatch.elapsed >= noPeerAbort &&
+            info.activePeers <= 0 &&
+            info.connectedSeeders <= 0 &&
+            info.downloadSpeed <= 0) {
+          _log(
+            'No peers after ${stopwatch.elapsed.inSeconds}s — aborting magnet '
+            '(hash $hash). Swarm cannot deliver metadata.',
+          );
+          return null;
+        }
       } catch (e) {
+        // The engine no longer knows this torrent (it was dropped, or the
+        // session was cleaned up). Polling a 404 cannot succeed, so the wait
+        // ends here instead of burning the whole timeout budget on a dead
+        // hash - and instead of flooding the log every 300ms.
+        if (isTorrentGone(e)) {
+          _log(
+            'Torrent $hash is no longer in the engine - aborting the metadata '
+            'wait',
+          );
+          return null;
+        }
         _log('Polling metadata error: $e');
       }
       await Future.delayed(pollInterval);
@@ -317,6 +492,14 @@ class TorrentStreamService {
     _log('Metadata timeout after ${timeout.inSeconds}s for hash $hash');
     return null;
   }
+
+  /// True when the error means "the engine does not have this torrent".
+  ///
+  /// TorrServer answers 404 for a hash it never got or already dropped. Once
+  /// that happens the torrent can never appear under the same hash, so the
+  /// wait has to end.
+  static bool isTorrentGone(Object error) =>
+      error is TorrServerHttpException && error.statusCode == 404;
 
   // ─────────────────────────────────────────────────────────────────────────
   // File selection — intelligent auto file picker
@@ -372,7 +555,23 @@ class TorrentStreamService {
     final hash = _extractHash(magnetOrHash) ?? magnetOrHash.toLowerCase();
     final info = _latestUpdates[hash];
     if (info == null) return false;
-    return info.loadedSize > 0 || info.preloadedBytes > 0;
+    // Preloaded bytes are a request marker, not data — only real buffered
+    // bytes mean "safe to open without waiting".
+    return info.loadedSize > 0;
+  }
+
+  /// One-shot live refresh for the playback watchdog (no subscription).
+  /// Returns null when the engine/torrent is gone.
+  Future<TorrentStats?> refreshStats(String magnetOrHash) async {
+    final hash = _extractHash(magnetOrHash) ?? magnetOrHash.toLowerCase();
+    if (!_controller.isRunning) return null;
+    try {
+      final info = await _controller.getTorrent(hash);
+      _latestUpdates[hash] = info;
+    } catch (_) {
+      return null;
+    }
+    return getTorrentStats(hash);
   }
 
   /// Returns latest cached or live stats for a torrent.
@@ -381,13 +580,13 @@ class TorrentStreamService {
     final info = _latestUpdates[hash];
     if (info == null) return null;
 
-    final speedMbps = info.downloadSpeed / 1024 / 1024;
+    final speedMBps = info.downloadSpeed / 1024 / 1024;
     final total = info.torrentSize;
     final loaded = info.loadedSize;
     final percent = total > 0 ? (loaded / total) * 100 : 0.0;
 
     return TorrentStats(
-      speedMbps: speedMbps,
+      speedMBps: speedMBps,
       activePeers: info.activePeers,
       totalPeers: info.totalPeers,
       cachePercent: percent,

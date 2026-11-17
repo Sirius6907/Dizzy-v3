@@ -2,6 +2,7 @@ import 'package:dizzy/services/social/username_gate_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  usernameContinuityTests();
   group('UsernameGatePolicy.decide', () {
     test('skips the gate when the server already has a username row', () {
       expect(
@@ -107,9 +108,18 @@ void main() {
     });
 
     test('flags spaces and unsupported characters', () {
-      expect(UsernameGatePolicy.localProblem('ravi kumar'), UsernameProblem.badChars);
-      expect(UsernameGatePolicy.localProblem('rahul!'), UsernameProblem.badChars);
-      expect(UsernameGatePolicy.localProblem('राहुल'), UsernameProblem.badChars);
+      expect(
+        UsernameGatePolicy.localProblem('ravi kumar'),
+        UsernameProblem.badChars,
+      );
+      expect(
+        UsernameGatePolicy.localProblem('rahul!'),
+        UsernameProblem.badChars,
+      );
+      expect(
+        UsernameGatePolicy.localProblem('राहुल'),
+        UsernameProblem.badChars,
+      );
     });
 
     test('accepts letters, digits and underscore', () {
@@ -135,6 +145,44 @@ void main() {
       expect(UsernameGatePolicy.canDefer(1), isFalse);
       expect(UsernameGatePolicy.canDefer(2), isTrue);
       expect(UsernameGatePolicy.canDefer(3), isTrue);
+    });
+  });
+}
+
+// Username continuity (v1.3.5): a name left behind on this device must be
+// reclaimable instead of dead-ending on "already taken".
+void usernameContinuityTests() {
+  group('UsernameGateFlow.afterClaim', () {
+    test('a successful claim ends the gate', () {
+      expect(
+        UsernameGateFlow.afterClaim({'success': true, 'username': 'khushii'}),
+        UsernameGateAction.done,
+      );
+    });
+
+    test('a reclaimable name is reclaimed instead of blocking', () {
+      expect(
+        UsernameGateFlow.afterClaim({
+          'success': false,
+          'code': 'reclaimable',
+          'error': 'left behind on this device',
+        }),
+        UsernameGateAction.reclaim,
+      );
+    });
+
+    test('a name taken by someone else stops the claim', () {
+      expect(
+        UsernameGateFlow.afterClaim({'success': false, 'code': 'taken'}),
+        UsernameGateAction.stop,
+      );
+    });
+
+    test('an unknown failure stops the claim', () {
+      expect(
+        UsernameGateFlow.afterClaim({'success': false, 'error': 'offline'}),
+        UsernameGateAction.stop,
+      );
     });
   });
 }

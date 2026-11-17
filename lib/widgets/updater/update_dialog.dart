@@ -126,10 +126,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
                           const SizedBox(height: 4),
                           Text(
                             'Version ${widget.updateInfo.latestVersion}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: _ink,
                             ),
                           ),
                         ],
@@ -159,21 +159,21 @@ class _UpdateDialogState extends State<UpdateDialog> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Current',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.white38,
+                                  color: _inkSoft,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 widget.updateInfo.currentVersion,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white70,
+                                  color: _ink,
                                 ),
                               ),
                             ],
@@ -185,11 +185,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text(
+                              Text(
                                 'Latest',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.white38,
+                                  color: _inkSoft,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -211,13 +211,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
                     const SizedBox(height: 20),
 
                     // Release notes header & box
-                    const Text(
+                    Text(
                       "WHAT'S NEW",
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: Colors.white38,
+                        color: _inkSoft,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -232,9 +232,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
                       child: SingleChildScrollView(
                         child: Text(
                           widget.updateInfo.releaseNotes,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Colors.white70,
+                            color: _ink,
                             height: 1.5,
                           ),
                         ),
@@ -294,10 +294,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
                               ),
                               Text(
                                 '${(_downloadProgress * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white70,
+                                  color: _ink,
                                 ),
                               ),
                             ],
@@ -341,17 +341,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.15),
-                              ),
+                              side: BorderSide(color: _hairline),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Later',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white70,
+                              color: _inkSoft,
                             ),
                           ),
                         ),

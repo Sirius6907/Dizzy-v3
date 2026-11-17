@@ -91,72 +91,83 @@ export function copyFor(c: Candidate, tone: PushTone | string = "warm") {
   ].filter(Boolean).join(" · ");
   const variant = stableVariant(`${c.media_type}:${c.tmdb_id}:${c.title}`, 3);
 
+  // Human copy, not a marketing machine. Titles stay short enough to survive
+  // a notification shade (<=40), bodies stay scannable (<=100), and emoji are
+  // a title garnish only — one or two, never three, never in the body.
+
   if (playful && c.media_type === "tv") {
     if (hinglish) {
       const titles = [
-        `Aaj raat: ${c.title}`,
-        `${c.title} — episode mood?`,
-        `Aaj ka pick: ${c.title}`,
+        `🌙 Aaj raat: ${c.title}`,
+        `${c.title} — episode mood? 🍿`,
+        `Aaj ka pick: ${c.title} 🔥`,
       ];
       const bodies = [
-        `${genre ? `${genre} ka ` : ""}episode, tumhare liye. ${meta}`,
-        `Ek episode se mood set karein? ${meta}`,
-        `Aaj ${c.title}? Ek episode, jab time mile. ${meta}`,
+        `${genre ? `${genre} ka ` : ""}episode, tum ke liye. ${meta}`,
+        `Ek episode se mood set, aaj raat. ${meta}`,
+        `Ek episode, jab time mile aaj. ${meta}`,
       ];
-      return { title: clip(titles[variant], 120), body: clip(bodies[variant], 240) };
+      return { title: clip(titles[variant], 40), body: clip(bodies[variant], 100) };
     }
-    return {
-      title: clip(`Tonight: ${c.title}`, 120),
-      body: clip(`An episode of your ${genre || "show"}? ${meta}`, 240),
-    };
+    const titles = [
+      `🌙 Tonight: ${c.title}`,
+      `One episode? ${c.title} 🍿`,
+      `Episode time… ${c.title} 🎬`,
+    ];
+    const bodies = [
+      `An episode of your ${genre || "show"}? One tap. ${meta}`,
+      `Episode night — your kind of show. ${meta}`,
+      `Tonight, one episode of ${genre || "the show"}. ${meta}`,
+    ];
+    return { title: clip(titles[variant], 40), body: clip(bodies[variant], 100) };
   }
 
   if (playful) {
     if (hinglish) {
       const titles = [
-        `Aaj raat: ${c.title}`,
-        `${c.title} — tumhare liye`,
-        `Psst… ${c.title}`,
+        `🍿 Aaj raat: ${c.title}`,
+        `${c.title} — tum ke liye 🎬`,
+        `Psst… ${c.title} 👀`,
       ];
       const bodies = [
-        `${genre ? `${genre} + ` : ""}tumhara taste = match. ${meta}`,
+        `${genre ? `${genre} + ` : ""}tum = perfect match. ${meta}`,
         `Movie night banti hai. ${meta}`,
-        `Ek tap, ek movie. ${meta}`,
+        `Aaj raat, ek tap — movie night set. ${meta}`,
       ];
-      return { title: clip(titles[variant], 120), body: clip(bodies[variant], 240) };
+      return { title: clip(titles[variant], 40), body: clip(bodies[variant], 100) };
     }
     const titles = [
-      `${c.title} just found you`,
-      `Psst — ${c.title}`,
-      `${c.title} is waiting`,
+      `🍿 ${c.title} just landed`,
+      `Psst — ${c.title} 🎬`,
+      `Tonight: ${c.title} 🍿`,
     ];
     const bodies = [
-      `Aaj ${genre || "watch"} mood? ${meta}`,
+      `${genre || "Story"} + you = match. Movie night? ${meta}`,
       `Exactly your kind of ${genre || "story"}. One tap?`,
-      `One tap. One movie night. ${meta}`,
+      `One tap. Movie night, on me. ${meta}`,
     ];
-    return { title: clip(titles[variant], 120), body: clip(bodies[variant], 240) };
+    return { title: clip(titles[variant], 40), body: clip(bodies[variant], 100) };
   }
 
   if (c.media_type === "tv") {
     return {
-      title: clip(hinglish ? `${c.title} — aaj dekh lein?` : `Tonight: ${c.title}`, 120),
+      title: clip(hinglish ? `${c.title} — aaj dekh lein?` : `Tonight: ${c.title}`, 40),
       body: clip(
         hinglish
           ? `Ek ${lang} episode, jab time mile. ${meta}`
           : `An ${lang} episode when you have time. ${meta}`,
-        240,
+        100,
       ),
     };
   }
 
   return {
-    title: clip(hinglish ? `${c.title} ab Dizzy par` : `New on Dizzy: ${c.title}`, 120),
+    title: clip(hinglish ? `${c.title} ab Dizzy par` : `New on Dizzy: ${c.title}`, 40),
     body: clip(
       hinglish
         ? `Naya ${lang} movie. Jab man kare, tap karo. ${meta}`
         : `A new ${lang} movie is ready when you are. ${meta}`,
-      240,
+      100,
     ),
   };
 }

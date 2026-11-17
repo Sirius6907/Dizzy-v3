@@ -264,6 +264,10 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
         autoPlay: true,
         aniDbEpisodes: _aniDbEpisodes,
         totalEpisodes: _computedTotalEpisodes,
+        // The SUB / DUB toggle on this page is the user's choice:
+        // SUB = original Japanese audio with English subtitles,
+        // DUB = the English dub. (Hindi dubs are never offered for anime.)
+        initialCategory: _isDub ? 'dub' : 'sub',
       ),
     );
   }
@@ -751,17 +755,27 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
       );
     }
 
+    // Keep each "•" attached to the item that follows it. As separate Wrap
+    // children a separator could end a line on its own, leaving a dangling
+    // "•" after the rating ("... 170 Eps • 7.9 •" / "Studio Pierrot" below).
     final List<Widget> spaced = [];
     for (int i = 0; i < items.length; i++) {
-      spaced.add(items[i]);
-      if (i < items.length - 1) {
+      if (i == 0) {
+        spaced.add(items[i]);
+      } else {
         spaced.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: _Space.sm),
-            child: Text(
-              '•',
-              style: TextStyle(color: _Palette.faint, fontSize: 16),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: _Space.sm),
+                child: Text(
+                  '•',
+                  style: TextStyle(color: _Palette.faint, fontSize: 16),
+                ),
+              ),
+              items[i],
+            ],
           ),
         );
       }
@@ -769,6 +783,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
 
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: _Space.sm,
       runSpacing: 6,
       children: spaced,
     );

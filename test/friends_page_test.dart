@@ -128,7 +128,17 @@ void main() {
         await tester.enterText(find.byType(TextField), input);
         await tester.pump();
         expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(find.text('Search any @username to add friends.'), findsOneWidget);
+        // One character typed (after normalisation) shows the too-short
+        // hint; an empty query shows the invite copy (2026-11-09 K-06).
+        final normalized = input.replaceAll(RegExp(r'[\s@]+'), '');
+        expect(
+          find.text(
+            normalized.isEmpty
+                ? 'Search any @username to add friends.'
+                : 'Type at least 2 letters to search.',
+          ),
+          findsOneWidget,
+        );
         lookup.requests[0].complete([_alice]);
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.text('@alice'), findsNothing);

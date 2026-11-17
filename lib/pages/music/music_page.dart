@@ -10,10 +10,12 @@ import 'package:dizzy/design/prism_tokens.dart';
 import '../../models/music/music_track.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../services/music/music_download_service.dart';
+import '../../services/music/music_engagement_service.dart';
 import '../../services/music/music_library_service.dart';
 import '../../services/music/music_player_controller.dart';
 import '../../services/music/music_radio_service.dart';
 import '../../services/music/music_mini_pip_service.dart';
+import '../../services/music/music_onboarding_service.dart';
 import '../../services/music/music_service.dart';
 import '../../services/music/music_settings.dart';
 import '../../widgets/common/animated_ambient_background.dart';
@@ -34,6 +36,7 @@ import 'widgets/music_downloaded_tracks_modal.dart';
 import 'widgets/music_track_details_modal.dart';
 import 'modals/music_artist_detail_modal.dart';
 import 'modals/music_album_detail_modal.dart';
+import 'onboarding/music_onboarding_wizard.dart';
 import 'modals/music_curated_playlist_detail_modal.dart';
 import 'modals/music_user_playlist_detail_modal.dart';
 import 'views/music_home_view.dart';
@@ -80,6 +83,7 @@ class _MusicPageState extends State<MusicPage> {
   String _activeQuery = '';
   String _selectedFilter = 'All';
   Timer? _debounceTimer;
+  Timer? _onboardingDebounceTimer;
 
   bool _isPlayerExpanded = false;
   bool _showQueueDrawer = false;
@@ -96,17 +100,45 @@ class _MusicPageState extends State<MusicPage> {
     _libraryService.addListener(_onStateChanged);
     MusicDownloadService.instance.addListener(_onStateChanged);
     MusicSettings.changeNotifier.addListener(_onStateChanged);
+    // Part C: onboarding completion / Music-Settings taste edits must
+    // re-shape the home immediately — the first load may have run while
+    // the wizard was still open (no vibe yet), so listen and refetch.
+    MusicOnboardingService.changeNotifier.addListener(_onOnboardingChanged);
     AppThemeService.currentPalette.addListener(_onStateChanged);
     MusicMiniPipService.instance.isMiniPipMode.addListener(_onStateChanged);
     _libraryService.init();
     MusicDownloadService.instance.init();
+    // Engagement engine: observe the player so skip/like/replay signals
+    // steer up-next ranking and the queue auto-extends before it runs dry.
+    MusicEngagementService.instance.ensureStarted();
+    // Part B (2026-11-12): first-open onboarding wizard. Once the user
+    // completes or skips, the `music_onboarding_done` flag keeps it away.
+    _maybeShowOnboarding();
     _loadMusicData();
+  }
+
+  bool _onboardingChecked = false;
+
+  Future<void> _maybeShowOnboarding() async {
+    if (_onboardingChecked) return;
+    _onboardingChecked = true;
+    await MusicOnboardingService.initialize();
+    if (!mounted || MusicOnboardingService.isDone.value) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || MusicOnboardingService.isDone.value) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const MusicOnboardingWizard()),
+      );
+    });
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
     _toastTimer?.cancel();
+    _onboardingDebounceTimer?.cancel();
+    MusicOnboardingService.changeNotifier
+        .removeListener(_onOnboardingChanged);
     _playerController.removeListener(_onStateChanged);
     _libraryService.removeListener(_onStateChanged);
     MusicDownloadService.instance.removeListener(_onStateChanged);
@@ -122,6 +154,19 @@ class _MusicPageState extends State<MusicPage> {
 
   void _onStateChanged() {
     if (mounted) setState(() {});
+  }
+
+  /// Part C: the user finished the wizard or edited their taste in
+  /// Music Settings — re-fetch the home so vibe rails, mix titles and
+  /// the artists row reflect the new profile. Debounced so a burst of
+  /// chip toggles costs one fetch, and trend caches keep the refetch
+  /// cheap (style pools are shared, only favorite-artist faces are new).
+  void _onOnboardingChanged() {
+    if (!mounted) return;
+    _onboardingDebounceTimer?.cancel();
+    _onboardingDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) _loadMusicData();
+    });
   }
 
   void _showToast(String message) {

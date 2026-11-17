@@ -1,8 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+
 import '../../models/stream/stream_model.dart';
-import '../player/player_settings.dart';
+import 'html_stream_resolver.dart';
 import 'torrent_stream_service.dart';
+import '../player/player_settings.dart';
 
 /// Production-grade HTTP/HLS/MP4 Stream Health & Liveness Checker for built-in sources.
 ///
@@ -15,13 +21,34 @@ class StreamHealthChecker {
   /// Torrent streams are only "alive" for instant play when they expose
   /// seeders and the TorrServer engine already has bytes cached; otherwise
   /// they win the race and then stall waiting for metadata/DHT.
-  static Future<bool> isAlive(StreamSource source) async {
+  static Future<bool> isAlive(
+    StreamSource source, {
+    http.Client Function()? clientFactory,
+  }) async {
+    // v1.3.5: an embed source IS a page. Probing its URL with a HEAD would
+    // either fail the TLS/JS gate or prove nothing — the webview is the probe,
+    // and it is never "dead" before it has been given a chance to load.
+    if (source.isEmbedSource) {
+      source.probeDead = false;
+      return true;
+    }
+
     if (source.infoHash != null &&
         source.infoHash!.isNotEmpty &&
         !source.isDebrid) {
       final seeders = source.seeders;
-      if (seeders != null && seeders <= 0) return false;
-      return TorrentStreamService().isCached(source.infoHash!);
+      if (!isTorrentCandidateViable(seeders: seeders)) {
+        source.probeDead = true;
+        return false;
+      }
+      // Instant play only: a cold torrent still has to gather metadata and
+      // peers. It stays in the failover chain — the ranker decides when the
+      // torrent tier is reached, not this probe.
+      final cached = TorrentStreamService().isCached(source.infoHash!);
+      // A cold torrent is not "dead" — it is a last-resort candidate that
+      // needs a swarm. Only a torrent without peers is dropped for good.
+      source.probeDead = false;
+      return cached;
     }
 
     final rawUrl = source.url ?? source.externalUrl;
@@ -36,7 +63,17 @@ class StreamHealthChecker {
     );
     final cookiesCaptured = <String>[];
 
-    final alive = await _probeUrl(rawUrl, effectiveHeaders, 0, cookiesCaptured);
+    final alive = await _probeUrl(
+      rawUrl,
+      effectiveHeaders,
+      cookiesCaptured,
+      clientFactory: clientFactory,
+      source: source,
+    );
+
+    // The verdict travels with the source: the failover chain must not pick a
+    // source the probe already proved dead.
+    source.probeDead = !alive;
 
     // Accept captured cookies and persist them into the source headers
     if (alive && cookiesCaptured.isNotEmpty) {
@@ -52,6 +89,11 @@ class StreamHealthChecker {
     return alive;
   }
 
+  /// A torrent candidate is viable when it advertises peers. An unknown peer
+  /// count is NOT treated as dead — the swarm decides that at warm-up time.
+  static bool isTorrentCandidateViable({int? seeders}) =>
+      seeders == null || seeders > 0;
+
   /// Merges existing Cookie headers with incoming Set-Cookie header strings.
   static String _mergeCookies(String existing, List<String> newCookies) {
     final cookieMap = <String, String>{};
@@ -63,8 +105,8 @@ class StreamHealthChecker {
         }
       }
     }
-    for (final c in newCookies) {
-      final mainPart = c.split(';').first.trim();
+    for (final cookie in newCookies) {
+      final mainPart = cookie.split(';').first.trim();
       final kv = mainPart.split('=');
       if (kv.length >= 2) {
         cookieMap[kv[0].trim()] = kv.sublist(1).join('=').trim();
@@ -83,57 +125,34 @@ class StreamHealthChecker {
         lower.contains('master.m3u8');
   }
 
-  /// Probes the stream URL using a zero-memory HEAD request with Accept-Cookies handling,
-  /// with automatic fallback to GET when HEAD is not supported by the CDN/origin.
+  /// Probes the stream URL using a zero-memory HEAD request with Accept-Cookies
+  /// handling, and confirms a suspicious HEAD answer with a ranged GET.
+  ///
+  /// Many extractors answer HEAD with their HTML player page, so a dead-looking
+  /// HEAD is only a suspicion: the ranged GET decides.
   static Future<bool> _probeUrl(
     String url,
-    Map<String, String> headers, [
+    Map<String, String> headers,
+    List<String> cookiesCaptured, {
+    http.Client Function()? clientFactory,
     int redirectCount = 0,
-    List<String>? cookiesCaptured,
-  ]) async {
+    StreamSource? source,
+  }) async {
     if (redirectCount > 3) return false;
 
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme) return false;
 
-    HttpClient? client;
+    final client = clientFactory?.call() ?? _defaultClient();
     try {
-      // v1.1.9: only accept bad certs when the user explicitly opted in
-      // (local/dev servers). Default OFF — blind accept was an MITM hole.
-      final allowInsecure = PlayerSettings.allowInsecureProbes.value;
-      client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 4)
-        ..badCertificateCallback = ((_, __, ___) => allowInsecure);
-
-      // 1. Send fast HEAD request (0 MB downloaded!)
-      final req = await client
-          .openUrl('HEAD', uri)
-          .timeout(const Duration(seconds: 4));
-      req.followRedirects = false;
-
-      headers.forEach((k, v) {
-        if (v.isNotEmpty &&
-            k.toLowerCase() != 'range' &&
-            k.toLowerCase() != 'content-length') {
-          try {
-            req.headers.set(k, v);
-          } catch (_) {}
-        }
-      });
-      req.headers.set(
-        'User-Agent',
-        headers['User-Agent'] ??
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      );
-      req.headers.set('Accept', '*/*');
-
-      final resp = await req.close().timeout(const Duration(seconds: 4));
+      // 1. Fast HEAD request (0 MB downloaded!)
+      final head = http.Request('HEAD', uri)..followRedirects = false;
+      head.headers.addAll(_requestHeaders(headers));
+      final resp = await client.send(head).timeout(const Duration(seconds: 4));
       final code = resp.statusCode;
 
       // Capture Set-Cookie headers
-      for (final c in resp.cookies) {
-        cookiesCaptured?.add('${c.name}=${c.value}');
-      }
+      cookiesCaptured.addAll(_setCookies(resp));
 
       // Handle 3xx Redirects
       if (code == 301 ||
@@ -141,14 +160,14 @@ class StreamHealthChecker {
           code == 303 ||
           code == 307 ||
           code == 308) {
-        final loc = resp.headers.value(HttpHeaders.locationHeader);
+        final loc = resp.headers['location'];
         if (loc != null && loc.isNotEmpty) {
           final redirectedUri = uri.resolve(loc).toString();
           final redirectHeaders = PlayerSettings.resolveStreamHeaders(
             redirectedUri,
             headers,
           );
-          if (cookiesCaptured != null && cookiesCaptured.isNotEmpty) {
+          if (cookiesCaptured.isNotEmpty) {
             final existing =
                 redirectHeaders['Cookie'] ?? redirectHeaders['cookie'] ?? '';
             redirectHeaders['Cookie'] = _mergeCookies(
@@ -156,72 +175,77 @@ class StreamHealthChecker {
               cookiesCaptured,
             );
           }
-          client.close(force: true);
           return await _probeUrl(
             redirectedUri,
             redirectHeaders,
-            redirectCount + 1,
             cookiesCaptured,
+            clientFactory: clientFactory,
+            redirectCount: redirectCount + 1,
+            source: source,
           );
         }
         return false;
       }
 
-      // If HEAD returns 200 or 206, verify it's not an HTML/JSON error page
       if (code == 200 || code == 206) {
-        final ct = (resp.headers.contentType?.mimeType ?? '').toLowerCase();
-        final isDead =
-            ct.contains('text/html') ||
-            ct.contains('application/json') ||
-            ct.contains('text/xml');
-        if (!isDead || _isKnownMediaUrl(url)) return true;
+        final ct = (resp.headers['content-type'] ?? '').toLowerCase();
+        if (!_contentTypeLooksLikeErrorPage(ct)) return true;
+        // A HEAD that answers with an error page is only a suspicion —
+        // confirm with a ranged GET before dropping the source.
+      } else if (code != 405 && code != 501) {
+        // Any other 4xx/5xx fails fast — no second request.
         return false;
       }
 
-      // 2. If HEAD is not allowed (405/501), fallback to lightweight GET.
-      // Many CDNs (Cloudflare, Akamai, video proxies) reject HEAD requests.
-      // Any other 4xx/5xx fails fast — no second request (v1.1.9 halves
-      // slow-network probe cost per dead source).
-      if (code != 405 && code != 501) return false;
-      final getReq = await client
-          .openUrl('GET', uri)
+      // 2. Confirm with a lightweight ranged GET (also the fallback when HEAD
+      // is not allowed). Any other 4xx/5xx fails fast.
+      final get = http.Request('GET', uri)..followRedirects = true;
+      get.headers.addAll(_requestHeaders(headers));
+      get.headers['Range'] = 'bytes=0-512';
+      final getResp = await client
+          .send(get)
           .timeout(const Duration(seconds: 4));
-      getReq.followRedirects = true;
-      getReq.maxRedirects = 4;
-      headers.forEach((k, v) {
-        if (v.isNotEmpty &&
-            k.toLowerCase() != 'range' &&
-            k.toLowerCase() != 'content-length') {
-          try {
-            getReq.headers.set(k, v);
-          } catch (_) {}
-        }
-      });
-      getReq.headers.set(
-        'User-Agent',
-        headers['User-Agent'] ??
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      );
-      getReq.headers.set('Accept', '*/*');
-      getReq.headers.set('Range', 'bytes=0-512');
-
-      final getResp = await getReq.close().timeout(const Duration(seconds: 4));
       final getCode = getResp.statusCode;
 
-      for (final c in getResp.cookies) {
-        cookiesCaptured?.add('${c.name}=${c.value}');
-      }
+      cookiesCaptured.addAll(_setCookies(getResp));
 
-      // 200 (OK), 206 (Partial), 416 (Range Not Satisfiable = endpoint is active video server)
+      // 200 (OK), 206 (Partial), 416 (Range Not Satisfiable = endpoint is
+      // an active video server).
       if (getCode == 200 || getCode == 206 || getCode == 416) {
-        final ct = (getResp.headers.contentType?.mimeType ?? '').toLowerCase();
-        final isDead =
-            (ct.contains('text/html') ||
-                ct.contains('application/json') ||
-                ct.contains('text/xml')) &&
-            !_isKnownMediaUrl(url);
-        await getResp.drain();
-        return !isDead;
+        if (getCode == 416) return true;
+        final ct = (getResp.headers['content-type'] ?? '').toLowerCase();
+        final bytes = <int>[];
+        await for (final chunk in getResp.stream) {
+          bytes.addAll(chunk);
+          if (bytes.length >= 512) break;
+        }
+        // The body decides when the content type lied: an extractor that
+        // answers with its HTML player page is not a playable source —
+        // UNLESS the page carries the stream (which is the normal case for
+        // the embed-style extractors). The stream behind the page is
+        // extracted here, so a working source is no longer marked dead.
+        final sniff = utf8
+            .decode(bytes.take(64).toList(), allowMalformed: true)
+            .trimLeft()
+            .toLowerCase();
+        final body = utf8.decode(bytes, allowMalformed: true);
+        if (sniff.startsWith('<!doctype html') || sniff.startsWith('<html')) {
+          final media = HtmlStreamResolver.extractMediaUrl(body, pageUrl: url);
+          if (media != null) {
+            source?.resolvedMediaUrl = media.url;
+            return true;
+          }
+          return false;
+        }
+        if (_looksDead(ct, url)) {
+          final media = HtmlStreamResolver.extractMediaUrl(body, pageUrl: url);
+          if (media != null) {
+            source?.resolvedMediaUrl = media.url;
+            return true;
+          }
+          return false;
+        }
+        return true;
       }
 
       return false;
@@ -229,8 +253,62 @@ class StreamHealthChecker {
       return false;
     } finally {
       try {
-        client?.close(force: true);
+        client.close();
       } catch (_) {}
     }
+  }
+
+  /// Set-Cookie header values of a response (package:http keeps them raw).
+  static List<String> _setCookies(http.StreamedResponse response) {
+    final raw = response.headers['set-cookie'];
+    if (raw == null) return const <String>[];
+    // A joined header keeps its commas (Expires dates contain them), so it
+    // is treated as one cookie header instead of being split.
+    return [raw];
+  }
+
+  /// True when the content type itself announces an error page.
+  static bool _contentTypeLooksLikeErrorPage(String contentType) {
+    final ct = contentType.toLowerCase();
+    return ct.contains('text/html') ||
+        ct.contains('application/json') ||
+        ct.contains('text/xml');
+  }
+
+  /// True when the response looks like an error page rather than media.
+  static bool _looksDead(String contentType, String url) {
+    final ct = contentType.toLowerCase();
+    final dead =
+        ct.contains('text/html') ||
+        ct.contains('application/json') ||
+        ct.contains('text/xml');
+    return dead && !_isKnownMediaUrl(url);
+  }
+
+  static Map<String, String> _requestHeaders(Map<String, String> headers) {
+    final out = <String, String>{};
+    headers.forEach((k, v) {
+      if (v.isNotEmpty &&
+          k.toLowerCase() != 'range' &&
+          k.toLowerCase() != 'content-length') {
+        out[k] = v;
+      }
+    });
+    out['User-Agent'] =
+        headers['User-Agent'] ??
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+    out['Accept'] = '*/*';
+    return out;
+  }
+
+  static http.Client _defaultClient() {
+    // v1.1.9: only accept bad certs when the user explicitly opted in
+    // (local/dev servers). Default OFF — blind accept was a MITM hole.
+    final allowInsecure = PlayerSettings.allowInsecureProbes.value;
+    return IOClient(
+      HttpClient()
+        ..connectionTimeout = const Duration(seconds: 4)
+        ..badCertificateCallback = ((_, __, ___) => allowInsecure),
+    );
   }
 }

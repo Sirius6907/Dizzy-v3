@@ -20,6 +20,11 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  latestFor,
+  mergeLatest,
+  type LatestTitle,
+} from "./latest_releases.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -127,6 +132,17 @@ serve(async (req) => {
       if (type !== "movie" && type !== "tv" && type !== "all") {
         return json({ error: "bad type" }, 400, 60);
       }
+    } else if (feed === "latest") {
+      // Release-date-driven catalogue (v1.3.5). `discover` sorts by
+      // popularity; `latest` sorts by the day the title actually came out,
+      // per language bucket, and keeps the newest N of each. It is the feed
+      // the Home "Latest releases" rail and the nightly warm read.
+      // (Built below, where the TMDB reader exists.)
+      if (type !== "movie" && type !== "tv") {
+        return json({ error: "bad type" }, 400, 60);
+      }
+    } else if (feed === "imdb_lookup") {
+      // handled after tmdbGet is defined (exact tmdb→imdb mapping)
     } else {
       return json({ error: "bad feed" }, 400, 60);
     }
@@ -138,10 +154,17 @@ serve(async (req) => {
     // P22/F1: read-through warm cache. Any cache fault → cold path.
     // The key carries every filter so one region never serves another's row.
     // `fresh` is 30 minutes: new TMDB titles must land without a cron edit.
+    // `latest` is the same: the release-date catalogue changes with every
+    // release day, and it is warmed nightly. The `v2` tag retires the
+    // cached rows written by the older, wrong-shaped `latest` feed (it
+    // filled 20 of 50 rows and let unreleased films in).
     const cacheKey =
-      `${feed}|${type}|${page}|${region}|${languageExpr}|${providers}` +
+      `${feed}${feed === "latest" ? "|v2" : ""}|${type}|${page}|${region}|` +
+      `${languageExpr}|${providers}` +
       (feed === "fresh" ? `|w${windowDays}` : "");
-    const ttlMs = feed === "fresh" ? 30 * 60 * 1000 : 6 * 3600 * 1000;
+    const ttlMs = (feed === "fresh" || feed === "latest")
+      ? 30 * 60 * 1000
+      : 6 * 3600 * 1000;
     const headers: Record<string, string> = { Accept: "application/json" };
     if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
 
@@ -153,6 +176,26 @@ serve(async (req) => {
       const res = await fetch(target.toString(), { headers });
       return await res.json();
     };
+
+    // imdb_lookup: exact tmdb→imdb mapping for rail cards (`tmdb:<id>`).
+    // The details page treats the result as authoritative, so it goes
+    // straight to TMDB external_ids — no warm-cache round-trip.
+    if (feed === "imdb_lookup") {
+      const tmdbId = (u.searchParams.get("tmdb") ?? "").replace(/\D/g, "");
+      const kind = u.searchParams.get("type") === "tv" ? "tv" : "movie";
+      if (!tmdbId) return json({ error: "bad tmdb" }, 400, 60);
+      try {
+        const ext = await tmdbGet(`/${kind}/${tmdbId}/external_ids`);
+        const imdb = typeof ext?.imdb_id === "string" ? ext.imdb_id : "";
+        return json(
+          { items: [{ id: Number(tmdbId), imdb_id: imdb }] },
+          imdb ? 200 : 404,
+          3600,
+        );
+      } catch (_) {
+        return json({ error: "lookup failed" }, 502, 10);
+      }
+    }
 
     try {
       const url = Deno.env.get("SUPABASE_URL") ?? "";
@@ -191,13 +234,97 @@ serve(async (req) => {
     let totalPages = 1;
     let tmdbPage: unknown = 1;
 
-    if (feed === "fresh") {
+    if (feed === "latest") {
+      // Release-date-driven catalogue (v1.3.5): the newest N titles per
+      // language bucket, ordered by the day they actually came out.
+      // `discover` sorts by popularity and `fresh` is a rolling window of
+      // whatever is hot - neither answers "what came out this month".
+      const langs = languages.length ? languages : ["hi"];
+      const sinceIso = isoDate(Date.now() - 540 * DAY_MS); // 18 months
+      // Unreleased films must not reach the rail: a poster without a
+      // source is the "catalogue me hai, playback nahi" complaint.
+      const untilIso = isoDate(Date.now());
+      // Anime (ja/ko) is not origin-scoped to India.
+      const animeBucket = langs.every((l) => l === "ja" || l === "ko");
+      const perLang = Math.min(
+        50,
+        Math.max(1, Number(u.searchParams.get("limit") ?? 50)),
+      );
+      const rows: LatestTitle[] = [];
+      for (const lang of langs) {
+        // TMDB discover answers 20 rows per page, so one page can never
+        // fill a 50-title bucket - keep paging until the bucket is full.
+        // The upper bound (`lte` = today) is what keeps unreleased films
+        // out of the rail: they have a poster and a date but no source,
+        // which is exactly the "catalogue me hai, playback nahi" report.
+        const paged: Record<string, unknown>[] = [];
+        for (let page = 1; page <= 4 && paged.length < perLang; page++) {
+          const data = await tmdbGet(`/discover/${type}`, {
+            with_original_language: lang,
+            // The Indian buckets are origin-scoped; anime is not (a 'ja'
+            // film with an IN origin country does not exist, so the filter
+            // emptied the whole bucket).
+            ...(animeBucket ? {} : { with_origin_country: region }),
+            sort_by: type === "tv"
+              ? "first_air_date.desc"
+              : "primary_release_date.desc",
+            [type === "tv"
+              ? "first_air_date.gte"
+              : "primary_release_date.gte"]: sinceIso,
+            [type === "tv"
+              ? "first_air_date.lte"
+              : "primary_release_date.lte"]: untilIso,
+            include_adult: "false",
+            page: String(page),
+          });
+          paged.push(...((data.results ?? []) as Record<string, unknown>[]));
+        }
+        for (const r of paged) {
+          const date = String(
+            type === "tv" ? r.first_air_date ?? "" : r.release_date ?? "",
+          );
+          if (!date || date > untilIso) continue;
+          rows.push({
+            id: `tmdb:${r.id}`,
+            tmdbId: String(r.id),
+            title: String(r.title ?? r.name ?? ""),
+            releaseDate: date,
+            year: date ? date.slice(0, 4) : undefined,
+            lang,
+            rating: typeof r.vote_average === "number"
+              ? r.vote_average
+              : undefined,
+            votes: typeof r.vote_count === "number" ? r.vote_count : undefined,
+            poster: r.poster_path ? IMG + r.poster_path : undefined,
+            source: "tmdb" as const,
+            sources: ["tmdb" as const],
+          });
+        }
+      }
+      items = latestFor(mergeLatest(rows), langs, perLang).map((r) => ({
+        id: Number(r.tmdbId),
+        title: r.title,
+        poster: r.poster ?? null,
+        backdrop: r.poster ? r.poster.replace("w500", "w780") : null,
+        year: r.year ?? r.releaseDate.slice(0, 4),
+        rating: r.rating ?? 0,
+        media_type: type,
+        lang: r.lang,
+        votes: r.votes ?? 0,
+        pop: 0,
+        release_date: r.releaseDate,
+      }));
+      totalPages = 1;
+      tmdbPage = 1;
+    } else if (feed === "fresh") {
       // Rolling window computed per request — no hardcoded year anywhere.
       const nowMs = Date.now();
       const lte = isoDate(nowMs);
       const gte = isoDate(nowMs - windowDays * DAY_MS);
       const wanted = languages.length ? languages : ["hi", "en"];
-      const kinds: ("movie" | "tv")[] = type === "all" ? ["movie", "tv"] : [type];
+      const kinds: ("movie" | "tv")[] = type === "all"
+        ? ["movie", "tv"]
+        : [type as "movie" | "tv"];
 
       const raw = new Map<string, Record<string, unknown>[]>();
       for (const lang of wanted) raw.set(lang, []);

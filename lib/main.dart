@@ -69,6 +69,8 @@ import './services/notification/notification_service.dart';
 import './services/notification/notification_triggers.dart';
 import './services/push/push_service.dart';
 import './services/social/dizzy_social_service.dart';
+import './services/social/dizzy_friend_service.dart';
+import './rust/frb_generated.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
 import './pages/search/universal_spotlight_modal.dart';
@@ -81,16 +83,51 @@ import './services/media/media_session_bridge.dart';
 import './services/watchparty/voice_background_gate.dart';
 import './services/watchparty/guest_auto_open.dart';
 
+/// Boot-stage cap (P-BOOT, 2026-11-12): no single initializer may hold the
+/// splash longer than this. A stage that misses the cap keeps running in the
+/// background; boot refuses to wait on it (fail-soft, same contract as the
+/// catch below). This is what guarantees runApp always runs.
+const Duration _bootStageTimeout = Duration(seconds: 12);
+
 /// Runs one boot initializer in isolation: a single failing service must not
 /// abort boot before runApp (that used to leave a permanent black window).
 Future<void> _safeInit(String name, Future<void> Function() fn) async {
+  final watch = Stopwatch()..start();
   try {
-    await fn();
+    // P-BOOT: the pre-runApp bootstrap is a real gate — a network init that
+    // stalled on a dead socket (no timeout of its own) used to pin the
+    // native splash forever: no error, no UI, no watchdog, runApp never ran.
+    // Every stage is now bounded; late completions keep going in the
+    // background and the app launches regardless.
+    // .then<void>(_) first: stages may return Future<String> etc (device_id
+    // does). A bare .timeout with a void onTimeout throws a runtime subtype
+    // error there; erasing the value type makes the void callback valid for
+    // every stage.
+    await fn()
+        .then<void>((_) {})
+        .timeout(
+          _bootStageTimeout,
+          onTimeout: () {
+            debugPrint(
+              '[boot] $name TIMEOUT >${_bootStageTimeout.inSeconds}s '
+              '(continues in background; boot proceeds)',
+            );
+            unawaited(
+              AppErrorLog.log(
+                code: 'E_BOOT_TIMEOUT',
+                screen: 'boot',
+                detail: name,
+              ),
+            );
+          },
+        );
+    debugPrint('[boot] $name ok ${watch.elapsedMilliseconds}ms');
   } catch (e, st) {
     unawaited(
       AppErrorLog.log(code: 'E_BOOT', screen: 'boot', detail: '$name: $e'),
     );
-    if (kDebugMode) debugPrint('[boot] $name failed: $e\n$st');
+    debugPrint('[boot] $name failed ${watch.elapsedMilliseconds}ms: $e');
+    if (kDebugMode) debugPrint('[boot] $name stack:\n$st');
   }
 }
 
@@ -107,6 +144,16 @@ void main() async {
   // boot continues (a black window is strictly worse).
   await _safeInit('desktop_db', DesktopDatabase.initialize);
   await _safeInit('mediakit', () async => MediaKit.ensureInitialized());
+  // v1.3.5: Rust adblock engine (rust/dizzy_adblock). Soft by design — a
+  // missing/incompatible native library disables embed ad-blocking only; every
+  // other source, and the rest of boot, is untouched.
+  await _safeInit('adblock_bridge', () async {
+    try {
+      await RustLib.init();
+    } catch (e) {
+      debugPrint('[boot] adblock bridge unavailable (soft): $e');
+    }
+  });
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await _safeInit('window_manager', windowManager.ensureInitialized);
     await _safeInit('window_service', WindowService.instance.initialize);
@@ -156,8 +203,11 @@ void main() async {
   // because init() was never called). All cloud writes stay fail-soft.
   // ignore: unawaited_futures
   CloudClient.init().then((_) => CloudAuthService.init()).then((_) async {
-    // ignore: unawaited_futures
-    DizzyIdentityService.init();
+    // The device boot registers this device and — when the session behind it
+    // changed (an update or a reinstall) — carries the @username over to the
+    // new session. The username and the gate must be read AFTER that, or the
+    // app asks for a name it already owns.
+    await DizzyIdentityService.init();
     // v1.3.3-T1.3: restore saved phone badge state.
     // ignore: unawaited_futures
     PhoneLinkService.init();
@@ -362,6 +412,10 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
         _soft(DmOutbox.flush(send: _sendOutboxEntry)),
         _soft(AnnouncementService.refresh()),
         _soft(HeartbeatService.instance.beat(force: true)),
+        // v1.3.5: friend status drifts while the app sleeps (requests sent
+        // or accepted on another device) — refetch on every resume so
+        // "Sent ✓" and pending badges are current without a restart.
+        _soft(DizzyFriendService.loadFriendships()),
         // v1.3.3-T5: hot-fix pull rides the resume heartbeat (forced,
         // TTL-bypassed).
         _soft(RemoteConfigService.refresh(force: true)),

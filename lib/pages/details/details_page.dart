@@ -8,6 +8,7 @@ import '../../models/movie/movie.dart';
 import '../../models/movie/video.dart';
 import '../../models/movie/movie_detail.dart';
 import '../../models/my_list/my_list_item.dart';
+import '../../services/catalog/catalog_service.dart';
 import '../../services/metadata/bestsimilar_scraper.dart';
 import '../../services/metadata/metadata_service.dart';
 import '../../services/scraper/sites/tmdb_helper.dart';
@@ -265,6 +266,20 @@ class _DetailsPageState extends State<DetailsPage>
     String effectiveType = widget.movie.type;
     String effectiveId = widget.movie.id;
 
+    // Rail cards carry a `tmdb:<id>` id whose TMDB title often differs
+    // from the IMDb title (e.g. "Ramayana: Rise of Legend" vs "Ramayana"),
+    // so the exact-title search fallback below can never resolve them.
+    // Ask the catalog edge for the authoritative tmdb→imdb mapping first.
+    if (effectiveId.startsWith('tmdb:')) {
+      final imdb = await CatalogService.fetchImdbId(
+        tmdbId: effectiveId.substring(5),
+        type: effectiveType,
+      );
+      if (imdb != null && imdb.isNotEmpty) {
+        effectiveId = imdb;
+      }
+    }
+
     if (effectiveId.startsWith('bestsimilar_') ||
         effectiveBaseUrl.contains('bestsimilar')) {
       final yearNum = widget.movie.year != null
@@ -289,6 +304,20 @@ class _DetailsPageState extends State<DetailsPage>
       type: effectiveType,
       imdbId: effectiveId,
     );
+
+    // Catalog-only addons (e.g. "Streaming Catalogs", resources == ['catalog'])
+    // answer /meta/*.json with HTTP 200 + their web landing page HTML, which
+    // parses to null — so EVERY card from such an addon opened a blank
+    // details page ("no data", user report 2026-11-12). The addon itself is
+    // fine, it just doesn't serve meta. Fall back to Cinemeta, the universal
+    // metadata source, so catalog cards always resolve.
+    if (meta == null && effectiveBaseUrl != 'https://v3-cinemeta.strem.io') {
+      meta = await MetadataService.fetchMeta(
+        baseUrl: 'https://v3-cinemeta.strem.io',
+        type: effectiveType,
+        imdbId: effectiveId,
+      );
+    }
 
     // If fetchMeta failed, try fallback search to resolve
     if (meta == null && !effectiveId.startsWith('tt')) {
@@ -354,7 +383,15 @@ class _DetailsPageState extends State<DetailsPage>
               .toList();
           seasons.sort();
           if (seasons.isNotEmpty) {
-            _selectedSeason = seasons.first;
+            // Season 0 is TMDB's "Specials" bucket. Defaulting to it meant
+            // "Play Episodes" opened a bonus/special episode (Cops showed
+            // S0:E16 "Crimes of Passion") instead of the actual first episode.
+            // Prefer a real season, then fall back to whatever exists.
+            final firstReal = seasons.firstWhere(
+              (s) => s != null && s > 0,
+              orElse: () => seasons.first,
+            );
+            _selectedSeason = firstReal;
             _updateEpisodesForSeason();
           } else {
             _currentSeasonEpisodes = List.from(meta.videos);
@@ -466,7 +503,12 @@ class _DetailsPageState extends State<DetailsPage>
   }
 
   bool _isDesktop([BuildContext? ctx]) {
-    return MediaQuery.sizeOf(ctx ?? context).width >= 800;
+    final size = MediaQuery.sizeOf(ctx ?? context);
+    // Width alone is not a desktop signal: a phone held in landscape is
+    // 2400x1080 (≈800x360dp) and used to get the desktop layout, whose 280dp
+    // poster column is taller than the whole viewport — the Watch button ended
+    // up off-screen. Require a tall-enough viewport as well.
+    return size.width >= 800 && size.height >= 600;
   }
 
   @override
@@ -524,10 +566,12 @@ class _DetailsPageState extends State<DetailsPage>
     // This is now just how far down the *content* starts — the backdrop
     // itself is full-viewport and persistent (see _buildBackdrop), so this
     // no longer controls when the image "runs out".
-    final heroHeight = (screenSize.height * (isDesktop ? 0.46 : 0.4)).clamp(
-      320.0,
-      520.0,
-    );
+    // The 320dp floor is taller than a landscape phone viewport (≈360dp), so
+    // the backdrop alone ate the screen. Keep the floor, but never let the
+    // hero take more than 55% of the visible height.
+    final heroHeight = (screenSize.height * (isDesktop ? 0.46 : 0.4))
+        .clamp(320.0, 520.0)
+        .clamp(0.0, screenSize.height * 0.55);
     final contentMaxWidth = isDesktop ? 1440.0 : double.infinity;
     final overlap = isDesktop ? 120.0 : 70.0;
 
@@ -743,6 +787,11 @@ class _DetailsPageState extends State<DetailsPage>
               alignment: Alignment.topCenter,
               memCacheWidth: ImageCaps.kBackdrop,
               maxWidthDiskCache: ImageCaps.kBackdrop,
+              // TMDB/Cinemeta sometimes has no backdrop (404). Without this,
+              // debug builds painted a giant red X and the exception string
+              // across the hero; release builds got a blank block.
+              errorWidget: (_, __, ___) =>
+                  const ColoredBox(color: DizzyColors.bg),
             ),
             // horizontal wash — darkens where the title/synopsis sit, leaves
             // the rest of the image breathing room instead of blacking it all out
@@ -819,6 +868,9 @@ class _DetailsPageState extends State<DetailsPage>
                   alignment: Alignment.topCenter,
                   memCacheWidth: ImageCaps.kBackdrop,
                   maxWidthDiskCache: ImageCaps.kBackdrop,
+                  // Missing backdrop (404) must not paint a red error cross
+                  // over the light hero band; let the page surface show.
+                  errorWidget: (_, __, ___) => const SizedBox.shrink(),
                 ),
                 const DecoratedBox(
                   decoration: BoxDecoration(
@@ -1010,7 +1062,11 @@ class _DetailsPageState extends State<DetailsPage>
   // poster next to it the way it did before (that's what made the poster
   // look like an afterthought in the screenshot).
   Widget _buildLogoOrTitle(MovieDetail meta, {required bool isDesktop}) {
-    if (meta.logo != null && meta.logo!.isNotEmpty) {
+    // Provider logo art is white-on-transparent, built for dark backgrounds.
+    // On Light Clay it is nearly invisible (white "COPS" on a pale card), so
+    // fall back to the plain title there instead of shipping an unreadable
+    // logo.
+    if (meta.logo != null && meta.logo!.isNotEmpty && !_isLight) {
       return ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: isDesktop ? 380 : 220,
@@ -1106,17 +1162,22 @@ class _DetailsPageState extends State<DetailsPage>
   Widget _buildMetadataRow(MovieDetail meta) {
     final List<Widget> items = [];
 
-    if (meta.year != null && meta.year!.isNotEmpty) {
-      items.add(
-        Text(
-          meta.year!,
-          style: TextStyle(
-            color: _ink,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+    if (meta.year != null && meta.year!.trim().isNotEmpty) {
+      // TMDB sometimes stores an open-ended air range ("2026–") for a show
+      // that is still running; rendered as-is it reads like a typo.
+      final yearLabel = meta.year!.replaceAll(RegExp(r'\s*[-–—]\s*$'), '').trim();
+      if (yearLabel.isNotEmpty) {
+        items.add(
+          Text(
+            yearLabel,
+            style: TextStyle(
+              color: _ink,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     if (_isSeries) {
@@ -1173,14 +1234,9 @@ class _DetailsPageState extends State<DetailsPage>
       );
     }
 
-    if (meta.genres.isNotEmpty) {
-      items.add(
-        Text(
-          meta.genres.take(3).join(' · '),
-          style: TextStyle(color: _inkSoft, fontSize: 14),
-        ),
-      );
-    }
+    // Genres already get their own chip row under the synopsis. Repeating them
+    // here wrapped onto a second line and stranded a "•" separator at the end
+    // of the first line ("1989–2025 • 39 Seasons • 7.0 •").
 
     final List<Widget> spaced = [];
     for (int i = 0; i < items.length; i++) {

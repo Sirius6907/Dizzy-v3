@@ -184,20 +184,25 @@ class MusicArtistDetailModal extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        SizedBox(
-                          height: 180,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: details.albums.length,
-                            separatorBuilder: (_, __) =>
+                        // Audit follow-up 2026-11-10: this row used a fixed
+                        // SizedBox(height: 180) around the album cards, whose
+                        // intrinsic height (~190 with the app's text metrics)
+                        // overflowed the slot by exactly 10px ("BOTTOM
+                        // OVERFLOWED BY 10.0 PIXELS"). An intrinsic-height
+                        // horizontal scroll row cannot overflow — the card
+                        // dictates its own height.
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              for (final album in details.albums) ...[
+                                MusicAlbumCard(
+                                  album: album,
+                                  onTap: () => onOpenAlbum(album.id),
+                                ),
                                 const SizedBox(width: 14),
-                            itemBuilder: (context, index) {
-                              final album = details.albums[index];
-                              return MusicAlbumCard(
-                                album: album,
-                                onTap: () => onOpenAlbum(album.id),
-                              );
-                            },
+                              ],
+                            ],
                           ),
                         ),
                       ],

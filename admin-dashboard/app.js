@@ -102,6 +102,7 @@ const PAGE_META = {
   moderation: ['Moderation', 'Reported rooms waiting on you'],
   scrapers: ['Scrapers', 'Crowd votes & kill switches'],
   users: ['Fleet', 'Live presence · devices · installs — everything tracked in one place'],
+  usernames: ['Usernames', 'Who holds each @name and how to repair a stranded one'],
   push: ['Announcements', 'In-app banners the app polls'],
   config: ['Remote config', 'Flags & limits read at app startup'],
   audit: ['Audit log', 'Every admin write, newest first'],
@@ -126,6 +127,7 @@ function show(name) {
   if (name === 'scrapers') loadScrapers();
   if (name === 'overview') startOverviewLive(); else stopOverviewLive();
   if (name === 'users') { loadUsers(); loadDevices(); startFleetLive(); } else stopFleetLive();
+  if (name === 'usernames') loadUsernames();
   if (name === 'push') { loadAnn(); loadPushLog(); }
   if (name === 'config') loadCfg();
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
@@ -1205,6 +1207,60 @@ async function loadDevices() {
     }).join('')
       || `<tr><td colspan="6">${emptyState('📭', 'No devices yet', 'Devices register on app boot.')}</td></tr>`;
   } catch (e) { toast('Devices failed: ' + e.message, 'err'); }
+}
+
+// ── v1.3.5: username ownership ──
+// A guest session that no longer owns a device row leaves its @name behind;
+// the person then cannot claim their own name. This panel shows the owner,
+// whether the name is stranded, and lets an admin release or move it.
+async function loadUsernames() {
+  const tb = document.querySelector('#unamesTbl tbody');
+  if (tb) tb.innerHTML = skRows(8, 6);
+  try {
+    const rows = await rpc('admin_usernames', {
+      p_search: ($('unSearch') || {}).value || '',
+      p_limit: 100,
+    });
+    if (tb) tb.innerHTML = (rows || []).map((u) => {
+      const stranded = (u.device_count || 0) === 0;
+      const devices = (u.devices || []).map((d) =>
+        `<span class="chip">${esc(d.device_code || '')}</span>`).join(' ')
+        || '<span class="mut">none</span>';
+      const session = u.is_anonymous
+        ? '<span class="pill">guest</span>'
+        : '<span class="pill p-live">verified</span>';
+      const flag = stranded
+        ? ' <span class="pill p-closed" title="no device row — the name was left behind">stranded</span>'
+        : '';
+      return `<tr><td class="mono">@${esc(u.username)}</td>
+       <td class="mut mono" title="${esc(u.user_id)}">${esc(shortId(u.user_id))}…</td>
+       <td>${session}${flag}</td>
+       <td>${devices}</td>
+       <td class="mut" title="${esc(fmtAbs(u.last_seen))}">${ago(u.last_seen)}</td>
+       <td><button class="btn btn-sm" onclick="reassignUsername('${esc(u.username)}')">Reassign</button>
+           <button class="btn btn-danger btn-sm" onclick="releaseUsername('${esc(u.username)}')">Release</button></td></tr>`;
+    }).join('')
+      || `<tr><td colspan="6">${emptyState('🔤', 'No usernames yet', 'Names appear after the first claim.')}</td></tr>`;
+  } catch (e) { toast('Usernames failed: ' + e.message, 'err'); }
+}
+
+async function releaseUsername(name) {
+  if (!confirm(`Release @${name}? The name becomes claimable by anyone.`)) return;
+  try {
+    await rpc('admin_release_username', { p_username: name });
+    toast('@' + name + ' released', 'ok');
+    loadUsernames();
+  } catch (e) { toast('Release failed: ' + e.message, 'err'); }
+}
+
+async function reassignUsername(name) {
+  const uid = (prompt(`Move @${name} to which user id? (paste the uid)`, '')) || '';
+  if (!uid.trim()) return;
+  try {
+    await rpc('admin_reassign_username', { p_username: name, p_target_uid: uid.trim() });
+    toast('@' + name + ' reassigned', 'ok');
+    loadUsernames();
+  } catch (e) { toast('Reassign failed: ' + e.message, 'err'); }
 }
 
 async function revokeDevice(deviceId, revoke) {

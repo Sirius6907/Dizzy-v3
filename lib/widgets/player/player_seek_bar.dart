@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../models/player/skip_segment_model.dart';
+import '../../services/player/playback_duration_guard.dart';
 import 'player_glass.dart';
 
 /// Timeline scrubber with buffered progress and interactive hover / drag preview.
@@ -35,7 +36,10 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
   bool _isScrubbing = false;
   double? _scrubFraction;
   double? _hoverFraction;
-  bool _showRemainingTime = true;
+  // Total duration is the sane default: a fresh open used to show a negative
+  // countdown ("-1:56:19") as the very first thing the user saw, which reads
+  // as a broken duration. Remaining is opt-in via a tap.
+  bool _showRemainingTime = false;
 
   String _formatDuration(Duration d) {
     if (d.isNegative) {
@@ -49,6 +53,9 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
     }
     return '${d.inMinutes}:$seconds';
   }
+
+  /// Unknown-duration placeholder (live streams, broken containers).
+  static const String _unknown = '--:--';
 
   void _updateScrub(double localX, double width) {
     if (width <= 0) return;
@@ -96,17 +103,22 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
     Duration? currentBuffered,
   ) {
     final totalMs = widget.duration.inMilliseconds;
+    // duration == 0 means the player could not verify a duration (bogus or
+    // still unknown): no scrub positions, no countdown, no negative numbers.
+    final totalKnown = totalMs > 0;
     final currentMs = currentPosition.inMilliseconds;
-    final currentFraction = totalMs > 0
+    final currentFraction = totalKnown
         ? (currentMs / totalMs).clamp(0.0, 1.0)
         : 0.0;
     final bufferedMs = currentBuffered?.inMilliseconds ?? 0;
-    final bufferedFraction = totalMs > 0
+    final bufferedFraction = totalKnown
         ? (bufferedMs / totalMs).clamp(0.0, 1.0)
         : 0.0;
     final activeFraction = _scrubFraction ?? currentFraction;
 
-    final remainingDuration = widget.duration - currentPosition;
+    final remainingDuration = totalKnown
+        ? PlaybackDurationGuard.remaining(currentPosition, widget.duration)
+        : null;
 
     return Row(
       children: [
@@ -294,7 +306,8 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
                         ),
 
                         // Floating Timestamp Preview Bubble on Hover / Scrub
-                        if ((_isHovered || _isScrubbing) &&
+                        if (totalKnown &&
+                            (_isHovered || _isScrubbing) &&
                             (_hoverFraction != null ||
                                 _scrubFraction != null)) ...[
                           Positioned(
@@ -348,16 +361,20 @@ class _PlayerSeekBarState extends State<PlayerSeekBar> {
 
         // Time End / Remaining Toggle
         GestureDetector(
-          onTap: () => setState(() => _showRemainingTime = !_showRemainingTime),
+          onTap: totalKnown
+              ? () => setState(() => _showRemainingTime = !_showRemainingTime)
+              : null,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: Container(
               constraints: const BoxConstraints(minWidth: 46),
               alignment: Alignment.centerRight,
               child: Text(
-                _showRemainingTime
-                    ? (_formatDuration(-remainingDuration))
-                    : _formatDuration(widget.duration),
+                !totalKnown
+                    ? _unknown
+                    : (_showRemainingTime
+                          ? '${_formatDuration(remainingDuration ?? Duration.zero)} left'
+                          : _formatDuration(widget.duration)),
                 style: const TextStyle(
                   color: PlayerTheme.inkMuted,
                   fontSize: 12.5,

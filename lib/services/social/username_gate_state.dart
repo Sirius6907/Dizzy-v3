@@ -70,6 +70,21 @@ abstract final class UsernameGatePolicy {
   static bool canDefer(int failedAttempts) => failedAttempts >= 2;
 }
 
+/// What the gate should do with the answer of a claim attempt.
+enum UsernameGateAction { done, reclaim, stop }
+
+abstract final class UsernameGateFlow {
+  /// The server reports 'reclaimable' when the name is still held by an
+  /// anonymous session that no longer owns any device — this device left it
+  /// behind. The app then asks the server to hand the name back instead of
+  /// telling the person to pick a different one.
+  static UsernameGateAction afterClaim(Map<String, dynamic> result) {
+    if (result['success'] == true) return UsernameGateAction.done;
+    if (result['code'] == 'reclaimable') return UsernameGateAction.reclaim;
+    return UsernameGateAction.stop;
+  }
+}
+
 /// Boot-time state holder. Everything fails soft: an unreachable server
 /// leaves the gate undecided, which shows nothing.
 class UsernameGateState {
@@ -109,6 +124,17 @@ class UsernameGateState {
           .eq('user_id', uid)
           .maybeSingle();
       has = row != null;
+      if (!has) {
+        // The session behind this device may have changed (an update that
+        // swapped the anonymous user, or a partial data wipe). The local
+        // store still knows which name this device used — ask the server
+        // to hand it back instead of stranding it on a dead session.
+        final local = await DizzySocialService.readLocalUsername();
+        if (local != null && local.isNotEmpty) {
+          final reclaimed = await DizzySocialService.reclaimUsername(local);
+          if (reclaimed['success'] == true) has = true;
+        }
+      }
     } catch (e) {
       AppLog.d('[UsernameGate] resolve failed (soft): $e');
     }
@@ -137,10 +163,10 @@ class UsernameGateState {
     try {
       final uid = CloudClient.db.auth.currentUser?.id;
       if (uid == null) return false;
-      final res = await CloudClient.db.rpc('merge_devices', params: {
-        'p_old_anon_uid': candidate.userId,
-        'p_canonical_uid': uid,
-      });
+      final res = await CloudClient.db.rpc(
+        'merge_devices',
+        params: {'p_old_anon_uid': candidate.userId, 'p_canonical_uid': uid},
+      );
       if (res is! Map || res['success'] != true) return false;
       returning.value = null;
       await DizzySocialService.loadCurrentUsername();
@@ -153,10 +179,14 @@ class UsernameGateState {
   }
 
   /// Claims through the existing service; on success the gate is done.
+  /// A 'reclaimable' answer means the name is this device's own — the app
+  /// asks the server to move it back instead of blocking the person.
   static Future<Map<String, dynamic>> claim(String raw) async {
-    final res = await DizzySocialService.claimUsername(
-      UsernameGatePolicy.normalize(raw),
-    );
+    final normalized = UsernameGatePolicy.normalize(raw);
+    var res = await DizzySocialService.claimUsername(normalized);
+    if (UsernameGateFlow.afterClaim(res) == UsernameGateAction.reclaim) {
+      res = await DizzySocialService.reclaimUsername(normalized);
+    }
     if (res['success'] == true) {
       phase.value = UsernameGate.notNeeded;
       returning.value = null;
@@ -169,15 +199,36 @@ class UsernameGateState {
   static Future<bool?> isAvailable(String raw) async {
     if (!CloudClient.isReady) return null;
     try {
-      final res = await CloudClient.db.rpc('username_available', params: {
-        'p_username': UsernameGatePolicy.normalize(raw),
-      });
+      final res = await CloudClient.db.rpc(
+        'username_available',
+        params: {'p_username': UsernameGatePolicy.normalize(raw)},
+      );
       if (res is Map && res['available'] is bool) {
         return res['available'] as bool;
       }
       return null;
     } catch (e) {
       AppLog.d('[UsernameGate] availability failed (soft): $e');
+      return null;
+    }
+  }
+
+  /// The server's verdict for [raw]: 'ok', 'reclaimable' (this device left
+  /// the name behind), 'taken', 'reserved', 'rate_limited' … null when the
+  /// server could not be asked.
+  static Future<String?> availabilityReason(String raw) async {
+    if (!CloudClient.isReady) return null;
+    try {
+      final res = await CloudClient.db.rpc(
+        'username_available',
+        params: {'p_username': UsernameGatePolicy.normalize(raw)},
+      );
+      if (res is Map && res['reason'] is String) {
+        return res['reason'] as String;
+      }
+      return null;
+    } catch (e) {
+      AppLog.d('[UsernameGate] availability reason failed (soft): $e');
       return null;
     }
   }

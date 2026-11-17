@@ -11,10 +11,12 @@ import '../../models/movie/movie.dart';
 import '../../pages/details/details_page.dart';
 import '../cloud/cloud_client.dart';
 import '../errors/app_log.dart';
+import '../metadata/metadata_service.dart';
 import '../notification/notification_inbox.dart';
 import '../notification/notification_prefs.dart';
 import '../notification/notification_service.dart';
 import '../notification/notification_sync.dart';
+import '../scraper/sites/tmdb_helper.dart';
 import '../taste/taste_event_service.dart';
 
 /// FCM payload after normalisation. Pure value type so the mapping is
@@ -97,6 +99,105 @@ class PushPayload {
   }
 }
 
+/// What [PushService.openMovieFor] must do about the entity id before opening
+/// details. Cinemeta (`MetadataService.fetchMeta`) only understands imdb `tt…`
+/// ids, but push-brain sends a numeric TMDB id — so numeric ids need a
+/// tmdb→imdb bridge first. `tt…` / other id shapes pass through untouched.
+class PushEntityPlan {
+  const PushEntityPlan({required this.endpoint, required this.tmdbId});
+
+  /// 'movie' or 'tv' — TMDB's resource path for [tmdbId].
+  final String endpoint;
+  final int tmdbId;
+}
+
+/// House copy that push-brain prefixes to the real title (2026-11-R2
+/// templates). Order: longer/more specific first is unnecessary — none is a
+/// prefix of another — but keep the list grouped by shape for readability.
+@visibleForTesting
+const List<String> pushCopyPrefixes = <String>[
+  'aaj raat:',
+  'aaj ka pick:',
+  'one episode?',
+  'episode time…',
+  'psst…',
+  'psst — ',
+  'tonight:',
+  'new on dizzy:',
+];
+
+/// House copy that push-brain appends after the real title. Terminal
+/// punctuation (`?`, `…`) is deliberately absent — displayTitleFor's end-trim
+/// consumes it before suffix matching runs.
+@visibleForTesting
+const List<String> pushCopySuffixes = <String>[
+  ' — episode mood',
+  ' — tum ke liye',
+  ' — aaj dekh lein',
+  ' ab dizzy par',
+  ' just landed',
+];
+
+/// Pure: the real title name behind the notification copy, so
+/// [MetadataService.findMovieByTitle]'s exact-title gate can match when the
+/// tmdb→imdb bridge fails. Strips emoji/symbol runs at both ends, then the
+/// known prefixes/suffixes, then trims again ('🌙 Aaj raat: Dune 2 🍿' →
+/// 'Dune 2'; 'One episode? Breaking Bad 🎬' → 'Breaking Bad'; a plain title
+/// passes through unchanged). Case-insensitive, idempotent, never empty-lossy:
+/// if nothing remains (e.g. the 40-char shade clip ate the name) the nearest
+/// prior state wins.
+@visibleForTesting
+String displayTitleFor(String rawTitle) {
+  var s = rawTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (s.isEmpty) return s;
+  // Emoji, symbols, punctuation and control chars at either end — but keep
+  // a leading '(' or trailing ')' so titles starting with parens survive.
+  final lead = RegExp(r'^[^\p{L}\p{N}(]+', unicode: true);
+  final tail = RegExp(r'[^\p{L}\p{N})]+$', unicode: true);
+  for (var round = 0; round < 3; round++) {
+    var changed = false;
+    final next = s.replaceAll(lead, '').replaceAll(tail, '').trim();
+    final lower = next.toLowerCase();
+    for (final p in pushCopyPrefixes) {
+      if (lower.startsWith(p)) {
+        s = next.substring(p.length).trim();
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) {
+      for (final suf in pushCopySuffixes) {
+        if (lower.endsWith(suf)) {
+          s = next.substring(0, next.length - suf.length).trim();
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (!changed) return next;
+    // else loop again: another prefix/suffix/emoji run may remain.
+  }
+  return s;
+}
+
+/// Pure: how the payload's entity id must be resolved before DetailsPage can
+/// use it. Returns null when no bridge is needed (`tt…` ids pass straight
+/// through, legacy non-numeric shapes keep today's pass-through behavior,
+/// unparseable ids cannot be bridged).
+@visibleForTesting
+PushEntityPlan? resolvePlanForPushEntity(PushPayload payload) {
+  final id = payload.entityId.trim();
+  if (id.isEmpty) return null;
+  if (id.toLowerCase().startsWith('tt')) return null;
+  final tmdbId = int.tryParse(id);
+  if (tmdbId == null || tmdbId <= 0) return null;
+  final type = payload.entityType.trim().toLowerCase();
+  return PushEntityPlan(
+    endpoint: type == 'tv' || type == 'series' ? 'tv' : 'movie',
+    tmdbId: tmdbId,
+  );
+}
+
 /// Must be a top-level function: FCM spawns a background isolate that calls
 /// it by name. No UI and no local-notification plugin — only the inbox is
 /// written, because the OS already draws the banner for notification
@@ -133,6 +234,10 @@ class PushService {
   static Future<String?> Function()? _tokenOverride;
   static Future<String> Function()? _appVersionOverride;
   static Future<bool> Function(Map<String, dynamic>)? _registerOverride;
+  static Future<String?> Function({required String endpoint, required int tmdbId})?
+      _imdbResolveOverride;
+  static Future<Movie?> Function(String title, String type, int? year)?
+      _titleSearchOverride;
 
   /// 'android' | 'ios' | 'desktop' | 'other' — stored on device_tokens.
   static String get platformName {
@@ -168,6 +273,9 @@ class PushService {
         unawaited(handleTap(payloadFromMessage(m)));
       });
       unawaited(_handleInitialMessage(messaging));
+      // Foreground banner taps come back through the local-notification
+      // plugin; hook them into the same open-details pipeline.
+      NotificationService.onTapData = _onLocalTap;
       await _syncAuthorization();
       if (_granted) unawaited(registerToken());
       unawaited(NotificationSync.push(gate: NotificationService.gate));
@@ -261,6 +369,11 @@ class PushService {
     unawaited(dispatch(payloadFromMessage(message)));
   }
 
+  /// Local-banner tap (foreground): rebuild the payload from the data blob
+  /// carried in the notification and feed the same handleTap path.
+  static Future<void> _onLocalTap(Map<String, dynamic> data) =>
+      handleTap(PushPayload.fromData(data));
+
   /// Foreground delivery: inbox + banner under the user's gate.
   static Future<void> dispatch(PushPayload payload) async {
     if (!payload.hasContent) return;
@@ -270,10 +383,33 @@ class PushService {
         payload.title,
         payload.body,
         id: payload.id,
+        dataPayload: tapDataFor(payload),
       );
     } catch (e) {
       AppLog.d('[Push] dispatch failed (soft): $e');
     }
+  }
+
+  /// Data carried in the local banner so a foreground banner tap can rebuild
+  /// the payload and open the title details screen. Everything round-trips:
+  /// the rebuilt payload must pass [PushPayload.fromData] with the same
+  /// content/openable result, otherwise `handleTap` would bail on
+  /// `hasContent` and the tap would do nothing. Pure: unit-tested.
+  static Map<String, String> tapDataFor(PushPayload payload) {
+    final data = <String, String>{
+      'kind': payload.kind.key,
+      'title': payload.title,
+      'body': payload.body,
+      'entity_type': payload.entityType,
+      'entity_id': payload.entityId,
+      'lang': payload.lang,
+      'poster': payload.poster,
+      'year': payload.year,
+      'rating': payload.rating,
+    };
+    final id = payload.id;
+    if (id != null && id.isNotEmpty) data['id'] = id;
+    return data;
   }
 
   /// Background isolate: inbox only, history load first so a cold isolate
@@ -319,21 +455,112 @@ class PushService {
       _pendingTap = payload;
       return;
     }
-    nav.push(MaterialPageRoute(builder: (_) => DetailsPage(movie: movie)));
+    final resolved = await openMovieFor(payload);
+    if (resolved == null) return;
+    // The navigator may have gone away while resolving (dispose during
+    // navigation away) — fall back to pending so nothing is silently lost.
+    final nav2 = navigatorKey.currentState;
+    if (nav2 == null) {
+      _pendingTap = payload;
+      return;
+    }
+    nav2.push(
+      MaterialPageRoute(builder: (_) => DetailsPage(movie: resolved)),
+    );
   }
 
   /// Called after the first frame — flushes a tap that arrived before the
   /// navigator existed.
-  static void openPendingTap() {
+  static Future<void> openPendingTap() async {
     final payload = _pendingTap;
     if (payload == null) return;
     final nav = navigatorKey.currentState;
     if (nav == null) return;
-    final movie = payload.toMovie();
-    if (movie == null) return;
     _pendingTap = null;
-    nav.push(MaterialPageRoute(builder: (_) => DetailsPage(movie: movie)));
+    final resolved = await openMovieFor(payload);
+    if (resolved == null) return;
+    final nav2 = navigatorKey.currentState;
+    if (nav2 == null) return;
+    nav2.push(
+      MaterialPageRoute(builder: (_) => DetailsPage(movie: resolved)),
+    );
   }
+
+  /// Resolves the movie to open for a tap: swaps a numeric TMDB entity id for
+  /// an imdb id via [TmdbHelper.fetchImdbId] (Cinemeta only speaks `tt…`),
+  /// and when that bridge fails falls back to an exact-title search on the
+  /// copy-cleaned name (pure [displayTitleFor]). Always returns a movie for an
+  /// openable payload — worst case it keeps prior pass-through behavior.
+  /// Resolution failures are soft and logged, never thrown.
+  static Future<Movie?> openMovieFor(PushPayload payload) async {
+    final base = payload.toMovie();
+    if (base == null) return null;
+    final plan = resolvePlanForPushEntity(payload);
+    if (plan == null) return base;
+    String id = base.id;
+    try {
+      String? imdb;
+      if (_imdbResolveOverride != null) {
+        final resolve = _imdbResolveOverride;
+        if (resolve != null) {
+          imdb = await resolve(
+            endpoint: plan.endpoint,
+            tmdbId: plan.tmdbId,
+          );
+          if (imdb != null && imdb.isNotEmpty) id = imdb;
+        }
+      } else {
+        imdb = await TmdbHelper.fetchImdbId(
+          endpoint: plan.endpoint,
+          tmdbId: plan.tmdbId,
+        );
+        if (imdb != null && imdb.startsWith('tt')) id = imdb;
+      }
+    } catch (e) {
+      AppLog.d('[Push] tmdb->imdb bridge failed (soft): $e');
+    }
+    if (id != base.id) {
+      return _withId(base, id);
+    }
+    // Bridge unavailable/failed → exact-title fallback with copy cleaned.
+    final displayTitle = displayTitleFor(payload.title);
+    if (displayTitle.isEmpty) return base;
+    try {
+      Movie? found;
+      if (_titleSearchOverride != null) {
+        found = await _titleSearchOverride!(
+          displayTitle,
+          base.type,
+          _yearOf(payload),
+        );
+      } else {
+        found = await MetadataService.findMovieByTitle(
+          title: displayTitle,
+          type: base.type,
+          year: _yearOf(payload),
+        );
+      }
+      if (found != null && found.id.isNotEmpty) return found;
+    } catch (e) {
+      AppLog.d('[Push] title fallback failed (soft): $e');
+    }
+    return base;
+  }
+
+  static int? _yearOf(PushPayload payload) {
+    final y = payload.year.replaceAll(RegExp(r'[^0-9]'), '');
+    return y.length >= 4 ? int.tryParse(y.substring(0, 4)) : null;
+  }
+
+  static Movie _withId(Movie base, String id) => Movie(
+        id: id,
+        name: base.name,
+        poster: base.poster,
+        year: base.year,
+        type: base.type,
+        addonBaseUrl: base.addonBaseUrl,
+        imdbRating: base.imdbRating,
+      );
 
   @visibleForTesting
   static PushPayload? get pendingTapForTest => _pendingTap;
@@ -350,6 +577,20 @@ class PushService {
     _registerOverride = register;
   }
 
+  /// Test seams for the open path: [imdbResolve] mirrors
+  /// [TmdbHelper.fetchImdbId], [titleSearch] mirrors
+  /// [MetadataService.findMovieByTitle]; both let tests assert on the exact
+  /// calls without network. Pass null to leave that seam unchanged.
+  @visibleForTesting
+  static void configureResolverForTest({
+    Future<String?> Function({required String endpoint, required int tmdbId})?
+        imdbResolve,
+    Future<Movie?> Function(String title, String type, int? year)? titleSearch,
+  }) {
+    if (imdbResolve != null) _imdbResolveOverride = imdbResolve;
+    if (titleSearch != null) _titleSearchOverride = titleSearch;
+  }
+
   @visibleForTesting
   static void resetForTest() {
     _testMode = false;
@@ -360,5 +601,7 @@ class PushService {
     _tokenOverride = null;
     _appVersionOverride = null;
     _registerOverride = null;
+    _imdbResolveOverride = null;
+    _titleSearchOverride = null;
   }
 }

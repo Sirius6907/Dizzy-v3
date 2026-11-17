@@ -15,13 +15,18 @@ class ScraperQuarantineService {
   /// Matched against `scraper.name.toLowerCase()` — these MUST equal the
   /// unique per-site keys (v1.2.0-P1: no more shared 'DizzyHTTP' label).
   static const Set<String> _baselineDead = {
-    'flaxmovies',
     'peestream',
     'vidfast',
     'vidgod',
     'vidup',
     'bcine',
   };
+
+  /// Providers the owner verified live against the real upstream
+  /// (2026-11-16): they answer with playable HLS. They must never be
+  /// quarantined — a 7-day skip silenced FlaxMovies completely, so the
+  /// app showed none of its sources.
+  static const Set<String> _neverQuarantine = {'rivestream', 'flaxmovies'};
 
   /// User-visible brand per scraper key, for the Sources health dashboard
   /// (Settings → Sources). Keys not listed here fall back to Title Case.
@@ -112,12 +117,18 @@ class ScraperQuarantineService {
         changed = true;
       }
     }
+    // A verified provider must never stay silenced, even if an older
+    // install already quarantined it.
+    for (final name in _neverQuarantine) {
+      if (_quarantineMap.remove(name) != null) changed = true;
+    }
     if (changed) _persist();
   }
 
   /// Returns true if [scraperName] should be skipped on this scrape run.
   static bool isQuarantined(String scraperName) {
     final key = scraperName.trim().toLowerCase();
+    if (_neverQuarantine.contains(key)) return false;
     final quarantinedAt = _quarantineMap[key];
     if (quarantinedAt == null) return false;
 

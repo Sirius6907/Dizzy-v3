@@ -122,4 +122,140 @@ void main() {
       expect(incoming.status, FriendStatus.pending);
     });
   });
+
+  group('statusFor — accepted wins over pending', () {
+    Friendship row(String requester, String addressee, FriendStatus status) =>
+        Friendship(
+          requesterId: requester,
+          addresseeId: addressee,
+          status: status,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+    test('pending only → pending (both directions)', () {
+      final rows = [row('alice', 'bob', FriendStatus.pending)];
+      expect(
+        DizzyFriendService.statusFor('alice', rows, 'bob'),
+        FriendStatus.pending,
+      );
+      // Outgoing pending must read the same as incoming pending.
+      expect(
+        DizzyFriendService.statusFor('bob', rows, 'alice'),
+        FriendStatus.pending,
+      );
+    });
+
+    test('mutual add (two rows) → accepted, never "Sent ✓"', () {
+      final rows = [
+        row('alice', 'bob', FriendStatus.pending), // alice sent
+        row('bob', 'alice', FriendStatus.pending), // bob sent
+      ];
+      expect(
+        DizzyFriendService.statusFor('alice', rows, 'bob'),
+        FriendStatus.pending,
+      );
+    });
+
+    test('accepted + stale pending → accepted (the real friendship)', () {
+      final rows = [
+        row('alice', 'bob', FriendStatus.pending), // leftover after mutual add
+        row('bob', 'alice', FriendStatus.accepted),
+      ];
+      expect(
+        DizzyFriendService.statusFor('alice', rows, 'bob'),
+        FriendStatus.accepted,
+      );
+      expect(
+        DizzyFriendService.statusFor('bob', rows, 'alice'),
+        FriendStatus.accepted,
+      );
+    });
+
+    test('unrelated rows are ignored; unknown user → null', () {
+      final rows = [
+        row('alice', 'bob', FriendStatus.accepted),
+        row('carol', 'dave', FriendStatus.pending),
+      ];
+      expect(DizzyFriendService.statusFor('alice', rows, 'carol'), isNull);
+      expect(DizzyFriendService.statusFor('alice', rows, 'alice'), isNull);
+    });
+
+    test('blocked row hides the friendship unless accepted exists', () {
+      final rows = [row('alice', 'bob', FriendStatus.blocked)];
+      expect(
+        DizzyFriendService.statusFor('alice', rows, 'bob'),
+        FriendStatus.blocked,
+      );
+      // An accepted row still wins even alongside a block row.
+      final mixed = [
+        row('alice', 'bob', FriendStatus.blocked),
+        row('bob', 'alice', FriendStatus.accepted),
+      ];
+      expect(
+        DizzyFriendService.statusFor('alice', mixed, 'bob'),
+        FriendStatus.accepted,
+      );
+    });
+  });
+
+  group('incomingPendingFor — search tab Accept vs Sent ✓', () {
+    Friendship row(String requester, String addressee, FriendStatus status) =>
+        Friendship(
+          requesterId: requester,
+          addresseeId: addressee,
+          status: status,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+    test('requester sees their own outgoing pending → false (Sent ✓)', () {
+      final rows = [row('alice', 'bob', FriendStatus.pending)];
+      expect(
+        DizzyFriendService.incomingPendingFor('alice', rows, 'bob'),
+        isFalse,
+      );
+    });
+
+    test('addressee sees the incoming pending → true (Accept button)', () {
+      final rows = [row('bob', 'alice', FriendStatus.pending)];
+      expect(
+        DizzyFriendService.incomingPendingFor('alice', rows, 'bob'),
+        isTrue,
+      );
+    });
+
+    test('accepted rows are never incoming pending', () {
+      final rows = [row('bob', 'alice', FriendStatus.accepted)];
+      expect(
+        DizzyFriendService.incomingPendingFor('alice', rows, 'bob'),
+        isFalse,
+      );
+    });
+
+    test('outgoing pending toward someone else does not count', () {
+      final rows = [
+        row('alice', 'bob', FriendStatus.pending), // alice → bob
+        row('carol', 'alice', FriendStatus.pending), // carol → alice
+      ];
+      expect(
+        DizzyFriendService.incomingPendingFor('alice', rows, 'bob'),
+        isFalse,
+      );
+      expect(
+        DizzyFriendService.incomingPendingFor('alice', rows, 'carol'),
+        isTrue,
+      );
+    });
+  });
+
+  group('Cloud-off guards stay consistent', () {
+    test('getStatus returns null when cloud is unavailable', () {
+      expect(DizzyFriendService.getStatus('anyone'), isNull);
+    });
+
+    test('isIncomingPending returns false when cloud is unavailable', () {
+      expect(DizzyFriendService.isIncomingPending('anyone'), isFalse);
+    });
+  });
 }

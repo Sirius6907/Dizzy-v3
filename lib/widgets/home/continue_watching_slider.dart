@@ -143,7 +143,14 @@ class _ContinueWatchingSliderState extends State<ContinueWatchingSlider> {
             : screenWidth > 600
             ? 240.0
             : 200.0;
-        final cardHeight = cardWidth * 0.62 + 60.0;
+        // The 60dp shelf under the artwork holds the title + "m left" line.
+        // At 200% system text that line block grew past the shelf and every
+        // card painted "BOTTOM OVERFLOWED BY 23 PIXELS"; scale the shelf with
+        // the text instead of clipping it.
+        final textScale = MediaQuery.textScalerOf(
+          context,
+        ).scale(1.0).clamp(1.0, 2.0);
+        final cardHeight = cardWidth * 0.62 + 60.0 * textScale;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 28),

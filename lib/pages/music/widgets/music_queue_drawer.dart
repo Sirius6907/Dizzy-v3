@@ -1,14 +1,21 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
 import 'package:flutter/services.dart';
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
+import '../../../services/music/music_radio_service.dart';
+import '../../../services/theme/app_theme_service.dart';
 import '../../../utils/perf/image_caps.dart';
 import '../../../widgets/common/performance_liquid_lens.dart';
 import 'music_hoverable.dart';
 
+/// Queue drawer (restyle 2026-11-09): the hardcoded 0xFF7C5CFF purple +
+/// raw white text are gone in favour of [AppThemePalette.primaryColor] and
+/// the Prism ink/silver tokens. Adds a "More like this" rail fed by
+/// [MusicRadioService.generateSongRadio] with play-next / add-to-queue
+/// actions on the existing player controller (extended, not rewritten).
 class MusicQueueDrawer extends StatefulWidget {
   final VoidCallback onClose;
 
@@ -21,10 +28,24 @@ class MusicQueueDrawer extends StatefulWidget {
 class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
   bool _showHistory = false;
 
+  // Similar next-up state. Cached per seed track so controller churn
+  // doesn't re-fire the radio search on every notifyListeners().
+  String? _similarSeedId;
+  bool _similarLoading = false;
+  List<MusicTrack>? _similar;
+
+  bool get _isLight => AppThemeService.currentPalette.value.isLight;
+  Color get _ink => PrismInk.primary(_isLight);
+  Color get _inkSoft => PrismInk.soft(_isLight);
+  Color get _inkFaint => PrismInk.faint(_isLight);
+
+  Color get _accent => AppThemeService.currentPalette.value.primaryColor;
+
   @override
   void initState() {
     super.initState();
     MusicPlayerController.instance.addListener(_onControllerChanged);
+    _maybeLoadSimilar();
   }
 
   @override
@@ -35,6 +56,64 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
 
   void _onControllerChanged() {
     if (mounted) setState(() {});
+    _maybeLoadSimilar();
+  }
+
+  /// Loads similar tracks for the currently playing track. Skips everything
+  /// already in the queue (now playing + upcoming + history) by id.
+  Future<void> _maybeLoadSimilar() async {
+    final controller = MusicPlayerController.instance;
+    final current = controller.currentTrack;
+    if (current == null || _similarSeedId == current.id) return;
+
+    _similarSeedId = current.id;
+    _similarLoading = true;
+    _similar = null;
+    if (mounted) setState(() {});
+
+    try {
+      final radio = await MusicRadioService.instance.generateSongRadio(current);
+      if (!mounted) return;
+      final queuedIds = <String>{
+        ...[
+          current,
+          ...controller.upcomingTracks,
+          ...controller.historyTracks,
+        ].map((t) => t.id),
+      };
+      final suggestions = radio
+          .where((t) => !queuedIds.contains(t.id))
+          .take(6)
+          .toList();
+      if (!mounted || _similarSeedId != current.id) return;
+      setState(() {
+        _similarLoading = false;
+        _similar = suggestions;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _similarLoading = false;
+        _similar = const [];
+      });
+    }
+  }
+
+  void _playNextFromSimilar(MusicTrack track) {
+    HapticFeedback.lightImpact();
+    MusicPlayerController.instance.playTrackNext(track);
+    // Remove from the rail so it can't be queued twice.
+    setState(() {
+      _similar = _similar?.where((t) => t.id != track.id).toList();
+    });
+  }
+
+  void _queueFromSimilar(MusicTrack track) {
+    HapticFeedback.lightImpact();
+    MusicPlayerController.instance.addTrackToQueue(track);
+    setState(() {
+      _similar = _similar?.where((t) => t.id != track.id).toList();
+    });
   }
 
   @override
@@ -44,22 +123,31 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
     final upcoming = controller.upcomingTracks;
     final history = controller.historyTracks;
     final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final accent = _accent;
 
     return PerformanceLiquidLens(
       style: PerformanceGlassStyles.sheet,
       child: Container(
         width: isMobile ? MediaQuery.sizeOf(context).width : 400,
         decoration: BoxDecoration(
-          gradient: PrismShadows.surfaceGradient(false),
+          gradient: PrismShadows.surfaceGradient(_isLight),
           borderRadius: isMobile
               ? const BorderRadius.vertical(top: Radius.circular(28))
               : const BorderRadius.only(
                   topLeft: Radius.circular(28),
                   bottomLeft: Radius.circular(28),
                 ),
-          boxShadow: PrismShadows.floating(isLight: false),
+          boxShadow: PrismShadows.floating(isLight: _isLight),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        // Audit follow-up 2026-11-10: top padding now includes the status
+        // bar inset. Without it the header row (and the X close button)
+        // rendered behind system status-bar chrome and taps near it missed.
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20 + MediaQuery.paddingOf(context).top,
+          20,
+          16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -69,25 +157,28 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C5CFF).withValues(alpha: 0.2),
+                    color: accent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.queue_music_rounded,
-                    color: Color(0xFF7C5CFF),
+                    color: accent,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
-                  'Queue & Up Next',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                Expanded(
+                  child: Text(
+                    'Queue & Up Next',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 if (upcoming.isNotEmpty)
                   TextButton(
                     onPressed: () {
@@ -95,17 +186,13 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                       controller.clearUpcomingQueue();
                       setState(() {});
                     },
-                    child: const Text(
+                    child: Text(
                       'Clear',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                      style: TextStyle(color: _inkFaint, fontSize: 12),
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: Colors.white70,
-                    size: 20,
-                  ),
+                  icon: Icon(Icons.close_rounded, color: _inkSoft, size: 20),
                   onPressed: widget.onClose,
                 ),
               ],
@@ -118,37 +205,24 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                 children: [
                   // 1. NOW PLAYING
                   if (currentTrack != null) ...[
-                    const Text(
-                      'NOW PLAYING',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    _sectionLabel('NOW PLAYING'),
                     const SizedBox(height: 8),
-                    _buildNowPlayingCard(currentTrack, controller),
+                    _buildNowPlayingCard(currentTrack, controller, accent),
                     const SizedBox(height: 18),
                   ],
 
                   // 2. UP NEXT REORDERABLE LIST
                   Row(
                     children: [
-                      Text(
-                        'UP NEXT (${upcoming.length})',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
+                      _sectionLabel('UP NEXT (${upcoming.length})'),
                       const Spacer(),
                       if (upcoming.isNotEmpty)
-                        const Text(
+                        Text(
                           'Drag handles to reorder',
-                          style: TextStyle(color: Colors.white24, fontSize: 10),
+                          style: TextStyle(
+                            color: _inkFaint.withValues(alpha: 0.5),
+                            fontSize: 10,
+                          ),
                         ),
                     ],
                   ),
@@ -162,22 +236,19 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                         children: [
                           Icon(
                             Icons.playlist_play_rounded,
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: _ink.withValues(alpha: 0.15),
                             size: 42,
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'No more songs queued up',
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 13,
-                            ),
+                            style: TextStyle(color: _inkFaint, fontSize: 13),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Songs you play or add will appear here',
                             style: TextStyle(
-                              color: Colors.white24,
+                              color: _inkFaint.withValues(alpha: 0.7),
                               fontSize: 11,
                             ),
                           ),
@@ -213,7 +284,11 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
 
                   const SizedBox(height: 16),
 
-                  // 3. HISTORY SECTION
+                  // 3. SIMILAR NEXT-UP — radio suggestions for the current seed
+                  if (currentTrack != null && _buildSimilarSection() != null)
+                    _buildSimilarSection()!,
+
+                  // 4. HISTORY SECTION
                   if (history.isNotEmpty) ...[
                     InkWell(
                       onTap: () => setState(() => _showHistory = !_showHistory),
@@ -226,18 +301,12 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                               _showHistory
                                   ? Icons.keyboard_arrow_down_rounded
                                   : Icons.keyboard_arrow_right_rounded,
-                              color: Colors.white54,
+                              color: _inkFaint,
                               size: 18,
                             ),
                             const SizedBox(width: 4),
-                            Text(
+                            _sectionLabel(
                               'PLAYED RECENTLY (${history.length})',
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                              ),
                             ),
                           ],
                         ),
@@ -258,18 +327,131 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
     );
   }
 
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: _inkFaint,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget? _buildSimilarSection() {
+    if (_similarLoading && _similar == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionLabel('UP NEXT · FOR THIS SONG'),
+          const SizedBox(height: 12),
+          const Center(
+            child: SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ],
+      );
+    }
+    final suggestions = _similar;
+    if (suggestions == null || suggestions.isEmpty) return null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('UP NEXT · FOR THIS SONG'),
+        const SizedBox(height: 8),
+        for (final track in suggestions) _buildSimilarItem(track),
+      ],
+    );
+  }
+
+  Widget _buildSimilarItem(MusicTrack track) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: _ink.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 2,
+          ),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: track.coverUrl,
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+              memCacheWidth: ImageCaps.kThumb,
+              maxWidthDiskCache: ImageCaps.kThumb,
+            ),
+          ),
+          title: Text(
+            track.title,
+            style: TextStyle(
+              color: _ink,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            track.artist,
+            style: TextStyle(color: _inkFaint, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          // Tap = play next (the next-up contract of this rail).
+          onTap: () => _playNextFromSimilar(track),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Play next',
+                icon: Icon(
+                  Icons.low_priority_rounded,
+                  color: _accent,
+                  size: 18,
+                ),
+                onPressed: () => _playNextFromSimilar(track),
+              ),
+              IconButton(
+                tooltip: 'Add to queue',
+                icon: Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: _inkFaint,
+                  size: 18,
+                ),
+                onPressed: () => _queueFromSimilar(track),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNowPlayingCard(
     MusicTrack track,
     MusicPlayerController controller,
+    Color accent,
   ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF7C5CFF).withValues(alpha: 0.16),
+        color: accent.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF7C5CFF).withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
@@ -292,8 +474,8 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
               children: [
                 Text(
                   track.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _ink,
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
                   ),
@@ -304,7 +486,7 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
                 Text(
                   track.artist,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: _ink.withValues(alpha: 0.7),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -315,28 +497,50 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
             ),
           ),
           const SizedBox(width: 8),
-          // Animated Waveform Indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF7C5CFF),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.graphic_eq_rounded, color: Colors.white, size: 16),
-                SizedBox(width: 4),
-                Text(
-                  'Playing',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Animated Waveform Indicator + one-tap seed radio affordance:
+          // every playing screen offers the next obvious action.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.graphic_eq_rounded,
+                      color: PrismAccent.onAccent,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      controller.isLoading
+                          ? 'Loading'
+                          : controller.isPlaying
+                          ? 'Playing'
+                          : 'Paused',
+                      style: const TextStyle(
+                        color: PrismAccent.onAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Play radio for this song',
+                icon: Icon(Icons.radar_rounded, color: accent, size: 22),
+                onPressed: () => MusicRadioService.instance.startRadioForTrack(
+                  context,
+                  track,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -353,77 +557,83 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
       key: key,
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: DizzyVoid.surface1,
+        color: AppThemeService.currentPalette.value.cardBackgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _ink.withValues(alpha: 0.05)),
       ),
-      child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
-            imageUrl: track.coverUrl,
-            width: 38,
-            height: 38,
-            fit: BoxFit.cover,
-            memCacheWidth: ImageCaps.kThumb,
-            maxWidthDiskCache: ImageCaps.kThumb,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 2,
           ),
-        ),
-        title: Text(
-          track.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          track.artist,
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          final targetIndex = controller.currentIndex + 1 + index;
-          controller.jumpToQueueIndex(targetIndex);
-          setState(() {});
-        },
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Delete from queue button
-            IconButton(
-              icon: const Icon(
-                Icons.remove_circle_outline_rounded,
-                color: Colors.white38,
-                size: 18,
-              ),
-              tooltip: 'Remove',
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                final targetIndex = controller.currentIndex + 1 + index;
-                controller.removeFromQueue(targetIndex);
-                setState(() {});
-              },
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: track.coverUrl,
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+              memCacheWidth: ImageCaps.kThumb,
+              maxWidthDiskCache: ImageCaps.kThumb,
             ),
-            // Reorder Drag Handle
-            ReorderableDragStartListener(
-              index: index,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4.0),
-                child: Icon(
-                  Icons.drag_indicator_rounded,
-                  color: Colors.white38,
-                  size: 20,
+          ),
+          title: Text(
+            track.title,
+            style: TextStyle(
+              color: _ink,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            track.artist,
+            style: TextStyle(color: _inkFaint, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            final targetIndex = controller.currentIndex + 1 + index;
+            controller.jumpToQueueIndex(targetIndex);
+            setState(() {});
+          },
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Delete from queue button
+              IconButton(
+                icon: Icon(
+                  Icons.remove_circle_outline_rounded,
+                  color: _inkFaint.withValues(alpha: 0.7),
+                  size: 18,
+                ),
+                tooltip: 'Remove',
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  final targetIndex = controller.currentIndex + 1 + index;
+                  controller.removeFromQueue(targetIndex);
+                  setState(() {});
+                },
+              ),
+              // Reorder Drag Handle
+              ReorderableDragStartListener(
+                index: index,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Icon(
+                    Icons.drag_indicator_rounded,
+                    color: Color(0xFFB9BEC9),
+                    size: 20,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -437,48 +647,53 @@ class _MusicQueueDrawerState extends State<MusicQueueDrawer> {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: _ink.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: CachedNetworkImage(
-            imageUrl: track.coverUrl,
-            width: 32,
-            height: 32,
-            fit: BoxFit.cover,
-            memCacheWidth: ImageCaps.kThumb,
-            maxWidthDiskCache: ImageCaps.kThumb,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 1,
           ),
-        ),
-        title: Text(
-          track.title,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          track.artist,
-          style: const TextStyle(color: Colors.white38, fontSize: 10),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: MusicHoverable(
-          scaleFactor: 1.1,
-          child: IconButton(
-            icon: const Icon(
-              Icons.replay_rounded,
-              color: Colors.white54,
-              size: 18,
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: CachedNetworkImage(
+              imageUrl: track.coverUrl,
+              width: 32,
+              height: 32,
+              fit: BoxFit.cover,
+              memCacheWidth: ImageCaps.kThumb,
+              maxWidthDiskCache: ImageCaps.kThumb,
             ),
-            tooltip: 'Replay now',
-            onPressed: () {
-              controller.jumpToQueueIndex(originalIndex);
-              setState(() {});
-            },
+          ),
+          title: Text(
+            track.title,
+            style: TextStyle(color: _inkSoft, fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            track.artist,
+            style: TextStyle(
+              color: _inkFaint.withValues(alpha: 0.6),
+              fontSize: 10,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: MusicHoverable(
+            scaleFactor: 1.1,
+            child: IconButton(
+              icon: Icon(Icons.replay_rounded, color: _inkFaint, size: 18),
+              tooltip: 'Replay now',
+              onPressed: () {
+                controller.jumpToQueueIndex(originalIndex);
+                setState(() {});
+              },
+            ),
           ),
         ),
       ),

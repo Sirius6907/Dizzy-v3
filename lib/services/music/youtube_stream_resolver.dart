@@ -6,12 +6,42 @@ import 'youtube_audio_extractor.dart';
 import 'youtube_rate_limit_guard.dart';
 
 class YoutubeStreamResolver {
-  static final YoutubeStreamResolver instance =
-      YoutubeStreamResolver._internal();
-  YoutubeStreamResolver._internal();
+  static final YoutubeStreamResolver instance = YoutubeStreamResolver();
+  YoutubeStreamResolver({YoutubeAudioExtractor? extractor})
+    : _extractor = extractor ?? YoutubeAudioExtractor.instance;
 
+  final YoutubeAudioExtractor _extractor;
   final Map<String, String> _cache = <String, String>{}; // trackId -> videoId
   final Map<String, ({String url, String userAgent})> _streamCache = {};
+
+  void invalidate(String trackId) {
+    _streamCache.remove(trackId);
+    final videoId = _cache.remove(trackId);
+    if (videoId != null) _extractor.invalidate(videoId);
+  }
+
+  /// The next usable stream for [track] after the previous one was rejected
+  /// by the native player. Tries the remaining ranked candidates of the same
+  /// video first, then a completely fresh extraction (new signed URL).
+  Future<({String url, String? userAgent})?> nextCandidate(
+    MusicTrack track,
+  ) async {
+    final videoId = _cache[track.id];
+    if (videoId != null) {
+      try {
+        final next = await _extractor
+            .nextReachableCandidate(videoId)
+            .timeout(const Duration(seconds: 6), onTimeout: () => null);
+        if (next != null) {
+          return (url: next.url, userAgent: next.userAgent);
+        }
+      } catch (_) {}
+      _extractor.invalidate(videoId);
+      _cache.remove(track.id);
+      _streamCache.remove(track.id);
+    }
+    return resolveUrl(track);
+  }
 
   Future<({String url, String? userAgent})?> resolveUrl(
     MusicTrack track, {
@@ -29,7 +59,7 @@ class YoutubeStreamResolver {
     final cachedVid = _cache[track.id];
     if (cachedVid != null) {
       try {
-        final res = await YoutubeAudioExtractor.instance
+        final res = await _extractor
             .getAudioUrl(cachedVid, verifyStream: verifyStream)
             .timeout(const Duration(seconds: 8), onTimeout: () => null);
         if (res != null) {
@@ -44,7 +74,7 @@ class YoutubeStreamResolver {
     // 3. Fast extraction via YoutubeAudioExtractor (InnerTube)
     try {
       final res = await YoutubeRateLimitGuard.runLowRequest(
-        () => YoutubeAudioExtractor.instance
+        () => _extractor
             .extract(
               track.title,
               track.artist,
@@ -69,7 +99,7 @@ class YoutubeStreamResolver {
     var vidId = _cache[track.id];
     if (vidId == null) {
       try {
-        final ids = await YoutubeAudioExtractor.instance.searchVideoIds(
+        final ids = await _extractor.searchVideoIds(
           track.title,
           track.artist,
           targetDuration: track.durationSeconds > 0

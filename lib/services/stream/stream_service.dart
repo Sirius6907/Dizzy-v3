@@ -81,67 +81,109 @@ class StreamService {
     'vixsrc',
     'fsonline',
     'movy',
+    // 2026-11-09 bulk live-probe (186 titles, new+old+series): 0 sources
+    // everywhere — they only add latency to every scrape.
+    'videasy',
+    'vidcore',
+    'fourkhdhub',
+    'xdownloader',
+    'cinejoy',
+    'dulo',
+    'flystream',
+    'movienight',
+    'mapple',
+    'nova',
+    'megasource',
+    'purstream',
+    'frame',
+    'fsharetv',
+    'fsonic',
+    'kisskh',
+    'meowtv',
+    'xpass',
   };
 
+  /// 2026-11-16 isolation: while the promoted pair is live, the app resolves
+  /// exclusively through it. Every other built-in scraper — plain HTTP,
+  /// embed and torrent — is held back at registration. Nothing is deleted:
+  /// the probe tool still iterates the full [builtInHttpScrapers] list, and
+  /// re-enabling a scraper is a one-line edit here.
+  static const Set<String> appActiveScrapers = {'rivestream', 'flaxmovies'};
+
   static void _reg(StreamScraper scraper) {
-    if (retiredScrapers.contains(scraper.name.toLowerCase())) return;
+    final name = scraper.name.toLowerCase();
+    if (retiredScrapers.contains(name)) return;
+    if (!appActiveScrapers.contains(name)) return;
     ScraperManager.instance.registerScraper(scraper);
   }
+
+  /// Every built-in HTTP scraper implementation, in the app's registration
+  /// order.
+  ///
+  /// This is the single source of truth: [_registerBuiltInScrapers] registers
+  /// this list (minus [retiredScrapers]) and tooling such as the source probe
+  /// uses the same list. A retired site therefore stays reachable for
+  /// re-testing without being reinstated in the app by accident.
+  static List<StreamScraper> builtInHttpScrapers() => [
+    A111477Scraper(),
+    VadapavScraper(),
+    HindMoviezScraper(),
+    FourKHDHubScraper(),
+    XDownloaderScraper(),
+    VideasyScraper(),
+    VidSrcScraper(),
+    MultiEmbedScraper(),
+    VidCoreScraper(),
+    FlyStreamScraper(),
+    MovieNightScraper(),
+    DownloadEverythingScraper(),
+    MovyScraper(),
+    VuflixScraper(),
+    RiveStreamScraper(),
+    CinejoyScraper(),
+    DuloScraper(),
+    VidUpScraper(),
+    FlaxMoviesScraper(),
+    VidGodScraper(),
+    VidFastScraper(),
+    PeeStreamScraper(),
+    LookMovieScraper(),
+    HexaScraper(),
+    BcineScraper(),
+    MappleScraper(),
+    NovaScraper(),
+    MegaSourceScraper(),
+    PurstreamScraper(),
+    VidApiScraper(),
+    VidRockScraper(),
+    VidVaultScraper(),
+    VidZeeScraper(),
+    CineSrcScraper(),
+    CineSuScraper(),
+    FrameScraper(),
+    FshareTvScraper(),
+    FSonicScraper(),
+    FSOnlineScraper(),
+    KissKhScraper(),
+    LMScriptScraper(),
+    MeowTvScraper(),
+    VidLinkScraper(),
+    VixSrcScraper(),
+    XPassScraper(),
+  ];
 
   static void _registerBuiltInScrapers() {
     // Source of truth = builtin addon entry (kept in lockstep with the
     // Settings switch via AddonManager.toggleAddon). isP2pEnabled mirrors it.
     if (AddonManager.instance.isDizzyActive) {
-      ScraperManager.instance.registerScraper(KnabenScraper());
+      _reg(KnabenScraper());
       _reg(TorrentGalaxyScraper());
     } else {
       ScraperManager.instance.unregisterTorrentScrapers();
     }
-    _reg(A111477Scraper());
-    _reg(VadapavScraper());
-    _reg(HindMoviezScraper());
-    _reg(FourKHDHubScraper());
-    _reg(XDownloaderScraper());
-    _reg(VideasyScraper());
-    _reg(VidSrcScraper());
-    _reg(MultiEmbedScraper());
-    _reg(VidCoreScraper());
-    _reg(FlyStreamScraper());
-    _reg(MovieNightScraper());
-    _reg(DownloadEverythingScraper());
-    _reg(MovyScraper());
-    _reg(VuflixScraper());
-    _reg(RiveStreamScraper());
-    _reg(CinejoyScraper());
-    _reg(DuloScraper());
-    _reg(VidUpScraper());
-    _reg(FlaxMoviesScraper());
-    _reg(VidGodScraper());
-    _reg(VidFastScraper());
-    _reg(PeeStreamScraper());
-    _reg(LookMovieScraper());
-    _reg(HexaScraper());
-    _reg(BcineScraper());
-    _reg(MappleScraper());
-    _reg(NovaScraper());
-    _reg(MegaSourceScraper());
-    _reg(PurstreamScraper());
-    _reg(VidApiScraper());
-    _reg(VidRockScraper());
-    _reg(VidVaultScraper());
-    _reg(VidZeeScraper());
-    _reg(CineSrcScraper());
-    _reg(CineSuScraper());
-    _reg(FrameScraper());
-    _reg(FshareTvScraper());
-    _reg(FSonicScraper());
-    _reg(FSOnlineScraper());
-    _reg(KissKhScraper());
-    _reg(LMScriptScraper());
-    _reg(MeowTvScraper());
-    _reg(VidLinkScraper());
-    _reg(VixSrcScraper());
-    _reg(XPassScraper());
+    for (final scraper in builtInHttpScrapers()) {
+      _reg(scraper);
+    }
   }
 
   /// Fetches streams from all active stream-capable addons for the given

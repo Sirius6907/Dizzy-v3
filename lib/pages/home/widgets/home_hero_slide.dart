@@ -43,7 +43,10 @@ class HomeHeroSlide extends StatelessWidget {
     final heroStyle = HomePageSettings.heroStyle.value;
 
     final imageUrl = detail?.background ?? movie.poster;
-    final year = detail?.year ?? movie.year;
+    // Cinemeta stores "...–" for a show that is still airing ("2026–"), which
+    // reads like a typo next to the runtime. Drop the dangling dash only.
+    final rawYear = detail?.year ?? movie.year;
+    final year = rawYear?.replaceAll(RegExp(r'\s*[-–—]\s*$'), '').trim();
     final rating = detail?.imdbRating;
     final description = detail?.description;
     final genres = detail?.genres ?? const <String>[];
@@ -80,8 +83,8 @@ class HomeHeroSlide extends StatelessWidget {
                 end: Alignment.centerRight,
                 stops: const [0.0, 0.38, 0.85],
                 colors: [
-                  PrismDark.bg.withValues(alpha: 0.95),
-                  PrismDark.bg.withValues(alpha: 0.70),
+                  PrismDark.bg.withValues(alpha: isCompact ? 0.35 : 0.85),
+                  PrismDark.bg.withValues(alpha: isCompact ? 0.15 : 0.45),
                   Colors.transparent,
                 ],
               ),
@@ -114,8 +117,8 @@ class HomeHeroSlide extends StatelessWidget {
                 end: Alignment.topCenter,
                 stops: const [0.0, 0.15, 0.55],
                 colors: [
-                  PrismDark.bg,
-                  PrismDark.bg.withValues(alpha: 0.7),
+                  palette.scaffoldBackgroundColor,
+                  PrismDark.bg.withValues(alpha: 0.9),
                   Colors.transparent,
                 ],
               ),
@@ -140,8 +143,9 @@ class HomeHeroSlide extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Rating + year + runtime
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    runSpacing: 8,
                     children: [
                       if (rating != null && rating.isNotEmpty) ...[
                         Container(
@@ -187,7 +191,7 @@ class HomeHeroSlide extends StatelessWidget {
                           year,
                           style: TextStyle(
                             fontSize: 14.5,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: PrismDark.ink.withValues(alpha: 0.55),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -197,14 +201,14 @@ class HomeHeroSlide extends StatelessWidget {
                           child: Icon(
                             Icons.circle,
                             size: 4,
-                            color: Colors.white.withValues(alpha: 0.25),
+                            color: PrismDark.ink.withValues(alpha: 0.25),
                           ),
                         ),
                         Text(
                           detail!.runtime!,
                           style: TextStyle(
                             fontSize: 14.5,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: PrismDark.ink.withValues(alpha: 0.55),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -238,7 +242,7 @@ class HomeHeroSlide extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: isCompact ? 14.0 : 15.0,
-                          color: Colors.white.withValues(alpha: 0.65),
+                          color: PrismDark.ink.withValues(alpha: 0.65),
                           height: 1.45,
                         ),
                       ),
@@ -259,17 +263,17 @@ class HomeHeroSlide extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: PrismDark.ink.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: PrismDark.ink.withValues(alpha: 0.12),
                             ),
                           ),
                           child: Text(
                             genre,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.70),
+                              color: PrismDark.ink.withValues(alpha: 0.70),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -295,7 +299,7 @@ class HomeHeroSlide extends StatelessWidget {
                               size: 22,
                             ),
                             label: const Text(
-                              'Watch Now',
+                              'Explore',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
@@ -303,7 +307,7 @@ class HomeHeroSlide extends StatelessWidget {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: palette.primaryColor,
-                              foregroundColor: Colors.white,
+                              foregroundColor: PrismDark.ink,
                               padding: EdgeInsets.symmetric(
                                 horizontal: isCompact ? 16 : 24,
                                 vertical: isCompact ? 10 : 14,
@@ -312,7 +316,9 @@ class HomeHeroSlide extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               elevation: 4,
-                              shadowColor: Colors.black.withValues(alpha: 0.35),
+                              shadowColor: PrismDark.sunken.withValues(
+                                alpha: 0.35,
+                              ),
                             ),
                           );
                         },
@@ -326,14 +332,14 @@ class HomeHeroSlide extends StatelessWidget {
                               icon: Icon(
                                 Icons.info_outline_rounded,
                                 size: isCompact ? 18 : 20,
-                                color: Colors.white.withValues(alpha: 0.80),
+                                color: PrismDark.ink.withValues(alpha: 0.80),
                               ),
                               label: Text(
                                 'Details',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: isCompact ? 13.5 : 15,
-                                  color: Colors.white.withValues(alpha: 0.80),
+                                  color: PrismDark.ink.withValues(alpha: 0.80),
                                 ),
                               ),
                               style: OutlinedButton.styleFrom(
@@ -345,7 +351,7 @@ class HomeHeroSlide extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 side: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.18),
+                                  color: PrismDark.ink.withValues(alpha: 0.18),
                                   width: 1.2,
                                 ),
                               ),

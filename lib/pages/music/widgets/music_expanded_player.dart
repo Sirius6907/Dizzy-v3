@@ -1,25 +1,21 @@
-import 'dart:ui';
-import 'music_audio_source_selector.dart';
-import 'music_dynamic_canvas_background.dart';
-import 'music_quality_badge.dart';
-import 'music_equalizer_modal.dart';
-import 'music_sleep_timer_modal.dart';
-import 'music_audio_visualizer.dart';
 import 'dart:math' as math;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dizzy/design/dizzy_tactile.dart';
 import 'package:dizzy/design/prism_shadows.dart';
+import 'package:dizzy/design/prism_tokens.dart';
+
 import '../../../models/music/music_track.dart';
 import '../../../services/music/music_player_controller.dart';
 import '../../../services/music/music_settings.dart';
 import '../../../services/theme/app_theme_service.dart';
 import '../../../utils/perf/image_caps.dart';
-import '../../../widgets/common/performance_liquid_lens.dart';
-import '../../../widgets/music/music_interactive_physics_button.dart';
 import '../../../widgets/music/music_waveform_seekbar.dart';
-import 'music_hoverable.dart';
+import 'music_audio_source_selector.dart';
+import 'music_equalizer_modal.dart';
+import 'music_queue_drawer.dart';
+import 'music_sleep_timer_modal.dart';
 
 class MusicExpandedPlayer extends StatefulWidget {
   final MusicPlayerController playerController;
@@ -45,853 +41,484 @@ class MusicExpandedPlayer extends StatefulWidget {
   State<MusicExpandedPlayer> createState() => _MusicExpandedPlayerState();
 }
 
-class _MusicExpandedPlayerState extends State<MusicExpandedPlayer>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _discAnimController;
+class _MusicExpandedPlayerState extends State<MusicExpandedPlayer> {
+  bool _queueOpen = false;
+  AppThemePalette get _palette => AppThemeService.currentPalette.value;
+  Color get _ink => PrismInk.primary(_palette.isLight);
+  Color get _soft => PrismInk.soft(_palette.isLight);
 
-  @override
-  void initState() {
-    super.initState();
-    _discAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    );
-    if (widget.playerController.isPlaying) {
-      _discAnimController.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant MusicExpandedPlayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.playerController.isPlaying && !_discAnimController.isAnimating) {
-      _discAnimController.repeat();
-    } else if (!widget.playerController.isPlaying &&
-        _discAnimController.isAnimating) {
-      _discAnimController.stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _discAnimController.dispose();
-    super.dispose();
+  void _openQueue() {
+    if (_queueOpen) return;
+    _queueOpen = true;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _palette.scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * 0.78,
+        child: MusicQueueDrawer(
+          onClose: () => Navigator.of(sheetContext).pop(),
+        ),
+      ),
+    ).whenComplete(() => _queueOpen = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final track = widget.playerController.currentTrack;
-    if (track == null) return const SizedBox.shrink();
-
-    final palette = AppThemeService.currentPalette.value;
-    final preset = MusicSettings.selectedFullscreenPreset.value;
-    final seekStyle = MusicSettings.customSeekbarStyle.value;
-    final artStyle = MusicSettings.customArtworkStyle.value;
-    final order = MusicSettings.componentOrderFullscreen.value;
-
-    final screenSize = MediaQuery.sizeOf(context);
-    final isDesktop = screenSize.width >= 800;
-    final artSize = isDesktop
-        ? 230.0
-        : math.min(screenSize.width * 0.75, screenSize.height * 0.38);
-
-    final playerBody = Column(
-      children: [
-        // Top Navigation & Actions Bar
-        Row(
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        widget.playerController,
+        AppThemeService.currentPalette,
+      ]),
+      builder: (context, _) {
+        final track = widget.playerController.currentTrack;
+        if (track == null) return const SizedBox.shrink();
+        final screen = MediaQuery.sizeOf(context);
+        final desktop = screen.width >= 800;
+        final artSize = math
+            .min(desktop ? 300.0 : screen.width - 72, screen.height * 0.32)
+            .clamp(140.0, 340.0);
+        final preset = MusicSettings.selectedFullscreenPreset.value;
+        final content = Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            MusicHoverable(
-              scaleFactor: 1.1,
-              child: IconButton(
-                icon: Icon(
-                  isDesktop
-                      ? Icons.close_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: Colors.white,
-                  size: isDesktop ? 24 : 32,
-                ),
-                onPressed: widget.onCollapse,
-              ),
-            ),
-            const Spacer(),
-            InkWell(
-              onTap: () =>
-                  MusicAudioSourceSelectorButton.showAudioSourceDialog(context),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: widget.playerController.isCurrentTrackLossless
-                      ? const Color(0xFF00D2EF).withValues(alpha: 0.15)
-                      : const Color(0xFFFF3366).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: widget.playerController.isCurrentTrackLossless
-                        ? const Color(0xFF00D2EF).withValues(alpha: 0.4)
-                        : const Color(0xFFFF3366).withValues(alpha: 0.4),
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Close player',
+                  onPressed: widget.onCollapse,
+                  icon: Icon(
+                    desktop
+                        ? Icons.close_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: _ink,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      widget.playerController.isCurrentTrackLossless
-                          ? Icons.diamond_rounded
-                          : Icons.play_circle_fill_rounded,
-                      size: 13,
-                      color: widget.playerController.isCurrentTrackLossless
-                          ? const Color(0xFF00D2EF)
-                          : const Color(0xFFFF6688),
+                Expanded(
+                  child: Text(
+                    'Now playing',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _soft,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      widget.playerController.currentQualityLabel.toUpperCase(),
-                      style: TextStyle(
-                        color: widget.playerController.isCurrentTrackLossless
-                            ? const Color(0xFF00D2EF)
-                            : const Color(0xFFFF6688),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_drop_down_rounded,
-                      size: 16,
-                      color: widget.playerController.isCurrentTrackLossless
-                          ? const Color(0xFF00D2EF)
-                          : const Color(0xFFFF6688),
-                    ),
-                  ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Add to playlist',
+                  onPressed: widget.onAddToPlaylist,
+                  icon: Icon(Icons.more_horiz_rounded, color: _ink),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (preset == MusicFullscreenPreset.customStudio)
+              ...MusicSettings.componentOrderFullscreen.value.map(
+                (key) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _customComponent(key, track, artSize),
+                ),
+              )
+            else ...[
+              _artwork(
+                track,
+                artSize,
+                preset == MusicFullscreenPreset.vinylStudio,
+              ),
+              const SizedBox(height: 32),
+              _title(track),
+              const SizedBox(height: 24),
+              _seekbar(
+                preset == MusicFullscreenPreset.cyberWaveform
+                    ? MusicSeekbarStyle.waveformEqualizer
+                    : MusicSettings.customSeekbarStyle.value,
+              ),
+              const SizedBox(height: 16),
+              _controls(),
+            ],
+            if (widget.playerController.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'Audio unavailable. Try another source or song.',
+                  style: TextStyle(color: _soft),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            ),
-            const Spacer(),
-            MusicHoverable(
-              scaleFactor: 1.1,
-              child: IconButton(
-                icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
-                onPressed: widget.onAddToPlaylist,
-              ),
-            ),
+            const SizedBox(height: 20),
+            _secondaryControls(),
+            const SizedBox(height: 16),
+            _queuePreview(),
           ],
-        ),
-        if (!isDesktop) const Spacer() else const SizedBox(height: 12),
-
-        // Preset-based or Custom Arranged Body
-        if (preset == MusicFullscreenPreset.customStudio)
-          ...order.map(
-            (key) => _buildCustomComponent(
-              key,
-              track,
-              palette,
-              seekStyle,
-              artStyle,
-              artSize,
-            ),
-          )
-        else
-          ..._buildPresetBody(preset, track, palette, seekStyle, artSize),
-
-        if (!isDesktop) const Spacer() else const SizedBox(height: 12),
-      ],
-    );
-
-    if (isDesktop) {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          // Dismissible Scrim with blur
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: widget.onCollapse,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(color: Colors.black.withValues(alpha: 0.65)),
-              ),
+        );
+        final surface = ColoredBox(
+          key: const ValueKey('music-player-surface'),
+          color: _palette.scaffoldBackgroundColor,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: content,
             ),
           ),
-          // Floating Modal Card
-          Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: 540,
-                maxHeight: math.min(740, screenSize.height * 0.88),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: PrismShadows.surfaceGradient(false),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: PrismShadows.floating(isLight: false),
+        );
+        if (desktop) {
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: widget.onCollapse,
+                  child: ColoredBox(
+                    color: PrismDark.sunken.withValues(alpha: 0.75),
+                  ),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: MusicDynamicCanvasBackground(
-                    track: track,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 20.0,
+              ),
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 540,
+                    maxHeight: screen.height * 0.92,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: PrismRadius.xlAll,
+                      boxShadow: PrismShadows.floating(
+                        isLight: _palette.isLight,
                       ),
-                      child: playerBody,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: PrismRadius.xlAll,
+                      child: surface,
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return GestureDetector(
-      onVerticalDragEnd: (details) {
-        if ((details.primaryVelocity ?? 0) > 280) {
-          HapticFeedback.lightImpact();
-          widget.onCollapse();
+            ],
+          );
         }
+        return GestureDetector(
+          onVerticalDragEnd: (details) {
+            if ((details.primaryVelocity ?? 0) < -280) {
+              HapticFeedback.lightImpact();
+              _openQueue();
+            } else if ((details.primaryVelocity ?? 0) > 280) {
+              widget.onCollapse();
+            }
+          },
+          child: surface,
+        );
       },
-      child: MusicDynamicCanvasBackground(
-        track: track,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 14.0,
-            ),
-            child: playerBody,
-          ),
-        ),
-      ),
     );
   }
 
-  List<Widget> _buildPresetBody(
-    MusicFullscreenPreset preset,
-    MusicTrack track,
-    AppThemePalette palette,
-    MusicSeekbarStyle seekStyle,
-    double artSize,
-  ) {
-    return [
-      // Artwork Section with Gestures
-      if (preset == MusicFullscreenPreset.vinylStudio)
-        _wrapArtworkGestures(
-          _buildVinylDiscArtwork(track, artSize, palette),
-          artSize,
-        )
-      else if (preset == MusicFullscreenPreset.cyberWaveform)
-        _wrapArtworkGestures(
-          _buildCyberWaveArtwork(track, artSize, palette),
-          artSize,
-        )
-      else if (preset == MusicFullscreenPreset.liquidGlassNeo)
-        _wrapArtworkGestures(
-          _buildLiquidGlassArtwork(track, artSize, palette),
-          artSize,
-        )
-      else
-        _wrapArtworkGestures(_buildCinematicArtwork(track, artSize), artSize),
-
-      const SizedBox(height: 24),
-
-      // Track & Artist Title Row with Like Button
-      _buildTitleRow(track),
-
-      const SizedBox(height: 16),
-
-      // Scrubber Canvas
-      MusicWaveformSeekbar(
-        position: widget.playerController.position,
-        duration: widget.playerController.duration,
-        isPlaying: widget.playerController.isPlaying,
-        style: preset == MusicFullscreenPreset.cyberWaveform
-            ? MusicSeekbarStyle.waveformEqualizer
-            : (preset == MusicFullscreenPreset.liquidGlassNeo
-                  ? MusicSeekbarStyle.liquidGlassSlider
-                  : seekStyle),
-        onSeek: (pos) => widget.playerController.seekTo(pos),
-      ),
-
-      const SizedBox(height: 16),
-
-      // Main Controls
-      _buildPlaybackControlsRow(palette),
-
-      const SizedBox(height: 8),
-
-      // Live Spectrum Audio Visualizer
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: MusicAudioVisualizer(
-          isPlaying: widget.playerController.isPlaying,
-          barCount: 26,
-          height: 24,
-          gradient: LinearGradient(
-            colors: [
-              palette.primaryColor.withValues(alpha: 0.7),
-              palette.accentColor.withValues(alpha: 0.9),
-            ],
-            begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-          ),
-        ),
-      ),
-    ];
-  }
-
-  Widget _buildCustomComponent(
-    String key,
-    MusicTrack track,
-    AppThemePalette palette,
-    MusicSeekbarStyle seekStyle,
-    MusicArtworkStyle artStyle,
-    double artSize,
-  ) {
-    switch (key) {
-      case 'artwork':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: _buildCustomArtworkByStyle(track, artSize, palette, artStyle),
-        );
-      case 'title':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildTitleRow(track),
-        );
-      case 'qualityBadge':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00D2EF).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: const Color(0xFF00D2EF).withValues(alpha: 0.4),
-              ),
-            ),
-            child: Text(
-              '${widget.playerController.currentQualityLabel.toUpperCase()} • HI-RES LOSSLESS AUDIO',
-              style: const TextStyle(
-                color: Color(0xFF00D2EF),
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ),
-        );
-      case 'seekbar':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: MusicWaveformSeekbar(
-            position: widget.playerController.position,
-            duration: widget.playerController.duration,
-            isPlaying: widget.playerController.isPlaying,
-            style: seekStyle,
-            onSeek: (pos) => widget.playerController.seekTo(pos),
-          ),
-        );
-      case 'mainControls':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildPlaybackControlsRow(palette),
-        );
-      case 'secondaryControls':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                tooltip: 'Karaoke Lyrics',
-                icon: const Icon(
-                  Icons.format_quote_rounded,
-                  color: Colors.white70,
-                  size: 22,
-                ),
-                onPressed: widget.onLyricsTap ?? widget.onCollapse,
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Equalizer & 3D Spatial Audio',
-                icon: const Icon(
-                  Icons.tune_rounded,
-                  color: Colors.white70,
-                  size: 22,
-                ),
-                onPressed: () => MusicEqualizerModal.show(context),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Queue & Up Next',
-                icon: const Icon(
-                  Icons.queue_music_rounded,
-                  color: Colors.white70,
-                  size: 22,
-                ),
-                onPressed: widget.onQueueTap,
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Sleep Timer',
-                icon: const Icon(
-                  Icons.bedtime_rounded,
-                  color: Colors.white70,
-                  size: 22,
-                ),
-                onPressed: () => MusicSleepTimerModal.show(context),
-              ),
-            ],
-          ),
-        );
-      case 'extraActions':
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              OutlinedButton.icon(
-                onPressed: widget.onQueueTap,
-                icon: Icon(
-                  Icons.queue_music_rounded,
-                  color: palette.primaryColor,
-                  size: 16,
-                ),
-                label: const Text(
-                  'Playing Queue',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: palette.primaryColor.withValues(alpha: 0.4),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  Widget _buildTitleRow(MusicTrack track) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                track.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w900,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                track.artist,
-                style: const TextStyle(color: Colors.white60, fontSize: 15),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              const MusicQualityBadge(),
-            ],
-          ),
-        ),
-        MusicInteractivePhysicsButton(
-          effect: MusicSettings.customHoverEffect.value,
-          glowColor: const Color(0xFFFF4B72),
-          borderRadius: BorderRadius.circular(20),
-          onTap: widget.onToggleSave,
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: Icon(
-              widget.isSaved
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: widget.isSaved ? const Color(0xFFFF4B72) : Colors.white70,
-              size: 28,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlaybackControlsRow(AppThemePalette palette) {
-    final hoverEffect = MusicSettings.customHoverEffect.value;
-    final playBtnStyle = MusicSettings.customPlayButtonStyle.value;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        MusicInteractivePhysicsButton(
-          effect: hoverEffect,
-          glowColor: palette.primaryColor,
-          borderRadius: BorderRadius.circular(14),
-          onTap: widget.playerController.toggleShuffle,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(
-              Icons.shuffle_rounded,
-              color: widget.playerController.isShuffle
-                  ? palette.primaryColor
-                  : Colors.white38,
-              size: 24,
-            ),
-          ),
-        ),
-        MusicInteractivePhysicsButton(
-          effect: hoverEffect,
-          glowColor: palette.primaryColor,
-          borderRadius: BorderRadius.circular(14),
-          onTap: widget.playerController.playPrevious,
-          child: const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Icon(
-              Icons.skip_previous_rounded,
-              color: Colors.white,
-              size: 36,
-            ),
-          ),
-        ),
-        MusicInteractivePhysicsButton(
-          effect: hoverEffect,
-          glowColor: palette.primaryColor,
-          borderRadius: BorderRadius.circular(32),
-          onTap: widget.playerController.togglePlayPause,
-          child: widget.playerController.isLoading
-              ? SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: CircularProgressIndicator(
-                    color: palette.primaryColor,
-                    strokeWidth: 3,
-                  ),
-                )
-              : _buildExpandedPlayButtonIcon(playBtnStyle, palette),
-        ),
-        MusicInteractivePhysicsButton(
-          effect: hoverEffect,
-          glowColor: palette.primaryColor,
-          borderRadius: BorderRadius.circular(14),
-          onTap: widget.playerController.playNext,
-          child: const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Icon(Icons.skip_next_rounded, color: Colors.white, size: 36),
-          ),
-        ),
-        MusicInteractivePhysicsButton(
-          effect: hoverEffect,
-          glowColor: palette.primaryColor,
-          borderRadius: BorderRadius.circular(14),
-          onTap: widget.playerController.toggleRepeat,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Icon(
-              widget.playerController.repeatMode == MusicRepeatMode.one
-                  ? Icons.repeat_one_rounded
-                  : Icons.repeat_rounded,
-              color: widget.playerController.repeatMode != MusicRepeatMode.off
-                  ? palette.primaryColor
-                  : Colors.white38,
-              size: 24,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExpandedPlayButtonIcon(
-    MusicPlayButtonStyle style,
-    AppThemePalette palette,
-  ) {
-    final isPlaying = widget.playerController.isPlaying;
-    final icon = isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded;
-
-    if (style == MusicPlayButtonStyle.liquidGlassNeo) {
-      return Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: palette.primaryColor.withValues(alpha: 0.3),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.5),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: palette.primaryColor.withValues(alpha: 0.5),
-              blurRadius: 20,
-            ),
-          ],
-        ),
-        child: Icon(icon, color: Colors.white, size: 38),
-      );
-    }
-
-    if (style == MusicPlayButtonStyle.neonSquare) {
-      return Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            colors: [palette.primaryColor, palette.accentColor],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: palette.primaryColor.withValues(alpha: 0.6),
-              blurRadius: 20,
-            ),
-          ],
-        ),
-        child: Icon(icon, color: Colors.white, size: 38),
-      );
-    }
-
-    // Default: Circle Glow
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [palette.primaryColor, palette.accentColor],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: palette.primaryColor.withValues(alpha: 0.6),
-            blurRadius: 22,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Icon(icon, color: Colors.white, size: 40),
-    );
-  }
-
-  Widget _buildVinylDiscArtwork(
-    MusicTrack track,
-    double size,
-    AppThemePalette palette,
-  ) {
-    return AnimatedBuilder(
-      animation: _discAnimController,
-      builder: (context, child) => Transform.rotate(
-        angle: widget.playerController.isPlaying
-            ? _discAnimController.value * 2 * math.pi
-            : 0,
-        child: child,
-      ),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: DizzyVoid.surface1,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.18),
-            width: 4,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: palette.primaryColor.withValues(alpha: 0.4),
-              blurRadius: 36,
-            ),
-          ],
-        ),
-        child: Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(size * 0.22),
-            child: CachedNetworkImage(
-              imageUrl: track.coverUrl,
-              width: size * 0.44,
-              height: size * 0.44,
-              fit: BoxFit.cover,
-              // P12: decode-capped (was full-res).
-              memCacheWidth: ImageCaps.kCardW,
-              maxWidthDiskCache: ImageCaps.kCardW,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCyberWaveArtwork(
-    MusicTrack track,
-    double size,
-    AppThemePalette palette,
-  ) {
-    return Container(
+  Widget _artwork(MusicTrack track, double size, bool clayFrame) {
+    final art = Container(
       width: size,
       height: size,
+      padding: EdgeInsets.all(clayFrame ? 12 : 0),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: palette.primaryColor, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: palette.primaryColor.withValues(alpha: 0.45),
-            blurRadius: 30,
-          ),
-        ],
+        gradient: PrismShadows.surfaceGradient(_palette.isLight),
+        borderRadius: PrismRadius.xlAll,
+        boxShadow: PrismShadows.raised(isLight: _palette.isLight, scale: 1.25),
+        border: Border.all(
+          color: _palette.isLight
+              ? PrismLight.borderSubtle
+              : PrismDark.borderSubtle,
+        ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: CachedNetworkImage(
-          imageUrl: track.coverUrl,
-          fit: BoxFit.cover,
-          // P12: decode-capped (was full-res).
-          memCacheWidth: ImageCaps.kCardW,
-          maxWidthDiskCache: ImageCaps.kCardW,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLiquidGlassArtwork(
-    MusicTrack track,
-    double size,
-    AppThemePalette palette,
-  ) {
-    return PerformanceLiquidLens(
-      style: PerformanceGlassStyles.sheet,
-      child: Container(
-        width: size,
-        height: size,
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-          boxShadow: [
-            BoxShadow(
-              color: palette.primaryColor.withValues(alpha: 0.35),
-              blurRadius: 28,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: CachedNetworkImage(
-            imageUrl: track.coverUrl,
-            fit: BoxFit.cover,
-            // P12: decode-capped (was full-res).
-            memCacheWidth: ImageCaps.kCardW,
-            maxWidthDiskCache: ImageCaps.kCardW,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCinematicArtwork(MusicTrack track, double size) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: CachedNetworkImage(
-        imageUrl: track.coverUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        // P12: decode-capped (was full-res).
-        memCacheWidth: ImageCaps.kCardW,
-        maxWidthDiskCache: ImageCaps.kCardW,
-      ),
-    );
-  }
-
-  Widget _buildCustomArtworkByStyle(
-    MusicTrack track,
-    double size,
-    AppThemePalette palette,
-    MusicArtworkStyle style,
-  ) {
-    if (style == MusicArtworkStyle.vinylSpinningDisc) {
-      return _buildVinylDiscArtwork(track, size, palette);
-    }
-    if (style == MusicArtworkStyle.floatingCard3D) {
-      return _buildLiquidGlassArtwork(track, size, palette);
-    }
-    if (style == MusicArtworkStyle.glowSphere) {
-      return _wrapArtworkGestures(
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: palette.primaryColor.withValues(alpha: 0.5),
-                blurRadius: 36,
+        borderRadius: PrismRadius.lgAll,
+        child: track.coverUrl.isEmpty
+            ? ColoredBox(
+                color: _palette.cardBackgroundColor,
+                child: Icon(
+                  Icons.album_rounded,
+                  size: size * 0.4,
+                  color: _soft,
+                ),
+              )
+            : CachedNetworkImage(
+                imageUrl: track.coverUrl,
+                fit: BoxFit.cover,
+                memCacheWidth: ImageCaps.kCardW,
+                maxWidthDiskCache: ImageCaps.kCardW,
+                errorWidget: (_, __, ___) =>
+                    Icon(Icons.album_rounded, size: size * 0.4, color: _soft),
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(size / 2),
-            child: CachedNetworkImage(
-              imageUrl: track.coverUrl,
-              fit: BoxFit.cover,
-              // P12: decode-capped (was full-res).
-              memCacheWidth: ImageCaps.kCardW,
-              maxWidthDiskCache: ImageCaps.kCardW,
-            ),
-          ),
-        ),
-        size,
-      );
-    }
-    return _wrapArtworkGestures(_buildCinematicArtwork(track, size), size);
-  }
-
-  Widget _wrapArtworkGestures(Widget artwork, double size) {
+      ),
+    );
     return GestureDetector(
+      onVerticalDragEnd: (details) {
+        if ((details.primaryVelocity ?? 0) < -280) _openQueue();
+        if ((details.primaryVelocity ?? 0) > 280) widget.onCollapse();
+      },
       onHorizontalDragEnd: (details) {
-        final velocity = details.primaryVelocity ?? 0;
-        if (velocity < -250) {
-          HapticFeedback.mediumImpact();
+        if ((details.primaryVelocity ?? 0) < -250) {
           widget.playerController.playNext();
-        } else if (velocity > 250) {
-          HapticFeedback.mediumImpact();
+        }
+        if ((details.primaryVelocity ?? 0) > 250) {
           widget.playerController.playPrevious();
         }
       },
       onDoubleTapDown: (details) {
-        final x = details.localPosition.dx;
-        if (x < size * 0.4) {
-          HapticFeedback.lightImpact();
-          widget.playerController.seekTo(
-            widget.playerController.position - const Duration(seconds: 10),
-          );
-        } else if (x > size * 0.6) {
-          HapticFeedback.lightImpact();
-          widget.playerController.seekTo(
-            widget.playerController.position + const Duration(seconds: 10),
-          );
-        }
+        final delta = details.localPosition.dx < size / 2 ? -10 : 10;
+        widget.playerController.seekTo(
+          widget.playerController.position + Duration(seconds: delta),
+        );
       },
-      child: artwork,
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateY(clayFrame ? -0.035 : 0),
+        child: art,
+      ),
     );
+  }
+
+  Widget _title(MusicTrack track) => Row(
+    children: [
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              track.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _ink,
+                fontSize: 24,
+                height: 1.15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              track.artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: _soft, fontSize: 15),
+            ),
+          ],
+        ),
+      ),
+      IconButton(
+        tooltip: widget.isSaved ? 'Remove from liked songs' : 'Like song',
+        onPressed: widget.onToggleSave,
+        icon: Icon(
+          widget.isSaved
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
+          color: widget.isSaved ? PrismAccent.text(_palette.isLight) : _soft,
+          size: 28,
+        ),
+      ),
+    ],
+  );
+
+  Widget _seekbar(MusicSeekbarStyle style) => MusicWaveformSeekbar(
+    position: widget.playerController.position,
+    duration: widget.playerController.duration,
+    isPlaying: widget.playerController.isPlaying,
+    style: style,
+    onSeek: widget.playerController.seekTo,
+  );
+
+  Widget _controls() {
+    final controller = widget.playerController;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          tooltip: 'Shuffle',
+          onPressed: controller.toggleShuffle,
+          icon: Icon(
+            Icons.shuffle_rounded,
+            color: controller.isShuffle
+                ? PrismAccent.text(_palette.isLight)
+                : _soft,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Previous song',
+          onPressed: controller.playPrevious,
+          icon: Icon(Icons.skip_previous_rounded, color: _ink, size: 34),
+        ),
+        SizedBox(
+          width: 72,
+          height: 72,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _palette.primaryColor,
+              borderRadius:
+                  MusicSettings.customPlayButtonStyle.value ==
+                      MusicPlayButtonStyle.neonSquare
+                  ? PrismRadius.lgAll
+                  : BorderRadius.circular(36),
+              boxShadow: PrismShadows.raised(isLight: _palette.isLight),
+            ),
+            child: IconButton(
+              tooltip: controller.isPlaying ? 'Pause' : 'Play',
+              onPressed: controller.isLoading
+                  ? null
+                  : controller.togglePlayPause,
+              icon: controller.isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: PrismAccent.onAccent,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      controller.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: PrismAccent.onAccent,
+                      size: 38,
+                    ),
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Next song',
+          onPressed: controller.playNext,
+          icon: Icon(Icons.skip_next_rounded, color: _ink, size: 34),
+        ),
+        IconButton(
+          tooltip: 'Repeat',
+          onPressed: controller.toggleRepeat,
+          icon: Icon(
+            controller.repeatMode == MusicRepeatMode.one
+                ? Icons.repeat_one_rounded
+                : Icons.repeat_rounded,
+            color: controller.repeatMode == MusicRepeatMode.off
+                ? _soft
+                : PrismAccent.text(_palette.isLight),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sourceButton() => TextButton.icon(
+    onPressed: () =>
+        MusicAudioSourceSelectorButton.showAudioSourceDialog(context),
+    icon: Icon(
+      widget.playerController.isCurrentTrackLossless
+          ? Icons.album_rounded
+          : Icons.graphic_eq_rounded,
+      size: 16,
+    ),
+    label: Text(
+      widget.playerController.currentQualityLabel,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+    style: TextButton.styleFrom(foregroundColor: _soft),
+  );
+
+  Widget _secondaryControls() => Row(
+    children: [
+      Expanded(child: _sourceButton()),
+      IconButton(
+        tooltip: 'Lyrics',
+        onPressed: widget.onLyricsTap,
+        icon: Icon(Icons.format_quote_rounded, color: _soft),
+      ),
+      IconButton(
+        tooltip: 'Equalizer',
+        onPressed: () => MusicEqualizerModal.show(context),
+        icon: Icon(Icons.tune_rounded, color: _soft),
+      ),
+      IconButton(
+        tooltip: 'Sleep timer',
+        onPressed: () => MusicSleepTimerModal.show(context),
+        icon: Icon(Icons.bedtime_rounded, color: _soft),
+      ),
+    ],
+  );
+
+  Widget _queuePreview() {
+    final upcoming = widget.playerController.upcomingTracks;
+    return Tooltip(
+      message: 'Queue & Up Next',
+      child: Material(
+        color: _palette.cardBackgroundColor,
+        borderRadius: PrismRadius.lgAll,
+        child: InkWell(
+          onTap: _openQueue,
+          borderRadius: PrismRadius.lgAll,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.queue_music_rounded, color: _ink),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Up next · ${upcoming.length} songs',
+                        style: TextStyle(color: _soft, fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        upcoming.isEmpty ? 'Open queue' : upcoming.first.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.keyboard_arrow_up_rounded, color: _soft),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _customComponent(String key, MusicTrack track, double size) {
+    switch (key) {
+      case 'artwork':
+        return _artwork(
+          track,
+          size,
+          MusicSettings.customArtworkStyle.value !=
+              MusicArtworkStyle.glowSphere,
+        );
+      case 'title':
+        return _title(track);
+      case 'qualityBadge':
+        return _sourceButton();
+      case 'seekbar':
+        return _seekbar(MusicSettings.customSeekbarStyle.value);
+      case 'mainControls':
+        return _controls();
+      case 'secondaryControls':
+        return _secondaryControls();
+      case 'extraActions':
+        return TextButton.icon(
+          onPressed: _openQueue,
+          icon: const Icon(Icons.queue_music_rounded),
+          label: const Text('Open queue'),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }

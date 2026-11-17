@@ -14,6 +14,16 @@ abstract class StreamScraper {
   /// name, so identity comparison on names is unreliable for type checks.
   bool get isTorrentScraper => false;
 
+  /// True when this source reliably indexes releases from the current year.
+  /// New-release titles are tried against these FIRST (the resolve budget is
+  /// 20s, so ordering — not raw count — decides whether a 2026 movie gets a
+  /// stream at all). Only set this where live probing proved it.
+  bool get indexesNewReleases => false;
+
+  /// Tie-breaker inside each ordering group (higher = earlier). Default 50;
+  /// a proven-fast, high-yield source may raise it, a slow/partial one lower.
+  int get priority => 50;
+
   /// Yields sources progressively one-by-one as they are resolved.
   Stream<StreamSource> scrapeStream({
     required String type,
@@ -113,7 +123,7 @@ class ScraperManager {
     // v1.1.9 (Task 19): snapshot per scrape — mid-scrape P2P toggles apply
     // on the NEXT scrape by design (consistent source set per run).
     final p2pAllowed = P2pSettingsService.isP2pEnabled.value;
-    final activeScrapers = _scrapers.where((s) {
+    var activeScrapers = _scrapers.where((s) {
       if (!p2pAllowed && s.isTorrentScraper) {
         return false;
       }
@@ -128,6 +138,26 @@ class ScraperManager {
       }
       return true;
     }).toList();
+
+    // New-release ordering (2026-11-09): only the first ~10 scrapers run in
+    // the initial window, so a 2026 title must hit the sources that actually
+    // index this year before the pool fills with slow/archival sites.
+    _sortForReleaseRecency(activeScrapers, year);
+
+    // P2P off → the promoted pair is the first-priority streaming source
+    // for every title. They are moved to the head of the pool so their
+    // answers reach the autoplay race before any other scraper.
+    if (!p2pAllowed) {
+      final promoted = <StreamScraper>[];
+      final rest = <StreamScraper>[];
+      for (final s in activeScrapers) {
+        (promotedScrapers.contains(s.name.trim().toLowerCase())
+                ? promoted
+                : rest)
+            .add(s);
+      }
+      activeScrapers = [...promoted, ...rest];
+    }
 
     if (activeScrapers.isEmpty) {
       controller.close();
@@ -208,6 +238,41 @@ class ScraperManager {
 
     return controller.stream;
   }
+
+  /// Orders scrapers in place: new-release indexes first for a recent title,
+  /// then by [StreamScraper.priority], preserving registration order on ties
+  /// (Dart's sort is not stable, so the original index is the final key).
+  ///
+  /// [year] is the title's release year. "Recent" means this year or last;
+  /// older titles keep the plain priority order, where archival sources win.
+  static void _sortForReleaseRecency(List<StreamScraper> scrapers, int? year) {
+    if (scrapers.length < 2) return;
+    final nowYear = DateTime.now().year;
+    final wantsNewReleases = year != null && year >= nowYear - 1;
+    final order = List<int>.generate(scrapers.length, (i) => i);
+    order.sort((a, b) {
+      final sa = scrapers[a];
+      final sb = scrapers[b];
+      if (wantsNewReleases) {
+        final na = sa.indexesNewReleases ? 0 : 1;
+        final nb = sb.indexesNewReleases ? 0 : 1;
+        if (na != nb) return na.compareTo(nb);
+      }
+      final byPriority = sb.priority.compareTo(sa.priority);
+      if (byPriority != 0) return byPriority;
+      return a.compareTo(b);
+    });
+    final sorted = [for (final i in order) scrapers[i]];
+    for (var i = 0; i < scrapers.length; i++) {
+      scrapers[i] = sorted[i];
+    }
+  }
+
+  /// The providers the owner verified live against the real upstream
+  /// (2026-11-16): RiveStream and FlaxMovies answer with playable HLS.
+  /// When in-app P2P is OFF, they are the first-priority streaming sources
+  /// for every title, so they must be scraped before the rest.
+  static const Set<String> promotedScrapers = {'rivestream', 'flaxmovies'};
 
   /// Runs ONE scraper's stream into [controller] with dedup + quarantine
   /// votes. Extracted verbatim from the old inline loop so bounded pooling

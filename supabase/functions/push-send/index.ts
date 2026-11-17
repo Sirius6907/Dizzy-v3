@@ -49,6 +49,39 @@ function text(raw: unknown, max: number): string {
   return String(raw ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+/** FCM v1 message shape. When the payload carries a poster URL it rides as
+ *  the notification image (both the top-level notification and the
+ *  android-specific override accept an `image` field per the FCM v1
+ *  reference); a missing or empty poster sends no image key at all. */
+export function buildFcmMessage(
+  title: string,
+  body: string,
+  data: Record<string, string>,
+): Record<string, unknown> {
+  const notification: Record<string, unknown> = { title: title || "Dizzy", body };
+  const androidNotification: Record<string, unknown> = {
+    channel_id: String(data.kind ?? "releases"),
+    sound: "default",
+  };
+  const poster = String(data.poster ?? "").trim();
+  if (poster) {
+    notification.image = poster;
+    androidNotification.image = poster;
+  }
+  return {
+    notification,
+    data,
+    android: {
+      priority: "high",
+      notification: androidNotification,
+    },
+    apns: {
+      headers: { "apns-priority": "10" },
+      payload: { aps: { sound: "default" } },
+    },
+  };
+}
+
 function b64url(bytes: Uint8Array): string {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
@@ -238,18 +271,7 @@ serve(async (req) => {
     }
 
     const access = await fcmAccessToken(sa);
-    const message: Record<string, unknown> = {
-      notification: { title: title || "Dizzy", body: messageBody },
-      data,
-      android: {
-        priority: "high",
-        notification: { channel_id: kind, sound: "default" },
-      },
-      apns: {
-        headers: { "apns-priority": "10" },
-        payload: { aps: { sound: "default" } },
-      },
-    };
+    const message: Record<string, unknown> = buildFcmMessage(title, messageBody, data);
 
     let sent = 0;
     let failed = 0;

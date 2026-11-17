@@ -421,10 +421,14 @@ extension _WatchScreenStateLayout on _WatchScreenState {
   Widget _buildMetaRow(MovieDetail meta) {
     final items = <Widget>[];
 
-    if (meta.year != null && meta.year!.isNotEmpty) {
+    // Cinemeta's open-ended air range ("2026–") must not render with a
+    // dangling dash beside the runtime.
+    final yearLabel =
+        meta.year?.replaceAll(RegExp(r'\s*[-–—]\s*$'), '').trim() ?? '';
+    if (yearLabel.isNotEmpty) {
       items.add(
         Text(
-          meta.year!,
+          yearLabel,
           style: const TextStyle(
             color: WatchColors.textPrimary,
             fontSize: 14,

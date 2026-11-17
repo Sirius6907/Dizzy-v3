@@ -120,8 +120,7 @@ class AppUpdaterService {
           'v',
           '',
         );
-        final releaseNotes =
-            data['body'] as String? ?? 'No release notes available';
+        final releaseNotes = plainReleaseNotes(data['body'] as String?);
         final publishedAt = DateTime.parse(data['published_at']);
 
         if (_isNewerVersion(currentVersion, latestVersion)) {
@@ -246,6 +245,33 @@ class AppUpdaterService {
   /// cert is the pre-v1.1.7 debug key), falling back to normal assets while a
   /// release has no legacy variant yet. The normal channel EXCLUDES legacy
   /// assets so release-key installs never fetch them. Static for testability.
+  /// GitHub release bodies are markdown. The dialog renders one plain Text,
+  /// so unmarked markdown reaches users as literal `**Full Changelog**: url`.
+  /// Flatten it once here, where the body is read.
+  @visibleForTesting
+  static String plainReleaseNotes(String? raw) {
+    if (raw == null) return 'No release notes available';
+    var text = raw.replaceAll('\r\n', '\n');
+    text = text.replaceAll(RegExp(r'```[\s\S]*?```'), ' ');
+    text = text.replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '');
+    text = text.replaceAllMapped(
+      RegExp(r'\[([^\]]+)\]\([^)]+\)'),
+      (m) => m[1] ?? '',
+    );
+    text = text.replaceAll(RegExp(r'\*\*|__|`'), '');
+    text = text.replaceAll(RegExp(r'^\s*[*+-]\s+', multiLine: true), '• ');
+    text = text.replaceAll(RegExp(r'^\s*>+\s*', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'\*'), '');
+    text = text.replaceAll(
+      RegExp(r'^\s*full changelog\b.*$', multiLine: true, caseSensitive: false),
+      '',
+    );
+    text = text.replaceAll(RegExp(r'https?://\S+'), '');
+    text = text.replaceAll(RegExp(r'[ \t]+'), ' ');
+    text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+    return text.isEmpty ? 'No release notes available' : text;
+  }
+
   static Map<dynamic, dynamic>? pickAndroidAsset(
     List<dynamic> assets, {
     required List<String> archKeywords,

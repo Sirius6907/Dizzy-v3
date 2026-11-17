@@ -20,6 +20,8 @@ import '../../models/stream/stream_model.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
 import '../../services/debrid/debrid_service.dart';
 import '../../services/stream/torrent_stream_service.dart';
+import '../../services/stream/html_stream_resolver.dart';
+import '../../utils/torrent/torrent_trackers.dart';
 import '../../services/media/global_media_coordinator.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../services/trakt/trakt_service.dart';
@@ -29,16 +31,21 @@ import '../../services/player/playback_brain.dart';
 import '../../services/player/quality_service.dart';
 import '../../services/player/smart_quality_policy.dart';
 import '../../services/player/auto_skip_policy.dart';
+import '../../services/player/auto_quality_policy.dart';
 import '../../services/player/playback_start_policy.dart';
 import '../../services/taste/taste_event_service.dart';
 import '../../services/player/audio_track_preference.dart';
 import '../../services/player/dub_mode_service.dart';
 import '../../services/player/bandwidth_meter.dart';
 import '../../services/player/hls_rendition_parser.dart';
+import '../../services/player/playback_duration_guard.dart';
+import '../../services/player/startup_bandwidth_policy.dart';
+import '../../services/player/throughput_probe.dart';
 import '../../services/errors/app_error_log.dart';
 import '../../services/discord/discord_rpc_service.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 
+import 'embed_webview_player.dart';
 import '../../widgets/player/player_glass.dart';
 import '../../widgets/player/player_top_bar.dart';
 import '../../widgets/player/player_transport.dart';
@@ -131,9 +138,27 @@ class _PlayerScreenState extends State<PlayerScreen>
   );
 
   bool _isLoading = true;
+  bool _isPhone = true;
+  bool _sawFirstMetrics = false;
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+
+  /// Catalog runtime for MOVIES only (a series runtime is per-episode and
+  /// would wrongly reject a valid feature-length special).
+  Duration? get _runtimeReference =>
+      (widget.detail?.type ?? '').toLowerCase() == 'movie'
+      ? StartupBandwidthPolicy.parseRuntime(widget.detail?.runtime)
+      : null;
+
+  /// Duration that is safe to render / persist / resume with.
+  /// Null = unknown or bogus (the UI then shows `--:--`, never a negative
+  /// countdown, and failover stops trusting the value).
+  Duration? get _trustedDuration =>
+      PlaybackDurationGuard.trusted(_duration, reference: _runtimeReference);
+
+  /// What the transport bar may show; 0 = unknown.
+  Duration get _uiDuration => _trustedDuration ?? Duration.zero;
   Duration? _buffered;
   bool _isBuffering = false;
   bool _wasBuffering = false;
@@ -168,6 +193,17 @@ class _PlayerScreenState extends State<PlayerScreen>
   Timer? _autoQualityTimer;
   QualityChoice? _autoEffective;
 
+  // Bandwidth-aware START gate (2026-11-09): measured once per open before the
+  // first byte reaches mpv, so a 4K source is never auto-opened on a link
+  // that cannot feed it.
+  double? _startupMbps;
+  bool _startupCapDone = false;
+  int? _startHlsCapBps;
+
+  /// Torrent-only byte-growth watchdog (mpv reports "buffering", not an
+  /// error, while TorrServer is starved — the HTTP stall rules never fire).
+  Timer? _torrentStallWatchdog;
+
   // P9 — rendition ladder fetch state (one flight per source).
   bool _renditionsFetching = false;
 
@@ -192,6 +228,10 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// every episode/source switch so each new media gets its own decision,
   /// and never re-fires after the user has picked a track by hand.
   bool _audioAutoSelectDone = false;
+
+  /// True once the user picks an audio track by hand; disables the
+  /// language-tag auto-select for the rest of this source.
+  bool _audioUserPicked = false;
   double _audioDelaySec = 0.0;
   bool _showAudioHud = false;
   String _audioHudText = '';
@@ -253,9 +293,68 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Live view of the gate's dead-source set (this-session only).
   Set<String> get _failedFingerprints => _playGate.deadFingerprints;
   bool _failoverInProgress = false;
+
+  // ── v1.3.5 embed sources ─────────────────────────────────────────────
+  // While [_embedActive] the ad-blocked webview owns the screen. The media
+  // URL it captures is keyed by source fingerprint, so a failover to another
+  // source always starts a fresh capture instead of replaying the old URL.
+  bool _embedActive = false;
+  String? _embedCaptureFp;
+  String? _embedCaptureUrl;
+  Map<String, String>? _embedCaptureHeaders;
+
+  void _onEmbedMediaCaptured(CapturedMedia media) {
+    if (!mounted) return;
+    setState(() {
+      _embedCaptureFp = SourceRanker.fingerprint(_currentSource);
+      _embedCaptureUrl = media.url;
+      _embedCaptureHeaders = media.headers;
+      _embedActive = false;
+      _isLoading = true;
+      _statusMessage = 'Starting video…';
+    });
+    unawaited(_initStream());
+  }
+
+  /// The embed page could not load at all. Use a ranked backup when there is
+  /// one; otherwise the webview keeps its own retry screen.
+  void _onEmbedGaveUp() {
+    final hasBackup = _failoverChain.any(
+      (s) => !_failedFingerprints.contains(SourceRanker.fingerprint(s)),
+    );
+    if (!hasBackup || !PlayerSettings.autoFailover.value) return;
+    _attemptSilentFailover(reason: 'embed page failed');
+  }
+
+  /// A torrent rejection raised from inside _initStream while a failover
+  /// switch is already in flight. Dropping it silently left the player on an
+  /// endless "Gathering metadata & peers…" spinner (2026-11-09 audit); the
+  /// finally-block of the active switch must re-fire it.
+  bool _pendingFailoverRequest = false;
   Timer? _stallWatchdog;
+
+  /// Bounds the wait for the FIRST playable frame.
+  ///
+  /// The stall watchdog only fires when playback should be running and mpv is
+  /// not buffering. A link that "opens" and then buffers forever (dead CDN,
+  /// exhausted one-shot token, starved swarm) satisfies neither condition, so
+  /// the player sat on "Buffering …" with no recovery path. This timer is the
+  /// only guard for that state.
+  Timer? _startupWatchdog;
+  DateTime _startupBegan = DateTime.now();
   Duration _lastProgressPosition = Duration.zero;
   DateTime _lastProgressAt = DateTime.now();
+
+  /// Last time the demuxer buffer actually grew. A spinner with a growing
+  /// buffer is a slow link (leave it alone); a spinner with a frozen buffer is
+  /// a dead one, regardless of what `_isBuffering` claims.
+  DateTime _lastBufferGrowthAt = DateTime.now();
+  Duration _lastBufferedSeen = Duration.zero;
+
+  /// Forward position gained since the current source was armed. A resume
+  /// seek jumps the absolute position without decoding a frame, so only
+  /// small forward deltas count as proof that playback actually started.
+  Duration _startupProgress = Duration.zero;
 
   /// Failover resume override — passed straight into Media(start:) so the
   /// backup source opens AT the saved position (no seek-after-open race on
@@ -276,6 +375,17 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   /// One taste event per title/episode per session — progress ticks a lot.
   bool _tastePlayLogged = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sawFirstMetrics) return;
+    _sawFirstMetrics = true;
+    // Remember the device class before we force landscape; dispose() restores
+    // the right orientation for it. Phones must not stay sideways after the
+    // player closes.
+    _isPhone = MediaQuery.sizeOf(context).shortestSide < 600;
+  }
 
   @override
   void initState() {
@@ -325,7 +435,7 @@ class _PlayerScreenState extends State<PlayerScreen>
             .where((s) => SourceRanker.fingerprint(s) != primaryFp)
             .where((s) => _relevantForEpisode(s, widget.episode))
             .toList();
-        _failoverChain = SourceRanker.order(
+        _failoverChain = SourceRanker.buildFailoverChain(
           candidates,
           RankerContext(
             lastGoodByAddon: history,
@@ -374,8 +484,14 @@ class _PlayerScreenState extends State<PlayerScreen>
         _positionNotifier.value = pos;
         _onPlaybackTick(pos);
         // ── Stall watchdog: position changing (forward or backward) = healthy.
-        final diff = (pos - _lastProgressPosition).inMilliseconds.abs();
+        final step = pos - _lastProgressPosition;
+        final diff = step.inMilliseconds.abs();
         if (diff >= 200) {
+          // Five seconds is above any normal tick; a bigger jump is a seek,
+          // not proof that the demuxer is feeding frames.
+          if (step > Duration.zero && step < const Duration(seconds: 5)) {
+            _startupProgress += step;
+          }
           _lastProgressPosition = pos;
           _lastProgressAt = DateTime.now();
         }
@@ -408,6 +524,10 @@ class _PlayerScreenState extends State<PlayerScreen>
       _player.stream.buffer.listen((buf) {
         _buffered = buf;
         _bufferNotifier.value = buf;
+        if (buf > _lastBufferedSeen + const Duration(milliseconds: 500)) {
+          _lastBufferedSeen = buf;
+          _lastBufferGrowthAt = DateTime.now();
+        }
       }),
       _player.stream.buffering.listen((isBuffering) {
         _isBuffering = isBuffering;
@@ -494,14 +614,21 @@ class _PlayerScreenState extends State<PlayerScreen>
     unawaited(ContinueWatchingService.flushProgress());
     WakelockPlus.disable();
     _hideTimer?.cancel();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations(
+      _isPhone
+          ? [DeviceOrientation.portraitUp]
+          : [
+              DeviceOrientation.portraitUp,
+              DeviceOrientation.portraitDown,
+              DeviceOrientation.landscapeLeft,
+              DeviceOrientation.landscapeRight,
+            ],
+    );
     PlayerSettings.changeNotifier.removeListener(_onPlayerSettingsChanged);
     _stallWatchdog?.cancel();
+    _torrentStallWatchdog?.cancel();
+    _startupWatchdog?.cancel();
     _lastGoodTimer?.cancel();
     _autoQualityTimer?.cancel();
     _openTailGuard?.cancel();

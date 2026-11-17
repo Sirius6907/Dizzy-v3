@@ -1,211 +1,97 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../stream_scraper.dart';
 import '../../../models/stream/stream_model.dart';
 import 'tmdb_helper.dart';
-import '../../errors/app_log.dart';
 
-/// Pure-Dart VidFast Stream Scraper.
+/// TMDB id resolution seam. Production uses [TmdbHelper.resolveTmdbId];
+/// tests inject a stub so the embed URL shape is verified without network.
+typedef TmdbResolver = Future<int?> Function({
+  String? imdbId,
+  required String title,
+  required String type,
+  int? year,
+});
+
+/// VidFast — the site's OWN documented embed, played in-app.
 ///
-/// Ported 1-to-1 from Vyla VidFast provider.
-/// Resolves movies and TV shows via vidfast.vc and enc-dec.app decryption pipeline.
+/// The old scraper chased VidFast's internal `enc-dec.app` chain, and that
+/// chain died: the site is now a Next.js RSC page behind a VF1 protection VM
+/// and a TLS-fingerprint gate, so a Dart HTTP client gets a token-less page
+/// (root-cause captures in `artifacts/audit-dsh/vidfast/`). Chasing it again
+/// is explicitly out of scope.
+///
+/// Instead this yields exactly one EMBED source. The player opens the embed in
+/// an ad-blocked webview (see `EmbedWebviewPlayer`) and hands the captured
+/// m3u8 to mpv. The site accepts both TMDB and IMDb ids, so a failed TMDB
+/// resolution degrades to the IMDb id instead of yielding nothing.
 class VidFastScraper extends StreamScraper {
+  VidFastScraper({TmdbResolver? resolveTmdbId})
+    : _resolve = resolveTmdbId ?? TmdbHelper.resolveTmdbId;
+
+  final TmdbResolver _resolve;
+
+  static const domain = 'https://vidfast.vc';
+
   @override
   String get name => 'vidfast';
 
-  static const _domain = 'https://vidfast.vc';
-  static const _apiBase = 'https://enc-dec.app/api';
-  static const _ua =
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  /// The embed answers any id instantly, so this source is valid for titles
+  /// that released today — the case slow archival scrapers miss.
+  @override
+  bool get indexesNewReleases => true;
 
-  static const _defaultHeaders = {
-    'User-Agent': _ua,
-    'Referer': '$_domain/',
-    'Origin': _domain,
-    'X-Requested-With': 'XMLHttpRequest',
-  };
+  /// Pure: embed URL for a resolved id. Kept out of [scrape] so the shape is
+  /// testable without a resolver.
+  static String embedUrl({
+    required String id,
+    required bool isTv,
+    int? season,
+    int? episode,
+  }) => isTv
+      ? '$domain/tv/$id/${season ?? 1}/${episode ?? 1}?autoPlay=true'
+      : '$domain/movie/$id?autoPlay=true';
 
   @override
-  Stream<StreamSource> scrapeStream({
+  Future<List<StreamSource>> scrape({
     required String type,
     required String title,
     int? year,
     int? season,
     int? episode,
     String? imdbId,
-  }) async* {
-    final isTv = (type == 'tv' || type == 'series');
+  }) async {
+    final isTv = type == 'tv' || type == 'series';
+    final imdb = (imdbId ?? '').trim();
 
+    String? id;
     try {
-      final tmdbId = await TmdbHelper.resolveTmdbId(
-        imdbId: imdbId,
+      final tmdbId = await _resolve(
+        imdbId: imdb.isEmpty ? null : imdb,
         title: title,
         type: isTv ? 'tv' : 'movie',
         year: year,
       );
-
-      if (tmdbId == null) {
-        if (kDebugMode) {
-          AppLog.d('[VidFastScraper] Could not resolve TMDB ID for "$title"');
-        }
-        return;
-      }
-
-      final client = http.Client();
-      try {
-        final embedUrl = isTv
-            ? '$_domain/tv/$tmdbId/${season ?? 1}/${episode ?? 1}/'
-            : '$_domain/movie/$tmdbId/';
-
-        final pageRes = await client
-            .get(
-              Uri.parse(embedUrl),
-              headers: {'User-Agent': _ua, 'Referer': '$_domain/'},
-            )
-            .timeout(const Duration(seconds: 10));
-
-        if (pageRes.statusCode != 200) return;
-
-        final html = pageRes.body;
-        final tokenMatch =
-            RegExp(r'\\"(?:en|token)\\":\\"(.*?)\\"').firstMatch(html) ??
-            RegExp(r'"(?:en|token)":"(.*?)"').firstMatch(html);
-
-        if (tokenMatch == null || tokenMatch.group(1) == null) return;
-
-        final rawToken = tokenMatch.group(1)!;
-
-        // Query enc-vidfast
-        final encRes = await client
-            .get(
-              Uri.parse(
-                '$_apiBase/enc-vidfast?text=${Uri.encodeComponent(rawToken)}',
-              ),
-              headers: {'User-Agent': _ua, 'Accept': 'application/json'},
-            )
-            .timeout(const Duration(seconds: 10));
-
-        if (encRes.statusCode != 200) return;
-        final encData = jsonDecode(encRes.body);
-        if (encData['status'] != 200 || encData['result'] == null) return;
-
-        final serversUrl = encData['result']['servers']?.toString();
-        final streamUrl = encData['result']['stream']?.toString();
-        final csrfToken = encData['result']['token']?.toString();
-
-        if (serversUrl == null || streamUrl == null || csrfToken == null) {
-          return;
-        }
-
-        final reqHeaders = {..._defaultHeaders, 'X-CSRF-Token': csrfToken};
-
-        // Fetch encrypted servers
-        final serversEncRes = await client
-            .post(Uri.parse(serversUrl), headers: reqHeaders)
-            .timeout(const Duration(seconds: 10));
-
-        if (serversEncRes.statusCode != 200) return;
-
-        // Decrypt servers
-        final decServersRes = await client
-            .post(
-              Uri.parse('$_apiBase/dec-vidfast'),
-              headers: {'Content-Type': 'application/json', 'User-Agent': _ua},
-              body: jsonEncode({'text': serversEncRes.body}),
-            )
-            .timeout(const Duration(seconds: 10));
-
-        if (decServersRes.statusCode != 200) return;
-        final decServersData = jsonDecode(decServersRes.body);
-        final serversList = decServersData['result'];
-        if (serversList is! List || serversList.isEmpty) return;
-
-        // Fan out server resolution
-        final futures = <Future<Map<String, dynamic>?>>[];
-        for (final srv in serversList) {
-          if (srv is! Map) continue;
-          final srvName = srv['name']?.toString() ?? 'Server';
-          final srvData = srv['data']?.toString();
-          if (srvData == null) continue;
-
-          futures.add(() async {
-            try {
-              final sEncRes = await client
-                  .post(Uri.parse('$streamUrl/$srvData'), headers: reqHeaders)
-                  .timeout(const Duration(seconds: 10));
-
-              if (sEncRes.statusCode != 200) return null;
-
-              final decStreamRes = await client
-                  .post(
-                    Uri.parse('$_apiBase/dec-vidfast'),
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'User-Agent': _ua,
-                    },
-                    body: jsonEncode({'text': sEncRes.body}),
-                  )
-                  .timeout(const Duration(seconds: 10));
-
-              if (decStreamRes.statusCode != 200) return null;
-              final decData = jsonDecode(decStreamRes.body);
-              if (decData['status'] != 200 || decData['result'] == null) {
-                return null;
-              }
-
-              final finalUrl = decData['result']['url']?.toString();
-              if (finalUrl == null || finalUrl.isEmpty) return null;
-
-              return {
-                'name': srvName,
-                'url': finalUrl,
-                'captions': decData['result']['captions'],
-              };
-            } catch (e) {
-              return null;
-            }
-          }());
-        }
-
-        final resolved = await Future.wait(futures);
-
-        for (final item in resolved) {
-          if (item == null) continue;
-          final srvName = item['name'] as String;
-          final streamTargetUrl = item['url'] as String;
-
-          final is4K =
-              srvName.toLowerCase().contains('2160') ||
-              srvName.toLowerCase().contains('4k') ||
-              streamTargetUrl.contains('2160p');
-          final qualityLabel = is4K ? '4K' : '1080p';
-
-          final headers = {
-            'User-Agent': _ua,
-            'Referer': '$_domain/',
-            'Origin': _domain,
-          };
-
-          yield StreamSource(
-            name: 'VidFast',
-            addonName: 'vidfast',
-            title: 'VidFast · $srvName · $qualityLabel',
-            description: 'VidFast Multi-CDN Stream · $qualityLabel',
-            url: streamTargetUrl,
-            headers: headers,
-            behaviorHints: {
-              'notWebReady': false,
-              'proxyHeaders': {'request': headers},
-            },
-          );
-        }
-      } finally {
-        client.close();
-      }
-    } catch (e) {
-      if (kDebugMode) AppLog.d('[VidFastScraper] scrapeStream error: $e');
+      if (tmdbId != null) id = '$tmdbId';
+    } catch (_) {
+      // Resolution is best-effort; the IMDb id below is the safety net.
     }
+    id ??= imdb.startsWith('tt') ? imdb : null;
+    if (id == null || id.isEmpty) return const [];
+
+    return [
+      StreamSource(
+        name: 'VidFast',
+        addonName: name,
+        title: 'VidFast · Embed',
+        description: 'VidFast embed player',
+        url: null,
+        externalUrl: embedUrl(
+          id: id,
+          isTv: isTv,
+          season: season,
+          episode: episode,
+        ),
+        behaviorHints: const {'dizzyEmbed': true},
+      ),
+    ];
   }
 }

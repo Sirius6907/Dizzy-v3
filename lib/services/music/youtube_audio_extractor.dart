@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/foundation.dart';
-import '../net/dizzy_net.dart';
 import '../config/env_service.dart';
 
 /// 1-to-1 Match of WAVE / NuvioTV InAppYouTubeExtractor for Audio Streams.
@@ -16,9 +16,11 @@ import '../config/env_service.dart';
 ///    container ranking (m4a > webm), and client priority hierarchy.
 /// 5. Multi-node CDN redundancy probing (parsing `mn` param to find the fastest reachable host).
 class YoutubeAudioExtractor {
-  YoutubeAudioExtractor._();
-  static final YoutubeAudioExtractor instance = YoutubeAudioExtractor._();
+  YoutubeAudioExtractor({http.Client? client})
+    : _client = client ?? http.Client();
+  static final YoutubeAudioExtractor instance = YoutubeAudioExtractor();
 
+  final http.Client _client;
   static const String _tag = 'YoutubeAudioExtractor';
 
   /// YouTube's public WEB InnerTube key (shipped in every youtube.com page);
@@ -119,6 +121,15 @@ class YoutubeAudioExtractor {
 
   final Map<String, _CachedVideoIds> _videoIdCache = {};
   final Map<String, _CachedStream> _streamCache = {};
+  final Map<String, List<({String url, String userAgent})>> _rankedCandidates =
+      {};
+  final Map<String, int> _servedCandidateIndex = {};
+
+  void invalidate(String videoId) {
+    _streamCache.remove(videoId);
+    _rankedCandidates.remove(videoId);
+    _servedCandidateIndex.remove(videoId);
+  }
 
   // ===========================================================================
   // Public API
@@ -287,10 +298,10 @@ class YoutubeAudioExtractor {
     required bool forceRefreshConfig,
   }) async {
     final config = await _ensureConfig(forceRefresh: forceRefreshConfig);
-    final candidates = <_NuvioAudioCandidate>[];
     int loginRequiredCount = 0;
 
     for (final client in _clients) {
+      final candidates = <_NuvioAudioCandidate>[];
       try {
         final player = await _fetchPlayer(config, videoId, client);
         final playabilityStatus = _map(player['playabilityStatus']);
@@ -363,6 +374,34 @@ class YoutubeAudioExtractor {
             ),
           );
         }
+
+        // Verify this client's formats before a slower fallback consumes the load budget.
+        candidates.sort((a, b) {
+          final s = b.score.compareTo(a.score);
+          if (s != 0) return s;
+          final n = (a.hasN ? 1 : 0).compareTo(b.hasN ? 1 : 0);
+          if (n != 0) return n;
+          return a.containerPreference.compareTo(b.containerPreference);
+        });
+        final ranked = _rankedCandidates.putIfAbsent(videoId, () => []);
+        final baseIndex = ranked.length;
+        ranked.addAll(
+          candidates.map((c) => (url: c.url, userAgent: c.userAgent)),
+        );
+        for (var i = 0; i < candidates.length; i++) {
+          final best = candidates[i];
+          final reachableUrl = await _resolveReachableUrl(
+            best.url,
+            userAgent: best.userAgent,
+          );
+          if (reachableUrl != null) {
+            _log(
+              'Resolved reachable audio URL (client=${best.clientKey}, itag=${best.itag}, ext=${best.ext})',
+            );
+            _servedCandidateIndex[videoId] = baseIndex + i;
+            return (url: reachableUrl, userAgent: best.userAgent);
+          }
+        }
       } catch (e) {
         _log('Client ${client.key} failed: $e');
       }
@@ -376,37 +415,30 @@ class YoutubeAudioExtractor {
       return null;
     }
 
-    if (candidates.isEmpty) return null;
+    return null;
+  }
 
-    // NuvioTV Sort Hierarchy:
-    // 1. Higher score first
-    // 2. without 'n' param first
-    // 3. m4a over webm
-    // 4. client priority (visionos > android > ios)
-    candidates.sort((a, b) {
-      final s = b.score.compareTo(a.score);
-      if (s != 0) return s;
-      final n = (a.hasN ? 1 : 0).compareTo(b.hasN ? 1 : 0);
-      if (n != 0) return n;
-      final c = a.containerPreference.compareTo(b.containerPreference);
-      if (c != 0) return c;
-      return a.clientPriority.compareTo(b.clientPriority);
-    });
-
-    // Probing & CDN resolution
-    for (final best in candidates) {
-      final reachableUrl = await _resolveReachableUrl(
-        best.url,
-        userAgent: best.userAgent,
+  /// The next ranked candidate for [videoId] that the CDN still serves.
+  /// Used when the native player rejected the first URL: an alternative
+  /// container/quality of the same video usually opens fine.
+  Future<({String url, String userAgent})?> nextReachableCandidate(
+    String videoId,
+  ) async {
+    final ranked = _rankedCandidates[videoId];
+    if (ranked == null) return null;
+    var index = (_servedCandidateIndex[videoId] ?? -1) + 1;
+    while (index < ranked.length) {
+      final candidate = ranked[index];
+      final reachable = await _resolveReachableUrl(
+        candidate.url,
+        userAgent: candidate.userAgent,
       );
-      if (reachableUrl != null) {
-        _log(
-          'Resolved reachable audio URL (client=${best.clientKey}, itag=${best.itag}, ext=${best.ext})',
-        );
-        return (url: reachableUrl, userAgent: best.userAgent);
+      if (reachable != null) {
+        _servedCandidateIndex[videoId] = index;
+        return (url: reachable, userAgent: candidate.userAgent);
       }
+      index++;
     }
-
     return null;
   }
 
@@ -476,17 +508,17 @@ class YoutubeAudioExtractor {
 
   Future<bool> _isUrlReachable(String url, {required String userAgent}) async {
     try {
-      final res = await DizzyNet.instance
-          .get(
-            Uri.parse(url),
-            headers: {
-              'Range': 'bytes=0-0',
-              'User-Agent': userAgent,
-              'Accept-Language': 'en-US,en;q=0.9',
-            },
-          )
+      final request = http.Request('GET', Uri.parse(url))
+        ..headers.addAll({
+          'Range': 'bytes=0-0',
+          'User-Agent': userAgent,
+          'Accept-Language': 'en-US,en;q=0.9',
+        });
+      final response = await _client
+          .send(request)
           .timeout(const Duration(milliseconds: 1500));
-      return res.statusCode == 200 || res.statusCode == 206;
+      await response.stream.listen((_) {}).cancel();
+      return response.statusCode == 200 || response.statusCode == 206;
     } catch (_) {
       return false;
     }
@@ -523,7 +555,7 @@ class YoutubeAudioExtractor {
     String? visitorData;
 
     try {
-      final resp = await http
+      final resp = await _client
           .get(
             Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ&hl=en'),
             headers: {
@@ -584,7 +616,7 @@ class YoutubeAudioExtractor {
       'context': {'client': _searchClient.context},
     });
 
-    final resp = await http
+    final resp = await _client
         .post(uri, headers: headers, body: body)
         .timeout(_requestTimeout);
 
@@ -824,7 +856,7 @@ class YoutubeAudioExtractor {
       },
     });
 
-    final resp = await http
+    final resp = await _client
         .post(uri, headers: headers, body: body)
         .timeout(_requestTimeout);
 

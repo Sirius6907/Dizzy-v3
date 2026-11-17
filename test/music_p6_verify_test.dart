@@ -12,13 +12,13 @@ import 'package:flutter_test/flutter_test.dart';
 /// ambient canvas (no black flash), karaoke anti-jerk, queue reorder mapping,
 /// quality hot-swap, Song Radio + Smart Mix.
 MusicTrack _track(String id) => MusicTrack(
-      id: id,
-      title: 'Track $id',
-      artist: 'Artist $id',
-      album: 'Album $id',
-      coverUrl: '',
-      durationSeconds: 200,
-    );
+  id: id,
+  title: 'Track $id',
+  artist: 'Artist $id',
+  album: 'Album $id',
+  coverUrl: '',
+  durationSeconds: 200,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -49,24 +49,30 @@ void main() {
       }
     });
 
-    test('fast palette is deterministic so rebuilds never re-roll the tint', () {
-      final service = MusicArtworkPaletteService.instance;
-      final track = _track('stable');
-      final a = service.getFastPalette(track);
-      final b = service.getFastPalette(track);
-      expect(a.primary, b.primary);
-      expect(a.secondary, b.secondary);
-      expect(a.background, b.background);
-      expect(a.accent, b.accent);
-    });
+    test(
+      'fast palette is deterministic so rebuilds never re-roll the tint',
+      () {
+        final service = MusicArtworkPaletteService.instance;
+        final track = _track('stable');
+        final a = service.getFastPalette(track);
+        final b = service.getFastPalette(track);
+        expect(a.primary, b.primary);
+        expect(a.secondary, b.secondary);
+        expect(a.background, b.background);
+        expect(a.accent, b.accent);
+      },
+    );
 
-    test('extractPalette falls back to the safe HSL palette without artwork',
-        () async {
-      final service = MusicArtworkPaletteService.instance;
-      final palette =
-          await service.extractPalette(_track('nocover-${DateTime.now().microsecondsSinceEpoch}'));
-      expect(palette.isAmbientSafe, isTrue);
-    });
+    test(
+      'extractPalette falls back to the safe HSL palette without artwork',
+      () async {
+        final service = MusicArtworkPaletteService.instance;
+        final palette = await service.extractPalette(
+          _track('nocover-${DateTime.now().microsecondsSinceEpoch}'),
+        );
+        expect(palette.isAmbientSafe, isTrue);
+      },
+    );
 
     test('default dark palette is itself ambient-safe', () {
       expect(MusicTrackPalette.defaultDark.isAmbientSafe, isTrue);
@@ -83,34 +89,53 @@ void main() {
     });
 
     test('moving an item up inside the slice', () {
-      final next = MusicQueueOps.reorderUpcoming(queue, current,
-          oldIndex: 2, newIndex: 0);
+      final next = MusicQueueOps.reorderUpcoming(
+        queue,
+        current,
+        oldIndex: 2,
+        newIndex: 0,
+      );
       expect(next, ['a', 'b', 'e', 'c', 'd']);
     });
 
-    test('moving an item down inside the slice (ReorderableListView slot)',
-        () {
+    test('moving an item down inside the slice (ReorderableListView slot)', () {
       // Drop after 'd' → raw insert slot 2, legacy onReorder decrements a
       // downward move → lands between 'd' and 'e'.
-      final afterD = MusicQueueOps.reorderUpcoming(queue, current,
-          oldIndex: 0, newIndex: 2);
+      final afterD = MusicQueueOps.reorderUpcoming(
+        queue,
+        current,
+        oldIndex: 0,
+        newIndex: 2,
+      );
       expect(afterD, ['a', 'b', 'd', 'c', 'e']);
 
       // Drop past the end → raw insert slot 3 (= slice length) → true end.
-      final atEnd = MusicQueueOps.reorderUpcoming(queue, current,
-          oldIndex: 0, newIndex: 3);
+      final atEnd = MusicQueueOps.reorderUpcoming(
+        queue,
+        current,
+        oldIndex: 0,
+        newIndex: 3,
+      );
       expect(atEnd, ['a', 'b', 'd', 'e', 'c']);
     });
 
     test('a no-op drag keeps the order', () {
-      final next = MusicQueueOps.reorderUpcoming(queue, current,
-          oldIndex: 1, newIndex: 1);
+      final next = MusicQueueOps.reorderUpcoming(
+        queue,
+        current,
+        oldIndex: 1,
+        newIndex: 1,
+      );
       expect(next, queue);
     });
 
     test('reordering never touches the current track or history', () {
-      final next = MusicQueueOps.reorderUpcoming(queue, current,
-          oldIndex: 0, newIndex: 3);
+      final next = MusicQueueOps.reorderUpcoming(
+        queue,
+        current,
+        oldIndex: 0,
+        newIndex: 3,
+      );
       expect(next[0], 'a');
       expect(next[1], 'b');
       expect(MusicQueueOps.history(next, current), ['a']);
@@ -119,11 +144,21 @@ void main() {
 
     test('out-of-range drags are ignored instead of throwing', () {
       expect(
-        MusicQueueOps.reorderUpcoming(queue, current, oldIndex: 99, newIndex: 0),
+        MusicQueueOps.reorderUpcoming(
+          queue,
+          current,
+          oldIndex: 99,
+          newIndex: 0,
+        ),
         queue,
       );
       expect(
-        MusicQueueOps.reorderUpcoming(queue, current, oldIndex: -5, newIndex: 0),
+        MusicQueueOps.reorderUpcoming(
+          queue,
+          current,
+          oldIndex: -5,
+          newIndex: 0,
+        ),
         queue,
       );
     });
@@ -139,56 +174,61 @@ void main() {
       expect(MusicQueueOps.upcoming(const <String>[], 0), isEmpty);
       expect(MusicQueueOps.history(const <String>[], 0), isEmpty);
       expect(
-        MusicQueueOps.reorderUpcoming(const <String>[], 0, oldIndex: 0, newIndex: 1),
+        MusicQueueOps.reorderUpcoming(
+          const <String>[],
+          0,
+          oldIndex: 0,
+          newIndex: 1,
+        ),
         isEmpty,
       );
     });
 
-    test('controller reorder drives the same mapping through its public API',
-        () {
-      final controller = MusicPlayerController.instance;
-      final tracks = [_track('a'), _track('b'), _track('c'), _track('d')];
-      controller.debugSeedPlaybackState(track: tracks[1], queue: tracks);
+    test(
+      'controller reorder drives the same mapping through its public API',
+      () {
+        final controller = MusicPlayerController.instance;
+        final tracks = [_track('a'), _track('b'), _track('c'), _track('d')];
+        controller.debugSeedPlaybackState(track: tracks[1], queue: tracks);
 
-      controller.reorderUpcomingQueue(0, 2);
-      expect(
-        controller.upcomingTracks.map((t) => t.id).toList(),
-        ['d', 'c'],
-      );
-      expect(controller.currentTrack?.id, 'b');
-      expect(controller.historyTracks.map((t) => t.id).toList(), ['a']);
-    });
+        controller.reorderUpcomingQueue(0, 2);
+        expect(controller.upcomingTracks.map((t) => t.id).toList(), ['d', 'c']);
+        expect(controller.currentTrack?.id, 'b');
+        expect(controller.historyTracks.map((t) => t.id).toList(), ['a']);
+      },
+    );
   });
 
   group('P6 quality hot-swap keeps the listening position', () {
-    test('switching source reloads the same track at the same position',
-        () async {
+    test(
+      'switching source reloads the same track at the same position',
+      () async {
+        final controller = MusicPlayerController.instance;
+        final track = _track('hot-swap');
+        const at = Duration(seconds: 97);
+        controller.debugSeedPlaybackState(
+          track: track,
+          queue: [track, _track('next')],
+          position: at,
+        );
+
+        final before = controller.position;
+        final target = controller.audioSource == MusicAudioSource.flac
+            ? MusicAudioSource.youtube
+            : MusicAudioSource.flac;
+        await controller.setAudioSource(target);
+
+        expect(controller.position, before);
+        expect(controller.currentTrack?.id, 'hot-swap');
+        expect(controller.audioSource, target);
+      },
+    );
+
+    test('failed source resolution never advertises lossless audio', () {
       final controller = MusicPlayerController.instance;
-      final track = _track('hot-swap');
-      const at = Duration(seconds: 97);
-      controller.debugSeedPlaybackState(
-        track: track,
-        queue: [track, _track('next')],
-        position: at,
-      );
-
-      final before = controller.position;
-      final target = controller.audioSource == MusicAudioSource.flac
-          ? MusicAudioSource.youtube
-          : MusicAudioSource.flac;
-      await controller.setAudioSource(target);
-
-      expect(controller.position, before);
-      expect(controller.currentTrack?.id, 'hot-swap');
-      expect(controller.audioSource, target);
-    });
-
-    test('FLAC and YouTube report opposite lossless badges', () {
-      final controller = MusicPlayerController.instance;
-      expect(controller.isCurrentTrackLossless,
-          controller.audioSource == MusicAudioSource.flac);
-      expect(controller.currentQualityLabel,
-          controller.isCurrentTrackLossless ? contains('FLAC') : contains('YouTube'));
+      expect(controller.errorMessage, isNotNull);
+      expect(controller.isCurrentTrackLossless, isFalse);
+      expect(controller.currentQualityLabel, isNot(contains('FLAC')));
     });
 
     test('the same source is a no-op', () async {
@@ -202,22 +242,25 @@ void main() {
 
   group('P6 Song Radio + Smart Mix', () {
     test('Song Radio always leads with the seed track', () async {
-      final queue =
-          await MusicRadioService.instance.generateSongRadio(_track('seed'));
+      final queue = await MusicRadioService.instance.generateSongRadio(
+        _track('seed'),
+      );
       expect(queue, isNotEmpty);
       expect(queue.first.id, 'seed');
     });
 
     test('Song Radio never returns duplicate tracks', () async {
-      final queue =
-          await MusicRadioService.instance.generateSongRadio(_track('dedup'));
+      final queue = await MusicRadioService.instance.generateSongRadio(
+        _track('dedup'),
+      );
       final ids = queue.map((t) => t.id).toSet();
       expect(ids.length, queue.length);
     });
 
     test('Song Radio fails soft when nothing can be fetched', () async {
-      final queue =
-          await MusicRadioService.instance.generateSongRadio(_track('offline'));
+      final queue = await MusicRadioService.instance.generateSongRadio(
+        _track('offline'),
+      );
       expect(queue.length, greaterThanOrEqualTo(1));
     });
 

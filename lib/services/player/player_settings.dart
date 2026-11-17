@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../errors/app_log.dart';
+import 'dub_mode_service.dart';
 
 /// Subtitle styling preset for rapid 1-tap appearance selection.
 enum SubtitleStylePreset {
@@ -740,6 +741,16 @@ abstract final class PlayerSettings {
 
       // 4. A/V sync — hardware audio clock is always the master timeline
       await platform.setProperty('video-sync', 'audio');
+
+      // 4b. Preferred audio language BEFORE open. mpv's `alang` decides the
+      // default track while demuxing, so the Hindi dub starts as track 1
+      // instead of flashing English first. The post-open tag gate stays as a
+      // backup for untagged containers. Reset to empty for English mode so a
+      // reused player never inherits a previous session's preference.
+      await platform.setProperty(
+        'alang',
+        DubModeService.isHindi ? 'hin,hi,hindi' : '',
+      );
 
       // 5. Anime4K GLSL Shader Upscaling Pipeline (Applied statically before playback)
       // LOW-VRAM GUARD: shader chains on ≤4GB GPUs spill VRAM into system

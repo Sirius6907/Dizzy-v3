@@ -106,9 +106,11 @@ class _MusicDynamicCanvasBackgroundState
                 gradient: RadialGradient(
                   center: Alignment(-0.6 + shiftX, -0.6 + shiftY),
                   radius: 1.35,
+                  // Tuned (2026-11-09): alphas lifted so the artwork gradient
+                  // reads vivid instead of washing out into the base bg.
                   colors: [
-                    primary.withValues(alpha: 0.38),
-                    secondary.withValues(alpha: 0.18),
+                    primary.withValues(alpha: 0.50),
+                    secondary.withValues(alpha: 0.26),
                     bg.withValues(alpha: 0.95),
                     DizzyVoid.voidA,
                   ],
@@ -125,7 +127,7 @@ class _MusicDynamicCanvasBackgroundState
                           center: Alignment(0.7 - shiftX, 0.7 - shiftY),
                           radius: 1.1,
                           colors: [
-                            secondary.withValues(alpha: 0.22),
+                            secondary.withValues(alpha: 0.30),
                             Colors.transparent,
                           ],
                           stops: const [0.0, 0.7],

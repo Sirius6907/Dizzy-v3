@@ -101,9 +101,9 @@ class _NotificationCenterSheetState extends State<NotificationCenterSheet> {
               padding: const EdgeInsets.all(DizzySpace.md),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.notifications_none_rounded,
-                    color: DizzyGlow.beam,
+                    color: isLight ? PrismAccent.accent : DizzyGlow.beam,
                   ),
                   const SizedBox(width: DizzySpace.sm),
                   Text(

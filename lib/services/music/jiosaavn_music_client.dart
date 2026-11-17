@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../models/music/music_track.dart';
+import '../../utils/text/html_entities.dart';
 import '../cloud/cloud_client.dart';
 import 'music_match_policy.dart';
 
@@ -41,12 +42,15 @@ class JiosaavnMusicClient {
     if (!CloudClient.isReady) return const [];
     try {
       final res = await CloudClient.db.functions
-          .invoke('music-source', body: {
-            'provider': 'jiosaavn',
-            'op': op,
-            if (query.isNotEmpty) 'query': query,
-            'limit': limit,
-          })
+          .invoke(
+            'music-source',
+            body: {
+              'provider': 'jiosaavn',
+              'op': op,
+              if (query.isNotEmpty) 'query': query,
+              'limit': limit,
+            },
+          )
           .timeout(callBudget);
       final data = res.data;
       if (data is! Map) return const [];
@@ -77,11 +81,16 @@ class JiosaavnMusicClient {
     final preview = (row['previewUrl'] ?? '').toString().trim();
     return MusicTrack(
       id: 'saavn_$id',
-      title: title,
-      artist: (row['artist'] ?? 'Unknown Artist').toString(),
-      album: (row['album'] ?? 'Single').toString(),
+      // Saavn upstream HTML-escapes names ("Vishal &amp; Shekhar") — unescape
+      // once at this boundary (Part A, 2026-11-12).
+      title: unescapeHtmlEntities(title),
+      artist: unescapeHtmlEntities(
+        (row['artist'] ?? 'Unknown Artist').toString(),
+      ),
+      album: unescapeHtmlEntities((row['album'] ?? 'Single').toString()),
       coverUrl: (row['coverUrl'] ?? '').toString(),
-      durationSeconds: int.tryParse((row['durationSeconds'] ?? 0).toString()) ?? 0,
+      durationSeconds:
+          int.tryParse((row['durationSeconds'] ?? 0).toString()) ?? 0,
       previewUrl: preview.isEmpty ? null : preview,
     );
   }
@@ -89,7 +98,11 @@ class JiosaavnMusicClient {
   /// Exact-match picker over Saavn results (site §13: exact or nothing).
   /// Returns null rather than a wrong song.
   @visibleForTesting
-  static MusicTrack? pickExact(List<MusicTrack> tracks, String wanted, {int? year}) {
+  static MusicTrack? pickExact(
+    List<MusicTrack> tracks,
+    String wanted, {
+    int? year,
+  }) {
     final idx = MusicMatchPolicy.pickExact(
       wanted,
       candidateTitles: tracks.map((t) => t.title).toList(),

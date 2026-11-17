@@ -81,6 +81,20 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+# v1.3.5: Rust adblock engine. Built by cargo (rust/dizzy_adblock); the DLL is
+# installed next to dizzy.exe, which is where the flutter_rust_bridge loader
+# looks on Windows. Absent DLL = embed sources fail over like dead ones, so a
+# build that has not run cargo still produces a working app.
+set(DIZZY_ADBLOCK_DLL
+  "${CMAKE_CURRENT_SOURCE_DIR}/rust/dizzy_adblock/target/x86_64-pc-windows-msvc/release/dizzy_adblock.dll")
+if(EXISTS "${DIZZY_ADBLOCK_DLL}")
+  install(FILES "${DIZZY_ADBLOCK_DLL}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+else()
+  message(WARNING "dizzy_adblock.dll not built — embed ad-blocking disabled")
+endif()
+
 if(PLUGIN_BUNDLED_LIBRARIES)
   install(FILES "${PLUGIN_BUNDLED_LIBRARIES}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
