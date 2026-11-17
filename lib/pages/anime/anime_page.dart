@@ -556,17 +556,10 @@ class _AnimePageState extends State<AnimePage> {
             ),
 
           // Liquid Dock Navbar (Home Page Style)
-          Positioned(
-            bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: PrismDock(
-                currentDestination: DockItemKey.anime,
-                onSettingsTap: () => _navigateToSettings(null),
-                onSearchTap: () => _navigateToSearch(null),
-              ),
-            ),
+          PrismDockSlot(
+            currentDestination: DockItemKey.anime,
+            onSettingsTap: () => _navigateToSettings(null),
+            onSearchTap: () => _navigateToSearch(null),
           ),
         ];
 

@@ -341,14 +341,7 @@ class _BooksPageState extends State<BooksPage> {
             ),
 
           // ── Bottom Liquid Dock Navbar ──
-          Positioned(
-            bottom: 12.0 + MediaQuery.paddingOf(context).bottom,
-            left: 0,
-            right: 0,
-            child: const Center(
-              child: PrismDock(currentDestination: DockItemKey.books),
-            ),
-          ),
+          const PrismDockSlot(currentDestination: DockItemKey.books),
         ],
       ),
     );

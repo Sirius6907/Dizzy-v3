@@ -278,17 +278,10 @@ class _IptvPageState extends State<IptvPage> {
         ),
 
       // Liquid Dock Navbar (Home & Anime Page Style)
-      Positioned(
-        bottom: 24,
-        left: 0,
-        right: 0,
-        child: Center(
-          child: PrismDock(
-            currentDestination: DockItemKey.liveTv,
-            onSettingsTap: () => _navigateToSettings(null),
-            onSearchTap: () => _navigateToSearch(null),
-          ),
-        ),
+      PrismDockSlot(
+        currentDestination: DockItemKey.liveTv,
+        onSettingsTap: () => _navigateToSettings(null),
+        onSearchTap: () => _navigateToSearch(null),
       ),
     ];
 

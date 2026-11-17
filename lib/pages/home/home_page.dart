@@ -812,7 +812,6 @@ class _HomePageState extends State<HomePage> {
     double topPadding,
     BuildContext context,
   ) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
     final overlayChildren = <Widget>[
       // ── Floating glass app bar ──
       Positioned(
@@ -835,17 +834,10 @@ class _HomePageState extends State<HomePage> {
         ),
 
       // ── Liquid Dock Navbar ──
-      Positioned(
-        bottom: 12.0 + bottomInset,
-        left: 0,
-        right: 0,
-        child: Center(
-          child: PrismDock(
-            currentDestination: DockItemKey.home,
-            onSettingsTap: () => _navigateToSettings(null),
-            onSearchTap: () => _navigateToSearch(null),
-          ),
-        ),
+      PrismDockSlot(
+        currentDestination: DockItemKey.home,
+        onSettingsTap: () => _navigateToSettings(null),
+        onSearchTap: () => _navigateToSearch(null),
       ),
 
       // ── Intro Splash Screen ──

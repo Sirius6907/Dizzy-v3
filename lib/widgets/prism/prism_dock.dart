@@ -224,6 +224,51 @@ class PrismDock extends StatelessWidget {
   }
 }
 
+/// Where the dock sits on every tab (v1.4 one-app fix).
+///
+/// Before this, each page hand-rolled its own `Positioned`: home/anime/books/
+/// manga used `12 + safeArea.bottom`, Live TV used a bare `24`. On a phone with
+/// a 34dp gesture inset that is a 22dp jump between tabs — the "bottom bar
+/// teleports" bug. Every page now places [PrismDock] through this widget, so
+/// the gap and the safe-area handling can only change in one place.
+///
+/// It returns a [Positioned], so it must be a direct child of a [Stack].
+class PrismDockSlot extends StatelessWidget {
+  /// Gap between the dock and the safe area (or the screen edge when there is
+  /// no system inset).
+  static const double bottomGap = 12.0;
+
+  final DockItemKey? currentDestination;
+  final VoidCallback? onSettingsTap;
+  final VoidCallback? onSearchTap;
+  final VoidCallback? onHomeTap;
+
+  const PrismDockSlot({
+    super.key,
+    this.currentDestination,
+    this.onSettingsTap,
+    this.onSearchTap,
+    this.onHomeTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: bottomGap + MediaQuery.paddingOf(context).bottom,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: PrismDock(
+          currentDestination: currentDestination,
+          onSettingsTap: onSettingsTap,
+          onSearchTap: onSearchTap,
+          onHomeTap: onHomeTap,
+        ),
+      ),
+    );
+  }
+}
+
 class _PrismDockItem extends StatelessWidget {
   final DockItemKey item;
   final bool active;
