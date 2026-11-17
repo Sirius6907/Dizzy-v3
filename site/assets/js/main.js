@@ -117,6 +117,7 @@
       var on = t.dataset.os === os;
       t.classList.toggle('on', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1; // roving tabindex: one stop for the whole tablist
     });
     moveGlider();
 
@@ -189,6 +190,23 @@
     });
   });
 
+  /* WAI-ARIA tabs: arrows move the selection, Home/End jump to the ends. */
+  var tabList = $('.tabs');
+  if (tabList) {
+    tabList.addEventListener('keydown', function (e) {
+      var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      var tabs = $all('.tab', tabList);
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0 || (!step && e.key !== 'Home' && e.key !== 'End')) return;
+      e.preventDefault();
+      var next = e.key === 'Home' ? 0
+        : e.key === 'End' ? tabs.length - 1
+        : (i + step + tabs.length) % tabs.length;
+      tabs[next].focus();
+      tabs[next].click();
+    });
+  }
+
   /* ══ smart default: detect the visitor's OS once (stored choice wins) ══ */
   function detectOS() {
     try {
@@ -227,6 +245,7 @@
       last = y;
       parallax(y);
       sweepReveals();
+      updateDlBar();
     }
     window.addEventListener('scroll', function () {
       if (!ticking) { ticking = true; requestAnimationFrame(frame); }
@@ -252,6 +271,19 @@
         if (s) so.observe(s);
       });
     }
+  }
+
+  /* ══ sticky mobile download bar: shows between the hero and the picker ══ */
+  var dlBarEl = null, dlBarOn = false;
+  function updateDlBar() {
+    if (!dlBarEl) return;
+    var y = window.pageYOffset || document.documentElement.scrollTop;
+    var hero = $('.hero');
+    var dl = $('#download');
+    var pastHero = hero ? y > hero.offsetHeight * 0.7 : y > 520;
+    var dlTop = dl ? dl.getBoundingClientRect().top : 1e9;
+    var want = pastHero && dlTop > window.innerHeight * 0.75;
+    if (want !== dlBarOn) { dlBarOn = want; dlBarEl.classList.toggle('show', want); }
   }
 
   /* ══ hero parallax (scroll-linked, rAF-throttled) ══ */
@@ -426,21 +458,45 @@
 
     // lightbox
     var lb = $('#lightbox'), lbImg = $('#lbImg'), lbCap = $('#lbCap'), lbClose = $('#lbClose');
-    function closeLb() { if (lb) { lb.classList.remove('open'); document.body.style.overflow = ''; } }
+    var lbReturn = null;
+    function closeLb() {
+      if (!lb || !lb.classList.contains('open')) return;
+      lb.classList.remove('open');
+      document.body.style.overflow = '';
+      if (lbReturn && lbReturn.focus) lbReturn.focus();
+      lbReturn = null;
+    }
+    function openLb(img) {
+      if (!lb) return;
+      lbReturn = document.activeElement;
+      lbImg.src = img.currentSrc || img.src;
+      lbImg.alt = img.alt;
+      lbCap.textContent = img.alt;
+      lb.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (lbClose) lbClose.focus();
+    }
     $all('.shot img', rail).forEach(function (img) {
+      // keyboard reachable: the enlarged view is the only way to read a shot
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', 'Enlarge: ' + (img.alt || 'screenshot'));
       img.addEventListener('click', function () {
         if (moved > 6) { moved = 0; return; } // it was a drag, not a click
-        if (!lb) return;
-        lbImg.src = img.currentSrc || img.src;
-        lbImg.alt = img.alt;
-        lbCap.textContent = img.alt;
-        lb.classList.add('open');
-        document.body.style.overflow = 'hidden';
+        openLb(img);
+      });
+      img.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(img); }
       });
     });
     if (lbClose) lbClose.addEventListener('click', closeLb);
     if (lb) lb.addEventListener('click', function (e) { if (e.target === lb) closeLb(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLb(); });
+    document.addEventListener('keydown', function (e) {
+      if (!lb || !lb.classList.contains('open')) return;
+      if (e.key === 'Escape') { closeLb(); return; }
+      // the dialog holds one control, so Tab must stay on it, never reach the page
+      if (e.key === 'Tab') { e.preventDefault(); if (lbClose) lbClose.focus(); }
+    });
   }
 
   /* ══ FAQ accordion (details + animated open/close) ══ */
@@ -520,7 +576,9 @@
   initMenu();
   loadStars();
   heroParEls = $all('[data-par]');
-  window.addEventListener('resize', moveGlider);
+  dlBarEl = $('#dlBar');
+  updateDlBar();
+  window.addEventListener('resize', function () { moveGlider(); updateDlBar(); });
   window.addEventListener('load', moveGlider);
   moveGlider();
 })();
