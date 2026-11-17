@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dizzy — one app for movies, music, manga, books and live TV</title>
-<meta name="description" content="Dizzy is the free, open-source app that replaces the stack: movies and series, music, manga, anime, audiobooks and India-first live TV — plus watch parties, friends and DMs. No ads, no account needed.">
+<title>Dizzy — movies, music, manga and live TV in one app</title>
+<meta name="description" content="Dizzy plays films, series, music, manga, anime, audiobooks and live TV, and keeps watch parties in sync. Free, open source, Android and PC, no account needed.">
 <meta name="theme-color" content="#070910">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://dizzy-by-sirius.netlify.app/">
@@ -17,17 +17,17 @@
 <link rel="stylesheet" href="./assets/css/main.css">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Dizzy">
-<meta property="og:title" content="Dizzy — one app for movies, music, manga, books and live TV">
-<meta property="og:description" content="Movies, series, music, manga, anime, audiobooks and live TV in one app — with watch parties, friends and DMs. Free and open source.">
+<meta property="og:title" content="Dizzy — movies, music, manga and live TV in one app">
+<meta property="og:description" content="Films, series, music, manga, audiobooks and live TV in one app, with watch parties that stay in sync. Free and open source.">
 <meta property="og:url" content="https://dizzy-by-sirius.netlify.app/">
 <meta property="og:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Dizzy — one app for everything you watch, listen and read">
-<meta name="twitter:description" content="Movies, music, manga, audiobooks and live TV in one app, with watch parties built in.">
+<meta name="twitter:title" content="Dizzy — films, music, manga and live TV in one app">
+<meta name="twitter:description" content="Films, music, manga, audiobooks and live TV in one app, with watch parties.">
 <meta name="twitter:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.jpg">
-<script>document.documentElement.className += ' js';</script>
+<script>document.documentElement.className += ' js';setTimeout(function(){if(document.querySelector('.reveal.in'))return;var n=document.querySelectorAll('.reveal');for(var i=0;i<n.length;i++)n[i].className+=' in';},2500);</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -35,7 +35,7 @@
   "name": "Dizzy",
   "operatingSystem": ["Android", "Windows", "Linux"],
   "applicationCategory": "MultimediaApplication",
-  "description": "Free and open-source app for movies, series, music, manga, anime, audiobooks and live TV, with watch parties, friends and DMs.",
+  "description": "Free and open-source app for films, series, music, manga, anime, audiobooks and live TV, with watch parties and friends.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "downloadUrl": "https://github.com/Sirius6907/Dizzy-v3/releases/latest",
   "codeRepository": "https://github.com/Sirius6907/Dizzy-v3",
@@ -51,12 +51,12 @@
   "mainEntity": [
     { "@type": "Question", "name": "Is Dizzy really free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Dizzy is free and open source (GPL-3.0). No paid tiers, no locked features, no ads inside the app." } },
     { "@type": "Question", "name": "Which Android file should I download?", "acceptedAnswer": { "@type": "Answer", "text": "Almost every modern phone uses arm64-v8a, which is preselected for you. Older devices can use armeabi-v7a, x86_64 covers some tablets and emulators, and Universal works everywhere but is a much bigger download." } },
-    { "@type": "Question", "name": "How do I install the APK?", "acceptedAnswer": { "@type": "Answer", "text": "Open the downloaded file and allow installs from that source once. Android or Play Protect may warn you because the app did not come from the Play Store — that warning appears for every app installed this way." } },
+    { "@type": "Question", "name": "How do I install the APK?", "acceptedAnswer": { "@type": "Answer", "text": "Open the file and allow installs from that source once. Play Protect may warn you because it did not come from the Play Store; it does that for every sideloaded app. Builds are signed with the same key on every release." } },
     { "@type": "Question", "name": "How do updates work?", "acceptedAnswer": { "@type": "Answer", "text": "The app checks for new versions itself and offers a one-tap update. Release builds carry a versionCode floor, so a new build can never install as a downgrade." } },
     { "@type": "Question", "name": "The update says package not valid. What now?", "acceptedAnswer": { "@type": "Answer", "text": "That only affects installs older than v1.3.1, where the signing key or versionCode did not line up. Fixed installs update in place since v1.3.1. If you hit it, uninstall once and install the latest APK from this page: your @username and history live on the server and come back." } },
     { "@type": "Question", "name": "Do I need an account?", "acceptedAnswer": { "@type": "Answer", "text": "No. Everything plays without signing in. An @username is optional and only needed for friends, DMs, watch parties and syncing across devices." } },
     { "@type": "Question", "name": "Does it work offline?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Downloads resume where they stopped, pause when the network drops, and are sorted into video, music and active tabs with a storage gauge." } },
-    { "@type": "Question", "name": "Where does the content come from? Is this legal?", "acceptedAnswer": { "@type": "Answer", "text": "Dizzy hosts nothing. It plays media from third-party sources and addons that you configure. Availability and legality depend on the source and where you live — use your own judgement and support official releases." } }
+    { "@type": "Question", "name": "Where does the content come from? Is this legal?", "acceptedAnswer": { "@type": "Answer", "text": "Dizzy hosts nothing. It plays from sources and addons you set up yourself, so what is available, and what is legal, depends on those and on where you live. You are responsible for what you play." } }
   ]
 }
 </script>
@@ -111,24 +111,24 @@
       <div class="hero-copy">
         <p class="eyebrow reveal"><span class="dot-live" aria-hidden="true"></span><b data-ver>latest</b><span class="sep">·</span>one app<span class="sep">·</span>free &amp; open</p>
         <h1>
-          <span class="line">Four apps became</span>
-          <span class="line"><span class="grad">one app.</span></span>
+          <span class="line">Six libraries.</span>
+          <span class="line"><span class="grad">One app.</span></span>
         </h1>
-        <p class="sub reveal">Movies and series, music, manga, anime, audiobooks and live TV — one home row, one player, one identity. India-first, so a live cricket match sits at the top of Live TV when it matters. And when your people are in it, <b>Watch Party</b> keeps everyone on the same second.</p>
+        <p class="sub reveal">Films and series, music, manga, anime, audiobooks and live TV. One home screen and one player for all of it, and an account only if you want friends and sync. Live TV puts a running cricket match first. <b>Watch Party</b> keeps everyone within a second of each other.</p>
         <div class="cta-row reveal">
           <a class="btn btn-red btn-lg magnetic" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
             <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
             <span data-dl-label>Download the latest release</span>
           </a>
-          <a class="btn btn-lg" href="#download" data-dl-jump>Pick the right file</a>
+          <a class="btn btn-lg" href="#download" data-dl-jump>Choose your file</a>
         </div>
         <p class="cta-note reveal">
-          <span class="chk">✓</span> Free forever <span class="sep">·</span>
+          <span class="chk">✓</span> Free <span class="sep">·</span>
           <span class="chk">✓</span> No ads <span class="sep">·</span>
           <span class="chk">✓</span> No account to start <span class="sep">·</span>
           <span class="chk">✓</span> <b data-total-dl>—</b>&nbsp;downloads
         </p>
-        <p class="micro reveal">Android · Windows · Linux — built in the open on GitHub, updated in place from inside the app.</p>
+        <p class="micro reveal">Android, Windows and Linux. Every build comes from GitHub Actions, and updates install from inside the app.</p>
       </div>
 
       <div class="hero-stage">
@@ -155,8 +155,8 @@
     <div class="wrap">
       <div class="section-head">
         <p class="kicker reveal">One app</p>
-        <h2 class="reveal">Every vertical, at full strength.</h2>
-        <p class="lede reveal">Not five apps taped together. The same home row, the same player, the same account — whether you're starting a series, a song, a chapter or a match.</p>
+        <h2 class="reveal">What's in the app.</h2>
+        <p class="lede reveal">A series, a song, a chapter or a match all start in the same place, with the same player and the same account.</p>
       </div>
 
       <div class="bento">
@@ -172,7 +172,7 @@
           </div>
           <span class="pill">Flagship</span>
           <h3>Watch Party</h3>
-          <p>Host a room, share the six-character Room ID, and play, pause and seek stay locked for everyone in it. Drift corrects itself in about a second and a half. Chat and voice ride along — the stream never leaves anyone's own device.</p>
+          <p>Start a room, share the six-character Room ID. Play, pause and seek stay locked for everyone in it, and drift fixes itself in about a second and a half. Chat and voice run alongside; the video comes from each person's own device.</p>
         </article>
 
         <article class="card span5 reveal" data-rev="right">
@@ -180,7 +180,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg>
           </span>
           <h3>Live TV, cricket first</h3>
-          <p>India-first live rows: when a match is on, it's pinned to the front with a LIVE badge instead of buried on channel 47. EPG guide, category lists, and zapping that can't queue up a zombie channel.</p>
+          <p>A match in progress moves to the front of the row with a LIVE badge instead of sitting on channel 47. There's an EPG guide and category lists, and switching channels won't leave half-started streams queued up behind it.</p>
         </article>
 
         <article class="card span4 reveal">
@@ -188,7 +188,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M2 9h20"/><path d="m10 13 4 2.5-4 2.5z"/></svg>
           </span>
           <h3>Movies &amp; series</h3>
-          <p>New and trending rows, latest releases per language, and resume that follows you across devices. One player for HLS, progressive files, torrents and debrid.</p>
+          <p>New and trending rows, latest releases by language, resume points that follow you between devices. HLS, plain files, torrents and debrid all play through the same player.</p>
         </article>
 
         <article class="card span4 reveal">
@@ -196,7 +196,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           </span>
           <h3>Music</h3>
-          <p>Home, Browse, Library, Radio and Search — plus queue, lyrics, equaliser, sleep timer and offline albums. Desi-first rows, with an exact-match search that never hands back a near-miss song.</p>
+          <p>Five tabs: Home, Browse, Library, Radio, Search. Queue, lyrics, equaliser, sleep timer, offline albums. Indian releases get the front rows, and search won't hand you a near-miss song as if it were the one you wanted.</p>
         </article>
 
         <article class="card span4 reveal">
@@ -204,7 +204,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </span>
           <h3>Manga &amp; anime</h3>
-          <p>A reader built for long nights — horizontal or vertical, pinch zoom, progress kept per title. Anime gets trending and airing rows, ratings and a one-tap next episode.</p>
+          <p>Read horizontally or vertically, pinch to zoom, and your place is kept per title. Anime has trending and airing rows, ratings, and a next-episode button.</p>
         </article>
 
         <article class="card span4 reveal">
@@ -212,7 +212,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5z"/><path d="M4 16.5h16"/><path d="M9 7h6"/></svg>
           </span>
           <h3>Audiobooks</h3>
-          <p>Chapters, speed and a sleep timer for the long ones. Bring your own MP3 or M4B, or put an EPUB through the built-in audio studio and listen to it instead of reading it.</p>
+          <p>Chapter playback, speed control and a sleep timer. Bring your own MP3 or M4B, or run an EPUB through the audio studio and listen to it instead.</p>
         </article>
 
         <article class="card span4 reveal">
@@ -220,7 +220,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
           </span>
           <h3>Friends &amp; DMs</h3>
-          <p>Real @usernames, live friend requests and message threads that show up the moment they arrive. Tap a friend's invite and you land in their room, not a second empty one.</p>
+          <p>Requests update the moment they're accepted, threads load their real history, and tapping a friend's invite puts you in their room instead of opening a second one.</p>
         </article>
 
         <article class="card span4 reveal">
@@ -228,7 +228,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
           </span>
           <h3>Offline that behaves</h3>
-          <p>Downloads resume where they stopped, pause when the network drops, and live in one hub with a storage gauge. Flights, trains and dead zones included.</p>
+          <p>Downloads resume where they stopped, pause when the connection drops, and sit in one list with a storage gauge.</p>
         </article>
       </div>
     </div>
@@ -240,14 +240,14 @@
       <div class="party-copy reveal" data-rev="left">
         <p class="kicker">Watch together</p>
         <h2>No more “ok, press play… 3, 2, 1”.</h2>
-        <p class="lede">One person hosts. Everyone else just follows — pause, seek and next episode included. Private rooms take a six-digit pass, and a room holds up to 20 people before it stops accepting guests.</p>
+        <p class="lede">One person hosts, everyone else follows: pause, seek and next episode included. Private rooms take a six-digit pass. A room caps at 20 people.</p>
         <ul class="party-facts">
-          <li><b>1.5 s</b><span>drift before it silently re-syncs you</span></li>
-          <li><b>20</b><span>people in one room</span></li>
-          <li><b>Voice + chat</b><span>join muted, unmute when you have opinions</span></li>
-          <li><b>Listen Together</b><span>the same trick for a shared queue of music</span></li>
+          <li><b>1.5 s</b><span>of drift before it re-syncs you</span></li>
+          <li><b>20</b><span>people per room</span></li>
+          <li><b>Voice + chat</b><span>you join muted, unmute to talk</span></li>
+          <li><b>Listen Together</b><span>the same thing for a music queue</span></li>
         </ul>
-        <p class="party-next">Group chats and shared watch lists are next on the same roadmap.</p>
+        <p class="party-next">Group chats and shared watch lists are next.</p>
       </div>
 
       <div class="party-card reveal" data-rev="right" aria-label="Watch Party room example">
@@ -278,15 +278,15 @@
     <div class="wrap player-grid">
       <div class="player-copy reveal" data-rev="left">
         <p class="kicker">One player</p>
-        <h2>The same player for an episode, a track and a match.</h2>
-        <p class="lede">Video and audio don't live in separate worlds here. One engine takes an HLS or DASH stream, a plain MP4 or MKV, a torrent and a debrid link — and subtitles, quality and the next episode all live on the same screen.</p>
+        <h2>Video and audio share one player.</h2>
+        <p class="lede">HLS, DASH, MP4, MKV, torrents and debrid links all go through it. Subtitles, quality and the next episode sit on the same screen, whichever one you're in.</p>
         <ul class="fmt" aria-label="Formats and sources">
           <li>HLS</li><li>DASH</li><li>MP4 · MKV</li><li>Torrents</li><li>Debrid</li><li>External subtitles</li>
         </ul>
         <div class="player-facts">
-          <div><b>480p – 4K</b><span>manual quality, Auto included</span></div>
-          <div><b>&lt; 1 s</b><span>handoff when you zap a channel</span></div>
-          <div><b>Per device</b><span>quality choice is remembered</span></div>
+          <div><b>480p – 4K</b><span>manual quality, plus Auto</span></div>
+          <div><b>&lt; 1 s</b><span>when you switch channel</span></div>
+          <div><b>Per device</b><span>your quality choice is kept</span></div>
         </div>
       </div>
       <div class="player-stage reveal" data-rev="right">
@@ -306,24 +306,24 @@
     <div class="wrap">
       <div class="section-head">
         <p class="kicker reveal">Release notes</p>
-        <h2 class="reveal">What actually landed in <span data-ver>latest</span>.</h2>
-        <p class="lede reveal">Every release is a working build, not a promise. Three things from the most recent one, in plain language.</p>
+        <h2 class="reveal">What's in <span data-ver>latest</span>.</h2>
+        <p class="lede reveal">Three things from the last release.</p>
       </div>
       <div class="news">
         <article class="news-card reveal">
           <span class="news-tag">Friends &amp; DMs</span>
-          <h3>Chat that works both ways</h3>
-          <p>An accepted request turns into a Chat button the moment it happens, threads load their real history from the server, and your own messages finally render on your side.</p>
+          <h3>Chat works both ways now</h3>
+          <p>An accepted request turns into a Chat button straight away, threads load from the server, and your own messages finally appear on your side.</p>
         </article>
         <article class="news-card reveal">
           <span class="news-tag">Resolve</span>
-          <h3>The right film, not a same-name film</h3>
-          <p>Year and language are part of the answer now, so a Spanish “Game Over” can't stand in for a 2026 Odia request — and regional titles resolve at all.</p>
+          <h3>Same-name films stopped slipping through</h3>
+          <p>The resolver checks year and language, so a Spanish “Game Over” can't answer a 2026 Odia request. Most regional titles didn't resolve at all before this.</p>
         </article>
         <article class="news-card reveal">
           <span class="news-tag">Sources</span>
-          <h3>Ranked out loud</h3>
-          <p>Movies and episodes resolve through the verified pair, and every point of a source's score is attributable by name instead of being an opaque number.</p>
+          <h3>You can see why a source won</h3>
+          <p>Sources are still ranked, but every point in a score has a name now: addon history, debrid, instant play, past failures.</p>
         </article>
       </div>
       <p class="news-more reveal"><a href="https://github.com/Sirius6907/Dizzy-v3/releases" target="_blank" rel="noopener">Read the full release notes on GitHub →</a></p>
@@ -339,9 +339,9 @@
       </div>
       <ol class="steps reveal" data-steps>
         <span class="steps-track" aria-hidden="true"><i></i></span>
-        <li><span class="n">1</span><b>Download</b><span>Press the button above. The file picker on this page already knows your device and architecture.</span></li>
-        <li><span class="n">2</span><b>Install</b><span>Android: allow this one install. Windows: run the setup. Linux: run the AppImage. No account, no sign-up wall.</span></li>
-        <li><span class="n">3</span><b>Play</b><span>Pick a title, a track or a match. From then on it updates itself in place — one tap, newest version.</span></li>
+        <li><span class="n">1</span><b>Download</b><span>Press the button above. The picker on this page already knows your device and CPU type.</span></li>
+        <li><span class="n">2</span><b>Install</b><span>Android: allow this one install. Windows: run the setup file. Linux: run the AppImage. No account needed.</span></li>
+        <li><span class="n">3</span><b>Play</b><span>Pick something and press play. After that it updates itself, one tap per release.</span></li>
       </ol>
     </div>
   </section>
@@ -352,7 +352,7 @@
       <div class="section-head rail-head">
         <div>
           <p class="kicker reveal">Screenshots</p>
-          <h2 class="reveal">The real app, not mockups.</h2>
+          <h2 class="reveal">All 20 screens, straight from the app.</h2>
         </div>
         <div class="rail-ctrl reveal" data-rev="right">
           <button class="rail-btn" id="railPrev" aria-label="Previous screenshots">
@@ -366,11 +366,19 @@
     </div>
     <div class="rail-wrap reveal">
       <div class="rail" id="rail" role="list" aria-label="App screenshots, drag to browse">
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/intro.webp" alt="Dizzy welcome screen on first launch" width="480" height="957" loading="lazy" decoding="async"><figcaption>Welcome</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/home.webp" alt="Home: spotlight title with Explore and Details, then New &amp; Trending" width="600" height="1258" loading="lazy" decoding="async"><figcaption>Home</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/music.webp" alt="Music home: chart hit banner, mood chips and Made For You mixes" width="480" height="1008" loading="lazy" decoding="async"><figcaption>Music</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-albums.webp" alt="Music browse with a Your Artists row and Albums for your taste" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Artists &amp; albums</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/music-player.webp" alt="Full-screen music player with cover art, seek bar and controls" width="480" height="1007" loading="lazy" decoding="async"><figcaption>Player</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-player-2.webp" alt="Music player playing Sun Saathiya with a waveform seek bar" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Player · Hindi</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-player-3.webp" alt="Music player playing Gulabi with an up-next row underneath" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Player · Up next</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/music-queue.webp" alt="Music queue drawer showing the next tracks" width="480" height="1007" loading="lazy" decoding="async"><figcaption>Queue</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-queue-2.webp" alt="Queue and up next sheet with drag handles for reordering" width="480" height="1008" loading="lazy" decoding="async"><figcaption>Queue · reorder</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-eq.webp" alt="Equalizer sheet with 3D spatializer, bass boost and five frequency bands" width="480" height="1001" loading="lazy" decoding="async"><figcaption>Equaliser</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/music-album.webp" alt="Music player for Loco with a 40-song up-next queue" width="480" height="1004" loading="lazy" decoding="async"><figcaption>Player · 40 in queue</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/manga.webp" alt="Manga home with featured series and chapter rows" width="480" height="1000" loading="lazy" decoding="async"><figcaption>Manga</figcaption></figure>
+        <figure class="shot" role="listitem"><img src="./assets/img/shots/manga-2.webp" alt="Discover Manga grid with One Piece, Blue Lock, Overgeared and Black Clover" width="480" height="1004" loading="lazy" decoding="async"><figcaption>Discover manga</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/manga-reader.webp" alt="Manga reader showing a full page with progress" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Reader</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/anime.webp" alt="Anime details with rating, episode count and Watch Ep 1, plus Trending Anime and Airing Now rows" width="480" height="1000" loading="lazy" decoding="async"><figcaption>Anime</figcaption></figure>
         <figure class="shot" role="listitem"><img src="./assets/img/shots/audiobook.webp" alt="Audiobook hub with genre filters, a spotlight book and featured titles" width="480" height="1007" loading="lazy" decoding="async"><figcaption>Audiobooks</figcaption></figure>
@@ -380,17 +388,17 @@
         <figure class="shot" role="listitem"><img src="./assets/img/shots/settings.webp" alt="Settings with My Dizzy Wrap, Privacy &amp; Account, Profiles and Social Hub entries" width="480" height="1005" loading="lazy" decoding="async"><figcaption>Settings</figcaption></figure>
       </div>
     </div>
-    <p class="rail-hint">Drag, scroll, or tap a shot to enlarge</p>
+    <p class="rail-hint">Drag it, or tap a shot to enlarge</p>
   </section>
 
   <!-- ═══ STATS ═══ -->
   <section class="section" id="numbers">
     <div class="wrap">
       <div class="stats">
-        <div class="stat reveal"><span class="num" data-count="6">0</span><span class="lab">verticals, one player and one home row</span></div>
+        <div class="stat reveal"><span class="num" data-count="6">0</span><span class="lab">kinds of media in one app</span></div>
         <div class="stat reveal"><span class="num" data-count="0">0</span><span class="lab">ads, subscriptions or locked features</span></div>
-        <div class="stat reveal"><span class="num" data-count="20">0</span><span class="lab">people per watch room, private ones included</span></div>
-        <div class="stat reveal"><span class="num" data-count="100" data-suffix="%">0</span><span class="lab">open source — GPL-3.0, built in public</span></div>
+        <div class="stat reveal"><span class="num" data-count="20">0</span><span class="lab">people in a watch room</span></div>
+        <div class="stat reveal"><span class="num" data-count="100" data-suffix="%">0</span><span class="lab">open source, GPL-3.0</span></div>
       </div>
     </div>
   </section>
@@ -401,7 +409,7 @@
       <div class="reveal" data-rev="left">
         <p class="kicker">Built in the open</p>
         <h2>Read the code. Build it. Fork it.</h2>
-        <p class="lede">Every release comes out of GitHub Actions from the public repo — the same artifacts for you and for us. No mystery binaries, no telemetry you didn't agree to.</p>
+        <p class="lede">Every release is built by GitHub Actions from the public repo, so the file you download is the file we published. No telemetry, no bundled analytics.</p>
         <div class="oss-facts">
           <span class="fact" data-gh-fact hidden>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.9 5.34.9 11.6c0 4.9 3.17 9.05 7.57 10.52.55.1.76-.24.76-.53l-.02-1.86c-3.08.67-3.73-1.49-3.73-1.49-.5-1.29-1.23-1.63-1.23-1.63-1.01-.69.08-.68.08-.68 1.11.08 1.7 1.15 1.7 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.7-1.49-2.46-.28-5.05-1.23-5.05-5.5 0-1.21.43-2.2 1.15-2.98-.12-.28-.5-1.41.11-2.94 0 0 .93-.3 3.05 1.14a10.5 10.5 0 0 1 5.56 0c2.12-1.44 3.05-1.14 3.05-1.14.61 1.53.23 2.66.11 2.94.72.78 1.15 1.77 1.15 2.98 0 4.28-2.6 5.21-5.07 5.49.4.35.76 1.03.76 2.08l-.01 3.08c0 .3.2.64.77.53 4.39-1.48 7.56-5.62 7.56-10.52C23.1 5.34 18.27.5 12 .5Z"/></svg>
@@ -429,8 +437,8 @@
     <div class="wrap">
       <div class="section-head">
         <p class="kicker reveal">Download</p>
-        <h2 class="reveal">Get Dizzy <span class="grad" data-ver>free</span></h2>
-        <p class="dl-meta reveal"><b data-ver>—</b> · released <b data-rel-date>—</b> · <b data-total-dl>—</b> downloads · the right file for your device is already selected</p>
+        <h2 class="reveal">Get Dizzy <span class="grad" data-ver>latest</span></h2>
+        <p class="dl-meta reveal"><b data-ver>—</b> · released <b data-rel-date>—</b> · <b data-total-dl>—</b> downloads · your file is already selected</p>
       </div>
 
       <div class="tabs reveal" role="tablist" aria-label="Choose your system">
@@ -476,44 +484,44 @@
     <div class="wrap narrow">
       <div class="section-head">
         <p class="kicker reveal">FAQ</p>
-        <h2 class="reveal">Install, update, and the questions in between.</h2>
+        <h2 class="reveal">Install, update, and the rest.</h2>
       </div>
       <div class="faq">
         <details class="qa reveal" open>
           <summary>Is Dizzy really free? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Yes — free and open source under GPL-3.0. There are no paid tiers, no locked features and no ads inside the app. It is not on the Play Store, so you install it directly.</div></div>
+          <div class="ans"><div>Yes. GPL-3.0, no paid tier, no locked features, no ads. It isn't on the Play Store, so you install the APK yourself.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Which Android file should I download? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Almost every modern phone uses <b>arm64-v8a</b>, and it is already selected for you. Older or unusual devices can use armeabi-v7a (32-bit phones) or x86_64 (some tablets and emulators). Universal runs everywhere but is a much bigger download.</div></div>
+          <div class="ans"><div><b>arm64-v8a</b> unless the phone is old, and it's already selected. armeabi-v7a is for 32-bit phones, x86_64 for some tablets and emulators. Universal runs anywhere but is a much bigger download.</div></div>
         </details>
         <details class="qa reveal">
           <summary>How do I install the APK? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Open the downloaded file and let Android install from that source once. You may also see a Play Protect “unsafe app” prompt — that appears for every app installed outside the Play Store, including this one. The APK is built in the open by GitHub Actions and signed with the same key on every release.</div></div>
+          <div class="ans"><div>Open the file and allow installs from that source once. Play Protect may warn you because it didn't come from the Play Store; it does that for every sideloaded app. Builds are signed with the same key on every release.</div></div>
         </details>
         <details class="qa reveal">
           <summary>How do updates work? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>The app checks for a new version itself and offers a one-tap update — you never have to come back to this page unless you want a fresh install. Release builds carry a versionCode floor, so a newer build can't install as a downgrade, and each download's checksum is verified before the installer opens it.</div></div>
+          <div class="ans"><div>The app checks for a new version and offers a one-tap update. You don't need to come back here unless you want a clean install. Builds carry a versionCode floor, so a newer one can't install as a downgrade, and the download's checksum is checked before the installer opens it.</div></div>
         </details>
         <details class="qa reveal">
-          <summary>“Package not valid” — the update won't install. <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>That message belongs to installs older than <b>v1.3.1</b>. Builds since then update in place, and legacy-key installs get a matching mirror automatically, so v1.3.5 and newer should never ask you to uninstall anything. If you are still stuck on an old build, uninstall Dizzy once and install the latest APK from this page. Your @username and history live on the server and come back with it.</div></div>
+          <summary>The update says “package not valid”. <span class="chev" aria-hidden="true">+</span></summary>
+          <div class="ans"><div>That one is installs older than <b>v1.3.1</b>. Since then updates happen in place, and old debug-key installs get a matching mirror automatically, so v1.3.5 and later won't ask you to uninstall. If you're still on something older, uninstall once and install the latest APK here. Your @username and history come back from the server.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Do I need an account? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>No. Everything plays without signing in. An @username is optional and only needed for friends, DMs, watch parties and syncing across devices — and it survives a reinstall.</div></div>
+          <div class="ans"><div>No. Everything plays signed out. An @username is only for friends, DMs, parties and syncing between devices, and it survives a reinstall.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Does it work offline? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Yes. Downloads resume where they stopped, pause when the network drops, and sit in one hub with a storage gauge so you can see what is eating space before a trip.</div></div>
+          <div class="ans"><div>Yes. Downloads resume, pause when the network drops, and are listed with their sizes, so you can see what a trip will cost in space.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Is there adult content? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>There is an optional 18+ section, and it is <b>off by default</b>. Turning it on needs a birth-year confirmation, it never appears in kids profiles, and it keeps its own categories so it cannot leak into the normal home row. If you are under 18, leave it alone.</div></div>
+          <div class="ans"><div>There's an optional 18+ section, <b>off by default</b>. Turning it on asks for a birth year, it stays hidden from kids profiles, and it has its own categories so it doesn't show up in the normal rows. Under 18? Leave it off.</div></div>
         </details>
         <details class="qa reveal">
           <summary>Where does the content come from? Is this legal? <span class="chev" aria-hidden="true">+</span></summary>
-          <div class="ans"><div>Dizzy hosts nothing. It plays media from third-party sources and addons that you configure, and availability or legality depends on the source and on where you live. Use your own judgement, and support official releases when you can. Rights holders can reach us through the GitHub issue tracker and we will remove a source.</div></div>
+          <div class="ans"><div>Dizzy hosts nothing. It plays from sources and addons you set up yourself, so what's available, and what's legal, depends on those and on where you live. You're responsible for what you play. If you hold rights to something and think a source shouldn't be listed, open an issue on GitHub.</div></div>
         </details>
       </div>
     </div>
@@ -524,8 +532,8 @@
     <div class="wrap">
       <div class="cta-band reveal" data-rev="zoom">
         <p class="kicker" style="justify-content:center">Two minutes from now</p>
-        <h2>One download. Every screen you already use.</h2>
-        <p>Install Dizzy, send a Room ID to whoever you'd watch with, and press play. That's the whole tutorial.</p>
+        <h2>Install it once, then stop switching apps.</h2>
+        <p>Send the Room ID to whoever you're watching with, then press play. That's all of it.</p>
         <div class="cta-row">
           <a class="btn btn-red btn-lg magnetic" href="https://github.com/Sirius6907/Dizzy-v3/releases/latest" rel="noopener">
             <svg class="btn-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -533,7 +541,7 @@
           </a>
           <a class="btn btn-lg" href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">Browse the source</a>
         </div>
-        <p class="micro">Free forever · Android, Windows &amp; Linux · <b data-total-dl>—</b> downloads and counting</p>
+        <p class="micro">Free · Android, Windows &amp; Linux · <b data-total-dl>—</b> downloads so far</p>
       </div>
     </div>
   </section>
@@ -544,7 +552,7 @@
     <div class="foot-in">
       <div>
         <a class="brand" href="#top"><img class="brand-mark" src="./assets/img/favicon.png?v=3" alt="" width="24" height="24"><span class="brand-name">Dizzy</span></a>
-        <p>The free, open-source app for everything you watch, listen to and read — movies, series, music, manga, anime, audiobooks and live TV, with watch parties built in. Android, Windows and Linux.</p>
+        <p>Free and open source. Films, series, music, manga, anime, audiobooks and live TV in one app, with watch parties. Android, Windows and Linux.</p>
       </div>
       <div>
         <h3>Product</h3>
@@ -579,13 +587,13 @@
     <div class="legal" id="legal">
       <div class="legal-note age">
         <span class="age-badge">18+</span>
-        <p><b>Age-gated section.</b> Dizzy includes an optional 18+ area. It is off by default, needs a birth-year confirmation to turn on, stays out of kids profiles and never mixes into the normal home rows. Under 18? Leave it off.</p>
+        <p><b>18+ section.</b> Dizzy has an optional adult area. It's off by default, turning it on asks for a birth year, it stays hidden from kids profiles, and it never shows up in the normal rows. Under 18? Leave it off.</p>
       </div>
       <div class="legal-note">
-        <p><b>Disclaimer &amp; DMCA.</b> Dizzy is a media player. It hosts, stores and uploads no content of its own: everything you play comes from third-party sources and addons that you choose and configure. Availability and legality depend on those sources and on your country's rules — you are responsible for what you play. If you hold rights to something and believe a source should not be listed, open an issue at <a href="https://github.com/Sirius6907/Dizzy-v3/issues" target="_blank" rel="noopener">github.com/Sirius6907/Dizzy-v3/issues</a> and it will be removed.</p>
+        <p><b>Disclaimer &amp; DMCA.</b> Dizzy is a player. It hosts and uploads nothing: what you play comes from sources and addons you set up, and what's legal depends on those and on your country. You're responsible for what you play. If you hold rights to something and think a source shouldn't be listed, open an issue at <a href="https://github.com/Sirius6907/Dizzy-v3/issues" target="_blank" rel="noopener">github.com/Sirius6907/Dizzy-v3/issues</a> and it gets removed.</p>
       </div>
       <div class="legal-note">
-        <p><b>Privacy.</b> This page sets no cookies, runs no analytics and has no ad scripts. The app stores nothing you do not ask it to, and cloud sync is opt-in.</p>
+        <p><b>Privacy.</b> This page sets no cookies, runs no analytics and loads no ad scripts. The app keeps what you ask it to keep; cloud sync is opt-in.</p>
       </div>
     </div>
 
