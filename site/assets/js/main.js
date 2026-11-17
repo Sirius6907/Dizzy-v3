@@ -564,20 +564,26 @@
   }
 
   /* ══ boot ══ */
-  detectOS();
-  paintHeroCta();
-  renderPanel(); // clickable immediately, sizes fill in when release loads
-  loadRelease();
-  initNav();
-  initReveals();
-  initPointerFX();
-  initRail();
-  initFaq();
-  initMenu();
-  loadStars();
+  // One broken module must never take the whole page down with it: the .reveal
+  // styles hide content until JS runs, so a thrown error here would leave the
+  // page looking empty. Each initialiser fails alone.
+  function safe(fn) {
+    try { fn(); } catch (e) { if (window.console && console.warn) console.warn('dizzy:', e); }
+  }
+  safe(detectOS);
+  safe(paintHeroCta);
+  safe(renderPanel); // clickable immediately, sizes fill in when release loads
+  safe(loadRelease);
+  safe(initNav);
+  safe(initReveals);
+  safe(initPointerFX);
+  safe(initRail);
+  safe(initFaq);
+  safe(initMenu);
+  safe(loadStars);
   heroParEls = $all('[data-par]');
   dlBarEl = $('#dlBar');
-  updateDlBar();
+  safe(updateDlBar);
   window.addEventListener('resize', function () { moveGlider(); updateDlBar(); });
   window.addEventListener('load', moveGlider);
   moveGlider();
