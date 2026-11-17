@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../music/music_player_controller.dart';
+import 'artwork_cache_service.dart';
 
 /// Phase K1 — Dart side of the "now playing" layer.
 ///
@@ -56,7 +57,7 @@ class MediaSessionState {
   /// Everything that makes a notification visibly different. Position is
   /// deliberately coarse so a ticking clock cannot spam the platform side.
   String get fingerprint =>
-      '$title|${subtitle ?? ''}|$playing|$durationMs|${positionMs ~/ 5000}';
+      '$title|${subtitle ?? ''}|${artPath ?? ''}|$playing|$durationMs|${positionMs ~/ 5000}';
 
   @override
   bool operator ==(Object other) =>
@@ -113,6 +114,10 @@ class MediaSessionBridge {
 
   /// Whether we believe the native notification is currently up.
   static bool get isRunning => _running;
+
+  /// Whether the channel handler is installed (another surface may have
+  /// detached it, e.g. the audiobook player).
+  static bool get isAttached => _attached;
 
   @visibleForTesting
   static void resetForTest() {
@@ -271,30 +276,35 @@ class MusicMediaSessionWatcher {
     _active = this;
     _started = true;
 
-    await MediaSessionBridge.attach(
-      MediaSessionActions(
-        onToggle: controller.togglePlayPause,
-        onPlay: controller.play,
-        onPause: controller.pause,
-        onNext: controller.playNext,
-        onPrev: controller.playPrevious,
-        onSeekRelative: (deltaMs) async {
-          final target = controller.position + Duration(milliseconds: deltaMs);
-          await controller.seekTo(target);
-        },
-        onSeekAbsolute: (positionMs) =>
-            controller.seekTo(Duration(milliseconds: positionMs)),
-        onStop: controller.pause,
-        onFocusLost: () async {
-          if (controller.isPlaying) await controller.pause();
-        },
-      ),
-    );
+    await MediaSessionBridge.attach(_actionsFor());
 
     controller.addListener(_onControllerChanged);
     _onControllerChanged();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _push());
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      // Only a playing deck needs the 1 Hz position bar. A paused one is
+      // published once by the listener, otherwise we would repaint the
+      // notification every second and stomp the audiobook's.
+      if (controller.isPlaying) _push();
+    });
   }
+
+  MediaSessionActions _actionsFor() => MediaSessionActions(
+    onToggle: controller.togglePlayPause,
+    onPlay: controller.play,
+    onPause: controller.pause,
+    onNext: controller.playNext,
+    onPrev: controller.playPrevious,
+    onSeekRelative: (deltaMs) async {
+      final target = controller.position + Duration(milliseconds: deltaMs);
+      await controller.seekTo(target);
+    },
+    onSeekAbsolute: (positionMs) =>
+        controller.seekTo(Duration(milliseconds: positionMs)),
+    onStop: controller.pause,
+    onFocusLost: () async {
+      if (controller.isPlaying) await controller.pause();
+    },
+  );
 
   void _onControllerChanged() {
     if (!_started) return;
@@ -308,10 +318,20 @@ class MusicMediaSessionWatcher {
       await MediaSessionBridge.hide();
       return;
     }
+    // The audiobook player detaches the bridge when it closes; without this
+    // re-arm the notification would render but its buttons would be dead.
+    if (!MediaSessionBridge.isAttached) {
+      await MediaSessionBridge.attach(_actionsFor());
+    }
+    final artPath = await ArtworkCacheService.instance.localPathFor(track);
+    // The cover download can yield: by the time it returns the song or the
+    // watcher may be gone, and stale art on the wrong title looks broken.
+    if (!_started || controller.currentTrack?.id != track.id) return;
     await MediaSessionBridge.publish(
       MediaSessionState(
         title: track.title,
         subtitle: track.artist.isNotEmpty ? track.artist : track.album,
+        artPath: artPath,
         playing: controller.isPlaying,
         positionMs: controller.position.inMilliseconds,
         durationMs: controller.duration.inMilliseconds,

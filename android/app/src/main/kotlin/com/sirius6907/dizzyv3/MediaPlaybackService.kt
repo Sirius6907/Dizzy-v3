@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -104,6 +105,9 @@ class MediaPlaybackService : android.app.Service() {
                 override fun onRewind() = sendToDart("onSeek", -10000L)
                 override fun onSeekTo(pos: Long) = sendToDart("onSeekTo", pos)
             })
+            // Tapping the lock-screen / Bluetooth card reopens Dizzy instead of
+            // doing nothing.
+            openAppIntent()?.let { setSessionActivity(it) }
             isActive = true
         }
     }
@@ -150,8 +154,12 @@ class MediaPlaybackService : android.app.Service() {
         val duration = intent.getLongExtra("durationMs", 0L)
         val art = intent.getStringExtra("art")
 
+        // Decode the cover once: the notification and the session metadata
+        // share the same bitmap so a big cover is not decoded twice.
+        val artwork = loadArtwork(art)
+
         val notification =
-            buildNotification(title, subtitle, playing, position, duration, art)
+            buildNotification(title, subtitle, playing, position, duration, artwork)
         try {
             if (isShown) {
                 notificationManager()?.notify(NOTIFICATION_ID, notification)
@@ -168,7 +176,7 @@ class MediaPlaybackService : android.app.Service() {
             }
         }
 
-        publishSessionState(title, subtitle, playing, position, duration)
+        publishSessionState(title, subtitle, playing, position, duration, art, artwork)
 
         if (playing) {
             requestFocus()
@@ -180,7 +188,9 @@ class MediaPlaybackService : android.app.Service() {
         subtitle: String?,
         playing: Boolean,
         position: Long,
-        duration: Long
+        duration: Long,
+        artPath: String?,
+        artwork: Bitmap?
     ) {
         val s = session ?: return
         s.setPlaybackState(
@@ -212,6 +222,19 @@ class MediaPlaybackService : android.app.Service() {
                     subtitle ?: ""
                 )
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+                .apply {
+                    artwork?.let {
+                        putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, it)
+                        putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, it)
+                    }
+                    // Some launchers read the URI rather than the bitmap.
+                    if (!artPath.isNullOrBlank()) {
+                        putString(
+                            MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI,
+                            Uri.fromFile(File(artPath)).toString()
+                        )
+                    }
+                }
                 .build()
         )
     }
@@ -222,7 +245,7 @@ class MediaPlaybackService : android.app.Service() {
         playing: Boolean,
         position: Long,
         duration: Long,
-        art: String?
+        art: Bitmap?
     ): Notification {
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -254,7 +277,7 @@ class MediaPlaybackService : android.app.Service() {
                     .setShowActionsInCompactView(0, 2, 4)
             )
 
-        loadArtwork(art)?.let { b.setLargeIcon(it) }
+        art?.let { b.setLargeIcon(it) }
 
         if (duration > 0) {
             b.setProgress(
@@ -356,7 +379,7 @@ class MediaPlaybackService : android.app.Service() {
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             isShown = false
         }
-        publishSessionState("", null, false, 0L, 0L)
+        publishSessionState("", null, false, 0L, 0L, null, null)
         stopSelf()
     }
 

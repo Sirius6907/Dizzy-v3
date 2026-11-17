@@ -13,6 +13,7 @@ import '../../services/iptv/hardcoded_channels.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/window/window_service.dart';
 import '../../services/discord/discord_rpc_service.dart';
+import '../../services/media/global_media_coordinator.dart';
 import '../../widgets/player/player_aspect_menu.dart';
 
 class IptvPlayerPage extends StatefulWidget {
@@ -164,6 +165,8 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
     _positionNotifier.dispose();
     _bufferedNotifier.dispose();
     _player.dispose();
+    // K1b: leaving live TV frees the speaker again.
+    GlobalMediaCoordinator.instance.notifyVideoStopped();
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       WindowService.instance.exitFullscreen();
     }
@@ -226,6 +229,14 @@ class _IptvPlayerPageState extends State<IptvPlayerPage>
       });
 
       _startHideControlsTimer();
+
+      // P4 / K1b: live TV is video — it takes the speaker, so music and the
+      // audiobook yield instead of talking over the commentary.
+      unawaited(
+        GlobalMediaCoordinator.instance.notifyVideoStarted(
+          title: widget.channel.name,
+        ),
+      );
     } catch (e) {
       debugPrint('[IPTV Player Error] $e');
       if (!mounted) return;

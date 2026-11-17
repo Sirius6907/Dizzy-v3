@@ -29,6 +29,7 @@ import 'widgets/music_mobile_bottom_nav.dart';
 import 'widgets/music_desktop_pip_widget.dart';
 import 'widgets/music_bottom_player_bar.dart';
 import 'widgets/music_expanded_player.dart';
+import 'widgets/music_back_scope.dart';
 import 'widgets/music_lyrics_drawer.dart';
 import 'widgets/music_queue_drawer.dart';
 import 'widgets/music_shortcuts_modal.dart';
@@ -292,6 +293,50 @@ class _MusicPageState extends State<MusicPage> {
     _onSearchChanged('');
   }
 
+  /// Any in-page layer that should consume Android back before the route does.
+  bool get _hasOverlay =>
+      _isPlayerExpanded ||
+      _showQueueDrawer ||
+      _showLyricsDrawer ||
+      _showShortcutsModal ||
+      _showDownloadsModal ||
+      _activeArtistModal != null ||
+      _activeAlbumModal != null ||
+      _activeCuratedPlaylistModal != null ||
+      _activeUserPlaylistModal != null;
+
+  /// Closes exactly one layer, topmost first. The expanded player leads so
+  /// back from the now-playing screen lands on the music home, not the app
+  /// home.
+  void _dismissTopOverlay() {
+    setState(() {
+      if (_isPlayerExpanded) {
+        _isPlayerExpanded = false;
+        return;
+      }
+      if (_showQueueDrawer) {
+        _showQueueDrawer = false;
+        return;
+      }
+      if (_showLyricsDrawer) {
+        _showLyricsDrawer = false;
+        return;
+      }
+      if (_showShortcutsModal) {
+        _showShortcutsModal = false;
+        return;
+      }
+      if (_showDownloadsModal) {
+        _showDownloadsModal = false;
+        return;
+      }
+      _activeArtistModal = null;
+      _activeAlbumModal = null;
+      _activeCuratedPlaylistModal = null;
+      _activeUserPlaylistModal = null;
+    });
+  }
+
   void _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return;
     if (_searchFocusNode.hasFocus) return;
@@ -319,27 +364,8 @@ class _MusicPageState extends State<MusicPage> {
             key == LogicalKeyboardKey.slash)) {
       setState(() => _showShortcutsModal = !_showShortcutsModal);
     } else if (key == LogicalKeyboardKey.escape) {
-      if (_isPlayerExpanded) {
-        setState(() => _isPlayerExpanded = false);
-      } else if (_showQueueDrawer) {
-        setState(() => _showQueueDrawer = false);
-      } else if (_showLyricsDrawer) {
-        setState(() => _showLyricsDrawer = false);
-      } else if (_showShortcutsModal) {
-        setState(() => _showShortcutsModal = false);
-      } else if (_showDownloadsModal) {
-        setState(() => _showDownloadsModal = false);
-      } else if (_activeArtistModal != null ||
-          _activeAlbumModal != null ||
-          _activeCuratedPlaylistModal != null ||
-          _activeUserPlaylistModal != null) {
-        setState(() {
-          _activeArtistModal = null;
-          _activeAlbumModal = null;
-          _activeCuratedPlaylistModal = null;
-          _activeUserPlaylistModal = null;
-          _showDownloadsModal = false;
-        });
+      if (_hasOverlay) {
+        _dismissTopOverlay();
       } else {
         Navigator.maybePop(context);
       }
@@ -1014,6 +1040,14 @@ class _MusicPageState extends State<MusicPage> {
 
   @override
   Widget build(BuildContext context) {
+    return MusicBackScope(
+      hasOverlay: _hasOverlay,
+      onDismiss: _dismissTopOverlay,
+      child: _buildSection(context),
+    );
+  }
+
+  Widget _buildSection(BuildContext context) {
     if (MusicMiniPipService.instance.isMiniPipMode.value) {
       return const MusicDesktopPipWidget();
     }

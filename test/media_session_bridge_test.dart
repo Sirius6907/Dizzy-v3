@@ -90,6 +90,35 @@ void main() {
     },
   );
 
+  test('artwork is carried as a local path only', () async {
+    await MediaSessionBridge.publish(
+      const MediaSessionState(title: 'Neon Skyline', artPath: '/cache/a.jpg'),
+      force: true,
+    );
+
+    expect((calls.single.arguments as Map)['art'], '/cache/a.jpg');
+  });
+
+  test('artwork becoming available counts as a visible change', () async {
+    await MediaSessionBridge.publish(track(), force: true);
+    calls.clear();
+
+    // Same song, same second bucket - only the cover arrived.
+    await MediaSessionBridge.publish(
+      const MediaSessionState(
+        title: 'Neon Skyline',
+        subtitle: 'Kite Runner',
+        artPath: '/cache/cover.jpg',
+        playing: true,
+        positionMs: 0,
+        durationMs: 240000,
+      ),
+    );
+
+    expect(calls.single.method, 'show');
+    expect((calls.single.arguments as Map)['art'], '/cache/cover.jpg');
+  });
+
   test('play/pause always pushes immediately', () async {
     await MediaSessionBridge.publish(track(playing: true), force: true);
     calls.clear();

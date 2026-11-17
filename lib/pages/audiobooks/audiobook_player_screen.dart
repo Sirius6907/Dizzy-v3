@@ -21,6 +21,7 @@ import '../../services/player/player_settings.dart';
 import '../../widgets/audiobook/audiobook_interactive_physics_button.dart';
 import '../../widgets/audiobook/audiobook_waveform_seekbar.dart';
 import '../../services/heartbeat/heartbeat_service.dart';
+import '../../services/media/global_media_coordinator.dart';
 import '../../services/media/media_session_bridge.dart';
 import '../settings/appearance/audiobook_player_studio_page.dart';
 part 'audiobook_player_screen_parts.dart';
@@ -82,6 +83,9 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen>
 
     _initChapter(_currentChapterIndex);
     _attachMediaSession();
+    // Phase K1b: music or video can ask the book to step aside.
+    GlobalMediaCoordinator.instance.onPauseAudiobookRequest =
+        _pauseForOtherMedia;
 
     // Save progress and refresh the now-playing notification every 5 seconds
     _progressTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -187,6 +191,10 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen>
     unawaited(MediaSessionBridge.detach());
     // Phase L2: closing the player releases the listening signal.
     HeartbeatService.instance.noteActivity(null);
+    // Phase K1b: the speaker is free again, and our pause hook must not
+    // outlive the screen.
+    GlobalMediaCoordinator.instance.onPauseAudiobookRequest = null;
+    GlobalMediaCoordinator.instance.notifyAudiobookStopped();
     AudiobookSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
     for (final s in _playerSubscriptions) {
@@ -312,6 +320,15 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen>
             } else if (!playing && _discAnimController.isAnimating) {
               _discAnimController.stop();
             }
+            // Phase K1b: a book that is playing owns the speaker, so music
+            // and any on-screen video yield. Edge-triggered by the stream.
+            if (playing) {
+              unawaited(
+                GlobalMediaCoordinator.instance.notifyAudiobookStarted(
+                  title: widget.audiobook.title,
+                ),
+              );
+            }
           }
         }),
         player.stream.position.listen((pos) {
@@ -379,6 +396,13 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen>
         _errorMessage = 'Playback Error: $e';
       });
     }
+  }
+
+  /// Another surface claimed the speaker: pause quietly, without triggering
+  /// another round of "the book has started" notifications.
+  void _pauseForOtherMedia() {
+    if (!mounted || _player == null || !_isPlaying) return;
+    _togglePlayPause();
   }
 
   void _togglePlayPause() {

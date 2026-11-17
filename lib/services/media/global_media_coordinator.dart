@@ -9,8 +9,8 @@ import '../music/music_player_controller.dart';
 ///
 /// Rules (non-tech, Easy English):
 /// - Only ONE thing plays sound at a time.
-/// - Starting a video softly pauses music.
-/// - Starting music asks video to pause (via [onPauseVideoRequest]).
+/// - Starting a video softly pauses music and the audiobook.
+/// - Starting music asks video / audiobook to pause (via the request hooks).
 /// - Navigating away from fullscreen video -> mini-player, never full stop.
 class GlobalMediaCoordinator extends ChangeNotifier {
   GlobalMediaCoordinator._();
@@ -28,22 +28,37 @@ class GlobalMediaCoordinator extends ChangeNotifier {
   /// PlayerScreen registers here so music can request a video pause.
   VoidCallback? onPauseVideoRequest;
 
+  /// True while an audiobook is playing (it is audio, not video — background
+  /// playback must survive, so this never touches [videoActive]).
+  final ValueNotifier<bool> audiobookActive = ValueNotifier<bool>(false);
+
+  /// AudiobookPlayerScreen registers here so music/video can request a pause.
+  VoidCallback? onPauseAudiobookRequest;
+
   bool _notifying = false;
   bool _attached = false;
 
+  /// Last observed music state, so one tap of play asks for exactly one pause
+  /// instead of firing on every position tick.
+  bool _lastMusicPlaying = false;
+
   /// Observes music playback; call once at startup (main).
-  /// When music starts while video is active, asks video to pause.
+  /// When music starts while video or a book is active, asks them to pause.
   void attach() {
     if (_attached) return;
     _attached = true;
+    _lastMusicPlaying = MusicPlayerController.instance.isPlaying;
     MusicPlayerController.instance.addListener(_onMusicChanged);
   }
 
   void _onMusicChanged() {
     try {
-      if (MusicPlayerController.instance.isPlaying && videoActive.value) {
-        notifyMusicStarted();
-      }
+      final playing = MusicPlayerController.instance.isPlaying;
+      final wasPlaying = _lastMusicPlaying;
+      _lastMusicPlaying = playing;
+      // Rising edge only: a ticking progress bar must not re-ask forever.
+      if (!isMusicStart(playing: playing, wasPlaying: wasPlaying)) return;
+      if (videoActive.value || audiobookActive.value) notifyMusicStarted();
     } catch (_) {}
   }
 
@@ -52,12 +67,17 @@ class GlobalMediaCoordinator extends ChangeNotifier {
     videoActive.value = true;
     videoMiniPlayerVisible.value = false;
     if (title.isNotEmpty) videoMiniTitle.value = title;
-    // One sound at a time: softly pause music.
+    // One sound at a time: softly pause music and the book.
     try {
       if (MusicPlayerController.instance.isPlaying) {
         await MusicPlayerController.instance.pause();
       }
     } catch (_) {}
+    if (audiobookActive.value) {
+      try {
+        onPauseAudiobookRequest?.call();
+      } catch (_) {}
+    }
     notifyListeners();
   }
 
@@ -76,13 +96,41 @@ class GlobalMediaCoordinator extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Call when music starts; asks video to pause first.
+  /// Call when an audiobook chapter starts playing.
+  ///
+  /// A book is audio: it keeps playing in the background (unlike video), but
+  /// it still owns the only speaker, so music and any on-screen video yield.
+  Future<void> notifyAudiobookStarted({String title = ''}) async {
+    audiobookActive.value = true;
+    try {
+      if (MusicPlayerController.instance.isPlaying) {
+        await MusicPlayerController.instance.pause();
+      }
+    } catch (_) {}
+    if (videoActive.value) {
+      try {
+        onPauseVideoRequest?.call();
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
+  /// Call when the audiobook player is closed.
+  void notifyAudiobookStopped() {
+    audiobookActive.value = false;
+    notifyListeners();
+  }
+
+  /// Call when music starts; asks video and the book to pause first.
   void notifyMusicStarted() {
     if (_notifying) return;
     _notifying = true;
     try {
       if (videoActive.value) {
         onPauseVideoRequest?.call();
+      }
+      if (audiobookActive.value) {
+        onPauseAudiobookRequest?.call();
       }
     } finally {
       _notifying = false;
@@ -94,4 +142,28 @@ class GlobalMediaCoordinator extends ChangeNotifier {
   /// Returns 'pause-music' when video starts, 'pause-video' when music starts.
   static String resolveConflict({required bool videoStarting}) =>
       videoStarting ? 'pause-music' : 'pause-video';
+
+  /// Pure helper (unit-tested): only the moment music goes from silent to
+  /// playing is a conflict, not every following tick.
+  static bool isMusicStart({
+    required bool playing,
+    required bool wasPlaying,
+  }) => playing && !wasPlaying;
+
+  /// Test seam: drop listeners and forget any armed hooks.
+  @visibleForTesting
+  void resetForTest() {
+    if (_attached) {
+      MusicPlayerController.instance.removeListener(_onMusicChanged);
+    }
+    _attached = false;
+    _notifying = false;
+    _lastMusicPlaying = false;
+    videoActive.value = false;
+    videoMiniPlayerVisible.value = false;
+    videoMiniTitle.value = '';
+    audiobookActive.value = false;
+    onPauseVideoRequest = null;
+    onPauseAudiobookRequest = null;
+  }
 }
