@@ -714,6 +714,9 @@ h1 .grad {
   .chip-auto { right: auto; left: 62%; }
   .news { grid-template-columns: 1fr; }
   .player-facts { grid-template-columns: 1fr 1fr; }
+  /* no sideways reveals on phones: a +26px offset scrolls the page wide */
+  .js .reveal[data-rev="left"],
+  .js .reveal[data-rev="right"] { transform: translateY(18px); }
 }
 @media (max-width: 640px) {
   .player-facts { grid-template-columns: 1fr; gap: 12px; }
