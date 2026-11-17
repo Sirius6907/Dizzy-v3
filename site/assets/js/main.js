@@ -275,6 +275,13 @@
 
   /* ══ sticky mobile download bar: shows between the hero and the picker ══ */
   var dlBarEl = null, dlBarOn = false;
+  // the bar floats over the bottom ~90px, so step aside while a showcase section is there
+  function barWouldCover(sel) {
+    var el = $(sel);
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    return r.top < window.innerHeight && r.bottom > window.innerHeight - 110;
+  }
   function updateDlBar() {
     if (!dlBarEl) return;
     var y = window.pageYOffset || document.documentElement.scrollTop;
@@ -282,7 +289,9 @@
     var dl = $('#download');
     var pastHero = hero ? y > hero.offsetHeight * 0.7 : y > 520;
     var dlTop = dl ? dl.getBoundingClientRect().top : 1e9;
-    var want = pastHero && dlTop > window.innerHeight * 0.75;
+    // it would sit over the phones or the rail captions, so stay out of the way there
+    var overShow = barWouldCover('#player') || barWouldCover('#shots');
+    var want = pastHero && dlTop > window.innerHeight * 0.75 && !overShow;
     if (want !== dlBarOn) { dlBarOn = want; dlBarEl.classList.toggle('show', want); }
   }
 
