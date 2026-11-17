@@ -287,10 +287,14 @@ class DizzyGroupService {
   }
 
   /// Realtime inserts for one group's messages.
-  static RealtimeChannel subscribeToMessages(
+  ///
+  /// Fail-soft: returns null when the cloud is not ready, so a group screen
+  /// opened offline degrades to history-only instead of throwing.
+  static RealtimeChannel? subscribeToMessages(
     String groupId, {
     required void Function(DizzyGroupMessage message) onMessage,
   }) {
+    if (!CloudClient.isReady || groupId.isEmpty) return null;
     return CloudClient.db
         .channel('public:group_messages:group_$groupId')
         .onPostgresChanges(
@@ -313,10 +317,11 @@ class DizzyGroupService {
   }
 
   /// Realtime inserts for a member join (roster refresh).
-  static RealtimeChannel subscribeToRoster(
+  static RealtimeChannel? subscribeToRoster(
     String groupId, {
     required VoidCallback onChanged,
   }) {
+    if (!CloudClient.isReady || groupId.isEmpty) return null;
     return CloudClient.db
         .channel('public:group_members:group_$groupId')
         .onPostgresChanges(

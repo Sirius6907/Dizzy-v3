@@ -235,6 +235,7 @@ class DizzySocialService {
   /// Resolve display names for [uids]. Fail-soft: unknown uids simply stay
   /// absent from [resolvedNames] and callers keep their short-id fallback.
   static Future<void> resolveUsernames(Iterable<String> uids) async {
+    if (!CloudClient.isReady) return;
     final wanted = uids
         .where((u) => u.isNotEmpty)
         .where((u) => !(resolvedNames.value.containsKey(u)))

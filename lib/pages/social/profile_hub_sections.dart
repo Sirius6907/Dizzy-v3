@@ -22,6 +22,7 @@ import 'package:dizzy/services/updater/update_stager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../common/notification_center_sheet.dart';
+import 'groups_page.dart';
 import '../settings/watch_party_page.dart';
 import '../settings/about_settings_page.dart';
 import '../settings/appearance_settings_page.dart';
@@ -789,6 +790,13 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
               onTap: () => _go(context, const WatchPartyPage()),
             );
           },
+        ),
+        _groupLabel('TOGETHER'),
+        _sectionCard(
+          icon: Icons.groups_rounded,
+          title: 'Groups',
+          subtitle: 'Chat & watch together with your crew',
+          onTap: () => _go(context, const GroupsPage()),
         ),
         _groupLabel('MY STUFF'),
         _sectionCard(
