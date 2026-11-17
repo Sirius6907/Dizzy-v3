@@ -48,8 +48,17 @@ abstract final class IptvSettings {
   static const _keyShowCategoryCount = 'iptv_show_category_count';
   static const _keySidebarWidth = 'iptv_sidebar_width';
 
+  // Category-list schema. Existing installs restore their saved category list
+  // verbatim, so a newly shipped section would never appear for them. Bumping
+  // the schema merges the new sections in exactly once; hiding one afterwards
+  // still sticks because the stamp is already current.
+  static const _keyCategorySchema = 'iptv_category_schema';
+  static const int categorySchema = 2;
+  static const List<String> _schema2Categories = ['Cricket & India Matches'];
+
   static const List<String> defaultCategories = [
     'Premier Live Broadcasts',
+    'Cricket & India Matches',
     'ESPN & College Basketball (NCAA)',
     'US Major Leagues & Sports',
     'Global Football & Soccer',
@@ -133,10 +142,21 @@ abstract final class IptvSettings {
     enableAmbientLights.value = prefs.getBool(_keyEnableAmbientLights) ?? true;
 
     final savedCats = prefs.getStringList(_keyVisibleCategories);
+    final schema = prefs.getInt(_keyCategorySchema) ?? 1;
     if (savedCats != null && savedCats.isNotEmpty) {
-      visibleCategories.value = savedCats;
+      final cats = List<String>.from(savedCats);
+      if (schema < categorySchema) {
+        for (final c in _schema2Categories) {
+          if (!cats.contains(c)) cats.add(c);
+        }
+        await prefs.setStringList(_keyVisibleCategories, cats);
+      }
+      visibleCategories.value = cats;
     } else {
       visibleCategories.value = List.from(defaultCategories);
+    }
+    if (schema < categorySchema) {
+      await prefs.setInt(_keyCategorySchema, categorySchema);
     }
 
     // Modal settings
