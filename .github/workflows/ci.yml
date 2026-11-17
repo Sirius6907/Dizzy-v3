@@ -27,8 +27,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Same env injection as build.yml: tests run with the real env (TMDB_API_KEY
-      # etc.) so live tests exercise the same inputs the release builds get.
+      # Runtime .env for tests that opt in (EnvService.initialize() reads it
+      # from disk — e.g. the live_probe_audit corpus). Do NOT pass
+      # --dart-define-from-file: that would bake SUPABASE_URL into the test
+      # binaries at compile time, and the suite's premise is APK parity
+      # ("test env ships no key", "cloud unconfigured in test env").
       - name: Setup .env from GitHub Secrets
         shell: bash
         run: |
@@ -44,7 +47,7 @@ jobs:
         run: flutter analyze
 
       - name: Test suite
-        run: flutter test --dart-define-from-file=.env
+        run: flutter test
 
   secrets:
     name: Secret scan (gitleaks)

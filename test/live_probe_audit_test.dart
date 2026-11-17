@@ -337,8 +337,8 @@ void main() {
       // size. Skip cleanly instead of crashing on an empty corpus.
       _log('SKIP|empty corpus (TMDB_API_KEY missing) — audit skipped');
       markTestSkipped(
-        'no audit corpus (TMDB_API_KEY missing) — run with '
-        '--dart-define-from-file=.env',
+        'no audit corpus (TMDB_API_KEY missing) — add TMDB_API_KEY '
+        'to the CI env (ENV_FILE secret) or run locally with .env',
       );
       return;
     }
