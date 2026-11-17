@@ -42,6 +42,11 @@ jobs:
           else
             touch .env
           fi
+          # The live_probe_audit corpus needs a TMDB key at runtime (never a
+          # dart-define: test binaries must compile keyless / APK parity).
+          if [ -n "${{ secrets.TMDB_API_KEY }}" ]; then
+            echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" >> .env
+          fi
 
       - name: Static analysis (zero issues)
         run: flutter analyze
