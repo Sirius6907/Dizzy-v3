@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dizzy — movies, music, manga and live TV in one app</title>
+<title>Dizzy: movies, music, manga and live TV in one app</title>
 <meta name="description" content="Dizzy plays films, series, music, manga, anime, audiobooks and live TV, and keeps watch parties in sync. Free, open source, Android and PC, no account needed.">
-<meta name="theme-color" content="#070910">
+<meta name="theme-color" content="#08090c">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://dizzy-by-sirius.netlify.app/">
 <link rel="icon" type="image/png" sizes="64x64" href="./assets/img/favicon.png?v=3">
@@ -17,14 +17,14 @@
 <link rel="stylesheet" href="./assets/css/main.css">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Dizzy">
-<meta property="og:title" content="Dizzy — movies, music, manga and live TV in one app">
+<meta property="og:title" content="Dizzy: movies, music, manga and live TV in one app">
 <meta property="og:description" content="Films, series, music, manga, audiobooks and live TV in one app, with watch parties that stay in sync. Free and open source.">
 <meta property="og:url" content="https://dizzy-by-sirius.netlify.app/">
 <meta property="og:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Dizzy — films, music, manga and live TV in one app">
+<meta name="twitter:title" content="Dizzy: films, music, manga and live TV in one app">
 <meta name="twitter:description" content="Films, music, manga, audiobooks and live TV in one app, with watch parties.">
 <meta name="twitter:image" content="https://dizzy-by-sirius.netlify.app/assets/img/og.jpg">
 <script>document.documentElement.className += ' js';setTimeout(function(){if(document.querySelector('.reveal.in'))return;var n=document.querySelectorAll('.reveal');for(var i=0;i<n.length;i++)n[i].className+=' in';},2500);</script>
@@ -122,13 +122,6 @@
           </a>
           <a class="btn btn-lg" href="#download" data-dl-jump>Choose your file</a>
         </div>
-        <p class="cta-note reveal">
-          <span class="chk">✓</span> Free <span class="sep">·</span>
-          <span class="chk">✓</span> No ads <span class="sep">·</span>
-          <span class="chk">✓</span> No account to start <span class="sep">·</span>
-          <span class="chk">✓</span> <b data-total-dl>—</b>
-        </p>
-        <p class="micro reveal">Android, Windows and Linux. Every build comes from GitHub Actions, and updates install from inside the app.</p>
       </div>
 
       <div class="hero-stage">
@@ -143,9 +136,20 @@
     </div>
 
     <div class="wrap">
-      <ul class="verticals-strip reveal" aria-label="Everything Dizzy covers">
-        <li>Movies</li><li>Series</li><li>Music</li><li>Manga</li><li>Anime</li><li>Audiobooks</li><li>Live TV</li><li>Friends</li>
-      </ul>
+      <div class="hero-spec">
+        <div class="spec-in">
+          <div class="spec-cell"><b>6</b><span>libraries in one shell</span></div>
+          <div class="spec-cell"><b>0</b><span>ads, tiers or locked features</span></div>
+          <div class="spec-cell"><b>20</b><span>people in a watch room</span></div>
+          <div class="spec-cell"><b>3</b><span>platforms, one codebase</span></div>
+        </div>
+        <div class="spec-foot">
+          <ul class="coverage" aria-label="Everything Dizzy covers">
+            <li>Movies</li><li>Series</li><li>Music</li><li>Manga</li><li>Anime</li><li>Audiobooks</li><li>Live TV</li><li>Friends</li>
+          </ul>
+          <span>Android, Windows, Linux. CI-built, signed.</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -160,6 +164,11 @@
 
       <div class="bento">
         <article class="card card-flag span7 reveal" data-rev="left">
+          <div class="flag-copy">
+            <span class="pill">Flagship</span>
+            <h3>Watch Party</h3>
+            <p>Start a room, share the six-character Room ID. Play, pause and seek stay locked for everyone in it, and drift fixes itself in about a second and a half. Chat and voice run alongside; the video comes from each person's own device.</p>
+          </div>
           <div class="sync-stage" aria-hidden="true">
             <span class="sync-phone"><i></i><i></i><i></i></span>
             <span class="sync-mid">
@@ -169,66 +178,50 @@
             </span>
             <span class="sync-phone"><i></i><i></i><i></i></span>
           </div>
-          <span class="pill">Flagship</span>
-          <h3>Watch Party</h3>
-          <p>Start a room, share the six-character Room ID. Play, pause and seek stay locked for everyone in it, and drift fixes itself in about a second and a half. Chat and voice run alongside; the video comes from each person's own device.</p>
         </article>
 
-        <article class="card span5 reveal" data-rev="right">
-          <span class="ico c-red">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg>
-          </span>
-          <h3>Live TV, cricket first</h3>
-          <p>A match in progress moves to the front of the row with a LIVE badge instead of sitting on channel 47. There's an EPG guide and category lists, and switching channels won't leave half-started streams queued up behind it.</p>
+        <article class="card card-media span5 reveal" data-rev="right">
+          <div class="card-copy">
+            <h3>Music</h3>
+            <p>Five tabs: Home, Browse, Library, Radio, Search. Queue, lyrics, equaliser, sleep timer, offline albums. Indian releases get the front rows, and search won't hand you a near-miss song as if it were the one you wanted.</p>
+          </div>
+          <div class="card-shot">
+            <img src="./assets/img/shots/music.webp" alt="Music home: chart hit banner, mood chips and Made For You mixes" width="760" height="1596" loading="lazy" decoding="async">
+          </div>
         </article>
 
-        <article class="card span4 reveal">
-          <span class="ico c-gold">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M2 9h20"/><path d="m10 13 4 2.5-4 2.5z"/></svg>
-          </span>
-          <h3>Movies &amp; series</h3>
-          <p>New and trending rows, latest releases by language, resume points that follow you between devices. HLS, plain files, torrents and debrid all play through the same player.</p>
+        <article class="card card-media span5 reveal">
+          <div class="card-copy">
+            <h3>Manga &amp; anime</h3>
+            <p>Read horizontally or vertically, pinch to zoom, and your place is kept per title. Anime has trending and airing rows, ratings, and a next-episode button.</p>
+          </div>
+          <div class="card-shot">
+            <img src="./assets/img/shots/manga.webp" alt="Discover Manga grid with One Piece, Blue Lock, Overgeared and Black Clover" width="760" height="1590" loading="lazy" decoding="async">
+          </div>
         </article>
 
-        <article class="card span4 reveal">
-          <span class="ico c-violet">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </span>
-          <h3>Music</h3>
-          <p>Five tabs: Home, Browse, Library, Radio, Search. Queue, lyrics, equaliser, sleep timer, offline albums. Indian releases get the front rows, and search won't hand you a near-miss song as if it were the one you wanted.</p>
-        </article>
-
-        <article class="card span4 reveal">
-          <span class="ico c-mint">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          </span>
-          <h3>Manga &amp; anime</h3>
-          <p>Read horizontally or vertically, pinch to zoom, and your place is kept per title. Anime has trending and airing rows, ratings, and a next-episode button.</p>
-        </article>
-
-        <article class="card span4 reveal">
-          <span class="ico c-violet">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5z"/><path d="M4 16.5h16"/><path d="M9 7h6"/></svg>
-          </span>
-          <h3>Audiobooks</h3>
-          <p>Chapter playback, speed control and a sleep timer. Bring your own MP3 or M4B, or run an EPUB through the audio studio and listen to it instead.</p>
-        </article>
-
-        <article class="card span4 reveal">
-          <span class="ico c-cyan">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
-          </span>
-          <h3>Friends &amp; DMs</h3>
-          <p>Requests update the moment they're accepted, threads load their real history, and tapping a friend's invite puts you in their room instead of opening a second one.</p>
-        </article>
-
-        <article class="card span4 reveal">
-          <span class="ico c-cyan">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-          </span>
-          <h3>Offline that behaves</h3>
-          <p>Downloads resume where they stopped, pause when the connection drops, and sit in one list with a storage gauge.</p>
-        </article>
+        <div class="feat-list span7 reveal">
+          <div class="feat">
+            <h3>Live TV, cricket first</h3>
+            <p>A match in progress jumps to the front of the row with a LIVE badge, above an EPG guide and category lists. Changing channel doesn't queue half-started streams.</p>
+          </div>
+          <div class="feat">
+            <h3>Movies &amp; series</h3>
+            <p>New and trending rows, latest releases by language, resume points that follow you between devices. HLS, plain files, torrents and debrid play in the same player.</p>
+          </div>
+          <div class="feat">
+            <h3>Audiobooks</h3>
+            <p>Chapter playback, speed control and a sleep timer. Bring your own MP3 or M4B, or run an EPUB through the audio studio.</p>
+          </div>
+          <div class="feat">
+            <h3>Friends &amp; DMs</h3>
+            <p>Requests update the moment they're accepted, threads load their real history, and a friend's invite puts you in their room.</p>
+          </div>
+          <div class="feat">
+            <h3>Offline that behaves</h3>
+            <p>Downloads resume where they stopped, pause when the connection drops, and sit in one list with a storage gauge.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -283,7 +276,7 @@
           <li>HLS</li><li>DASH</li><li>MP4 · MKV</li><li>Torrents</li><li>Debrid</li><li>External subtitles</li>
         </ul>
         <div class="player-facts">
-          <div><b>480p – 4K</b><span>manual quality, plus Auto</span></div>
+          <div><b>480p to 4K</b><span>manual quality, plus Auto</span></div>
           <div><b>&lt; 1 s</b><span>when you switch channel</span></div>
           <div><b>Per device</b><span>your quality choice is kept</span></div>
         </div>
@@ -313,21 +306,28 @@
         <p class="lede reveal">Three things from the last release.</p>
       </div>
       <div class="news">
-        <article class="news-card reveal">
-          <span class="news-tag">Friends &amp; DMs</span>
-          <h3>Chat works both ways now</h3>
-          <p>An accepted request turns into a Chat button straight away, threads load from the server, and your own messages finally appear on your side.</p>
+        <article class="news-card news-lead reveal">
+          <div class="news-body">
+            <span class="news-tag">Friends &amp; DMs</span>
+            <h3>Chat works both ways now</h3>
+            <p>An accepted request turns into a Chat button straight away, threads load from the server, and your own messages finally appear on your side.</p>
+          </div>
+          <div class="news-shot">
+            <img src="./assets/img/shots/social.webp" alt="Social Hub sheet with Listen Together, Start a jam room and join with code" width="760" height="1592" loading="lazy" decoding="async">
+          </div>
         </article>
-        <article class="news-card reveal">
-          <span class="news-tag">Resolve</span>
-          <h3>Same-name films stopped slipping through</h3>
-          <p>The resolver checks year and language, so a Spanish “Game Over” can't answer a 2026 Odia request. Most regional titles didn't resolve at all before this.</p>
-        </article>
-        <article class="news-card reveal">
-          <span class="news-tag">Sources</span>
-          <h3>You can see why a source won</h3>
-          <p>Sources are still ranked, but every point in a score has a name now: addon history, debrid, instant play, past failures.</p>
-        </article>
+        <div class="news-side reveal">
+          <article class="news-item">
+            <span class="news-tag">Resolve</span>
+            <h3>Same-name films stopped slipping through</h3>
+            <p>The resolver checks year and language, so a Spanish “Game Over” can't answer a 2026 Odia request. Most regional titles didn't resolve at all before this.</p>
+          </article>
+          <article class="news-item">
+            <span class="news-tag">Sources</span>
+            <h3>You can see why a source won</h3>
+            <p>Sources are still ranked, but every point in a score has a name now: addon history, debrid, instant play, past failures.</p>
+          </article>
+        </div>
       </div>
       <p class="news-more reveal"><a href="https://github.com/Sirius6907/Dizzy-v3/releases" target="_blank" rel="noopener">Read the full release notes on GitHub →</a></p>
     </div>
@@ -416,7 +416,7 @@
         <div class="oss-facts">
           <span class="fact" data-gh-fact hidden>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.9 5.34.9 11.6c0 4.9 3.17 9.05 7.57 10.52.55.1.76-.24.76-.53l-.02-1.86c-3.08.67-3.73-1.49-3.73-1.49-.5-1.29-1.23-1.63-1.23-1.63-1.01-.69.08-.68.08-.68 1.11.08 1.7 1.15 1.7 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.7-1.49-2.46-.28-5.05-1.23-5.05-5.5 0-1.21.43-2.2 1.15-2.98-.12-.28-.5-1.41.11-2.94 0 0 .93-.3 3.05 1.14a10.5 10.5 0 0 1 5.56 0c2.12-1.44 3.05-1.14 3.05-1.14.61 1.53.23 2.66.11 2.94.72.78 1.15 1.77 1.15 2.98 0 4.28-2.6 5.21-5.07 5.49.4.35.76 1.03.76 2.08l-.01 3.08c0 .3.2.64.77.53 4.39-1.48 7.56-5.62 7.56-10.52C23.1 5.34 18.27.5 12 .5Z"/></svg>
-            <b data-gh-stars>—</b>&nbsp;stars
+            <b data-gh-stars>0</b>&nbsp;stars
           </span>
           <span class="fact">GPL-3.0</span>
           <span class="fact">CI-built, signed releases</span>
@@ -439,7 +439,7 @@
       <div class="section-head">
         <p class="kicker reveal">Download</p>
         <h2 class="reveal">Get Dizzy <span class="grad" data-ver>latest</span></h2>
-        <p class="dl-meta reveal">Released <b data-rel-date>—</b> · <b data-total-dl>—</b> · your file is already selected</p>
+        <p class="dl-meta reveal">Released <b data-rel-date>recently</b> · <b data-total-dl>0</b> downloads · your file is already selected</p>
       </div>
 
       <div class="dl-grid">
@@ -482,7 +482,7 @@
           <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> No account to start</span>
           <span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Same signing key every release</span>
         </div>
-        <p class="dl-side-note">Free, GPL-3.0, no ads and no telemetry — the same build everyone else gets.</p>
+        <p class="dl-side-note">Free, GPL-3.0, no ads and no telemetry. The same build everyone else gets.</p>
       </aside>
       </div><!-- /.dl-grid -->
     </div>
@@ -540,7 +540,7 @@
   <section class="section" id="get">
     <div class="wrap">
       <div class="cta-band reveal" data-rev="zoom">
-        <p class="kicker" style="justify-content:center">Two minutes from now</p>
+        <p class="kicker kicker-center">Two minutes from now</p>
         <h2>Install it once, then stop switching apps.</h2>
         <p>Send the Room ID to whoever you're watching with, then press play. That's all of it.</p>
         <div class="cta-row">
@@ -550,7 +550,7 @@
           </a>
           <a class="btn btn-lg" href="https://github.com/Sirius6907/Dizzy-v3" target="_blank" rel="noopener">Browse the source</a>
         </div>
-        <p class="micro">Free · Android, Windows &amp; Linux · <b data-total-dl>—</b></p>
+        <p class="micro">Free · Android, Windows &amp; Linux · no account required</p>
       </div>
     </div>
   </section>
