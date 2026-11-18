@@ -6,7 +6,6 @@ import '../../services/theme/app_theme_service.dart';
 import '../../services/theme/dock_settings.dart';
 import '../../services/theme/glass_settings.dart';
 import '../../services/iptv/hardcoded_channels.dart';
-import '../../services/iptv/cricket_priority.dart';
 import '../../services/iptv/iptv_controller.dart';
 import '../../services/iptv/iptv_settings.dart';
 import '../../services/discord/discord_rpc_service.dart';
@@ -32,7 +31,6 @@ class IptvPage extends StatefulWidget {
 
 class _IptvPageState extends State<IptvPage> {
   final IptvController _ctrl = IptvController.instance;
-  final CricketPriority _cricket = CricketPriority.instance;
   final ScrollController _scrollController = ScrollController();
 
   /// Phase L4 — one tap, one navigation. A second tap while the sheet is
@@ -57,8 +55,6 @@ class _IptvPageState extends State<IptvPage> {
     DiscordRpcService.instance.setWatchingLiveTv(channelName: 'Live TV');
     IptvSettings.changeNotifier.addListener(_onSettingsChanged);
     AppThemeService.currentPalette.addListener(_onSettingsChanged);
-    _cricket.addListener(_onCricketChanged);
-    _cricket.start();
     _ctrl.init();
     _loadSections();
   }
@@ -67,7 +63,6 @@ class _IptvPageState extends State<IptvPage> {
   void dispose() {
     IptvSettings.changeNotifier.removeListener(_onSettingsChanged);
     AppThemeService.currentPalette.removeListener(_onSettingsChanged);
-    _cricket.removeListener(_onCricketChanged);
     _scrollController.dispose();
     _navGate.dispose();
     DiscordRpcService.instance.clearToIdle();
@@ -77,21 +72,6 @@ class _IptvPageState extends State<IptvPage> {
   void _onSettingsChanged() {
     if (!mounted) return;
     setState(() {});
-  }
-
-  void _onCricketChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  /// Puts the available cricket channel at slot #1 of a row.
-  /// No pin means the shipped order, untouched.
-  List<HardcodedChannel> _pinFirst(
-    List<HardcodedChannel> list,
-    CricketPin? pin,
-  ) {
-    if (pin == null) return list;
-    return [pin.channel, ...list.where((c) => c.id != pin.channel.id)];
   }
 
   void _loadSections() {
@@ -195,17 +175,11 @@ class _IptvPageState extends State<IptvPage> {
     final palette = AppThemeService.currentPalette.value;
     final spotlightEnabled = IptvSettings.enableSpotlight.value;
     final visibleCategories = IptvSettings.visibleCategories.value;
-    final cricketPin = _cricket.pin;
-    final heroChannels = _pinFirst(_featured, cricketPin);
 
     final Map<String, (String, List<HardcodedChannel>)> categoryMap = {
       'Premier Live Broadcasts': (
         'Top worldwide sporting events and championship channels',
-        heroChannels,
-      ),
-      'Cricket & India Matches': (
-        'Star Sports, Sports18, Sony Ten, Willow & DD Sports',
-        _pinFirst(HardcodedChannels.byCategory('Cricket'), cricketPin),
+        _featured,
       ),
       'ESPN & College Basketball (NCAA)': (
         'ESPN+, ESPN, ESPN2, ESPNU, NCAA Men\'s & Women\'s CBB, SEC & ACC',
@@ -266,9 +240,7 @@ class _IptvPageState extends State<IptvPage> {
           // 1. Full Bleed Spotlight Hero Carousel
           if (spotlightEnabled)
             IptvHeroCarousel(
-              channels: heroChannels,
-              priorityChannelId: cricketPin?.channel.id,
-              priorityLabel: cricketPin?.label,
+              channels: _featured,
               onWatchNow: _watchChannelNow,
               onSourcesTap: _openChannel,
             )

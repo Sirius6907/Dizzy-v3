@@ -13,20 +13,11 @@ class IptvHeroCarousel extends StatefulWidget {
   final Function(HardcodedChannel) onWatchNow;
   final Function(HardcodedChannel) onSourcesTap;
 
-  /// Channel id that must own slot #1 because live cricket is available.
-  /// Null keeps the shipped order (and the shipped badges) untouched.
-  final String? priorityChannelId;
-
-  /// Badge text for the priority slide, supplied by remote config.
-  final String? priorityLabel;
-
   const IptvHeroCarousel({
     super.key,
     required this.channels,
     required this.onWatchNow,
     required this.onSourcesTap,
-    this.priorityChannelId,
-    this.priorityLabel,
   });
 
   @override
@@ -51,34 +42,6 @@ class _IptvHeroCarouselState extends State<IptvHeroCarousel> {
   void _onSettingsChanged() {
     if (!mounted) return;
     setState(() {});
-    _startTimer();
-  }
-
-  @override
-  void didUpdateWidget(covariant IptvHeroCarousel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final id = widget.priorityChannelId;
-
-    int? target;
-    if (id != null && id != oldWidget.priorityChannelId) {
-      // Cricket just became available: the pin was inserted at index 0, so snap
-      // the hero back to the top instead of leaving the viewer on slide 4 of a
-      // list that shifted underneath them.
-      target = 0;
-    } else if (widget.channels.isNotEmpty &&
-        _currentIndex >= widget.channels.length) {
-      // A channel dropped out (cricket ended, catalog change). Don't strand the
-      // viewer on a page index that no longer exists.
-      target = widget.channels.length - 1;
-    }
-    if (target == null) return;
-
-    final page = target;
-    _currentIndex = page;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_pageController.hasClients) return;
-      _pageController.jumpToPage(page);
-    });
     _startTimer();
   }
 
@@ -156,8 +119,6 @@ class _IptvHeroCarouselState extends State<IptvHeroCarousel> {
                   final ch = widget.channels[index];
                   return _IptvHeroSlide(
                     channel: ch,
-                    isPriority: widget.priorityChannelId == ch.id,
-                    priorityLabel: widget.priorityLabel,
                     onWatchNow: () => widget.onWatchNow(ch),
                     onSourcesTap: () => widget.onSourcesTap(ch),
                   );
@@ -267,18 +228,10 @@ class _IptvHeroSlide extends StatelessWidget {
   final VoidCallback onWatchNow;
   final VoidCallback onSourcesTap;
 
-  /// Set when this slide is the pinned live-cricket channel.
-  final bool isPriority;
-
-  /// Config-supplied badge text for the priority pill.
-  final String? priorityLabel;
-
   const _IptvHeroSlide({
     required this.channel,
     required this.onWatchNow,
     required this.onSourcesTap,
-    this.isPriority = false,
-    this.priorityLabel,
   });
 
   @override
@@ -370,10 +323,7 @@ class _IptvHeroSlide extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // LIVE Pulse & Category row
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -412,6 +362,7 @@ class _IptvHeroSlide extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -434,54 +385,6 @@ class _IptvHeroSlide extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (isPriority)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFFF5C542).withValues(alpha: 0.95),
-                            const Color(0xFFE07B39).withValues(alpha: 0.95),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFFF5C542,
-                            ).withValues(alpha: 0.45),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.sports_cricket_rounded,
-                            color: Colors.black87,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            (priorityLabel == null ||
-                                    priorityLabel!.trim().isEmpty)
-                                ? 'CRICKET PRIORITY'
-                                : priorityLabel!.trim().toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
 
