@@ -13,6 +13,11 @@
 useDefault = true
 
 [allowlist]
+regexes = [
+  # SharedPreferences pref-keys for the 18+ gate: high-entropy-looking
+  # storage names, not credentials (generic-api-key rule false positive).
+  '''adult_heaven_[a-z0-9_]+_v1''',
+]
 paths = [
   '''^TempJs\/clickn_step3\.html$''',
   '''^TempJs\/movienight_study\/home\.html$''',
