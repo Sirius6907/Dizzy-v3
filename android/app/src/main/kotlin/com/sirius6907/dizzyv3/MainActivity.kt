@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.PowerManager
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -96,8 +97,31 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        // Phase K3: microphone foreground service — start/stop the ongoing
-        // call notification that keeps LiveKit alive with the screen off.
+        // 18+ private mode: FLAG_SECURE blanks screenshots and the Android
+        // recents thumbnail while the adult surface is on screen. Mirrors
+        // PrivateModeShield.setSecure in lib/services/adult.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/secure").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setSecure" -> {
+                    try {
+                        val enabled = call.argument<Boolean>("enabled") ?: true
+                        runOnUiThread {
+                            if (enabled) {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("SECURE_ERROR", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Phase K3: microphone foreground service — start/stop the ongoing        // call notification that keeps LiveKit alive with the screen off.
         // Phase K2/K3: background services need the engine to talk back.
         DownloadForegroundService.engine = flutterEngine
         MediaPlaybackService.engine = flutterEngine

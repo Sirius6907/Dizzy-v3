@@ -6,6 +6,7 @@ import '../../models/movie/movie_section.dart';
 import '../../services/addon/addon_manager.dart';
 import '../../services/adult/adult_directory.dart';
 import '../../services/adult/adult_section_gate.dart';
+import '../../services/adult/private_mode_shield.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/movie/movie_slider_section.dart';
@@ -55,15 +56,25 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
     super.initState();
     AdultSectionGate.ensureLoaded();
     AdultSectionGate.visible.addListener(_onGateChanged);
+    AdultSectionGate.privateMode.addListener(_applyShield);
+    _applyShield();
     _load();
   }
 
   @override
   void dispose() {
     AdultSectionGate.visible.removeListener(_onGateChanged);
+    AdultSectionGate.privateMode.removeListener(_applyShield);
+    PrivateModeShield.release();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
+  }
+
+  /// Private mode → FLAG_SECURE while this page is visible, so the adult
+  /// grid never lands in a screenshot or the recents preview.
+  void _applyShield() {
+    PrivateModeShield.setSecure(AdultSectionGate.privateMode.value);
   }
 
   void _onGateChanged() {

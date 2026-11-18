@@ -612,7 +612,9 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
 
               // 18+ Heaven: gated entry — renders ONLY when the triple
-              // lock is open, so the section is invisible otherwise.
+              // lock is open, so the section is invisible otherwise. Under
+              // private mode the tile is disguised as a plain "Display"
+              // row: no emoji, no badge, no hint of adult content.
               ValueListenableBuilder<bool>(
                 valueListenable: AdultSectionGate.visible,
                 builder: (context, open, _) {
@@ -620,14 +622,29 @@ class _SettingsPageState extends State<SettingsPage> {
                   return Column(
                     children: [
                       const SizedBox(height: 12),
-                      _SettingsCategoryTile(
-                        icon: Icons.no_adult_content_rounded,
-                        iconColor: const Color(0xFFE50914),
-                        title: '🔞 18+ Heaven',
-                        subtitle: 'Adult-only browsed rows, category-wise',
-                        badgeText: '18+',
-                        badgeColor: const Color(0xFFE50914),
-                        onTap: () => _navigateTo(const AdultHeavenPage()),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: AdultSectionGate.privateMode,
+                        builder: (context, disguised, _) =>
+                            _SettingsCategoryTile(
+                              icon: disguised
+                                  ? Icons.display_settings_rounded
+                                  : Icons.no_adult_content_rounded,
+                              iconColor: disguised
+                                  ? palette.primaryColor
+                                  : const Color(0xFFE50914),
+                              title: disguised
+                                  ? 'Display'
+                                  : '🔞 18+ Heaven',
+                              subtitle: disguised
+                                  ? 'Screen, playback and layout preferences'
+                                  : 'Adult-only browsed rows, category-wise',
+                              badgeText: disguised ? null : '18+',
+                              badgeColor: disguised
+                                  ? null
+                                  : const Color(0xFFE50914),
+                              onTap: () =>
+                                  _navigateTo(const AdultHeavenPage()),
+                            ),
                       ),
                     ],
                   );

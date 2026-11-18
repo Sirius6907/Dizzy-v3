@@ -164,6 +164,19 @@ class AdultSectionGate {
     return left <= 0 ? Duration.zero : Duration(milliseconds: left);
   }
 
+  /// Short human label for a cooling-off remainder ("23h 59m", "45m",
+  /// "under a minute"). Used by the Privacy page so the user never has to
+  /// read a raw millisecond count.
+  static String describeCooldown(Duration remaining) {
+    if (remaining <= Duration.zero) return 'now';
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes % 60;
+    if (hours <= 0) {
+      return minutes <= 0 ? 'under a minute' : '${minutes}m';
+    }
+    return minutes == 0 ? '${hours}h' : '${hours}h ${minutes}m';
+  }
+
   /// The one way to open the local lock: submit a birth year.
   ///
   /// On success the year is remembered for this device and

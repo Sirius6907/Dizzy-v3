@@ -200,54 +200,74 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               _sectionTitle('18+ Heaven (adults only)'),
               ValueListenableBuilder<bool>(
                 valueListenable: AdultSectionGate.localConfirmed,
-                builder: (context, v, _) => SwitchListTile(
-                  title: Text(
-                    'I am 18+ — unlock adult section',
-                    style: TextStyle(color: ink),
-                  ),
+                builder: (context, unlocked, _) =>
+                    ValueListenableBuilder<int>(
+                      valueListenable: AdultSectionGate.lockedUntilMs,
+                      builder: (context, _, __) {
+                        final cooling = AdultSectionGate.isLockedOut();
+                        final attempts = AdultSectionGate.attemptsLeft.value;
+                        final year = AdultSectionGate.birthYear.value;
+                        final cooldown = AdultSectionGate.describeCooldown(
+                          AdultSectionGate.lockRemaining(),
+                        );
+                        return ListTile(
+                          leading: Icon(
+                            unlocked
+                                ? Icons.verified_rounded
+                                : cooling
+                                ? Icons.lock_clock_rounded
+                                : Icons.no_adult_content_rounded,
+                            color: unlocked
+                                ? (isLight
+                                      ? PrismAccent.successTextLight
+                                      : Colors.greenAccent)
+                                : cooling
+                                ? (isLight
+                                      ? PrismAccent.starTextLight
+                                      : Colors.orangeAccent)
+                                : (isLight
+                                      ? PrismAccent.text(isLight)
+                                      : Colors.white54),
+                          ),
+                          title: Text(
+                            unlocked
+                                ? 'Adult section unlocked'
+                                : cooling
+                                ? 'Cooling-off — $cooldown left'
+                                : 'Verify your age (18+)',
+                            style: TextStyle(color: ink),
+                          ),
+                          subtitle: Text(
+                            unlocked
+                                ? 'Birth year ${year ?? '—'} confirmed on this device. Admin allow is still required.'
+                                : cooling
+                                ? 'Too many underage attempts. The gate stays shut for 24h, then you get $attempts fresh attempts.'
+                                : 'Enter your birth year — $attempts ${attempts == 1 ? 'try' : 'tries'} left before a 24h lock. Admin allow is still required, and kids profiles stay locked.',
+                            style: TextStyle(color: inkSoft, fontSize: 12),
+                          ),
+                          trailing: unlocked
+                              ? TextButton(
+                                  onPressed: _lockAdultSection,
+                                  child: const Text('Lock'),
+                                )
+                              : FilledButton(
+                                  onPressed: cooling ? null : _verifyAge,
+                                  child: Text(cooling ? 'Locked' : 'Verify'),
+                                ),
+                        );
+                      },
+                    ),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: AdultSectionGate.privateMode,
+                builder: (context, hidden, _) => SwitchListTile(
+                  title: Text('Private mode', style: TextStyle(color: ink)),
                   subtitle: Text(
-                    'Needs admin allow for this device too. Kids profiles stay locked.',
+                    'Labels the entry "Display" and blocks screenshots and the recents preview while the 18+ screen is open.',
                     style: TextStyle(color: inkSoft, fontSize: 12),
                   ),
-                  value: v,
-                  onChanged: (nv) async {
-                    if (nv) {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (c) => AlertDialog(
-                          title: const Text('Confirm you are 18+?'),
-                          content: const Text(
-                            'This unlocks the 18+ Heaven section on THIS device only. Your admin must also allow this device.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(c, false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(c, true),
-                              child: const Text('I am 18+'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (ok != true) return;
-                    }
-                    await AdultSectionGate.setLocalConfirmed(nv);
-                    if (context.mounted) {
-                      unawaited(AdultSectionGate.refreshFromServer());
-                      final open = AdultSectionGate.visible.value;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            open
-                                ? '18+ Heaven unlocked ✓'
-                                : 'Saved. Waiting for admin allow on this device.',
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                  value: hidden,
+                  onChanged: AdultSectionGate.setPrivateMode,
                 ),
               ),
               ValueListenableBuilder<bool>(
@@ -350,6 +370,55 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     );
   }
 
+  /// Birth-year dialog → the ONLY path that can open the local lock.
+  Future<void> _verifyAge() async {
+    final year = await showDialog<int>(
+      context: context,
+      builder: (_) => const _BirthYearDialog(),
+    );
+    if (year == null || !mounted) return;
+
+    final result = await AdultSectionGate.submitBirthYear(year);
+    if (!mounted) return;
+    unawaited(AdultSectionGate.refreshFromServer());
+
+    final open = AdultSectionGate.visible.value;
+    String message;
+    switch (result) {
+      case AgeGateResult.granted:
+        message = open
+            ? '18+ Heaven unlocked ✓'
+            : 'Age confirmed. Waiting for admin allow on this device.';
+      case AgeGateResult.underage:
+        final left = AdultSectionGate.attemptsLeft.value;
+        message = left == 1
+            ? 'You must be ${AdultSectionGate.minAge}+ to continue. 1 try left before a 24h lock.'
+            : 'You must be ${AdultSectionGate.minAge}+ to continue. $left tries left before a 24h lock.';
+      case AgeGateResult.lockedOut:
+        final left = AdultSectionGate.describeCooldown(
+          AdultSectionGate.lockRemaining(),
+        );
+        message = 'Too many underage attempts. Try again in $left.';
+      case AgeGateResult.kidsProfile:
+        message = 'Kids profiles can never open the 18+ section.';
+      case AgeGateResult.invalidYear:
+        message = 'That birth year does not look right.';
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _lockAdultSection() async {
+    await AdultSectionGate.setLocalConfirmed(false);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Adult section locked. Birth year forgotten on this device.'),
+      ),
+    );
+  }
+
   Widget _sectionTitle(String t) {
     final isLight = AppThemeService.currentPalette.value.isLight;
     return Padding(
@@ -371,5 +440,88 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     if (id == null || id.isEmpty) return 'Device ID: —…';
     final head = id.length >= 8 ? id.substring(0, 8) : id;
     return 'Device ID: $head…';
+  }
+}
+
+/// Birth-year prompt. Returns the entered year, or null on cancel.
+///
+/// Only structurally impossible input (non-numeric, out of the plausible
+/// range) is rejected here — an underage year is handed back to
+/// [AdultSectionGate.submitBirthYear] so the attempt is counted and the
+/// cooling-off can engage.
+class _BirthYearDialog extends StatefulWidget {
+  const _BirthYearDialog();
+
+  @override
+  State<_BirthYearDialog> createState() => _BirthYearDialogState();
+}
+
+class _BirthYearDialogState extends State<_BirthYearDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final year = int.tryParse(_controller.text.trim());
+    if (year == null) {
+      setState(() => _error = 'Enter a four-digit year.');
+      return;
+    }
+    if (!AdultSectionGate.isPlausibleYear(year)) {
+      setState(
+        () => _error =
+            'Enter a year between ${DateTime.now().year - AdultSectionGate.maxAge} and ${DateTime.now().year}.',
+      );
+      return;
+    }
+    Navigator.pop(context, year);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    return AlertDialog(
+      title: const Text('Confirm your age'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'The 18+ section is adults only. Enter your birth year — it is stored on this device only and is never uploaded.',
+            style: TextStyle(color: inkSoft, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            maxLength: 4,
+            style: TextStyle(color: ink),
+            onSubmitted: (_) => _submit(),
+            decoration: InputDecoration(
+              hintText: 'Birth year',
+              errorText: _error,
+              counterText: '',
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Confirm')),
+      ],
+    );
   }
 }

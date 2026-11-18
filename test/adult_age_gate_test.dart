@@ -245,6 +245,26 @@ void main() {
     });
   });
 
+  group('cooldown label', () {
+    test('formats hours and minutes', () {
+      expect(
+        AdultSectionGate.describeCooldown(const Duration(hours: 23, minutes: 59)),
+        '23h 59m',
+      );
+      expect(AdultSectionGate.describeCooldown(const Duration(hours: 3)), '3h');
+      expect(AdultSectionGate.describeCooldown(const Duration(minutes: 45)), '45m');
+      expect(
+        AdultSectionGate.describeCooldown(const Duration(seconds: 30)),
+        'under a minute',
+      );
+      expect(AdultSectionGate.describeCooldown(Duration.zero), 'now');
+      expect(
+        AdultSectionGate.describeCooldown(const Duration(minutes: -5)),
+        'now',
+      );
+    });
+  });
+
   group('private mode', () {
     test('defaults to on', () async {
       expect(AdultSectionGate.privateMode.value, isTrue);
