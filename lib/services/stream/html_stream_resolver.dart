@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../errors/app_log.dart';
+import '../adult/adult_log.dart';
+import '../adult/adult_media.dart';
 
 /// A media URL that was recovered from an HTML player page.
 class HtmlStreamResolution {
@@ -129,9 +131,11 @@ class HtmlStreamResolver {
         out['Cookie'] = cookie.split(';').first;
       }
 
+      final adult = AdultMedia.isAdultUrl(url) ||
+          AdultMedia.isAdultUrl(media.url);
       AppLog.d(
         '[HtmlResolver] resolved player page → media: '
-        '${media.kind} ${media.url}',
+        '${media.kind} ${adult ? AdultLog.redactUrl(media.url) : media.url}',
       );
       return HtmlStreamResolution(
         url: media.url,
@@ -139,7 +143,15 @@ class HtmlStreamResolver {
         kind: media.kind,
       );
     } catch (e) {
-      AppLog.d('[HtmlResolver] resolve failed for $url: $e');
+      // A page URL or HTML error can carry the adult slug; keep only the host.
+      if (AdultMedia.isAdultUrl(url)) {
+        AppLog.d(
+          '[HtmlResolver] resolve failed for ${AdultLog.redactUrl(url)}: '
+          '${AdultLog.redactError(e)}',
+        );
+      } else {
+        AppLog.d('[HtmlResolver] resolve failed for $url: $e');
+      }
       return null;
     } finally {
       try {

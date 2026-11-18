@@ -5,6 +5,8 @@ import '../../models/stream/stream_model.dart';
 import '../addon/addon_manager.dart';
 import '../net/dizzy_net.dart';
 import '../errors/app_log.dart';
+import '../adult/adult_log.dart';
+import '../adult/adult_media.dart';
 
 /// Fetches streams from installed Stremio addons only (no built-in scrapers).
 ///
@@ -94,7 +96,16 @@ abstract final class StreamAddonService {
           )
           .toList();
     } catch (e) {
-      AppLog.d('Addon ${addon.manifest.name} stream fetch failed: $e');
+      // The addon name and the exception text (it often appends the request
+      // URI) would both leak an 18+ identity into logcat.
+      if (AdultMedia.isAdultAddonName(addon.manifest.name)) {
+        AppLog.d(
+          '[StreamAddon] 18+ addon stream fetch failed: '
+          '${AdultLog.redactError(e)}',
+        );
+      } else {
+        AppLog.d('Addon ${addon.manifest.name} stream fetch failed: $e');
+      }
       return [];
     }
   }

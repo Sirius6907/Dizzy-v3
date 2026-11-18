@@ -27,12 +27,19 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
     // Per-source measurement state must not leak into the next source.
     _startHlsCapBps = null;
 
-    AppLog.d('[PlayerScreen] Initializing playback:');
-    AppLog.d('[PlayerScreen]   Title: $_currentTitle');
-    AppLog.d('[PlayerScreen]   Source Name: ${_currentSource.name}');
-    AppLog.d('[PlayerScreen]   Addon Name: ${_currentSource.addonName}');
-    AppLog.d('[PlayerScreen]   Source Title: ${_currentSource.title}');
-    AppLog.d('[PlayerScreen]   Raw URL: ${_currentSource.url}');
+    // An 18+ title must not name itself in logcat: no title, addon, source
+    // label or URL. One generic marker keeps the "did playback start" signal
+    // that this block exists for.
+    if (_isAdultPlayback) {
+      AppLog.d('[PlayerScreen] Initializing playback: 18+ (details hidden)');
+    } else {
+      AppLog.d('[PlayerScreen] Initializing playback:');
+      AppLog.d('[PlayerScreen]   Title: $_currentTitle');
+      AppLog.d('[PlayerScreen]   Source Name: ${_currentSource.name}');
+      AppLog.d('[PlayerScreen]   Addon Name: ${_currentSource.addonName}');
+      AppLog.d('[PlayerScreen]   Source Title: ${_currentSource.title}');
+      AppLog.d('[PlayerScreen]   Raw URL: ${_currentSource.url}');
+    }
 
     // v1.3.5: an embed source is played by its webview, not by mpv. Until a
     // media URL is captured, the webview IS the player surface — opening mpv
@@ -126,7 +133,10 @@ extension _PlayerScreenStateStreamLifecycle on _PlayerScreenState {
           }
 
           streamUrl = debridFiles.first.downloadUrl;
-          AppLog.d('[PlayerScreen] Debrid resolved stream URL: $streamUrl');
+          AppLog.d(
+            '[PlayerScreen] Debrid resolved stream URL: '
+            '${_isAdultPlayback ? AdultLog.redactUrl(streamUrl) : streamUrl}',
+          );
         } else {
           if (!mounted) return false;
           setState(() => _statusMessage = 'Gathering metadata & peers...');
