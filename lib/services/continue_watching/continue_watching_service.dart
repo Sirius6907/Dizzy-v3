@@ -18,6 +18,7 @@ import '../../services/anime_arabic/anime_arabic_extractor.dart';
 import '../../services/stream/stream_service.dart';
 import '../../services/stream/stream_probe_race.dart';
 import '../../utils/navigation/route_transitions.dart';
+import '../adult/adult_media.dart';
 import '../trakt/trakt_service.dart';
 import '../trakt/trakt_continue_watching_service.dart';
 import '../home/genre_preference_service.dart';
@@ -137,9 +138,16 @@ class ContinueWatchingService {
           }
         }
 
-        final items = deduped.values.toList();
-        items.sort((a, b) => b.lastWatchedAt.compareTo(a.lastWatchedAt));
+        final all = deduped.values.toList();
+        all.sort((a, b) => b.lastWatchedAt.compareTo(a.lastWatchedAt));
+        // 18+ rows must not survive a restart: purge anything the old build
+        // (or a pre-guard session) persisted, and rewrite the store at once.
+        final items = all.where((i) => !isAdultItem(i)).toList();
         activeItems.value = items;
+        if (items.length != all.length) {
+          _markDirty(items);
+          await flushProgress();
+        }
       }
     } catch (e) {
       debugPrint('[ContinueWatchingService] Failed to load sessions: $e');
@@ -324,6 +332,30 @@ class ContinueWatchingService {
     await flushProgress();
   }
 
+  /// True when this playback belongs to the 18+ surface.
+  ///
+  /// The stream carries its addon manifest name, which is the dependable
+  /// adult signal (details may come from Cinemeta fallbacks, so a movie id
+  /// alone can look innocent). Ids/types/URLs are checked too, fail-closed.
+  @visibleForTesting
+  static bool isAdultPlayback(MovieDetail detail, StreamSource source) =>
+      AdultMedia.isAdult(
+        addonName: source.addonName,
+        mediaId: detail.id,
+        type: detail.type,
+        urls: [source.url, ...?source.sources],
+      );
+
+  /// True when a persisted recents row is 18+ — used to purge rows written
+  /// before this guard existed or by an older build.
+  @visibleForTesting
+  static bool isAdultItem(ContinueWatchingItem item) => AdultMedia.isAdult(
+    addonName: item.addonName,
+    mediaId: item.id,
+    type: item.type,
+    urls: [item.rawUrl, item.magnetUrl],
+  );
+
   static Future<void> saveProgress({
     required MovieDetail detail,
     Video? episode,
@@ -331,6 +363,12 @@ class ContinueWatchingService {
     required int positionSeconds,
     required int totalDurationSeconds,
   }) async {
+    // 18+ titles are never remembered: no recents row, no genre taste, no
+    // Trakt/Simkl scrobble and no cloud session. One gate here covers every
+    // caller (player, binge chain, downloads) — nothing adult reaches the
+    // normal home's Continue Watching rail.
+    if (isAdultPlayback(detail, source)) return;
+
     if (positionSeconds < 5 || totalDurationSeconds <= 0) return;
 
     final progress = positionSeconds / totalDurationSeconds;

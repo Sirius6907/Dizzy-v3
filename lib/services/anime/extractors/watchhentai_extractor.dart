@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
+import '../../adult/adult_log.dart';
+
 /// Extractor for watchhentai.net.
 ///
 /// Pipeline:
@@ -74,14 +76,21 @@ class WatchHentaiExtractor {
       final resp = await req.close().timeout(const Duration(seconds: 25));
       if (resp.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('[WatchHentai] $url HTTP ${resp.statusCode}');
+          debugPrint(
+            '[WatchHentai] ${AdultLog.redactUrl(url)} HTTP ${resp.statusCode}',
+          );
         }
         await resp.drain<void>();
         return null;
       }
       return await resp.transform(const SystemEncoding().decoder).join();
     } catch (e) {
-      if (kDebugMode) debugPrint('[WatchHentai] GET $url error: $e');
+      if (kDebugMode) {
+        debugPrint(
+          '[WatchHentai] GET ${AdultLog.redactUrl(url)} failed: '
+          '${AdultLog.redactError(e)}',
+        );
+      }
       return null;
     }
   }

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
+import '../../adult/adult_log.dart';
+
 /// Extractor for hentaini.com.
 class HentainiResult {
   final String url;
@@ -109,13 +111,22 @@ class HentainiExtractor {
       _setHeaders(req, referer: referer, json: json);
       final resp = await req.close().timeout(const Duration(seconds: 25));
       if (resp.statusCode != 200) {
-        if (kDebugMode) debugPrint('[Hentaini] $url HTTP ${resp.statusCode}');
+        if (kDebugMode) {
+          debugPrint(
+            '[Hentaini] ${AdultLog.redactUrl(url)} HTTP ${resp.statusCode}',
+          );
+        }
         await resp.drain<void>();
         return null;
       }
       return await resp.transform(const Utf8Decoder()).join();
     } catch (e) {
-      if (kDebugMode) debugPrint('[Hentaini] GET $url error: $e');
+      if (kDebugMode) {
+        debugPrint(
+          '[Hentaini] GET ${AdultLog.redactUrl(url)} failed: '
+          '${AdultLog.redactError(e)}',
+        );
+      }
       return null;
     }
   }

@@ -9,6 +9,7 @@ import '../../models/movie/video.dart';
 import '../../models/movie/movie_detail.dart';
 import '../../models/my_list/my_list_item.dart';
 import '../../services/catalog/catalog_service.dart';
+import '../../services/adult/adult_media.dart';
 import '../../services/metadata/bestsimilar_scraper.dart';
 import '../../services/metadata/metadata_service.dart';
 import '../../services/scraper/sites/tmdb_helper.dart';
@@ -261,6 +262,20 @@ class _DetailsPageState extends State<DetailsPage>
     );
   }
 
+  /// True when this page is showing 18+ content.
+  ///
+  /// The rail card carries the addon base URL, but metadata fallbacks can
+  /// swap the id for an IMDb one — so both the card and the resolved detail
+  /// are checked, plus the base host. Fail-closed: taste and genre learning
+  /// stay clean at the cost of one missed signal.
+  bool get _isAdultDetail =>
+      AdultMedia.isAdult(
+        mediaId: widget.movie.id,
+        type: widget.movie.type,
+        urls: [widget.movie.addonBaseUrl],
+      ) ||
+      AdultMedia.isAdult(mediaId: _detail?.id, type: _detail?.type);
+
   Future<void> _fetchDetails() async {
     String effectiveBaseUrl = widget.movie.addonBaseUrl;
     String effectiveType = widget.movie.type;
@@ -407,6 +422,7 @@ class _DetailsPageState extends State<DetailsPage>
           entityId: meta.id,
           title: meta.name,
           genres: meta.genres,
+          adult: _isAdultDetail,
         );
       }
       _animController.forward();
@@ -1592,14 +1608,16 @@ class _DetailsPageState extends State<DetailsPage>
     final adding = !MyListService.isInList(item);
     MyListService.toggle(item);
     final t = _detail!.type.toLowerCase();
+    final adult = _isAdultDetail;
     TasteEventService.record(
       adding ? TasteEventKind.addList : TasteEventKind.removeList,
       entityType: t == 'series' ? 'tv' : (t == 'anime' ? 'anime' : 'movie'),
       entityId: _detail!.id,
       title: _detail!.name,
       genres: _detail!.genres,
+      adult: adult,
     );
-    if (adding && _detail!.genres.isNotEmpty) {
+    if (adding && _detail!.genres.isNotEmpty && !adult) {
       GenrePreferenceService.recordGenres(_detail!.genres);
     }
   }

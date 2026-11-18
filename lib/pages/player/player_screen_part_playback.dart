@@ -1364,6 +1364,15 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
     _tastePlayLogged = false;
   }
 
+  /// 18+ identity of the stream currently playing — taste, recents, Discord
+  /// and log guards all read this one value.
+  bool get _isAdultPlayback => AdultMedia.isAdult(
+    addonName: _currentSource.addonName,
+    mediaId: widget.detail?.id,
+    type: widget.detail?.type,
+    urls: [_currentSource.url, ...?_currentSource.sources],
+  );
+
   void _savePlaybackProgress() {
     if (widget.detail == null) return;
 
@@ -1383,6 +1392,7 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
         entityId: detail.id,
         title: detail.name,
         genres: detail.genres,
+        adult: _isAdultPlayback,
       );
     }
 
@@ -1396,6 +1406,13 @@ extension _PlayerScreenStatePlaybackEngine on _PlayerScreenState {
   }
 
   void _updateDiscordRpc({bool? isPaused}) {
+    // Never broadcast an 18+ title, episode or poster to Discord. Idle keeps
+    // the presence "present" without naming what is playing.
+    if (_isAdultPlayback) {
+      DiscordRpcService.instance.clearToIdle();
+      return;
+    }
+
     final paused = isPaused ?? !_isPlaying;
     final detail = widget.detail;
     final episode = _currentEpisode;

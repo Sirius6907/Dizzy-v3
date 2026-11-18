@@ -17,6 +17,7 @@ import 'package:dizzy/services/subtitles/subtitle_service.dart';
 import 'package:dizzy/services/subtitles/subtitle_parser.dart';
 
 import '../../models/stream/stream_model.dart';
+import '../../services/adult/adult_media.dart';
 import '../../services/continue_watching/continue_watching_service.dart';
 import '../../services/debrid/debrid_service.dart';
 import '../../services/stream/torrent_stream_service.dart';

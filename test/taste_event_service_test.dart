@@ -69,8 +69,33 @@ void main() {
     expect(row['genres'], ['Action']);
   });
 
-  test('partial batches go out on a manual flush', () async {
-    var batches = 0;
+  test('adult events never enter the queue', () async {
+    var sent = 0;
+    TasteEventService.configureForTest(
+      consent: () => true,
+      sender: (rows) async {
+        sent += rows.length;
+        return true;
+      },
+    );
+
+    for (var i = 0; i < 3; i++) {
+      TasteEventService.record(
+        TasteEventKind.play,
+        entityType: 'movie',
+        entityId: 'asa:$i',
+        title: 'Do not remember',
+        genres: const ['Adult'],
+        adult: true,
+      );
+    }
+    await TasteEventService.flush();
+
+    expect(TasteEventService.debugQueueLength, 0);
+    expect(sent, 0, reason: 'adult behaviour must never be uploaded');
+  });
+
+  test('partial batches go out on a manual flush', () async {    var batches = 0;
     TasteEventService.configureForTest(
       consent: () => true,
       sender: (rows) async {

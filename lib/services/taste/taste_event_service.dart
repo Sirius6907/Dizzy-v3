@@ -73,7 +73,13 @@ class TasteEventService {
     String lang = '',
     List<String> genres = const [],
     Map<String, dynamic>? meta,
+    bool adult = false,
   }) {
+    // 18+ behaviour is never remembered — not even in the local queue, which
+    // is persisted to prefs and uploaded when consent is on. Recommendation
+    // data must stay clean no matter what the user watches.
+    if (adult) return;
+
     if (!_loaded) unawaited(ensureLoaded());
     _queue.add({
       'kind': kind.wire,
