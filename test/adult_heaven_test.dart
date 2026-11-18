@@ -116,6 +116,55 @@ void main() {
     });
   });
 
+  group('18+ fan-out isolation', () {
+    final adult = _addon(
+      id: 'com.tpb.adult.4k',
+      name: 'TPB 4K Porn',
+      baseUrl: 'https://tpb-adult-addon.click',
+    );
+    final clean = _addon(
+      id: 'com.linvo.cinemeta',
+      name: 'Cinemeta',
+      baseUrl: 'https://v3-cinemeta.strem.io',
+    );
+
+    test('normal home/search never admits adult addons, even unlocked', () {
+      expect(
+        AddonManager.browseAddon(adult, adultOnly: false, gateOpen: true),
+        isFalse,
+      );
+      expect(
+        AddonManager.browseAddon(adult, adultOnly: false, gateOpen: false),
+        isFalse,
+      );
+    });
+
+    test('normal home/search always admits clean addons', () {
+      expect(
+        AddonManager.browseAddon(clean, adultOnly: false, gateOpen: false),
+        isTrue,
+      );
+    });
+
+    test('18+ page fan-out excludes clean addons', () {
+      expect(
+        AddonManager.browseAddon(clean, adultOnly: true, gateOpen: true),
+        isFalse,
+      );
+    });
+
+    test('18+ page fan-out is fail-closed when the gate is shut', () {
+      expect(
+        AddonManager.browseAddon(adult, adultOnly: true, gateOpen: false),
+        isFalse,
+      );
+      expect(
+        AddonManager.browseAddon(adult, adultOnly: true, gateOpen: true),
+        isTrue,
+      );
+    });
+  });
+
   group('AdultDirectory.missingEntries (install cards)', () {
     test('empty install base → all 8 entries missing (cards render)', () {
       expect(AdultDirectory.missingEntries(const []),

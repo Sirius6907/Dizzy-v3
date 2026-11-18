@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/addon/addon.dart';
@@ -465,23 +466,50 @@ class AddonManager {
     );
   }
 
-  /// Home/search fan-outs call this: adult addons pass ONLY when the
-  /// 18+ Heaven gate is open. Fail-closed by default.
-  static bool _allowAddon(InstalledAddon addon) {
-    if (!isAdultAddon(addon)) return true;
-    return AdultSectionGate.visible.value;
+  /// Browse fan-out filter (home / search / genre).
+  ///
+  /// Adult addons are reachable ONLY through the 18+ page, which asks for
+  /// [adultOnly] sections and is itself gated. With [adultOnly] false they
+  /// are excluded outright — even when the gate is open — so nothing adult
+  /// can leak into the normal home rows, search results or genre rails.
+  /// With [adultOnly] true the gate must still be open (fail-closed).
+  static bool _browseAddon(InstalledAddon addon, {required bool adultOnly}) =>
+      browseAddon(
+        addon,
+        adultOnly: adultOnly,
+        gateOpen: AdultSectionGate.visible.value,
+      );
+
+  /// Pure browse admission rule — [gateOpen] is injectable for tests.
+  @visibleForTesting
+  static bool browseAddon(
+    InstalledAddon addon, {
+    required bool adultOnly,
+    required bool gateOpen,
+  }) {
+    final adult = isAdultAddon(addon);
+    if (adultOnly) return adult && gateOpen;
+    return !adult;
   }
 
-  /// Public twin for stream/subtitle services: same gate, same default.
-  static bool allowAddon(InstalledAddon addon) => _allowAddon(addon);
+  /// Public twin for stream/subtitle services: resolving one title's
+  /// streams is not a browse surface, so an adult addon may answer while
+  /// the 18+ gate is open.
+  static bool allowAddon(InstalledAddon addon) =>
+      !isAdultAddon(addon) || AdultSectionGate.visible.value;
 
   // ── Home sections ─────────────────────────────────────────────────────
 
   /// Fetch all home page sections from every active addon's catalogs.
   /// Each addon's catalogs are fetched concurrently.
-  Future<List<MovieSection>> fetchAllHomeSections() async {
+  ///
+  /// [adultOnly] flips the fan-out onto the 18+ addons only (see
+  /// [_browseAddon]); the normal home page never passes it.
+  Future<List<MovieSection>> fetchAllHomeSections({
+    bool adultOnly = false,
+  }) async {
     final active = activeCatalogAddons
-        .where(_allowAddon)
+        .where((a) => _browseAddon(a, adultOnly: adultOnly))
         .toList(growable: false);
 
     final addonFutures = active.map(_fetchAddonSections);
@@ -547,10 +575,11 @@ class AddonManager {
     return last;
   }
 
-  /// Streams home page sections one by one as they load, so the UI can populate dynamically.
-  Stream<MovieSection> streamHomeSections() async* {
+  /// Stream home page sections one by one as they load, so the UI can populate dynamically.
+  /// [adultOnly] is for the 18+ page; the normal home stream leaves it false.
+  Stream<MovieSection> streamHomeSections({bool adultOnly = false}) async* {
     final active = activeCatalogAddons
-        .where(_allowAddon)
+        .where((a) => _browseAddon(a, adultOnly: adultOnly))
         .toList(growable: false);
     final List<Future<MovieSection?>> sectionFutures = [];
 
@@ -620,10 +649,16 @@ class AddonManager {
   }
 
   /// Search across all active addons that support search.
-  /// 18+ Heaven addons answer only when the gate is open.
-  Future<List<MovieSection>> searchAll(String query) async {
+  ///
+  /// [adultOnly] restricts the fan-out to 18+ addons (the adult page's own
+  /// search box). The normal search page must leave it false so results
+  /// never mix in adult rows.
+  Future<List<MovieSection>> searchAll(
+    String query, {
+    bool adultOnly = false,
+  }) async {
     final active = activeSearchAddons
-        .where(_allowAddon)
+        .where((a) => _browseAddon(a, adultOnly: adultOnly))
         .toList(growable: false);
     final futures = <Future<MovieSection?>>[];
 
@@ -694,10 +729,13 @@ class AddonManager {
   }
 
   /// Fetch catalogs filtered by a specific genre across all active addons.
-  /// 18+ Heaven addons answer only when the gate is open.
-  Future<List<MovieSection>> fetchByGenre(String genre) async {
+  /// [adultOnly] keeps genre rails section-scoped on the 18+ page.
+  Future<List<MovieSection>> fetchByGenre(
+    String genre, {
+    bool adultOnly = false,
+  }) async {
     final active = activeCatalogAddons
-        .where(_allowAddon)
+        .where((a) => _browseAddon(a, adultOnly: adultOnly))
         .toList(growable: false);
     final futures = <Future<MovieSection?>>[];
 

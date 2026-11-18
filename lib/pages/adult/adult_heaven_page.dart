@@ -14,8 +14,18 @@ import '../../widgets/movie/movie_slider_section.dart';
 ///
 /// Renders ONLY when [AdultSectionGate.visible] is true (triple lock:
 /// local 18+ confirm × admin allow × not-kids). Otherwise shows a locked
-/// notice — never a glimpse of content. Category-wise rails come from the
-/// 7 curated adult addons; missing/dead addons show an Install card.
+/// notice — never a glimpse of content.
+///
+/// Everything here is section-scoped: rows come from the adult addons via
+/// `adultOnly` fan-outs and the search box below also searches only those
+/// addons, so a query typed here can never surface normal content and,
+/// conversely, nothing adult appears in the normal home/search.
+///
+/// Chips are built from what the installed addons actually publish: content
+/// type plus their catalog genres. Upstream manifests carry no separate
+/// language/region field — when an addon lists one as a genre (e.g. "Hindi")
+/// it shows up as a chip too, and never invents a category that would
+/// return an empty rail.
 class AdultHeavenPage extends StatefulWidget {
   const AdultHeavenPage({super.key});
 
@@ -25,9 +35,20 @@ class AdultHeavenPage extends StatefulWidget {
 
 class _AdultHeavenPageState extends State<AdultHeavenPage> {
   final _manager = AddonManager.instance;
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+
   bool _loading = true;
   List<MovieSection> _sections = [];
   String? _error;
+
+  /// Active category chip ('All' shows everything).
+  String _chip = 'All';
+
+  /// Non-null while a section-scoped search is showing its results.
+  String? _activeQuery;
+  List<MovieSection>? _searchResults;
+  bool _searching = false;
 
   @override
   void initState() {
@@ -40,6 +61,8 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
   @override
   void dispose() {
     AdultSectionGate.visible.removeListener(_onGateChanged);
+    _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -49,6 +72,8 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
       // Admin blocked mid-browse → drop content immediately.
       setState(() {
         _sections = [];
+        _searchResults = null;
+        _activeQuery = null;
         _error = 'locked';
       });
       return;
@@ -69,22 +94,22 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
       _error = null;
     });
     try {
-      final installed = _manager.addons;
-      final out = <MovieSection>[];
-      // One rail per installed adult addon = category-wise rows.
-      for (final addon in installed) {
+      // One gated fan-out: only adult addons answer, and only while the
+      // gate is open. Grouped into rails below, in addon order.
+      final sections = await _manager
+          .fetchAllHomeSections(adultOnly: true)
+          .timeout(const Duration(seconds: 45));
+      final order = <String, int>{};
+      for (final addon in _manager.addons) {
         if (!AddonManager.isAdultAddon(addon)) continue;
-        if (!addon.isCatalogsActive) continue;
-        try {
-          final sections = await _manager.fetchAllHomeSections().timeout(
-            const Duration(seconds: 30),
-          );
-          for (final s in sections) {
-            if (s.addonBaseUrl == addon.baseUrl) out.add(s);
-          }
-          if (out.length >= 12) break;
-        } catch (_) {}
+        order.putIfAbsent(addon.baseUrl, () => order.length);
       }
+      final out = List<MovieSection>.from(sections)
+        ..sort((a, b) {
+          final ai = order[a.addonBaseUrl] ?? order.length;
+          final bi = order[b.addonBaseUrl] ?? order.length;
+          return ai.compareTo(bi);
+        });
       if (mounted) {
         setState(() {
           _sections = out;
@@ -92,14 +117,50 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
           _error = out.isEmpty ? 'empty' : null;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e.toString();
+          _error = 'load';
         });
       }
     }
+  }
+
+  Future<void> _runSearch(String raw) async {
+    final q = raw.trim();
+    if (q.isEmpty) {
+      _clearSearch();
+      return;
+    }
+    _searchFocus.unfocus();
+    setState(() {
+      _searching = true;
+      _activeQuery = q;
+      _searchResults = null;
+    });
+    List<MovieSection> results;
+    try {
+      results = await _manager
+          .searchAll(q, adultOnly: true)
+          .timeout(const Duration(seconds: 45));
+    } catch (_) {
+      results = const [];
+    }
+    if (!mounted || _activeQuery != q) return;
+    setState(() {
+      _searchResults = results;
+      _searching = false;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _activeQuery = null;
+      _searchResults = null;
+      _searching = false;
+    });
   }
 
   Future<void> _install(AdultDirectoryEntry entry) async {
@@ -122,6 +183,44 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Could not add: $e')));
     }
+  }
+
+  // ── Category chips ───────────────────────────────────────────────────
+
+  /// Type chips first, then the genres the installed addons advertise,
+  /// most common first. No chip exists for a category with no rows.
+  List<String> _chips() {
+    final counts = <String, int>{};
+    for (final s in _sections) {
+      for (final raw in s.catalog.genres) {
+        final g = raw.trim();
+        if (g.isEmpty) continue;
+        counts[g] = (counts[g] ?? 0) + 1;
+      }
+    }
+    final top = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return <String>[
+      'All',
+      'Movies',
+      'Series',
+      ...top.take(12).map((e) => e.key),
+    ];
+  }
+
+  List<MovieSection> _filtered() {
+    if (_chip == 'All') return _sections;
+    if (_chip == 'Movies') {
+      return _sections.where((s) => s.contentType != 'series').toList();
+    }
+    if (_chip == 'Series') {
+      return _sections.where((s) => s.contentType == 'series').toList();
+    }
+    final needle = _chip.toLowerCase();
+    return _sections.where((s) {
+      final genres = s.catalog.genres;
+      return genres.any((g) => g.trim().toLowerCase() == needle);
+    }).toList();
   }
 
   @override
@@ -174,23 +273,146 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
             color: palette.primaryColor,
             backgroundColor: palette.cardBackgroundColor,
             onRefresh: _load,
-            child: ListView.builder(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
+            child: _content(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _content() {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight ? PrismLight.inkSoft : Colors.white60;
+    final searching = _activeQuery != null;
+    final rails = searching ? (_searchResults ?? const <MovieSection>[])
+        : _filtered();
+    final missing = searching ? const <AdultDirectoryEntry>[] : _missingInstalls();
+
+    return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: EdgeInsets.zero,
+      children: [
+        _searchField(ink, inkSoft),
+        if (!searching && _sections.isNotEmpty) _chipBar(),
+        if (searching) _searchHeader(inkSoft),
+        if (searching && _searching)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 48),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (rails.isEmpty && searching)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
+            child: Text(
+              'Nothing in the 18+ section matches "${_activeQuery!}".',
+              style: TextStyle(color: inkSoft, fontSize: 13),
+            ),
+          ),
+        for (final s in rails) MovieSliderSection(section: s),
+        for (final e in missing) _installCard(e),
+        const SizedBox(height: 8),
+        SizedBox(height: PrismLayout.dockClearance(context)),
+      ],
+    );
+  }
+
+  Widget _searchField(Color ink, Color inkSoft) {
+    final palette = AppThemeService.currentPalette.value;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        style: TextStyle(color: ink, fontSize: 14),
+        textInputAction: TextInputAction.search,
+        onSubmitted: _runSearch,
+        decoration: InputDecoration(
+          hintText: 'Search only the 18+ section',
+          hintStyle: TextStyle(color: inkSoft, fontSize: 13),
+          prefixIcon: Icon(Icons.search_rounded, color: inkSoft, size: 20),
+          suffixIcon: IconButton(
+            icon: Icon(Icons.close_rounded, color: inkSoft, size: 18),
+            tooltip: 'Clear search',
+            onPressed: _clearSearch,
+          ),
+          isDense: true,
+          filled: true,
+          fillColor: palette.cardBackgroundColor,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chipBar() {
+    final palette = AppThemeService.currentPalette.value;
+    final chips = _chips();
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final label = chips[i];
+          final selected = _chip == label;
+          return Center(
+            child: ChoiceChip(
+              label: Text(label),
+              selected: selected,
+              showCheckmark: false,
+              onSelected: (_) => setState(() => _chip = label),
+              backgroundColor: palette.cardBackgroundColor,
+              selectedColor: palette.primaryColor.withValues(alpha: 0.22),
+              labelStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected
+                    ? palette.primaryColor
+                    : (palette.isLight ? PrismLight.ink : Colors.white70),
               ),
-              itemCount: _sections.length + _missingInstalls().length + 1,
-              itemBuilder: (context, i) {
-                if (i < _sections.length) {
-                  return MovieSliderSection(section: _sections[i]);
-                }
-                final missing = _missingInstalls();
-                final mi = i - _sections.length;
-                if (mi < missing.length) return _installCard(missing[mi]);
-                return SizedBox(height: PrismLayout.dockClearance(context));
-              },
+              side: BorderSide(
+                color: selected
+                    ? palette.primaryColor.withValues(alpha: 0.6)
+                    : Colors.white.withValues(alpha: 0.10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              visualDensity: VisualDensity.compact,
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _searchHeader(Color inkSoft) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Results in 18+ Heaven only',
+              style: TextStyle(
+                color: inkSoft,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _clearSearch,
+            child: const Text('Clear'),
+          ),
+        ],
       ),
     );
   }
@@ -308,6 +530,7 @@ class _AdultHeavenPageState extends State<AdultHeavenPage> {
         ),
         const SizedBox(height: 12),
         for (final e in missing) _installCard(e),
+        SizedBox(height: PrismLayout.dockClearance(context)),
       ],
     );
   }
