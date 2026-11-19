@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,7 +26,8 @@ import '../support/support_chat_page.dart';
 import 'profiles_settings_page.dart';
 import 'scraper_health_page.dart';
 import 'watch_party_page.dart';
-import '../../widgets/social/social_hub_sheet.dart';
+import '../social/social_hub_page.dart';
+import '../../services/social/social_hub_service.dart';
 import '../../services/player/player_settings.dart';
 import '../../services/p2p/p2p_settings_service.dart';
 import '../../widgets/p2p/p2p_warning_dialog.dart';
@@ -666,16 +668,22 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 12),
 
-              // UX8: Unified Social Hub
-              _SettingsCategoryTile(
-                icon: Icons.hub_rounded,
-                iconColor: const Color(0xFFEC4899),
-                title: 'Social Hub',
-                subtitle:
-                    'Watch Together rooms, Listen Together sessions & 1-tap invite',
-                badgeText: 'HOT',
-                badgeColor: const Color(0xFFEC4899),
-                onTap: () => SocialHubSheet.show(context),
+              // UX8 / v1.3.6: one Social Hub for DMs, friends, groups, rooms.
+              ValueListenableBuilder<int>(
+                valueListenable: SocialHubService.totalUnread,
+                builder: (context, unread, _) => _SettingsCategoryTile(
+                  icon: Icons.hub_rounded,
+                  iconColor: const Color(0xFFEC4899),
+                  title: 'Social Hub',
+                  subtitle:
+                      'Messages, friends, groups, Watch & Listen Together',
+                  badgeText: unread > 0 ? '$unread new' : 'HOT',
+                  badgeColor: const Color(0xFFEC4899),
+                  onTap: () async {
+                    await SocialHubPage.show(context);
+                    unawaited(SocialHubService.refreshTotal());
+                  },
+                ),
               ),
 
               const SizedBox(height: 12),

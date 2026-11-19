@@ -12,6 +12,7 @@ import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/social/dizzy_friend_service.dart';
 import 'package:dizzy/services/social/dizzy_group_service.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
+import 'package:dizzy/services/social/social_hub_service.dart';
 import 'package:dizzy/services/push/active_thread.dart';
 import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
@@ -109,6 +110,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
       DizzyGroupService.resolveNames(history.map((m) => m.senderId)),
     );
     _scrollToEnd();
+    // Opening the chat clears its hub badge through the newest message.
+    DateTime? latest;
+    for (final m in history) {
+      if (latest == null || m.createdAt.isAfter(latest)) latest = m.createdAt;
+    }
+    unawaited(
+      SocialHubService.markGroupRead(widget.groupId, through: latest),
+    );
   }
 
   Future<void> _loadRoster() async {
@@ -130,6 +139,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
         setState(() => _messages.add(m));
         unawaited(DizzyGroupService.resolveNames([m.senderId]));
         _scrollToEnd();
+        // A message read on this screen is read: keep the cursor honest so
+        // the hub badge does not reappear behind an open chat.
+        if (m.senderId != _myUid) {
+          unawaited(
+            SocialHubService.markGroupRead(
+              widget.groupId,
+              through: m.createdAt,
+            ),
+          );
+        }
       },
     );
     _rosterChannel = DizzyGroupService.subscribeToRoster(

@@ -70,6 +70,7 @@ import './services/notification/notification_triggers.dart';
 import './services/push/push_service.dart';
 import './services/social/dizzy_social_service.dart';
 import './services/social/dizzy_friend_service.dart';
+import './services/social/social_hub_service.dart';
 import './rust/frb_generated.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
@@ -217,6 +218,10 @@ void main() async {
     // v1.3.3: first-run gate needs server truth as early as possible.
     // ignore: unawaited_futures
     UsernameGateState.ensureResolved();
+    // v1.3.6: warm the Social Hub unread badge (local read cursors + DM
+    // history) so it is correct before the first page open.
+    // ignore: unawaited_futures
+    SocialHubService.refreshTotal();
     // v1.3.3 Phase 2: drain any personalisation events queued offline.
     // ignore: unawaited_futures
     TasteEventService.ensureLoaded().then((_) => TasteEventService.flush());
@@ -416,6 +421,8 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
         // or accepted on another device) — refetch on every resume so
         // "Sent ✓" and pending badges are current without a restart.
         _soft(DizzyFriendService.loadFriendships()),
+        // v1.3.6: DM unread badge must not go stale while backgrounded.
+        _soft(SocialHubService.refreshTotal()),
         // v1.3.3-T5: hot-fix pull rides the resume heartbeat (forced,
         // TTL-bypassed).
         _soft(RemoteConfigService.refresh(force: true)),

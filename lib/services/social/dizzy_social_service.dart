@@ -267,12 +267,20 @@ class DizzySocialService {
     }
   }
 
-  /// Best-effort display name for a uid — resolved @username, or a short
-  /// readable fallback while the resolver has no answer.
+  /// Best-effort display name for a uid — resolved @username, or a neutral
+  /// human label while the resolver has no answer.
+  ///
+  /// Never returns a raw id or a `friend_<uid>` placeholder: those read as
+  /// machine noise to a non-technical user, and the uid is not ours to
+  /// surface. The resolver fills the real name in on the next repaint.
   static String displayNameFor(String uid) {
+    if (uid.isEmpty) return 'Dizzy member';
     final name = resolvedNames.value[uid];
     if (name != null && name.isNotEmpty) return name;
-    return 'friend_${uid.length > 6 ? uid.substring(0, 6) : uid}';
+    if (CloudClient.isReady && CloudClient.db.auth.currentUser?.id == uid) {
+      return 'You';
+    }
+    return 'Dizzy member';
   }
 
   // ── Thread history (DM real-data wiring) ───────────────────────

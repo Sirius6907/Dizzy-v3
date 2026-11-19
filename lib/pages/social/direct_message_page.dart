@@ -9,6 +9,7 @@ import 'package:dizzy/widgets/tactile/dizzy_tactile_button.dart';
 import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/social/dizzy_friend_service.dart';
+import 'package:dizzy/services/social/social_hub_service.dart';
 import 'package:dizzy/services/cloud/cloud_client.dart';
 import 'package:dizzy/services/cloud/watch_party_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
@@ -87,6 +88,12 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
       }
     });
     _subscribe();
+    // Reading a thread clears its hub badge through the newest message.
+    DateTime? latest;
+    for (final m in history) {
+      if (latest == null || m.createdAt.isAfter(latest)) latest = m.createdAt;
+    }
+    unawaited(SocialHubService.markRead(_threadId, through: latest));
   }
 
   /// Live thread updates. Sends and receives now share one source of
@@ -99,6 +106,9 @@ class _DirectMessagePageState extends State<DirectMessagePage> {
         if (_isDuplicate(m) || !mounted) return;
         _remember(m);
         setState(() => _messages.add(m));
+        if (m.senderId != _myUid) {
+          unawaited(SocialHubService.markRead(_threadId, through: m.createdAt));
+        }
       },
     );
   }

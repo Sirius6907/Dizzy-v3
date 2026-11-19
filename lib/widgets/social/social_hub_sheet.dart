@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 
 import '../../services/music/music_listen_together_service.dart';
 
-/// UX8 — Unified Social Hub: Watch Together + Listen Together in ONE sheet.
+/// Listen Together panel — the jam-room half of the Social Hub.
 ///
+/// v1.3.6: the Social Hub is now a full page ([SocialHubPage]); this sheet
+/// is opened from its "Listen Together" tile and from the music library.
 /// Shows live room status, member count, 1-tap invite copy.
 /// Easy English only. No tech words.
 class SocialHubSheet extends StatefulWidget {
@@ -126,7 +128,7 @@ class _SocialHubSheetState extends State<SocialHubSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Social Hub',
+                        'Listen Together',
                         style: TextStyle(
                           color: ink,
                           fontSize: 18,

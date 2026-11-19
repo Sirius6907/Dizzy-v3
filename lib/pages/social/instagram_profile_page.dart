@@ -22,8 +22,9 @@ import 'package:dizzy/models/movie/movie.dart';
 import 'package:dizzy/pages/details/details_page.dart';
 import 'package:dizzy/services/stats/watch_stats.dart';
 import 'package:dizzy/widgets/common/dizzy_image.dart';
-import 'friends_page.dart';
 import 'profile_hub_sections.dart';
+import 'social_hub_page.dart';
+import '../../services/social/social_hub_service.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../widgets/common/notify.dart';
 
@@ -969,24 +970,28 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                           DizzyTactileButton(
                             height: 42,
                             padding: const EdgeInsets.symmetric(horizontal: 14),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const FriendsPage(),
-                                ),
-                              );
-                            },
+                            onTap: () => SocialHubPage.show(context),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.people_rounded,
-                                  size: 18,
-                                  color: ink,
+                                ValueListenableBuilder<int>(
+                                  valueListenable:
+                                      SocialHubService.totalUnread,
+                                  builder: (c, unread, _) => Badge(
+                                    isLabelVisible: unread > 0,
+                                    label: Text(
+                                      unread > 99 ? '99+' : '$unread',
+                                    ),
+                                    child: Icon(
+                                      Icons.hub_rounded,
+                                      size: 18,
+                                      color: ink,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Friends',
+                                  'Social',
                                   style: TextStyle(
                                     color: ink,
                                     fontWeight: FontWeight.bold,
