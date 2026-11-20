@@ -143,7 +143,7 @@ class PartyChatService {
         );
   }
 
-  /// Members with display codes (device code when the install row exists).
+  /// Members with display codes (device code when the device row exists).
   static Future<List<PartyMember>> listMembers(String roomId) async {
     if (!CloudClient.isReady) return const [];
     try {
@@ -152,14 +152,14 @@ class PartyChatService {
           .from('room_members')
           .select('user_id, role')
           .eq('room_id', code);
-      final installs = await CloudClient.db
-          .from('installs')
-          .select('owner_user_id, device_code');
+      final devices = await CloudClient.db
+          .from('devices')
+          .select('user_id, device_code');
       final codeByUser = <String, String>{};
-      for (final row in (installs as List)) {
+      for (final row in (devices as List)) {
         final m = Map<String, dynamic>.from(row as Map);
-        final uid = m['owner_user_id']?.toString();
-        final dc = m['device_code']?.toString();
+        final uid = m['user_id']?.toString();
+        final dc = m['device_code']?.toString().trim();
         if (uid != null && dc != null && dc.isNotEmpty) codeByUser[uid] = dc;
       }
       return (members as List).map((r) {

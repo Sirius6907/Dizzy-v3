@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../design/prism_tokens.dart';
+import '../../services/cloud/cloud_auth_service.dart';
+import '../../services/device/device_id_service.dart';
+import '../../services/errors/app_error_log.dart';
 import '../../services/theme/app_theme_service.dart';
 
 class AboutSettingsPage extends StatelessWidget {
@@ -124,6 +128,98 @@ class AboutSettingsPage extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 28),
+
+              // ── This device ──────────────────────────────────────────
+              // The one thing support always needs and users could never
+              // find: the code the admin dashboard files this install under.
+              Text(
+                'THIS DEVICE',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isLight
+                      ? PrismLight.inkFaint
+                      : palette.silverAccent.withValues(alpha: 0.45),
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ValueListenableBuilder<String?>(
+                valueListenable: DeviceIdService.deviceCode,
+                builder: (context, code, _) {
+                  final shown = code == null
+                      ? '—'
+                      : DeviceIdService.displayCode(code);
+                  return Container(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+                    decoration: BoxDecoration(
+                      color: palette.cardBackgroundColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: cardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.fingerprint_rounded,
+                          color: palette.primaryColor,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Device code',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: inkSoft,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                shown,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                  color: ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Copy device code',
+                          icon: Icon(
+                            Icons.copy_rounded,
+                            size: 18,
+                            color: inkSoft,
+                          ),
+                          onPressed: code == null
+                              ? null
+                              : () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(text: shown),
+                                  );
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Device code copied'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              _DiagnosticsTile(palette: palette),
 
               const SizedBox(height: 32),
 
@@ -338,6 +434,111 @@ class AboutSettingsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Send diagnostics" — drains the queued error reports right now instead of
+/// waiting for the 15-minute timer, and says exactly what happened.
+///
+/// Exists because a user reporting a bug has no way to know whether anything
+/// was actually sent, and a report that is still sitting in the queue is the
+/// same as no report at all. The tile shows the real queue depth, so "0
+/// waiting" is a fact rather than a reassurance.
+class _DiagnosticsTile extends StatefulWidget {
+  const _DiagnosticsTile({required this.palette});
+
+  final AppThemePalette palette;
+
+  @override
+  State<_DiagnosticsTile> createState() => _DiagnosticsTileState();
+}
+
+class _DiagnosticsTileState extends State<_DiagnosticsTile> {
+  int? _pending;
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final n = await AppErrorLog.pendingCount();
+    if (mounted) setState(() => _pending = n);
+  }
+
+  Future<void> _send() async {
+    setState(() => _sending = true);
+    await AppErrorLog.flush();
+    final left = await AppErrorLog.pendingCount();
+    if (!mounted) return;
+    setState(() {
+      _sending = false;
+      _pending = left;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          left == 0
+              ? 'Diagnostics sent.'
+              : 'Still $left waiting — no connection? They will retry.',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = widget.palette;
+    final isLight = palette.isLight;
+    final ink = isLight ? PrismLight.ink : Colors.white;
+    final inkSoft = isLight
+        ? PrismLight.inkSoft
+        : Colors.white.withValues(alpha: 0.6);
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: CloudAuthService.consentCrash,
+      builder: (context, consent, _) {
+        final n = _pending;
+        final String subtitle;
+        if (!consent) {
+          subtitle = 'Crash counts are off in Privacy — nothing is sent.';
+        } else if (n == null) {
+          subtitle = 'Checking the queue…';
+        } else if (n == 0) {
+          subtitle = 'Nothing waiting. Recent errors were already sent.';
+        } else {
+          subtitle = '$n report${n == 1 ? '' : 's'} waiting to be sent.';
+        }
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            Icons.bug_report_rounded,
+            color: consent ? palette.primaryColor : inkSoft,
+          ),
+          title: Text(
+            'Send diagnostics',
+            style: TextStyle(color: ink, fontSize: 14),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(color: inkSoft, fontSize: 12),
+          ),
+          trailing: _sending
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : TextButton(
+                  onPressed: !consent || n == 0 ? null : _send,
+                  child: const Text('Send now'),
+                ),
+        );
+      },
     );
   }
 }

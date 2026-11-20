@@ -317,6 +317,12 @@ class AppErrorLog {
   static Future<List<Map<String, dynamic>>> pending() async =>
       _readQueue(await SharedPreferences.getInstance());
 
+  /// How many reports are waiting to be sent. Safe for UI use.
+  static Future<int> pendingCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _readQueue(prefs).length;
+  }
+
   /// Drop the queue. Test hook — isolates one test from the next.
   @visibleForTesting
   static Future<void> clearQueue() async {
