@@ -287,14 +287,14 @@
         </div>
         <div class="card">
           <div class="card-h">
-            <div class="card-t"><h3>Installs</h3><p class="sub">No PII — anonymous device IDs only</p></div>
+            <div class="card-t"><h3>Install history</h3><p class="sub">One row per install — device code and its owner, never a hardware ID</p></div>
             <div class="card-a">
-              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="uSearch" placeholder="Platform / version / region…" onkeydown="if(event.key==='Enter')loadUsers()"></div>
+              <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="text" id="uSearch" placeholder="Code / @name / device id / platform / version" onkeydown="if(event.key==='Enter')loadUsers()"></div>
               <button class="btn btn-primary btn-sm" onclick="loadUsers()">Search</button>
             </div>
           </div>
           <div class="tbl-wrap"><table id="usersTbl">
-            <thead><tr><th>Anon ID</th><th>Platform</th><th>Ver</th><th>Region</th><th>First seen</th><th>Last seen</th></tr></thead>
+            <thead><tr><th>Code</th><th>Owner</th><th>Platform</th><th>Ver</th><th>First seen</th><th>Last seen</th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>

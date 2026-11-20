@@ -755,20 +755,20 @@ async function saveCooldown() {
   } catch (e) { toast('Save failed: ' + e.message, 'err'); }
 }
 
-// ── installs ──
+// ── install history (devices ledger: one row per install) ──
 async function loadUsers() {
   const tb = document.querySelector('#usersTbl tbody');
   if (tb) tb.innerHTML = skRows(8, 6);
   try {
-    const rows = await rpc('admin_installs', { p_limit: 50, p_search: $('uSearch').value || '' });
-    if (tb) tb.innerHTML = rows.map((u) =>
-      `<tr><td class="mono" title="${esc(u.anon_id)}">${esc(shortId(u.anon_id))}…</td>
+    const rows = await rpc('admin_installs', { p_limit: 50, p_search: ($('uSearch') || {}).value || '' });
+    if (tb) tb.innerHTML = (rows || []).map((u) =>
+      `<tr><td class="mono">DIZ-${esc(u.anon_id)}</td>
+       <td>${u.username ? `<strong>@${esc(u.username)}</strong>` : '<span class="mut">no name</span>'}</td>
        <td>${esc(u.platform)}</td><td>${esc(u.app_version)}</td>
-       <td>${esc(u.region_code)}</td>
        <td class="mut" title="${esc(fmtAbs(u.created_at))}">${ago(u.created_at)}</td>
        <td class="mut" title="${esc(fmtAbs(u.last_seen_at))}">${ago(u.last_seen_at)}</td></tr>`).join('')
       || `<tr><td colspan="6">${emptyState('📭', 'No installs found', 'Try another search term.')}</td></tr>`;
-  } catch (e) { toast('Installs failed: ' + e.message, 'err'); }
+  } catch (e) { toast('Install history failed: ' + e.message, 'err'); }
   loadIdentity();
 }
 
