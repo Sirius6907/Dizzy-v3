@@ -106,4 +106,54 @@ void main() {
       }
     },
   );
+
+  test(
+    'verifyStream: false hands off the signed URL without probing the CDN',
+    () async {
+      final hits = <String>[];
+      final client = MockClient((request) async {
+        hits.add(request.url.path);
+        if (request.url.path == '/watch') {
+          return http.Response('"INNERTUBE_API_KEY":"test-key"', 200);
+        }
+        if (request.url.path == '/youtubei/v1/player') {
+          return http.Response(
+            jsonEncode({
+              'playabilityStatus': {'status': 'OK'},
+              'streamingData': {
+                'adaptiveFormats': [
+                  {
+                    'itag': 140,
+                    'url': 'https://rr1---test.googlevideo.com/plain.m4a',
+                    'mimeType': 'audio/mp4',
+                    'bitrate': 128000,
+                    'audioSampleRate': '44100',
+                  },
+                ],
+              },
+            }),
+            200,
+          );
+        }
+        // If the extractor probed the media URL it would get this 403 and
+        // (correctly) reject the candidate. The low-latency path must never
+        // reach it.
+        return http.Response('rejected', 403);
+      });
+      final extractor = YoutubeAudioExtractor(client: client);
+      try {
+        final result = await extractor
+            .getAudioUrl('test-video', verifyStream: false)
+            .timeout(const Duration(seconds: 1));
+        expect(result?.url, 'https://rr1---test.googlevideo.com/plain.m4a');
+        expect(
+          hits.where((p) => p.endsWith('.m4a')),
+          isEmpty,
+          reason: 'verifyStream: false must not probe googlevideo hosts',
+        );
+      } finally {
+        client.close();
+      }
+    },
+  );
 }

@@ -306,9 +306,14 @@ class MusicDownloadService extends ChangeNotifier {
         }
       }
 
-      // YouTube fallback or primary
+      // YouTube fallback or primary. Downloads have no candidate fallback if
+      // the CDN rejects the URL, so ask for a verified stream here; playback
+      // takes the fast unprobed path and recovers via nextReachableCandidate.
       if (streamUrl == null || streamUrl.isEmpty) {
-        final yt = await YoutubeStreamResolver.instance.resolveUrl(track);
+        final yt = await YoutubeStreamResolver.instance.resolveUrl(
+          track,
+          verifyStream: true,
+        );
         if (yt != null && yt.url.isNotEmpty) {
           streamUrl = yt.url;
           format = 'm4a';

@@ -7,6 +7,9 @@ import '../../models/movie/movie_detail.dart';
 import '../../models/movie/video.dart';
 import '../../models/stream/stream_model.dart';
 import 'kitsu_resolver.dart';
+// `AniDbEpisode` is only a plain model type now; the AniDb HTTP extractor is
+// no longer called (anidb.app 302s every path to an APK landing page). Kept as
+// the episode-list extension point for toMovieDetail.
 import 'extractors/anidb_extractor.dart';
 import 'extractors/megaplay_extractor.dart';
 import 'extractors/recloud_extractor.dart';
@@ -15,11 +18,8 @@ import 'extractors/watchhentai_extractor.dart';
 import 'extractors/hentaini_extractor.dart';
 import 'extractors/dulo_extractor.dart';
 import 'extractors/luna_extractor.dart';
-import 'extractors/anineko_extractor.dart';
-import 'extractors/one_two_three_anime_extractor.dart';
 import 'extractors/anihq_extractor.dart';
 import 'extractors/anipm_extractor.dart';
-import 'extractors/vidnest_extractor.dart';
 
 class AnimeScraperService {
   static final AnimeScraperService instance = AnimeScraperService._internal();
@@ -28,17 +28,18 @@ class AnimeScraperService {
   final MegaPlayExtractor _megaPlay = MegaPlayExtractor.instance;
   final ReCloudExtractor _reCloud = ReCloudExtractor.instance;
   final TryEmbedExtractor _tryEmbed = TryEmbedExtractor.instance;
-  final AniDbExtractor _aniDb = AniDbExtractor.instance;
   final DuloExtractor _dulo = DuloExtractor.instance;
   final LunaExtractor _luna = LunaExtractor.instance;
-  final AniNekoExtractor _aniNeko = AniNekoExtractor.instance;
-  final OneTwoThreeAnimeExtractor _oneTwoThreeAnime =
-      OneTwoThreeAnimeExtractor.instance;
   final AniHQExtractor _aniHQ = AniHQExtractor.instance;
   final AniPMExtractor _aniPM = AniPMExtractor.instance;
-  final VidNestExtractor _vidNest = VidNestExtractor.instance;
   final WatchHentaiExtractor _watchHentai = WatchHentaiExtractor();
   final HentainiExtractor _hentaini = HentainiExtractor();
+
+  /// Hard ceiling for a single provider inside a scrape fan-out. Results are
+  /// streamed as they arrive, but `Future.wait(tasks)` gates `controller.close()`,
+  /// so one dead host used to keep the sheet spinning until its own internal
+  /// timeout expired. Live providers answer in ~1-3 s, so 10 s is generous.
+  static const Duration _providerTimeout = Duration(seconds: 10);
 
   static String cleanAnimeTitle(String raw) {
     var s = raw;
@@ -80,7 +81,17 @@ class AnimeScraperService {
         if (RemoteConfigService.isKilled(key)) {
           return;
         }
-        tasks.add(run());
+        tasks.add(
+          run().timeout(
+            _providerTimeout,
+            onTimeout: () {
+              if (kDebugMode) {
+                debugPrint('[AnimeScraper] $key timed out');
+              }
+              return null;
+            },
+          ),
+        );
       }
 
       final cats = categoryFilter != null
@@ -233,50 +244,7 @@ class AnimeScraperService {
         );
       }
 
-      // 4. AniDB Provider (Sub & Dub)
-      if (titleCandidates.isNotEmpty) {
-        for (final cat in cats) {
-          addTask(
-            'anidb',
-            () => _aniDb
-                .extract(
-                  titleCandidates: titleCandidates,
-                  episodeNumber: episodeNumber,
-                  category: cat,
-                )
-                .then((res) {
-                  if (res != null &&
-                      res.url.isNotEmpty &&
-                      seenUrls.add(res.url) &&
-                      !controller.isClosed) {
-                    final catUpper = cat.toUpperCase();
-                    controller.add(
-                      StreamSource(
-                        name: '⚡ AniDB • $catUpper',
-                        title:
-                            '${anime.displayTitle} • Ep $episodeNumber [AniDB • $catUpper]',
-                        description: 'AniDB • Master HLS • $catUpper',
-                        url: res.url,
-                        addonName: 'AniDB',
-                        headers: res.headers,
-                        behaviorHints: {
-                          'notWebReady': false,
-                          'proxyHeaders': {'request': res.headers},
-                        },
-                      ),
-                    );
-                  }
-                })
-                .catchError((e) {
-                  if (kDebugMode) {
-                    debugPrint('[AnimeScraper] AniDB ($cat) error: $e');
-                  }
-                }),
-          );
-        }
-      }
-
-      // 5. Dulo Provider (Direct HLS Streams)
+      // 4. Dulo Provider (Direct HLS Streams)
       addTask(
         'dulo',
         () => _dulo
@@ -309,7 +277,7 @@ class AnimeScraperService {
             }),
       );
 
-      // 6. Luna Provider (Sub & Dub)
+      // 5. Luna Provider (Sub & Dub)
       for (final cat in cats) {
         addTask(
           'luna',
@@ -352,89 +320,7 @@ class AnimeScraperService {
         );
       }
 
-      // 7. AniNeko Provider (Sub & Dub)
-      if (titleCandidates.isNotEmpty) {
-        for (final cat in cats) {
-          addTask(
-            'anineko',
-            () => _aniNeko
-                .extract(
-                  titleCandidates: titleCandidates,
-                  episodeNumber: episodeNumber,
-                  category: cat,
-                )
-                .then((results) {
-                  for (final res in results) {
-                    if (res.url.isNotEmpty &&
-                        seenUrls.add(res.url) &&
-                        !controller.isClosed) {
-                      final catUpper = cat.toUpperCase();
-                      controller.add(
-                        StreamSource(
-                          name: '⚡ AniNeko • $catUpper',
-                          title:
-                              '${anime.displayTitle} • Ep $episodeNumber [AniNeko • $catUpper]',
-                          description: 'AniNeko • Master HLS • $catUpper',
-                          url: res.url,
-                          addonName: 'AniNeko',
-                          headers: res.headers,
-                          behaviorHints: {
-                            'notWebReady': false,
-                            'proxyHeaders': {'request': res.headers},
-                          },
-                        ),
-                      );
-                    }
-                  }
-                })
-                .catchError((e) {
-                  if (kDebugMode) {
-                    debugPrint('[AnimeScraper] AniNeko ($cat) error: $e');
-                  }
-                }),
-          );
-        }
-      }
-
-      // 8. 123Anime Provider
-      if (titleCandidates.isNotEmpty) {
-        addTask(
-          '123anime',
-          () => _oneTwoThreeAnime
-              .extract(
-                titleCandidates: titleCandidates,
-                episodeNumber: episodeNumber,
-              )
-              .then((results) {
-                for (final res in results) {
-                  if (res.url.isNotEmpty &&
-                      seenUrls.add(res.url) &&
-                      !controller.isClosed) {
-                    controller.add(
-                      StreamSource(
-                        name: '⚡ 123Anime • EchoVideo',
-                        title:
-                            '${anime.displayTitle} • Ep $episodeNumber [123Anime]',
-                        description: '123Anime • EchoVideo Master HLS',
-                        url: res.url,
-                        addonName: '123Anime',
-                        headers: res.headers,
-                        behaviorHints: {
-                          'notWebReady': false,
-                          'proxyHeaders': {'request': res.headers},
-                        },
-                      ),
-                    );
-                  }
-                }
-              })
-              .catchError((e) {
-                if (kDebugMode) debugPrint('[AnimeScraper] 123Anime error: $e');
-              }),
-        );
-      }
-
-      // 9. AniHQ Provider (Sub & Dub)
+      // 6. AniHQ Provider (Sub & Dub)
       if (titleCandidates.isNotEmpty) {
         for (final cat in cats) {
           addTask(
@@ -479,7 +365,7 @@ class AnimeScraperService {
         }
       }
 
-      // 10. AniPM Provider (Sub & Dub)
+      // 7. AniPM Provider (Sub & Dub)
       for (final cat in cats) {
         addTask(
           'anipm',
@@ -523,50 +409,7 @@ class AnimeScraperService {
         );
       }
 
-      // 11. VidNest Provider (Sub & Dub)
-      for (final cat in cats) {
-        addTask(
-          'vidnest',
-          () => _vidNest
-              .extract(
-                anilistId: anime.id,
-                episodeNumber: episodeNumber,
-                category: cat,
-              )
-              .then((results) {
-                for (final res in results) {
-                  if (res.url.isNotEmpty &&
-                      seenUrls.add(res.url) &&
-                      !controller.isClosed) {
-                    final catUpper = cat.toUpperCase();
-                    controller.add(
-                      StreamSource(
-                        name: '⚡ VidNest • $catUpper',
-                        title:
-                            '${anime.displayTitle} • Ep $episodeNumber [VidNest • $catUpper]',
-                        description:
-                            'VidNest (${res.server}) • Master HLS • $catUpper',
-                        url: res.url,
-                        addonName: 'VidNest',
-                        headers: res.headers,
-                        behaviorHints: {
-                          'notWebReady': false,
-                          'proxyHeaders': {'request': res.headers},
-                        },
-                      ),
-                    );
-                  }
-                }
-              })
-              .catchError((e) {
-                if (kDebugMode) {
-                  debugPrint('[AnimeScraper] VidNest ($cat) error: $e');
-                }
-              }),
-        );
-      }
-
-      // 12. Fallback Hentai extractors for NSFW/Ecchi anime
+      // 8. Fallback Hentai extractors for NSFW/Ecchi anime
       final isAdult = anime.genres.any(
         (g) =>
             g.toLowerCase().contains('hentai') ||
@@ -632,7 +475,7 @@ class AnimeScraperService {
         );
       }
 
-      // 13. Stremio addons through Kitsu — Torrentio / AcuAnime. A provider
+      // 9. Stremio addons through Kitsu — Torrentio / AcuAnime. A provider
       // changing its response shape kills one native extractor; the addon
       // pool keeps the episode playable.
       addTask(
@@ -658,9 +501,18 @@ class AnimeScraperService {
         },
       );
 
-      await Future.wait(tasks);
-      if (!controller.isClosed) {
-        controller.close();
+      // `close()` must run even if a provider rejects. Previously an escaping
+      // error skipped the close entirely and the source sheet never terminated.
+      try {
+        await Future.wait(tasks);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[AnimeScraper] fan-out error: $e');
+        }
+      } finally {
+        if (!controller.isClosed) {
+          controller.close();
+        }
       }
     }();
 
@@ -692,7 +544,17 @@ class AnimeScraperService {
         if (RemoteConfigService.isKilled(key)) {
           return;
         }
-        tasks.add(run());
+        tasks.add(
+          run().timeout(
+            _providerTimeout,
+            onTimeout: () {
+              if (kDebugMode) {
+                debugPrint('[AnimeScraper] $key timed out');
+              }
+              return null;
+            },
+          ),
+        );
       }
 
       final cats = categoryFilter != null
@@ -888,50 +750,7 @@ class AnimeScraperService {
         );
       }
 
-      // 5. AniDB Provider (Sub & Dub)
-      if (titleCandidates.isNotEmpty) {
-        for (final cat in cats) {
-          addTask(
-            'anidb',
-            () => _aniDb
-                .extract(
-                  titleCandidates: titleCandidates,
-                  episodeNumber: episodeNumber,
-                  category: cat,
-                )
-                .then((res) {
-                  if (res != null &&
-                      res.url.isNotEmpty &&
-                      seenUrls.add(res.url) &&
-                      !controller.isClosed) {
-                    final catUpper = cat.toUpperCase();
-                    controller.add(
-                      StreamSource(
-                        name: '⚡ AniDB • $catUpper',
-                        title:
-                            '$cleanTitle • Ep $episodeNumber [AniDB • $catUpper]',
-                        description: 'AniDB • Master HLS • $catUpper',
-                        url: res.url,
-                        addonName: 'AniDB',
-                        headers: res.headers,
-                        behaviorHints: {
-                          'notWebReady': false,
-                          'proxyHeaders': {'request': res.headers},
-                        },
-                      ),
-                    );
-                  }
-                })
-                .catchError((e) {
-                  if (kDebugMode) {
-                    debugPrint('[AnimeScraper] In-player AniDB error: $e');
-                  }
-                }),
-          );
-        }
-      }
-
-      // 6. Luna Provider (Sub & Dub)
+      // 5. Luna Provider (Sub & Dub)
       if (anilistId != null && anilistId > 0) {
         for (final cat in cats) {
           addTask(
@@ -978,92 +797,7 @@ class AnimeScraperService {
         }
       }
 
-      // 7. AniNeko Provider (Sub & Dub)
-      if (titleCandidates.isNotEmpty) {
-        for (final cat in cats) {
-          addTask(
-            'anineko',
-            () => _aniNeko
-                .extract(
-                  titleCandidates: titleCandidates,
-                  episodeNumber: episodeNumber,
-                  category: cat,
-                )
-                .then((results) {
-                  for (final res in results) {
-                    if (res.url.isNotEmpty &&
-                        seenUrls.add(res.url) &&
-                        !controller.isClosed) {
-                      final catUpper = cat.toUpperCase();
-                      controller.add(
-                        StreamSource(
-                          name: '⚡ AniNeko • $catUpper',
-                          title:
-                              '$cleanTitle • Ep $episodeNumber [AniNeko • $catUpper]',
-                          description: 'AniNeko • Master HLS • $catUpper',
-                          url: res.url,
-                          addonName: 'AniNeko',
-                          headers: res.headers,
-                          behaviorHints: {
-                            'notWebReady': false,
-                            'proxyHeaders': {'request': res.headers},
-                          },
-                        ),
-                      );
-                    }
-                  }
-                })
-                .catchError((e) {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[AnimeScraper] In-player AniNeko ($cat) error: $e',
-                    );
-                  }
-                }),
-          );
-        }
-      }
-
-      // 8. 123Anime Provider
-      if (titleCandidates.isNotEmpty) {
-        addTask(
-          '123anime',
-          () => _oneTwoThreeAnime
-              .extract(
-                titleCandidates: titleCandidates,
-                episodeNumber: episodeNumber,
-              )
-              .then((results) {
-                for (final res in results) {
-                  if (res.url.isNotEmpty &&
-                      seenUrls.add(res.url) &&
-                      !controller.isClosed) {
-                    controller.add(
-                      StreamSource(
-                        name: '⚡ 123Anime • EchoVideo',
-                        title: '$cleanTitle • Ep $episodeNumber [123Anime]',
-                        description: '123Anime • EchoVideo Master HLS',
-                        url: res.url,
-                        addonName: '123Anime',
-                        headers: res.headers,
-                        behaviorHints: {
-                          'notWebReady': false,
-                          'proxyHeaders': {'request': res.headers},
-                        },
-                      ),
-                    );
-                  }
-                }
-              })
-              .catchError((e) {
-                if (kDebugMode) {
-                  debugPrint('[AnimeScraper] In-player 123Anime error: $e');
-                }
-              }),
-        );
-      }
-
-      // 9. AniHQ Provider (Sub & Dub)
+      // 6. AniHQ Provider (Sub & Dub)
       if (titleCandidates.isNotEmpty) {
         for (final cat in cats) {
           addTask(
@@ -1110,7 +844,7 @@ class AnimeScraperService {
         }
       }
 
-      // 10. AniPM Provider (Sub & Dub)
+      // 7. AniPM Provider (Sub & Dub)
       if (anilistId != null && anilistId > 0) {
         for (final cat in cats) {
           addTask(
@@ -1158,54 +892,7 @@ class AnimeScraperService {
         }
       }
 
-      // 11. VidNest Provider (Sub & Dub)
-      if (anilistId != null && anilistId > 0) {
-        for (final cat in cats) {
-          addTask(
-            'vidnest',
-            () => _vidNest
-                .extract(
-                  anilistId: anilistId,
-                  episodeNumber: episodeNumber,
-                  category: cat,
-                )
-                .then((results) {
-                  for (final res in results) {
-                    if (res.url.isNotEmpty &&
-                        seenUrls.add(res.url) &&
-                        !controller.isClosed) {
-                      final catUpper = cat.toUpperCase();
-                      controller.add(
-                        StreamSource(
-                          name: '⚡ VidNest • $catUpper',
-                          title:
-                              '$cleanTitle • Ep $episodeNumber [VidNest • $catUpper]',
-                          description:
-                              'VidNest (${res.server}) • Master HLS • $catUpper',
-                          url: res.url,
-                          addonName: 'VidNest',
-                          headers: res.headers,
-                          behaviorHints: {
-                            'notWebReady': false,
-                            'proxyHeaders': {'request': res.headers},
-                          },
-                        ),
-                      );
-                    }
-                  }
-                })
-                .catchError((e) {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[AnimeScraper] In-player VidNest ($cat) error: $e',
-                    );
-                  }
-                }),
-          );
-        }
-      }
-
-      // 12. Fallback Hentai extractors
+      // 8. Fallback Hentai extractors
       if (titleCandidates.isNotEmpty) {
         addTask(
           'watchhentai',
@@ -1262,7 +949,7 @@ class AnimeScraperService {
         );
       }
 
-      // 13. Stremio addons through Kitsu — Torrentio / AcuAnime.
+      // 9. Stremio addons through Kitsu — Torrentio / AcuAnime.
       addTask(
         'kitsu_addons',
         () async {
@@ -1285,9 +972,18 @@ class AnimeScraperService {
         },
       );
 
-      await Future.wait(tasks);
-      if (!controller.isClosed) {
-        controller.close();
+      // `close()` must run even if a provider rejects. Previously an escaping
+      // error skipped the close entirely and the source sheet never terminated.
+      try {
+        await Future.wait(tasks);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[AnimeScraper] fan-out error: $e');
+        }
+      } finally {
+        if (!controller.isClosed) {
+          controller.close();
+        }
       }
     }();
 

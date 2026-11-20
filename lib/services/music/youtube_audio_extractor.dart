@@ -237,12 +237,17 @@ class YoutubeAudioExtractor {
     var result = await _extractAudioInternal(
       videoId,
       forceRefreshConfig: false,
+      verifyStream: verifyStream,
     );
     if (result == null) {
       _log(
         'First extraction attempt failed for $videoId, retrying with fresh config...',
       );
-      result = await _extractAudioInternal(videoId, forceRefreshConfig: true);
+      result = await _extractAudioInternal(
+        videoId,
+        forceRefreshConfig: true,
+        verifyStream: verifyStream,
+      );
     }
 
     if (result != null) {
@@ -263,7 +268,13 @@ class YoutubeAudioExtractor {
     Duration? targetDuration,
     String? titleVersion,
     bool verifyStream = true,
+    Duration budget = const Duration(seconds: 10),
   }) async {
+    // The resolver wraps this call in a 12 s timeout. Enforce an internal
+    // deadline too, so three slow candidates can never sum past the outer
+    // budget: 3 x 7 s previously guaranteed a timeout and a fallthrough to
+    // the 30 s Deezer preview even when YouTube was healthy.
+    final deadline = DateTime.now().add(budget);
     final ids = await searchVideoIds(
       title,
       artist,
@@ -271,9 +282,17 @@ class YoutubeAudioExtractor {
       titleVersion: titleVersion,
     );
     for (final id in ids.take(3)) {
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= const Duration(milliseconds: 250)) {
+        _log('extract budget exhausted before candidate $id');
+        break;
+      }
       try {
+        final perCandidate = remaining < const Duration(seconds: 7)
+            ? remaining
+            : const Duration(seconds: 7);
         final res = await getAudioUrl(id, verifyStream: verifyStream).timeout(
-          const Duration(seconds: 7),
+          perCandidate,
           onTimeout: () {
             _log('candidate $id timed out');
             return null;
@@ -296,6 +315,7 @@ class YoutubeAudioExtractor {
   Future<({String url, String userAgent})?> _extractAudioInternal(
     String videoId, {
     required bool forceRefreshConfig,
+    bool verifyStream = true,
   }) async {
     final config = await _ensureConfig(forceRefresh: forceRefreshConfig);
     int loginRequiredCount = 0;
@@ -388,6 +408,33 @@ class YoutubeAudioExtractor {
         ranked.addAll(
           candidates.map((c) => (url: c.url, userAgent: c.userAgent)),
         );
+
+        // `verifyStream: false` is the low-latency path: the caller only needs
+        // a signed URL to hand to media_kit, and the native player falls back
+        // through [nextReachableCandidate] if the CDN rejects it. Probing every
+        // node here burned the entire resolver budget and dropped playback onto
+        // the 30 s Deezer preview instead of the real track.
+        if (!verifyStream) {
+          if (candidates.isEmpty) continue;
+          final best = candidates.first;
+          // A client that only offers `n`-throttled URLs would stream at a
+          // crawl through media_kit, so prefer a lower-priority client that
+          // still hands out a plain, unthrottled URL.
+          if (best.hasN && candidates.every((c) => c.hasN)) {
+            _log(
+              'Client ${client.key} only offered n-throttled URLs, '
+              'trying next client',
+            );
+            continue;
+          }
+          _log(
+            'Handing off unprobed audio URL (client=${best.clientKey}, '
+            'itag=${best.itag}, ext=${best.ext}, hasN=${best.hasN})',
+          );
+          _servedCandidateIndex[videoId] = baseIndex;
+          return (url: best.url, userAgent: best.userAgent);
+        }
+
         for (var i = 0; i < candidates.length; i++) {
           final best = candidates[i];
           final reachableUrl = await _resolveReachableUrl(

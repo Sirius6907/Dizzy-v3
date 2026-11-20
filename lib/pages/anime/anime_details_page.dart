@@ -8,7 +8,6 @@ import '../../models/anime/anime_media.dart';
 import '../../design/prism_tokens.dart';
 import '../../services/anime/anilist_service.dart';
 import '../../services/anime/anime_library_service.dart';
-import '../../services/anime/extractors/anidb_extractor.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../../utils/navigation/route_transitions.dart';
 import '../../widgets/common/animated_ambient_background.dart';
@@ -82,7 +81,6 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
 
   int _selectedEpisodeBatch = 0; // 50 episodes per chunk
   int? _highlightedEpisode;
-  List<AniDbEpisode>? _aniDbEpisodes;
 
   static const int _chunkSize = 50;
 
@@ -130,7 +128,6 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
 
     _animController.forward();
     _loadDetails();
-    _resolveAniDbEpisodes();
 
     _castScrollController.addListener(_updateCastScrollButtons);
     _relationsScrollController.addListener(_updateRelationsScrollButtons);
@@ -164,29 +161,7 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
     }
   }
 
-  void _resolveAniDbEpisodes() async {
-    try {
-      final slug = await AniDbExtractor.instance.mapAnime(
-        titleCandidates: [
-          _anime.titleEnglish,
-          _anime.titleRomaji,
-          _anime.titleNative,
-          _anime.titleUserPreferred,
-        ].where((t) => t.isNotEmpty).toList(),
-      );
-      if (slug != null) {
-        final episodes = await AniDbExtractor.instance.getEpisodes(slug);
-        if (episodes != null && mounted) {
-          setState(() => _aniDbEpisodes = episodes);
-        }
-      }
-    } catch (_) {}
-  }
-
   int get _computedTotalEpisodes {
-    if (_aniDbEpisodes != null && _aniDbEpisodes!.isNotEmpty) {
-      return _aniDbEpisodes!.length;
-    }
     if (_anime.totalEpisodes > 0) return _anime.totalEpisodes;
     if (_anime.nextAiring != null && _anime.nextAiring!.episode > 1) {
       return _anime.nextAiring!.episode - 1;
@@ -262,7 +237,6 @@ class _AnimeDetailsPageState extends State<AnimeDetailsPage>
         anime: _anime,
         episodeNumber: episodeNumber,
         autoPlay: true,
-        aniDbEpisodes: _aniDbEpisodes,
         totalEpisodes: _computedTotalEpisodes,
         // The SUB / DUB toggle on this page is the user's choice:
         // SUB = original Japanese audio with English subtitles,

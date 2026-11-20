@@ -13,7 +13,6 @@ import 'package:flutter/services.dart';
 import '../../models/anime/anime_media.dart';
 import '../../services/anime/anilist_service.dart';
 import '../../services/anime/anime_library_service.dart';
-import '../../services/anime/extractors/anidb_extractor.dart';
 import '../../widgets/common/performance_liquid_lens.dart';
 
 class AnimeDetailsModal extends StatefulWidget {
@@ -40,7 +39,6 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
   bool _isDub = false;
   int _selectedEpisodeBatch = 0; // 50 episodes per batch
   int? _highlightedEpisode;
-  List<AniDbEpisode>? _aniDbEpisodes;
 
   final TextEditingController _jumpEpController = TextEditingController();
   final FocusNode _keyboardFocusNode = FocusNode();
@@ -52,7 +50,6 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
     super.initState();
     _anime = widget.initialAnime;
     _fetchFullDetails();
-    _resolveAniDbEpisodes();
   }
 
   @override
@@ -64,11 +61,9 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
         _isLoadingDetails = true;
         _selectedEpisodeBatch = 0;
         _highlightedEpisode = null;
-        _aniDbEpisodes = null;
       });
       _jumpEpController.clear();
       _fetchFullDetails();
-      _resolveAniDbEpisodes();
     }
   }
 
@@ -91,31 +86,7 @@ class _AnimeDetailsModalState extends State<AnimeDetailsModal> {
     }
   }
 
-  void _resolveAniDbEpisodes() async {
-    try {
-      final slug = await AniDbExtractor.instance.mapAnime(
-        titleCandidates: [
-          _anime.titleEnglish,
-          _anime.titleRomaji,
-          _anime.titleNative,
-          _anime.titleUserPreferred,
-        ].where((t) => t.isNotEmpty).toList(),
-      );
-      if (slug != null) {
-        final episodes = await AniDbExtractor.instance.getEpisodes(slug);
-        if (episodes != null && mounted) {
-          setState(() {
-            _aniDbEpisodes = episodes;
-          });
-        }
-      }
-    } catch (_) {}
-  }
-
   int get _computedTotalEpisodes {
-    if (_aniDbEpisodes != null && _aniDbEpisodes!.isNotEmpty) {
-      return _aniDbEpisodes!.length;
-    }
     if (_anime.totalEpisodes > 0) return _anime.totalEpisodes;
     if (_anime.nextAiring != null && _anime.nextAiring!.episode > 1) {
       return _anime.nextAiring!.episode - 1;

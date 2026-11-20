@@ -14,6 +14,7 @@ class _Extractor extends Fake implements YoutubeAudioExtractor {
     Duration? targetDuration,
     String? titleVersion,
     bool verifyStream = true,
+    Duration budget = const Duration(seconds: 10),
   }) async => (
     videoId: 'test-video',
     audioUrl: refreshed
