@@ -1,11 +1,8 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'cloud_client.dart';
-import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
 import '../my_list/my_list_service.dart';
 import '../continue_watching/continue_watching_service.dart';
@@ -75,43 +72,10 @@ class CloudAuthService {
       CloudClient.db.auth.onAuthStateChange.listen((data) {
         signedIn.value = data.session?.user != null;
       });
-      // Install telemetry is consent-gated. Auth itself remains anonymous
-      // and local-first; no installs row until user explicitly opts in.
-      if (consentTelemetry.value) await _upsertInstall();
+      // The install ledger is `devices`, written by device_boot() on every
+      // launch — nothing to upsert from here.
     } catch (e) {
       AppLog.d('[CloudAuth] anon sign-in failed (soft): $e');
-    }
-  }
-
-  static Future<void> _upsertInstall() async {
-    if (!CloudClient.isReady || _anonId == null) return;
-    try {
-      String platform = 'unknown';
-      if (Platform.isAndroid) platform = 'android';
-      if (Platform.isWindows) platform = 'windows';
-      if (Platform.isLinux) platform = 'linux';
-      final uid = CloudClient.db.auth.currentUser?.id;
-      if (uid == null) return;
-      await CloudClient.db.from('installs').upsert({
-        'owner_user_id': uid,
-        'anon_id': _anonId!,
-        'device_code': DeviceIdService.deviceCode.value,
-        'platform': platform,
-        'app_version': await _appVersion(),
-        'last_seen_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'owner_user_id');
-    } catch (e) {
-      AppLog.d('[CloudAuth] install upsert failed (soft): $e');
-    }
-  }
-
-  /// Real app version from the installed package (never a hardcoded guess).
-  static Future<String> _appVersion() async {
-    try {
-      final pkg = await PackageInfo.fromPlatform();
-      return pkg.version;
-    } catch (_) {
-      return 'unknown';
     }
   }
 
@@ -170,7 +134,6 @@ class CloudAuthService {
       await prefs.setBool(_keyWatchParty, watchParty);
     }
     await _pushConsents();
-    if (consentTelemetry.value) await _upsertInstall();
   }
 
   /// Push consent row to cloud (soft-fail). Only when cloud ready.
@@ -203,7 +166,13 @@ class CloudAuthService {
           .delete()
           .eq('owner_user_id', uid);
       await CloudClient.db.from('consents').delete().eq('owner_user_id', uid);
-      await CloudClient.db.from('installs').delete().eq('owner_user_id', uid);
+      // Legal acceptance is evidence, so it is only removable through a
+      // definer function that acts on auth.uid() alone.
+      try {
+        await CloudClient.db.rpc('delete_my_legal_acceptance');
+      } catch (e) {
+        AppLog.d('[CloudAuth] legal acceptance delete failed (soft): $e');
+      }
       if (uid.isNotEmpty) {
         await CloudClient.db.from('cloud_backups').delete().eq('user_id', uid);
         await CloudClient.db.from('profiles').delete().eq('user_id', uid);

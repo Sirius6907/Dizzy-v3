@@ -38,6 +38,7 @@ import '../../widgets/p2p/p2p_warning_dialog.dart';
 import '../../widgets/cloud/consent_onboarding_sheet.dart';
 import '../../widgets/onboarding/username_gate_screen.dart';
 import '../../services/cloud/cloud_auth_service.dart';
+import '../../services/legal/legal_acceptance_service.dart';
 
 /// Trending row (P22 warm catalog edge feed → snapshot → hidden).
 /// Fail-soft by design: offline/empty = no row, never an error.
@@ -188,7 +189,11 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
 
     // S2 (v1.1.9): consent is explicit and shown once, after other startup UI.
-    if (!CloudAuthService.onboarded.value) {
+    // v1.4.3: also re-opened when the legal text moved past the version this
+    // install agreed to — the sheet keeps the saved switches, so a re-prompt
+    // never resets anyone's choices.
+    if (!CloudAuthService.onboarded.value ||
+        LegalAcceptanceService.needsAcceptance) {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,

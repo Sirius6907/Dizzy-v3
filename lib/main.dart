@@ -82,6 +82,7 @@ import './services/system/desktop_database.dart';
 import './utils/perf/performance_mode.dart';
 import './services/watchparty/party_session.dart';
 import './services/heartbeat/heartbeat_service.dart';
+import './services/legal/legal_acceptance_service.dart';
 import './services/media/media_session_bridge.dart';
 import './services/watchparty/voice_background_gate.dart';
 import './services/watchparty/guest_auto_open.dart';
@@ -206,6 +207,10 @@ void main() async {
   // because init() was never called). All cloud writes stay fail-soft.
   // ignore: unawaited_futures
   CloudClient.init().then((_) => CloudAuthService.init()).then((_) async {
+    // v1.4.3: what this install already agreed to, and — if the server has a
+    // newer row for this uid — the authoritative date. Read before the
+    // onboarding gate so the gate does not flash for someone who agreed.
+    await LegalAcceptanceService.init();
     // The device boot registers this device and — when the session behind it
     // changed (an update or a reinstall) — carries the @username over to the
     // new session. The username and the gate must be read AFTER that, or the

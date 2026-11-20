@@ -11,7 +11,10 @@ import '../../widgets/prism/prism_card.dart';
 import '../../services/cloud/cloud_auth_service.dart';
 import '../../services/heartbeat/heartbeat_service.dart';
 import '../../services/cloud/cloud_client.dart';
+import '../../services/legal/legal_acceptance_service.dart';
+import '../../services/legal/legal_terms.dart';
 import '../../services/theme/app_theme_service.dart';
+import '../legal/legal_page.dart';
 
 /// S2 (v1.1.9): Settings → Privacy. Device identity + consent toggles + delete button.
 class PrivacySettingsPage extends StatefulWidget {
@@ -122,6 +125,55 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     style: TextStyle(color: inkSoft, fontSize: 12),
                   ),
                 ),
+              _sectionTitle('Terms & privacy'),
+              ValueListenableBuilder<String?>(
+                valueListenable: LegalAcceptanceService.acceptedVersion,
+                builder: (context, accepted, _) {
+                  final pending = accepted != LegalTerms.version;
+                  return ValueListenableBuilder<DateTime?>(
+                    valueListenable: LegalAcceptanceService.acceptedAt,
+                    builder: (context, at, __) => ListTile(
+                      leading: Icon(
+                        pending
+                            ? Icons.gavel_rounded
+                            : Icons.verified_user_rounded,
+                        color: pending
+                            ? (isLight
+                                  ? PrismAccent.starTextLight
+                                  : Colors.orangeAccent)
+                            : (isLight
+                                  ? PrismAccent.successTextLight
+                                  : Colors.greenAccent),
+                      ),
+                      title: Text(
+                        pending
+                            ? 'Terms & Privacy updated'
+                            : 'Terms & Privacy',
+                        style: TextStyle(color: ink),
+                      ),
+                      subtitle: Text(
+                        pending
+                            ? 'Version ${LegalTerms.version} needs your agreement. Tap to read and agree.'
+                            : 'Accepted v$accepted on ${LegalAcceptanceService.describeAcceptedAt(at)}.',
+                        style: TextStyle(color: inkSoft, fontSize: 12),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: inkSoft,
+                      ),
+                      onTap: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const LegalPage()),
+                        );
+                        // The page can accept on the way out; re-read so the
+                        // row is honest the moment it is visible again.
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
               _sectionTitle('What Dizzy may collect'),
               ValueListenableBuilder<bool>(
                 valueListenable: CloudAuthService.consentTelemetry,
@@ -349,7 +401,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                   style: TextStyle(color: ink),
                 ),
                 subtitle: Text(
-                  'Removes installs, consents, scores, backups, profiles, rooms & chat. Local app untouched.',
+                  'Removes consents, taste scores, backups, profiles, rooms, chat & legal acceptance. This device stays registered so admin blocks hold. Local app untouched.',
                   style: TextStyle(color: inkSoft, fontSize: 12),
                 ),
                 trailing: _deleting
