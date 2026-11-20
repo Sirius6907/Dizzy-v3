@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Collapsed "now playing" card. One row only: the shade clips anything
+     taller than the collapsed notification height, so the transport row and
+     the progress bar live in np_expanded.xml. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/np_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:baselineAligned="false"
+    android:background="@drawable/bg_np_card"
+    android:paddingStart="10dp"
+    android:paddingEnd="6dp"
+    android:paddingTop="9dp"
+    android:paddingBottom="9dp">
+
+    <ImageView
+        android:id="@+id/np_art"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/bg_np_art"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/np_artwork" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/np_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="14sp"
+            android:textColor="#FFF5F7FF"
+            android:text="@string/np_default_title" />
+
+        <TextView
+            android:id="@+id/np_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="11sp"
+            android:textColor="#FF9AA0B4" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/np_play"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@drawable/bg_np_play"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/np_play"
+        android:contentDescription="@string/np_play_pause" />
+
+    <ImageButton
+        android:id="@+id/np_close"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="2dp"
+        android:background="@android:color/transparent"
+        android:padding="9dp"
+        android:alpha="0.62"
+        android:scaleType="fitCenter"
+        android:src="@drawable/np_close"
+        android:contentDescription="@string/np_close" />
+</LinearLayout>

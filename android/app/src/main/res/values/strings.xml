@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Accessibility labels for the custom "now playing" RemoteViews card.
+         RemoteViews cannot resolve Flutter strings, so the card owns its
+         own copy. -->
+    <string name="np_artwork">Album artwork</string>
+    <string name="np_default_title">Now playing</string>
+    <string name="np_play_pause">Play or pause</string>
+    <string name="np_close">Close now playing</string>
+    <string name="np_rewind">Back 10 seconds</string>
+    <string name="np_previous">Previous</string>
+    <string name="np_next">Next</string>
+    <string name="np_forward">Forward 10 seconds</string>
+    <string name="np_playing">Playing</string>
+    <string name="np_paused">Paused</string>
+</resources>

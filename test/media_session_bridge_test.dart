@@ -204,6 +204,62 @@ void main() {
     });
   });
 
+  group('the close (X) button dismisses the card', () {
+    var closes = 0;
+
+    setUp(() async {
+      closes = 0;
+      await MediaSessionBridge.attach(
+        MediaSessionActions(onClose: () async => closes++),
+      );
+    });
+
+    Future<void> fromNative(String method) async {
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage(
+            channel.name,
+            const StandardMethodCodec().encodeMethodCall(MethodCall(method)),
+            (_) {},
+          );
+      await pumpEventQueue();
+    }
+
+    test('closing keeps a paused card down until playback resumes', () async {
+      await MediaSessionBridge.publish(track(playing: true), force: true);
+      expect(MediaSessionBridge.isRunning, isTrue);
+      calls.clear();
+
+      await fromNative('onClose');
+
+      expect(closes, 1, reason: 'the surface gets to pause itself');
+      expect(MediaSessionBridge.isDismissed, isTrue);
+      expect(MediaSessionBridge.isRunning, isFalse);
+      expect(calls, isEmpty, reason: 'the native side already tore down');
+
+      // The pause that follows the close must not put the card back.
+      await MediaSessionBridge.publish(track(playing: false), force: true);
+      expect(calls, isEmpty);
+
+      // Starting playback again is what earns the card back.
+      await MediaSessionBridge.publish(track(playing: true), force: true);
+      expect(calls.single.method, 'show');
+      expect(MediaSessionBridge.isDismissed, isFalse);
+      expect(MediaSessionBridge.isRunning, isTrue);
+    });
+
+    test('an explicit hide clears the dismissal', () async {
+      await MediaSessionBridge.publish(track(playing: true), force: true);
+      await fromNative('onClose');
+
+      // hide() is a no-op natively here, but it still says "we are done with
+      // this surface", so a paused push is allowed to draw a fresh card.
+      await MediaSessionBridge.hide();
+      await MediaSessionBridge.publish(track(playing: false), force: true);
+
+      expect(calls.where((c) => c.method == 'show').length, 2);
+    });
+  });
+
   test(
     'a refused foreground start never reports a running notification',
     () async {

@@ -19,25 +19,32 @@ import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.view.View
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
-// MediaStyle lives in androidx.media, not androidx.core.
-import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.core.app.ServiceCompat
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.util.Locale
 
 /**
  * Phase K1 — the "now playing" layer for music and audiobook playback.
  *
  * Dart owns playback (media_kit/mpv) and every decision about what plays
- * next; this service only renders that state as a MediaStyle notification
- * bound to a [MediaSessionCompat], so the same controls appear on the lock
- * screen, on Bluetooth headsets and in Android Auto.
+ * next; this service only renders that state as a custom card bound to a
+ * [MediaSessionCompat], so the same controls appear on the lock screen, on
+ * Bluetooth headsets and in Android Auto.
  *
- * Transport presses and audio-focus loss come back to Dart over the
- * method channel — the native side never decides what should play, and a
- * failed foreground start or a missing artwork file must never stop the
+ * The card is a hand-built [RemoteViews] layout instead of MediaStyle: the
+ * system MediaStyle body owns its own action row and silently drops anything
+ * we add, so a literal close (X) in the corner is only possible with our own
+ * layout. The media session is untouched — lock screen and Bluetooth keep
+ * working through [MediaSessionCompat].
+ *
+ * Transport presses, audio-focus loss and the close button come back to Dart
+ * over the method channel — the native side never decides what should play,
+ * and a failed foreground start or a missing artwork file must never stop the
  * music, so every path here is fail-soft.
  */
 class MediaPlaybackService : android.app.Service() {
@@ -48,13 +55,26 @@ class MediaPlaybackService : android.app.Service() {
         const val CH = "com.sirius6907.dizzyv3/media"
         private const val CHANNEL_NAME = "Now playing"
         private const val CMD = "cmd"
-        private const val ART_MAX_PX = 512
+
+        /**
+         * The card only ever draws a few dozen dp of cover art, so a small
+         * bitmap is enough — and it keeps the notification binder payload
+         * far below the transaction limit that a full-size cover can hit.
+         */
+        private const val ART_MAX_PX = 256
+        private const val THUMB_MAX_PX = 128
 
         private const val REQ_PREV = 6101
         private const val REQ_REW = 6102
         private const val REQ_PLAY = 6103
         private const val REQ_FFWD = 6104
         private const val REQ_NEXT = 6105
+
+        /** The corner (X). */
+        private const val REQ_CLOSE = 6106
+
+        /** Swipe-to-dismiss. Same command, separate intent so both fit. */
+        private const val REQ_SWIPED = 6107
 
         /** Set by [MainActivity] while the Flutter engine is alive. */
         var engine: FlutterEngine? = null
@@ -142,7 +162,22 @@ class MediaPlaybackService : android.app.Service() {
             "rew" -> sendToDart("onSeek", -10000L)
             "ffwd" -> sendToDart("onSeek", 10000L)
             "stop" -> sendToDart("onStop")
+            // The X (and a swipe) tear the card down and tell Dart to pause.
+            // Without the pause the audio would keep playing with no way back
+            // to the widget, which is worse than no button at all.
+            "close" -> closeFromUser()
         }
+    }
+
+    /**
+     * The user dismissed the card. Order matters: Dart is told first so the
+     * pause lands while the service is still alive, then focus is dropped and
+     * the foreground notification is removed.
+     */
+    private fun closeFromUser() {
+        sendToDart("onClose")
+        abandonFocus()
+        hide()
     }
 
     /** Draws (or refreshes) the notification and stays in the foreground. */
@@ -247,68 +282,97 @@ class MediaPlaybackService : android.app.Service() {
         duration: Long,
         art: Bitmap?
     ): Notification {
+        val state = subtitleOrState(subtitle, playing)
+        val thumb = thumbnail(art)
+
+        val compact = RemoteViews(packageName, R.layout.np_compact).apply {
+            bindArt(R.id.np_art, thumb)
+            setTextViewText(R.id.np_title, title)
+            setTextViewText(R.id.np_subtitle, state)
+            setImageViewResource(
+                R.id.np_play,
+                if (playing) R.drawable.np_pause else R.drawable.np_play
+            )
+            setOnClickPendingIntent(R.id.np_play, servicePending("playPause", REQ_PLAY))
+            setOnClickPendingIntent(R.id.np_close, servicePending("close", REQ_CLOSE))
+            // Taps on the artwork / text behave like tapping the notification.
+            openAppIntent()?.let { setOnClickPendingIntent(R.id.np_root, it) }
+        }
+
+        val expanded = RemoteViews(packageName, R.layout.np_expanded).apply {
+            bindArt(R.id.np_big_art, thumb)
+            setTextViewText(R.id.np_big_title, title)
+            setTextViewText(R.id.np_big_subtitle, state)
+            setImageViewResource(
+                R.id.np_big_play,
+                if (playing) R.drawable.np_pause else R.drawable.np_play
+            )
+            setOnClickPendingIntent(R.id.np_big_close, servicePending("close", REQ_CLOSE))
+            // Same rule as the collapsed row: an empty part of the card is a
+            // tap on the notification, not a dead zone.
+            openAppIntent()?.let { setOnClickPendingIntent(R.id.np_big_root, it) }
+            setOnClickPendingIntent(R.id.np_big_play, servicePending("playPause", REQ_PLAY))
+            setOnClickPendingIntent(R.id.np_big_prev, servicePending("prev", REQ_PREV))
+            setOnClickPendingIntent(R.id.np_big_next, servicePending("next", REQ_NEXT))
+            setOnClickPendingIntent(R.id.np_big_rew, servicePending("rew", REQ_REW))
+            setOnClickPendingIntent(R.id.np_big_ffwd, servicePending("ffwd", REQ_FFWD))
+            if (duration > 0) {
+                val max = duration.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                setProgressBar(
+                    R.id.np_progress,
+                    max,
+                    position.coerceIn(0L, duration).toInt(),
+                    false
+                )
+                setTextViewText(R.id.np_elapsed, mmss(position))
+                setTextViewText(R.id.np_total, mmss(duration))
+            } else {
+                // Live streams have no timeline; drop the row instead of
+                // drawing an empty 0:00 / 0:00 track.
+                setViewVisibility(R.id.np_progress, View.GONE)
+                setViewVisibility(R.id.np_times, View.GONE)
+            }
+        }
+
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
             // Flat white glyph — a launcher mipmap renders as a grey square.
             .setSmallIcon(R.drawable.ic_stat_music)
+            // Kept for the fallback renderers (Auto, OEM lockscreens) that
+            // ignore custom views; the card itself uses the RemoteViews below.
             .setContentTitle(title)
-            .setContentText(subtitle ?: if (playing) "Playing" else "Paused")
+            .setContentText(state)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(playing)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setContentIntent(openAppIntent())
-            // prev · rewind · play/pause · forward · next — compact row shows
-            // prev, play and next (indices 0, 2, 4).
-            .addAction(actionButton(android.R.drawable.ic_media_previous, "prev", REQ_PREV))
-            .addAction(actionButton(android.R.drawable.ic_media_rew, "rew", REQ_REW))
-            .addAction(
-                actionButton(
-                    if (playing) android.R.drawable.ic_media_pause
-                    else android.R.drawable.ic_media_play,
-                    "playPause",
-                    REQ_PLAY
-                )
-            )
-            .addAction(actionButton(android.R.drawable.ic_media_ff, "ffwd", REQ_FFWD))
-            .addAction(actionButton(android.R.drawable.ic_media_next, "next", REQ_NEXT))
-            .setStyle(
-                MediaStyle()
-                    .setMediaSession(session?.sessionToken)
-                    .setShowActionsInCompactView(0, 2, 4)
-            )
+            .setCustomContentView(compact)
+            .setCustomBigContentView(expanded)
+            // An un-dismissed card must never outlive the playback: a swipe
+            // takes the same path as the X.
+            .setDeleteIntent(servicePending("close", REQ_SWIPED))
 
         art?.let { b.setLargeIcon(it) }
-
-        if (duration > 0) {
-            b.setProgress(
-                duration.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-                position.coerceIn(0L, duration).toInt(),
-                false
-            )
-        }
         return b.build()
     }
 
-    private fun actionButton(icon: Int, cmd: String, requestCode: Int):
-        NotificationCompat.Action {
+    /** A bitmap small enough for a [RemoteViews] without risking the binder limit. */
+    private fun RemoteViews.bindArt(id: Int, art: Bitmap?) {
+        // No cover: leave the view alone. Its background drawable is the
+        // deliberate "empty cover" tile, so the row never looks broken.
+        if (art != null) setImageViewBitmap(id, art)
+    }
+
+    private fun servicePending(cmd: String, requestCode: Int): PendingIntent {
         val intent = Intent(this, MediaPlaybackService::class.java)
             .putExtra(CMD, cmd)
-        val pending = PendingIntent.getService(
+        return PendingIntent.getService(
             this,
             requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val label = when (cmd) {
-            "prev" -> "Previous"
-            "next" -> "Next"
-            "rew" -> "Back 10 seconds"
-            "ffwd" -> "Forward 10 seconds"
-            "playPause" -> "Play or pause"
-            else -> cmd
-        }
-        return NotificationCompat.Action.Builder(icon, label, pending).build()
     }
 
     private fun openAppIntent(): PendingIntent? {
@@ -346,6 +410,42 @@ class MediaPlaybackService : android.app.Service() {
         }
     }
 
+    /** Cover art is drawn at 42–52dp; nothing larger needs to cross the binder. */
+    private fun thumbnail(src: Bitmap?): Bitmap? {
+        if (src == null) return null
+        val largest = maxOf(src.width, src.height)
+        if (largest <= THUMB_MAX_PX) return src
+        val scale = THUMB_MAX_PX.toFloat() / largest
+        return try {
+            Bitmap.createScaledBitmap(
+                src,
+                (src.width * scale).toInt().coerceAtLeast(1),
+                (src.height * scale).toInt().coerceAtLeast(1),
+                true
+            )
+        } catch (_: Exception) {
+            src
+        }
+    }
+
+    private fun subtitleOrState(subtitle: String?, playing: Boolean): String {
+        if (!subtitle.isNullOrBlank()) return subtitle
+        return getString(if (playing) R.string.np_playing else R.string.np_paused)
+    }
+
+    /** `3:07`, or `1:02:09` once the track passes an hour. */
+    private fun mmss(ms: Long): String {
+        val total = (ms.coerceAtLeast(0L) / 1000L)
+        val seconds = total % 60
+        val minutes = (total / 60) % 60
+        val hours = total / 3600
+        return if (hours > 0) {
+            String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            String.format(Locale.US, "%d:%02d", minutes, seconds)
+        }
+    }
+
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = notificationManager() ?: return
@@ -379,6 +479,12 @@ class MediaPlaybackService : android.app.Service() {
         if (isShown) {
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             isShown = false
+        }
+        // stopForeground only removes a notification it owns; the fail-soft
+        // path above can have posted a plain one, so cancel explicitly too.
+        try {
+            notificationManager()?.cancel(NOTIFICATION_ID)
+        } catch (_: Exception) {
         }
         publishSessionState("", null, false, 0L, 0L, null, null)
         stopSelf()

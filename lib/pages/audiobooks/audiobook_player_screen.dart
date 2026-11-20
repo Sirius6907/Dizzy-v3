@@ -130,6 +130,13 @@ class _AudiobookPlayerScreenState extends State<AudiobookPlayerScreen>
             _togglePlayPause();
           }
         },
+        // The X (or a swipe) closed the card: stop the book too, so the
+        // dismissal does not leave audio playing with no visible control.
+        onClose: () async {
+          if (_isPlaying) {
+            _togglePlayPause();
+          }
+        },
       ),
     );
     _publishMediaSession(force: true);

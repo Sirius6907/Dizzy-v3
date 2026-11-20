@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Artwork well: sits behind the cover so a missing cover still reads as a
+     deliberate tile instead of a hole. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FF1C202C" />
+    <corners android:radius="12dp" />
+</shape>

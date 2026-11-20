@@ -10,11 +10,11 @@ import 'artwork_cache_service.dart';
 /// Phase K1 — Dart side of the "now playing" layer.
 ///
 /// [MediaSessionBridge] publishes what is playing to the native
-/// [MediaPlaybackService], which renders it as a MediaStyle notification
+/// [MediaPlaybackService], which renders it as a custom notification card
 /// bound to a system media session (lock screen, Bluetooth, Android Auto).
-/// Transport buttons and audio-focus loss arrive on the same channel and
-/// are routed into [MediaSessionActions], so playback decisions stay in
-/// Dart — the native layer never decides what plays next.
+/// Transport buttons, audio-focus loss and the card's close button arrive on
+/// the same channel and are routed into [MediaSessionActions], so playback
+/// decisions stay in Dart — the native layer never decides what plays next.
 ///
 /// Everything is fail-soft: a missing service, a denied foreground start or
 /// a platform channel that is not registered must never stop the music.
@@ -80,6 +80,7 @@ class MediaSessionActions {
     this.onSeekAbsolute,
     this.onStop,
     this.onFocusLost,
+    this.onClose,
   });
 
   final Future<void> Function()? onToggle;
@@ -91,6 +92,11 @@ class MediaSessionActions {
   final Future<void> Function(int positionMs)? onSeekAbsolute;
   final Future<void> Function()? onStop;
   final Future<void> Function()? onFocusLost;
+
+  /// The user closed the card (the X or a swipe). Playback keeps running in
+  /// Dart, so this is where the surface pauses itself — otherwise the card
+  /// would vanish mid-song with no way back to it.
+  final Future<void> Function()? onClose;
 }
 
 class MediaSessionBridge {
@@ -112,8 +118,18 @@ class MediaSessionBridge {
   static String? _lastForced;
   static bool _serviceMissing = false;
 
+  /// The user closed the card and nothing has started playing since. While
+  /// this is set, paused publishes are dropped so a 1 Hz ticker (or the
+  /// audiobook's 5 s save loop) cannot resurrect the card the user just
+  /// dismissed. Any `playing: true` publish clears it.
+  static bool _dismissed = false;
+
   /// Whether we believe the native notification is currently up.
   static bool get isRunning => _running;
+
+  /// Whether the card was dismissed by the user and is waiting for playback
+  /// to start again before it is allowed back.
+  static bool get isDismissed => _dismissed;
 
   /// Whether the channel handler is installed (another surface may have
   /// detached it, e.g. the audiobook player).
@@ -128,6 +144,17 @@ class MediaSessionBridge {
     _lastFingerprint = null;
     _lastForced = null;
     _serviceMissing = false;
+    _dismissed = false;
+  }
+
+  /// The card was closed by the user. Records the dismissal so paused pushes
+  /// stay quiet, and treats the native notification as gone.
+  static void markDismissed() {
+    _dismissed = true;
+    _running = false;
+    _lastFingerprint = null;
+    _lastForced = null;
+    _lastPublish = DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   /// Registers button handlers. Safe to call repeatedly — the newest wins.
@@ -151,6 +178,13 @@ class MediaSessionBridge {
     MediaSessionState state, {
     bool force = false,
   }) async {
+    // A paused deck must never resurrect a card the user just dismissed; the
+    // first `playing: true` push is what earns the card back.
+    if (state.playing) {
+      _dismissed = false;
+    } else if (_dismissed) {
+      return;
+    }
     final now = DateTime.now();
     final fingerprint = state.fingerprint;
     if (!force) {
@@ -183,6 +217,9 @@ class MediaSessionBridge {
 
   /// Takes the notification down (nothing is playing any more).
   static Future<void> hide() async {
+    // An explicit hide means whoever owns the surface is done with it, so the
+    // next publish — even a paused one — is allowed to show the card again.
+    _dismissed = false;
     if (!_running) return;
     _running = false;
     _lastFingerprint = null;
@@ -223,6 +260,11 @@ class MediaSessionBridge {
         // Another app took the audio (call, assistant). Losing that fight on
         // purpose is the polite behaviour — pause and let Dart tell the UI.
         await _actions.onFocusLost?.call();
+      case 'onClose':
+        // The native side already removed its notification and stopped the
+        // service; remember that before the pause push can race back in.
+        markDismissed();
+        await _actions.onClose?.call();
       default:
         break;
     }
@@ -302,6 +344,9 @@ class MusicMediaSessionWatcher {
         controller.seekTo(Duration(milliseconds: positionMs)),
     onStop: controller.pause,
     onFocusLost: () async {
+      if (controller.isPlaying) await controller.pause();
+    },
+    onClose: () async {
       if (controller.isPlaying) await controller.pause();
     },
   );
