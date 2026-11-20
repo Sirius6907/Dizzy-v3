@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -53,6 +54,17 @@ class MusicPlayerController extends ChangeNotifier {
   String _currentQualityLabel = 'No audio loaded';
   bool _isCurrentTrackLossless = false;
 
+  /// Cold-start resume: the queue, the index and the position survive a
+  /// process death. Restored **paused** — a fresh launch must never make
+  /// noise before the user has asked for it.
+  static const String _queuePrefsKey = 'music_queue_state_v1';
+  Timer? _queueSaveTimer;
+  bool _queueRestored = false;
+
+  /// True when the last queue was rebuilt from disk and no native player is
+  /// attached yet, so `play()` knows to open the track instead of resuming.
+  bool get resumedFromDisk => _queueRestored && _player == null;
+
   LyricsData _currentLyrics = LyricsData.empty();
   bool _isLoadingLyrics = false;
   int _activeLyricIndex = -1;
@@ -101,6 +113,105 @@ class MusicPlayerController extends ChangeNotifier {
           ? MusicAudioSource.youtube
           : MusicAudioSource.flac;
       notifyListeners();
+    } catch (_) {}
+    await _restoreQueue();
+  }
+
+  /// Rebuilds the last queue from disk without touching the network.
+  ///
+  /// Only metadata comes back: no `Player` is constructed and nothing is
+  /// fetched until the user presses play. That keeps cold start cheap and
+  /// guarantees the app cannot start talking at launch.
+  Future<void> _restoreQueue() async {
+    if (_queueRestored || _currentTrack != null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_queuePrefsKey);
+      if (raw == null || raw.isEmpty) return;
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return;
+      if (decoded['v'] != 1) return;
+
+      final queue = _tracksFromJson(decoded['queue']);
+      if (queue.isEmpty) return;
+
+      final original = _tracksFromJson(decoded['original']);
+      final index = (decoded['index'] as num?)?.toInt() ?? 0;
+      final positionMs = (decoded['positionMs'] as num?)?.toInt() ?? 0;
+      final safeIndex = index.clamp(0, queue.length - 1);
+
+      _playlist = queue;
+      _originalPlaylist = original.isEmpty
+          ? List<MusicTrack>.from(queue)
+          : original;
+      _currentIndex = safeIndex;
+      _currentTrack = queue[safeIndex];
+      _position = Duration(
+        milliseconds: positionMs.clamp(0, const Duration(hours: 24).inMilliseconds),
+      );
+      _duration = _currentTrack!.durationSeconds > 0
+          ? Duration(seconds: _currentTrack!.durationSeconds)
+          : Duration.zero;
+      _isShuffle = decoded['shuffle'] == true;
+      _repeatMode = switch (decoded['repeat']) {
+        'all' => MusicRepeatMode.all,
+        'one' => MusicRepeatMode.one,
+        _ => MusicRepeatMode.off,
+      };
+      _queueRestored = true;
+      _isPlaying = false;
+      _isLoading = false;
+      _currentQualityLabel = 'Paused · tap play to resume';
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[MusicPlayer] queue restore skipped: $e');
+    }
+  }
+
+  List<MusicTrack> _tracksFromJson(Object? raw) {
+    final out = <MusicTrack>[];
+    if (raw is! List) return out;
+    for (final entry in raw) {
+      if (entry is! Map<String, dynamic>) continue;
+      try {
+        out.add(MusicTrack.fromJson(entry));
+      } catch (_) {}
+    }
+    return out;
+  }
+
+  /// Trailing throttle: one write per two seconds of change, no matter how
+  /// many position ticks land in between.
+  void _scheduleQueueSave() {
+    if (_queueSaveTimer != null) return;
+    _queueSaveTimer = Timer(const Duration(seconds: 2), () {
+      _queueSaveTimer = null;
+      unawaited(_persistQueue());
+    });
+  }
+
+  Future<void> _persistQueue() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final track = _currentTrack;
+      if (track == null || _playlist.isEmpty) {
+        await prefs.remove(_queuePrefsKey);
+        return;
+      }
+      final payload = <String, dynamic>{
+        'v': 1,
+        'index': _currentIndex,
+        'positionMs': _position.inMilliseconds,
+        'shuffle': _isShuffle,
+        'repeat': _repeatMode.name,
+        'queue': _playlist.map((t) => t.toJson()).toList(growable: false),
+        'original': _originalPlaylist
+            .map((t) => t.toJson())
+            .toList(growable: false),
+        'savedAt': DateTime.now().millisecondsSinceEpoch,
+      };
+      await prefs.setString(_queuePrefsKey, jsonEncode(payload));
     } catch (_) {}
   }
 
@@ -214,6 +325,7 @@ class MusicPlayerController extends ChangeNotifier {
         _updateActiveLyricIndex();
         _checkCrossfadeTransition(pos, _duration);
         _checkPrecacheNext(pos, _duration);
+        _scheduleQueueSave();
         notifyListeners();
       }),
       player.stream.duration.listen((dur) {
@@ -264,6 +376,8 @@ class MusicPlayerController extends ChangeNotifier {
         : Duration.zero;
     _currentLyrics = LyricsData.empty();
     _activeLyricIndex = -1;
+    _queueRestored = false;
+    _scheduleQueueSave();
     notifyListeners();
 
     // Add to recent history & stats
@@ -582,7 +696,11 @@ class MusicPlayerController extends ChangeNotifier {
         await _player?.play();
       }
     } else if (_currentTrack != null) {
-      await _loadAndPlayTrack(_currentTrack!);
+      // Restored from disk: open at the saved position, not at 0:00.
+      await _loadAndPlayTrack(
+        _currentTrack!,
+        startPosition: _position > Duration.zero ? _position : null,
+      );
     }
   }
 
@@ -600,6 +718,7 @@ class MusicPlayerController extends ChangeNotifier {
       }
       _isPlaying = false;
       _updateDiscordRpc(isPaused: true);
+      _scheduleQueueSave();
       notifyListeners();
     }
   }
@@ -628,6 +747,7 @@ class MusicPlayerController extends ChangeNotifier {
       await _player!.seek(target);
     }
     _updateActiveLyricIndex();
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -658,6 +778,7 @@ class MusicPlayerController extends ChangeNotifier {
         if (_currentIndex < 0) _currentIndex = 0;
       }
     }
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -673,6 +794,7 @@ class MusicPlayerController extends ChangeNotifier {
         _repeatMode = MusicRepeatMode.off;
         break;
     }
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -730,6 +852,7 @@ class MusicPlayerController extends ChangeNotifier {
       if (index < _currentIndex) {
         _currentIndex--;
       }
+      _scheduleQueueSave();
       notifyListeners();
     }
   }
@@ -737,6 +860,7 @@ class MusicPlayerController extends ChangeNotifier {
   void clearQueue() {
     _playlist.clear();
     _currentIndex = 0;
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -756,6 +880,7 @@ class MusicPlayerController extends ChangeNotifier {
       oldIndex: oldIndex,
       newIndex: newIndex,
     );
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -791,6 +916,7 @@ class MusicPlayerController extends ChangeNotifier {
     final nextIndex = _currentIndex + 1;
     _playlist.insert(nextIndex.clamp(0, _playlist.length), track);
     _originalPlaylist.add(track);
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -798,6 +924,7 @@ class MusicPlayerController extends ChangeNotifier {
   void addTrackToQueue(MusicTrack track) {
     _playlist.add(track);
     _originalPlaylist.add(track);
+    _scheduleQueueSave();
     notifyListeners();
   }
 
@@ -813,6 +940,7 @@ class MusicPlayerController extends ChangeNotifier {
   void clearUpcomingQueue() {
     if (_currentIndex < _playlist.length - 1) {
       _playlist = _playlist.sublist(0, _currentIndex + 1);
+      _scheduleQueueSave();
       notifyListeners();
     }
   }
@@ -836,6 +964,10 @@ class MusicPlayerController extends ChangeNotifier {
 
   @override
   void dispose() {
+    // Last chance to record where the queue stopped before the process goes.
+    _queueSaveTimer?.cancel();
+    _queueSaveTimer = null;
+    unawaited(_persistQueue());
     for (final s in _subscriptions) {
       s.cancel();
     }
