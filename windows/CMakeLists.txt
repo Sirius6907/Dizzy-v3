@@ -86,7 +86,7 @@ install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
 # looks on Windows. Absent DLL = embed sources fail over like dead ones, so a
 # build that has not run cargo still produces a working app.
 set(DIZZY_ADBLOCK_DLL
-  "${CMAKE_CURRENT_SOURCE_DIR}/rust/dizzy_adblock/target/x86_64-pc-windows-msvc/release/dizzy_adblock.dll")
+  "${CMAKE_CURRENT_SOURCE_DIR}/../rust/dizzy_adblock/target/x86_64-pc-windows-msvc/release/dizzy_adblock.dll")
 if(EXISTS "${DIZZY_ADBLOCK_DLL}")
   install(FILES "${DIZZY_ADBLOCK_DLL}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
