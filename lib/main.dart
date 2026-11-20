@@ -70,6 +70,7 @@ import './services/notification/notification_triggers.dart';
 import './services/push/push_service.dart';
 import './services/social/dizzy_social_service.dart';
 import './services/social/dizzy_friend_service.dart';
+import './services/social/profile_avatar_service.dart';
 import './services/social/social_hub_service.dart';
 import './rust/frb_generated.dart';
 import './core/error_boundary.dart';
@@ -267,6 +268,7 @@ void main() async {
     _safeInit('download_service', () => DownloadService.instance.initialize()),
     _safeInit('discord_rpc', () => DiscordRpcService.instance.initialize()),
     _safeInit('dizzy_profile', () => DizzyProfileService.initialize()),
+    _safeInit('profile_avatar', ProfileAvatarService.initialize),
     _safeInit(
       'scraper_quarantine',
       () => ScraperQuarantineService.initialize(),
