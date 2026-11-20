@@ -9,6 +9,7 @@ import 'package:dizzy/widgets/prism/prism_card.dart';
 import 'package:dizzy/services/social/dizzy_identity_service.dart';
 import 'package:dizzy/services/social/dizzy_social_service.dart';
 import 'package:dizzy/services/social/phone_link_service.dart';
+import 'package:dizzy/services/social/profile_avatar_service.dart';
 import 'package:dizzy/services/device/device_id_service.dart';
 import 'package:dizzy/models/continue_watching/continue_watching_item.dart';
 import 'package:dizzy/services/continue_watching/continue_watching_service.dart';
@@ -22,6 +23,8 @@ import 'package:dizzy/models/movie/movie.dart';
 import 'package:dizzy/pages/details/details_page.dart';
 import 'package:dizzy/services/stats/watch_stats.dart';
 import 'package:dizzy/widgets/common/dizzy_image.dart';
+import 'package:dizzy/widgets/profile/profile_avatar.dart';
+import 'package:dizzy/widgets/profile/profile_avatar_sheet.dart';
 import 'profile_hub_sections.dart';
 import 'social_hub_page.dart';
 import '../../services/social/social_hub_service.dart';
@@ -749,34 +752,22 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                         child: _ProfileBackButton(),
                       ),
                       const SizedBox(height: DizzySpace.md),
-                      // Top Header: Avatar + Meta
+                      // Identity block: the photo is the anchor, the name is
+                      // the loudest thing on the page, and the device code
+                      // is support info — small, quiet, last.
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // 88px Tactile Avatar
-                          Container(
-                            width: 84,
-                            height: 84,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF3A1C71), Color(0xFFD76D77)],
-                              ),
-                              border: Border.all(
-                                color: DizzyGlow.gold,
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: DizzyGlow.gold.withValues(alpha: 0.30),
-                                  blurRadius: 16,
-                                ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Text('🍿', style: TextStyle(fontSize: 38)),
+                          ProfileAvatar(
+                            size: 86,
+                            username: _username,
+                            editable: true,
+                            onTap: () => ProfileAvatarSheet.show(
+                              context,
+                              username: _username,
                             ),
                           ),
-                          const SizedBox(width: DizzySpace.md),
+                          const SizedBox(width: PrismSpace.md),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -786,30 +777,46 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                     Flexible(
                                       child: Text(
                                         '@$_username',
+                                        maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: ink,
-                                          fontSize: DizzyType.title,
-                                          fontWeight: DizzyType.wBold,
+                                          fontSize: 23,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.7,
+                                          height: 1.1,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: PrismSpace.xs),
                                     Tooltip(
                                       message: 'Edit username',
                                       child: GestureDetector(
                                         onTap: _showClaimUsernameDialog,
-                                        child: Icon(
-                                          Icons.edit_rounded,
-                                          size: 16,
-                                          color: inkSoft,
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: panel,
+                                            border: Border.all(color: hairline),
+                                          ),
+                                          child: Icon(
+                                            Icons.edit_rounded,
+                                            size: 14,
+                                            color: inkSoft,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
+                                const SizedBox(height: PrismSpace.xs),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -817,7 +824,8 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                         vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius:
+                                            BorderRadius.circular(PrismRadius.sm),
                                         color: panel,
                                         border: Border.all(color: hairline),
                                       ),
@@ -825,116 +833,89 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
                                         'DEVICE: $_deviceCode',
                                         style: TextStyle(
                                           color: accentText,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: PrismType.micro,
+                                          fontWeight: FontWeight.w700,
                                           letterSpacing: 0.5,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
                                     const ProfileHubAdminBadge(),
                                   ],
+                                ),
+                                // Shown only while there is no photo: one
+                                // quiet line beats a hidden gesture.
+                                ValueListenableBuilder<String?>(
+                                  valueListenable: ProfileAvatarService.path,
+                                  builder: (context, path, _) {
+                                    if ((path ?? '').isNotEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.only(top: PrismSpace.xs),
+                                      child: GestureDetector(
+                                        onTap: () => ProfileAvatarSheet.show(
+                                          context,
+                                          username: _username,
+                                        ),
+                                        child: Text(
+                                          'Add a profile photo',
+                                          style: TextStyle(
+                                            color: accentText,
+                                            fontSize: PrismType.micro,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.1,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: DizzySpace.lg),
-                      // Binge Stats Row (3 Columns) — live from WatchStats + manga history
+                      const SizedBox(height: PrismSpace.xl),
+                      // Binge stats — three separate clay tiles, one number
+                      // each. Labels are micro-caps so the numerals own the
+                      // row, and every numeral sits in the same 28px slot so
+                      // "12h 30m" cannot shove its tile taller than the rest.
                       Row(
                         children: [
                           Expanded(
-                            child: PrismCard(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    _stats.hoursLabel,
-                                    style: TextStyle(
-                                      color: isLight
-                                          ? PrismAccent.text(true)
-                                          : DizzyGlow.beam,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Watched',
-                                    style: TextStyle(
-                                      color: inkSoft,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            child: _ProfileStat(
+                              value: _stats.hoursLabel,
+                              label: 'Watched',
+                              icon: Icons.schedule_rounded,
+                              color: isLight
+                                  ? PrismAccent.accentTextLight
+                                  : DizzyGlow.beam,
+                              glow: DizzyGlow.beam,
                             ),
                           ),
-                          const SizedBox(width: DizzySpace.xs),
+                          const SizedBox(width: PrismSpace.sm),
                           Expanded(
-                            child: PrismCard(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              glowColor: DizzyGlow.gold,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Text(
-                                        '🔥 ',
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                      Text(
-                                        '${_stats.currentStreakDays}d',
-                                        style: TextStyle(
-                                          color: isLight
-                                              ? PrismAccent.starTextLight
-                                              : DizzyGlow.gold,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Streak',
-                                    style: TextStyle(
-                                      color: inkSoft,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            child: _ProfileStat(
+                              value: '${_stats.currentStreakDays}d',
+                              label: 'Streak',
+                              icon: Icons.local_fire_department_rounded,
+                              color: isLight
+                                  ? PrismAccent.starTextLight
+                                  : DizzyGlow.gold,
+                              glow: DizzyGlow.gold,
                             ),
                           ),
-                          const SizedBox(width: DizzySpace.xs),
+                          const SizedBox(width: PrismSpace.sm),
                           Expanded(
-                            child: PrismCard(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '$_chaptersRead',
-                                    style: TextStyle(
-                                      color: isLight
-                                          ? PrismAccent.text(true)
-                                          : DizzyGlow.violet,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Chapters',
-                                    style: TextStyle(
-                                      color: inkSoft,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            child: _ProfileStat(
+                              value: '$_chaptersRead',
+                              label: 'Chapters',
+                              icon: Icons.menu_book_rounded,
+                              color: isLight
+                                  ? const Color(0xFF6D28D9)
+                                  : DizzyGlow.violet,
+                              glow: DizzyGlow.violet,
                             ),
                           ),
                         ],
@@ -1355,6 +1336,87 @@ class _InstagramProfilePageState extends State<InstagramProfilePage>
           ),
         );
       },
+    );
+  }
+}
+
+/// One number per tile, centred by construction rather than by padding
+/// guesswork. The numeral lives in a fixed-height, full-width slot with
+/// [FittedBox] at scaleDown, so a long label ("12h 30m") shrinks instead of
+/// growing the tile and knocking the row out of alignment.
+class _ProfileStat extends StatelessWidget {
+  const _ProfileStat({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.glow,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Color glow;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = AppThemeService.currentPalette.value.isLight;
+    final inkSoft = isLight ? PrismLight.inkSoft : PrismDark.inkSoft;
+
+    return PrismCard(
+      padding: const EdgeInsets.fromLTRB(8, 14, 8, 12),
+      glowColor: glow,
+      shadowScale: 0.8,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 30,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Text(
+                value,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  height: 1.0,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 11, color: color.withValues(alpha: 0.8)),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: inkSoft,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.9,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
