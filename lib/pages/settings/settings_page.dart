@@ -544,7 +544,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   letterSpacing: 1.1,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 1. Appearance & Interface
               ValueListenableBuilder<AppThemePalette>(
@@ -563,7 +563,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 2. Video & Anime4K Upscaling
               ValueListenableBuilder<Anime4KPreset>(
@@ -586,7 +586,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // F5 (v1.1.9): My Dizzy Wrap — watch stats.
               _SettingsCategoryTile(
@@ -600,7 +600,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const StatsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // S2 (v1.1.9): Privacy & Account.
               _SettingsCategoryTile(
@@ -623,7 +623,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (!open) return const SizedBox.shrink();
                   return Column(
                     children: [
-                      const SizedBox(height: 12),
+                      const SizedBox(height: PrismLayout.cardGap),
                       ValueListenableBuilder<bool>(
                         valueListenable: AdultSectionGate.privateMode,
                         builder: (context, disguised, _) =>
@@ -653,7 +653,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // S3B (v1.1.9) + v1.2.0-P1: local-first profiles, auto cloud sync.
               _SettingsCategoryTile(
@@ -666,7 +666,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const ProfilesSettingsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // UX8 / v1.3.6: one Social Hub for DMs, friends, groups, rooms.
               ValueListenableBuilder<int>(
@@ -686,7 +686,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // S3C (v1.1.9): optional logged-in Watch Party rooms.
               _SettingsCategoryTile(
@@ -699,7 +699,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const WatchPartyPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // v1.2.0-P2 (T2.1): Sources health dashboard (non-tech: "Sources").
               ValueListenableBuilder<int>(
@@ -717,7 +717,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 3. Debrid & Cloud Streaming
               _SettingsCategoryTile(
@@ -733,7 +733,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const DebridSettingsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 3. Metadata & Catalogs (Addons)
               _SettingsCategoryTile(
@@ -746,7 +746,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const AddonsSettingsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 4. Built-in P2P Torrent Source Toggle (Dizzy)
               ValueListenableBuilder<bool>(
@@ -783,7 +783,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 5. TV Airing Calendar Toggle
               ValueListenableBuilder<bool>(
@@ -810,7 +810,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 6. AI Recommendation Quiz Toggle
               ValueListenableBuilder<bool>(
@@ -837,7 +837,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 5. Discord Rich Presence (Desktop Only)
               if (Platform.isWindows ||
@@ -866,7 +866,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: PrismLayout.cardGap),
               ],
 
               // 6. Trakt Sync
@@ -883,7 +883,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const TraktSettingsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 6. Simkl Sync
               _SettingsCategoryTile(
@@ -898,7 +898,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const SimklSettingsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 7. Backup & Restore (JSON)
               _SettingsCategoryTile(
@@ -912,7 +912,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: _showBackupRestoreDialog,
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 8. App Updates & System
               _SettingsCategoryTile(
@@ -925,7 +925,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const UpdatesSettingsPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // One opt-in tour. Nothing pops up on its own anymore.
               _SettingsCategoryTile(
@@ -935,6 +935,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: 'A 3-card look at how Dizzy works',
                 onTap: () => GuideCard.show(context, AppGuides.tour),
               ),
+
+              const SizedBox(height: PrismLayout.cardGap),
 
               // Download Settings
               _SettingsCategoryTile(
@@ -947,7 +949,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _showDownloadSettings(),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // v1.3.3-T4: in-app help — offline FAQ first, human second.
               _SettingsCategoryTile(
@@ -958,7 +960,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () => _navigateTo(const SupportChatPage()),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: PrismLayout.cardGap),
 
               // 9. About Dizzy
               _SettingsCategoryTile(
@@ -1018,6 +1020,9 @@ class _SettingsCategoryTile extends StatelessWidget {
       onTap: onTap,
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
+      // Keep the drop shadow inside the list gap; the default elevation is
+      // tuned for isolated cards and bled onto the tile below here.
+      shadowScale: 0.7,
       child: Container(
         // The card itself owns the surface, radius and shadow. A second
         // border here clipped against a different radius and drew a dark
@@ -1157,17 +1162,12 @@ class _SettingsSwitchTile extends StatelessWidget {
       child: PrismCard(
         margin: EdgeInsets.zero,
         padding: EdgeInsets.zero,
+        shadowScale: 0.7,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: isLight ? Colors.transparent : PrismDark.raised,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isLight
-                  ? PrismLight.borderSubtle
-                  : Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
+          // No second surface here: PrismCard already paints the clay
+          // gradient, radius and shadow. Painting a 16 px-radius rectangle on
+          // top of a 22 px-radius card left the card corners peeking out.
           child: Row(
             children: [
               // Icon Container
@@ -1194,7 +1194,7 @@ class _SettingsSwitchTile extends StatelessWidget {
                           child: Text(
                             title,
                             style: TextStyle(
-                              fontSize: 14.5,
+                              fontSize: PrismType.cardTitle,
                               fontWeight: FontWeight.w700,
                               color: ink,
                             ),
