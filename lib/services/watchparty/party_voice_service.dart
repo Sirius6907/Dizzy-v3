@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../cloud/cloud_client.dart';
 import '../device/device_id_service.dart';
 import '../errors/app_log.dart';
+import 'party_voice_quality.dart';
 
 /// WP-P3: Discord-style voice for watch parties over LiveKit Cloud.
 ///
@@ -51,6 +52,7 @@ class PartyVoiceService {
   }) async {
     if (!CloudClient.isReady) return false;
     await leave();
+    await PartyVoiceQualityService.ensureLoaded();
     try {
       final code = roomCode.trim().toUpperCase();
       final device = DeviceIdService.deviceCode.value ?? 'unknown';
@@ -67,9 +69,7 @@ class PartyVoiceService {
       final url = json['url']?.toString() ?? '';
       if (token.isEmpty || url.isEmpty) return false;
 
-      final room = Room(
-        roomOptions: const RoomOptions(adaptiveStream: true, dynacast: true),
-      );
+      final room = Room(roomOptions: PartyVoiceQualityService.roomOptions());
       _listener = room.createListener();
       final listener = _listener;
       if (listener == null) {

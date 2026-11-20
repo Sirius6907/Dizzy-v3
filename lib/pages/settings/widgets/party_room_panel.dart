@@ -7,6 +7,7 @@ import '../../../services/theme/app_theme_service.dart';
 import '../../../services/cloud/watch_party_service.dart';
 import '../../../services/watchparty/party_chat_service.dart';
 import '../../../services/watchparty/party_voice_service.dart';
+import '../../../services/watchparty/room_invite.dart';
 
 /// WP-P4: live room panel — chat, members, host controls.
 /// Shown in the lobby once a room is joined. Chat is ephemeral
@@ -579,6 +580,12 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
     spacing: 8,
     runSpacing: 8,
     children: [
+      // Anyone in the room can bring someone in — not a host-only power.
+      OutlinedButton.icon(
+        onPressed: _invite,
+        icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+        label: const Text('Invite'),
+      ),
       if (widget.isHost)
         OutlinedButton.icon(
           onPressed: _toggleLock,
@@ -602,6 +609,37 @@ class _PartyRoomPanelState extends State<PartyRoomPanel> {
       ),
     ],
   );
+
+  /// One tap: the code lands in the room chat, where everyone already is.
+  ///
+  /// If chat is unavailable (rate cap, offline) the share sheet opens instead,
+  /// so the tap always produces something a friend can act on.
+  Future<void> _invite() async {
+    final invite = RoomInvite(
+      roomCode: _roomId,
+      mediaTitle: widget.room.currentTitle ?? widget.room.title,
+      locked: _locked,
+    );
+    final posted = await RoomInviteService.postToChat(invite, _roomId);
+    if (!mounted) return;
+    if (!posted) {
+      final result = await RoomInviteService.share(invite);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(RoomInviteService.resultLine(result))),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Invite posted in chat.'),
+        action: SnackBarAction(
+          label: 'Share outside',
+          onPressed: () => RoomInviteService.share(invite),
+        ),
+      ),
+    );
+  }
 
   Future<void> _send() async {
     final text = _input.text;

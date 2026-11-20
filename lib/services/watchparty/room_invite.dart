@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../share/native_share.dart';
+import 'party_chat_service.dart';
 import 'watch_sync_engine.dart' show WatchSyncMessage;
 
 /// F4 — getting your friends into the room takes one tap.
@@ -18,12 +19,20 @@ class RoomInvite {
   final String? mediaTitle;
   final String? hostName;
 
+  /// True when the room needs a pass to enter. The pass itself is never
+  /// stored on this device after the room is created, so an invite can say
+  /// "locked" but cannot hand the key over.
+  final bool locked;
+
   const RoomInvite({
     required this.roomCode,
     this.pass,
     this.mediaTitle,
     this.hostName,
+    this.locked = false,
   });
+
+  bool get hasPass => pass != null && pass!.isNotEmpty;
 
   /// The Easy English message a friend receives.
   ///
@@ -36,8 +45,23 @@ class RoomInvite {
     buf.write('Join my room on Dizzy');
     if (title.isNotEmpty) buf.write(' — $title');
     buf.write('. Code: $roomCode');
-    if (pass != null && pass!.isNotEmpty) buf.write('  Pass: $pass');
+    if (hasPass) buf.write('  Pass: $pass');
+    if (locked && !hasPass) buf.write('  (Locked — ask me for the pass.)');
     if (who.isNotEmpty) buf.write('\n$who is watching now.');
+    return buf.toString();
+  }
+
+  /// The version posted into room chat.
+  ///
+  /// Same information, no pass and no "join my room" preamble — everyone
+  /// reading it is already in the room, so it is a nudge for the friends
+  /// who are not. Kept under the 500-char chat cap with room to spare.
+  String get chatLine {
+    final title = (mediaTitle ?? '').trim();
+    final buf = StringBuffer('🎬 Room code: $roomCode');
+    if (title.isNotEmpty) buf.write(' — $title');
+    buf.write('. Tap Join with code to come in.');
+    if (locked) buf.write(' Locked — ask me for the pass.');
     return buf.toString();
   }
 
@@ -68,6 +92,20 @@ abstract final class RoomInviteService {
     } catch (_) {
       return ShareResult.failed;
     }
+  }
+
+  /// Post the invite into the room's own chat.
+  ///
+  /// This is the cheap half of inviting: whoever is already in the room sees
+  /// the code in the one place they are already looking, and can forward it
+  /// to a friend who is not. Returns false (never throws) when chat is
+  /// unavailable or the 1-message-per-2-seconds cap is hit — the caller then
+  /// falls back to the share sheet instead of showing an error.
+  static Future<bool> postToChat(RoomInvite invite, String roomId) async {
+    if (roomId.trim().isEmpty) return false;
+    final line = invite.chatLine;
+    if (line.trim().isEmpty) return false;
+    return PartyChatService.sendMessage(roomId, line);
   }
 
   /// The line shown after a share. Easy English, no jargon.

@@ -8,6 +8,7 @@ import 'package:dizzy/design/dizzy_tokens.dart';
 import 'package:dizzy/design/prism_shadows.dart';
 import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/services/theme/app_theme_service.dart';
+import 'package:dizzy/services/watchparty/room_invite.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 
 /// Unified tactile OLED co-experience room for the 3 modes:
@@ -118,6 +119,29 @@ class _UnifiedCoExperienceRoomPageState
     );
   }
 
+  /// Same invite the room panel posts, from the room itself: share sheet
+  /// first, clipboard if there is no sheet. Never a dead end.
+  Future<void> _shareInvite() async {
+    final session = PartySession.instance;
+    final room = session.room;
+    final code = room == null || room.roomId.isEmpty
+        ? 'LOBBY'
+        : room.roomId.toUpperCase();
+    final invite = RoomInvite(
+      roomCode: code,
+      mediaTitle: session.mediaTitle ?? room?.currentTitle,
+    );
+    HapticFeedback.lightImpact();
+    final result = await RoomInviteService.share(invite);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(RoomInviteService.resultLine(result)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppThemeService.currentPalette.value;
@@ -214,6 +238,7 @@ class _UnifiedCoExperienceRoomPageState
                 child: switch (_mode) {
                   CoExperienceMode.watch => _WatchTogetherBody(
                     onCopyCode: _copyRoomCode,
+                    onShareInvite: _shareInvite,
                   ),
                   CoExperienceMode.listen => _ListenTogetherBody(
                     spinning: _spinning,
@@ -497,8 +522,12 @@ class _VoiceStrip extends StatelessWidget {
 
 class _WatchTogetherBody extends StatelessWidget {
   final ValueChanged<String> onCopyCode;
+  final Future<void> Function() onShareInvite;
 
-  const _WatchTogetherBody({required this.onCopyCode});
+  const _WatchTogetherBody({
+    required this.onCopyCode,
+    required this.onShareInvite,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -554,6 +583,19 @@ class _WatchTogetherBody extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.6,
                             color: ink,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: onShareInvite,
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.ios_share_rounded,
+                            size: 17,
+                            color: inkSoft,
                           ),
                         ),
                       ),
