@@ -1009,40 +1009,152 @@ async function delCurated(id) {
     loadCurated();
   } catch (e) { toast('Delete failed: ' + e.message, 'err'); }
 }
+// Phase 6: one paste, one device card.
+// A support ticket says "DIZ-1234567". Answering it used to mean three tabs —
+// Fleet for the code, Device logs for the errors, Privacy for consent — and if
+// the user had reinstalled, the code in the ticket was the RETIRED one, so
+// Fleet showed nothing at all. admin_device_card() resolves current and
+// retired codes alike and returns the whole answer as one object.
+function devConsentPill(label, on) {
+  return `<span class="pill plain ${on ? 'p-live' : 'p-closed'}"
+    title="${label} consent: ${on ? 'allowed' : 'denied'}">${label} ${on ? 'on' : 'off'}</span>`;
+}
+
+function deviceCardHtml(d) {
+  const code = String(d.device_code || '');
+  const days = d.days_since_seen == null ? null : Number(d.days_since_seen);
+  const stale = d.stale
+    ? `<span class="pill p-lock" title="no boot from this device for ${days == null ? 'over 30 days' : days + ' day(s)'}">stale${days == null ? '' : ' ' + days + 'd'}</span>`
+    : '';
+  const online = d.online ? '<span class="pill p-live">online</span>' : '';
+  const revoked = d.revoked_at ? '<span class="pill p-closed">revoked</span>' : '';
+  const banned = d.banned
+    ? `<span class="pill p-closed" title="ban level ${esc(d.ban_level || 'social')}">banned</span>` : '';
+  const adult = d.adult_allowed ? '<span class="pill p-adult" title="18+ content allowed">🔞 18+</span>' : '';
+  const weak = d.hwid_stable === false
+    ? '<span class="pill" title="weak identity anchor — hwid did not stay stable on this install">new</span>' : '';
+
+  // null consent means the user never made a choice. That is NOT "no", and the
+  // card says so rather than quietly implying the user refused.
+  const c = d.consent;
+  const consent = c
+    ? [devConsentPill('telemetry', c.telemetry),
+       devConsentPill('crash', c.crash),
+       devConsentPill('genres', c.genre_prefs)].join(' ')
+    : '<span class="pill p-closed plain" title="this user never opened the consent sheet">no choice recorded</span>';
+
+  const codes = Array.isArray(d.codes) ? d.codes : [];
+  const codeChips = codes.map((x) => `<span class="chip mono"
+      title="${esc(x.source || 'boot')} · first seen ${x.first_seen_at ? esc(fmtAbs(x.first_seen_at)) : '—'}">
+      DIZ-${esc(x.code)}${x.current ? ' · current' : ''}
+      <span class="mut">${fmtNum(Number(x.hits) || 0)} hits</span>
+      <button class="btn btn-ghost btn-sm" onclick="openDevLogs('${esc(x.code)}')">logs</button>
+    </span>`).join('');
+
+  const hist = (d.username_history || []).length
+    ? `<div class="hist">${d.username_history.map((h) => `<div class="hist-row">
+         <span class="mut">${ago(h.at)}</span>
+         <span class="mono">@${esc(h.old_value || '—')}</span>
+         <span class="mut">→</span>
+         <span class="mono"><b>@${esc(h.new_value || '—')}</b></span></div>`).join('')}</div>`
+    : '<div class="mut">No username changes.</div>';
+
+  const rows = Number(d.log_rows) || 0;
+  const hits = Number(d.log_hits) || 0;
+  const screens = Number(d.log_screens) || 0;
+  const telemetry = rows
+    ? `${rows} kind${rows === 1 ? '' : 's'} · <b>${fmtNum(hits)}</b> hit${hits === 1 ? '' : 's'}
+       · ${screens} screen${screens === 1 ? '' : 's'}
+       · last ${d.log_last_at ? ago(d.log_last_at) : '—'}`
+    : 'No error reports from this device.';
+
+  const owner = d.username
+    ? `<strong>@${esc(d.username)}</strong>`
+    : '<span class="mut">no username claimed</span>';
+  const wasName = d.previous_username && d.previous_username !== d.username
+    ? `<span class="pill plain" title="username left behind by the previous owner of this device">was @${esc(d.previous_username)}</span>`
+    : '';
+
+  return `<div class="dev-card${d.stale ? ' is-stale' : ''}">
+    <div class="rep-top">
+      <span class="mono dev-code">DIZ-${esc(code || '—')}</span>
+      ${online} ${stale} ${revoked} ${banned} ${adult} ${weak}
+    </div>
+    <div class="rep-meta">${owner} ${wasName} ·
+      <span class="mono" title="${esc(d.user_id)}">${esc(shortId(d.user_id))}…</span></div>
+    <div class="kv">
+      <b>Build</b><span>${esc(d.platform || '—')} · v${esc(d.app_version || '—')}</span>
+      <b>First seen</b><span>${d.first_seen_at ? `${esc(fmtAbs(d.first_seen_at))} <span class="mut">(${ago(d.first_seen_at)})</span>` : '—'}</span>
+      <b>Last seen</b><span>${d.last_seen_at ? `${esc(fmtAbs(d.last_seen_at))} <span class="mut">(${ago(d.last_seen_at)})</span>` : '—'}</span>
+      <b>Consent</b><span>${consent}</span>
+      <b>Telemetry</b><span>${telemetry}</span>
+      <b>Codes (${codes.length})</b><span>${codeChips || '<span class="mut">none</span>'}</span>
+      <b>Username log</b><span>${hist}</span>
+    </div>
+    <div class="rowbtns">
+      <button class="btn btn-ghost btn-sm" onclick="openDevLogs('${esc(code)}')">Open device logs</button>
+      <button class="btn btn-ghost btn-sm" onclick="findUserFor('${esc(d.user_id)}')">Look up owner</button>
+    </div>
+  </div>`;
+}
+
+// Device card -> owner's user card, without retyping the id.
+function findUserFor(uid) {
+  const box = $('fuSearch');
+  if (box) box.value = uid;
+  loadFindUser();
+}
+
 async function loadFindUser() {
   const box = $('findUserList');
   if (box) box.innerHTML = skLines(4);
   try {
-    const q = ($('fuSearch') || {}).value || '';
-    if (!q.trim()) { if (box) box.innerHTML = emptyState('🔎', 'Search a user', 'Try @username, a user id, or a DIZ- device code.'); return; }
-    const rows = await rpc('admin_find_user', { p_search: q.trim() });
+    const q = (($('fuSearch') || {}).value || '').trim();
+    if (!q) {
+      if (box) box.innerHTML = emptyState('🔎', 'Search a user or device',
+        'Try @username, a user id, or a DIZ- device code — retired codes work too.');
+      return;
+    }
+    // Both lookups run: a code answers with a device card, a username answers
+    // with a user card, and one query can legitimately answer with both.
+    const [devices, users] = await Promise.all([
+      rpc('admin_device_card', { p_search: q }).catch(() => []),
+      rpc('admin_find_user', { p_search: q }).catch(() => []),
+    ]);
     if (!box) return;
-    box.innerHTML = (rows || []).length
-      ? rows.map((u) => {
-        const dev = (u.installs || []).map((d) =>
-          `<span class="chip mono">DIZ-${esc(d.device_code || '?')} · ${esc(d.platform || '?')}</span>`).join(' ');
-        const prof = (u.profiles || []).map((p) =>
-          `<span class="chip">${esc(p.avatar || '')} ${esc(p.name || 'Profile')}</span>`).join(' ');
-        return `<div class="rep-card">
-          <div class="rep-top">
-            <span class="mono">@${esc(u.username || '—')}</span>
-            <span class="mut mono" title="${esc(u.user_id)}">${esc(shortId(u.user_id))}…</span>
-            <span class="mut">${Number(u.sessions) || 0} sessions</span>
-            <span class="mut">seen ${ago(u.last_seen)}</span>
-          </div>
-          <div class="rep-meta">devices: ${dev || '<span class="mut">none</span>'}</div>
-          <div class="rep-meta">profiles: ${prof || '<span class="mut">none</span>'}</div>
-          <div class="hist">${historyRows(u.history)}</div>
-          <div class="rowbtns">
-            <button class="btn btn-ghost btn-sm" onclick="banUser('${esc(u.user_id)}','social')">🟠 Social ban</button>
-            <button class="btn btn-ghost btn-sm" onclick="banUser('${esc(u.user_id)}','full')">⛔ Full ban</button>
-            <button class="btn btn-ghost btn-sm" onclick="unbanUser('${esc(u.user_id)}')">🔓 Unban</button>
-            <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','progress')">Reset progress</button>
-            <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','profile')">Reset profile</button>
-          </div>
-        </div>`;
-      }).join('')
-      : emptyState('🔎', 'No match', 'Check the spelling, or search by device code.');
+    const devCards = (devices || []).map(deviceCardHtml);
+    const userCards = (users || []).map((u) => {
+      const dev = (u.installs || []).map((d) =>
+        `<span class="chip mono">DIZ-${esc(d.device_code || '?')} · ${esc(d.platform || '?')}</span>`).join(' ');
+      const prof = (u.profiles || []).map((p) =>
+        `<span class="chip">${esc(p.avatar || '')} ${esc(p.name || 'Profile')}</span>`).join(' ');
+      return `<div class="rep-card">
+        <div class="rep-top">
+          <span class="mono">@${esc(u.username || '—')}</span>
+          <span class="mut mono" title="${esc(u.user_id)}">${esc(shortId(u.user_id))}…</span>
+          <span class="mut">${Number(u.sessions) || 0} sessions</span>
+          <span class="mut">seen ${ago(u.last_seen)}</span>
+        </div>
+        <div class="rep-meta">devices: ${dev || '<span class="mut">none</span>'}</div>
+        <div class="rep-meta">profiles: ${prof || '<span class="mut">none</span>'}</div>
+        <div class="hist">${historyRows(u.history)}</div>
+        <div class="rowbtns">
+          <button class="btn btn-ghost btn-sm" onclick="banUser('${esc(u.user_id)}','social')">🟠 Social ban</button>
+          <button class="btn btn-ghost btn-sm" onclick="banUser('${esc(u.user_id)}','full')">⛔ Full ban</button>
+          <button class="btn btn-ghost btn-sm" onclick="unbanUser('${esc(u.user_id)}')">🔓 Unban</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','progress')">Reset progress</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetUser('${esc(u.user_id)}','profile')">Reset profile</button>
+        </div>
+      </div>`;
+    });
+    const cards = [...devCards, ...userCards];
+    box.innerHTML = cards.length
+      ? `<div class="mut" style="margin:0 0 10px">
+           ${devCards.length} device${devCards.length === 1 ? '' : 's'} ·
+           ${userCards.length} user${userCards.length === 1 ? '' : 's'}
+           matching “${esc(q)}”</div>` + cards.join('')
+      : emptyState('🔎', 'No match',
+        'Check the spelling, or paste the full DIZ- code from the ticket.');
   } catch (e) { if (box) box.innerHTML = emptyState('⚠️', 'Lookup failed', e.message); }
 }
 async function resetUser(uid, scope) {
