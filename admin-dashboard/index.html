@@ -373,10 +373,20 @@
 
         <div class="card" style="margin-top:18px">
           <div class="card-h"><div class="card-t"><h3>Device push <span class="opt">FCM</span></h3><p class="sub">Phones only · 20 h gap, 1/day, 4/week per user · quiet hours honoured</p></div>
-            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadPushLog()">↻ Refresh log</button></div>
+            <div class="card-a">
+              <button class="btn btn-ghost btn-sm" onclick="loadPushLog()">↻ Refresh log</button>
+              <button class="btn btn-ghost btn-sm" id="rpSwitch" onclick="togglePushSwitch()" title="Stop or resume every push">⏸ Pause all</button>
+            </div>
           </div>
+          <div id="rpAudience" class="hint" style="margin-bottom:12px">counting phones…</div>
           <div class="grid2">
             <div>
+              <label class="fl" for="rpTarget">Send to one device <span class="opt">DIZ-code, @username, user id</span></label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="text" id="rpTarget" placeholder="DIZ-1234567" style="flex:1" onkeydown="if(event.key==='Enter')findPushTarget()">
+                <button class="btn btn-ghost btn-sm" onclick="findPushTarget()">🔎 Find</button>
+              </div>
+              <div id="rpTargetOut" class="hint" style="margin-top:6px">Paste a ticket code to aim a single notification.</div>
               <label class="fl" for="rpKind">Channel</label>
               <select id="rpKind">
                 <option value="releases" selected>New releases</option>
@@ -393,7 +403,8 @@
                 <input type="checkbox" id="rpDry" style="width:auto"> <span>Dry run (count tokens, send nothing)</span>
               </label>
               <div class="rowbtns" style="margin-top:12px">
-                <button class="btn btn-primary btn-sm" onclick="sendPush('test')">📱 Send to me</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendPush('test')">📱 Send to me</button>
+                <button class="btn btn-primary btn-sm" id="rpSendTarget" onclick="sendPush('target')" disabled>🎯 Send to this device</button>
                 <button class="btn btn-ghost btn-sm" onclick="sendPush('broadcast')">📣 Broadcast</button>
                 <button class="btn btn-ghost btn-sm" onclick="runBrain()">🧠 Preview brain</button>
               </div>
@@ -402,6 +413,8 @@
             <div>
               <div class="card-t"><h3>Recent sends</h3><p class="sub">Newest 40 · failed rows stay out of the cadence</p></div>
               <div id="rpLog">loading…</div>
+              <div class="card-t" style="margin-top:16px"><h3>Admin actions</h3><p class="sub">Who pressed what · newest 20</p></div>
+              <div id="rpEvents">loading…</div>
             </div>
           </div>
         </div>

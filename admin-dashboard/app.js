@@ -128,7 +128,7 @@ function show(name) {
   if (name === 'overview') startOverviewLive(); else stopOverviewLive();
   if (name === 'users') { loadUsers(); loadDevices(); loadOrphans(); startFleetLive(); } else stopFleetLive();
   if (name === 'usernames') loadUsernames();
-  if (name === 'push') { loadAnn(); loadPushLog(); }
+  if (name === 'push') { loadAnn(); loadPushLog(); loadPushAudience(); loadPushEvents(); }
   if (name === 'config') loadCfg();
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
@@ -172,7 +172,7 @@ const RT_LOADERS = {
   moderation: () => { loadUserReports(); loadAppeals(); },
   rooms: () => loadRooms(),
   support: () => { loadTickets(); loadSupportStats(); loadSupportAnswers(); },
-  push: () => { loadAnn(); loadPushLog(); },
+  push: () => { loadAnn(); loadPushLog(); loadPushAudience(); loadPushEvents(); },
   config: () => loadCfg(),
   scrapers: () => loadScrapers(),
   audit: () => loadAudit(),
@@ -1947,10 +1947,18 @@ async function removeAdmin(uid) {
   } catch (e) { toast('Remove failed: ' + e.message, 'err'); }
 }
 
-// ── device push (v1.3.3 Phase 4) ──
+// ── device push (v1.3.3 Phase 4, v1.4 operator controls) ──
 // Thin wrappers over the two edge functions. The dashboard sends its own
 // admin JWT; push-send and push-brain both accept a real admin, so nothing
 // secret ever ships in this static bundle.
+//
+// v1.4 adds the three things an operator actually needs at 2 a.m.: how big
+// the audience is, one tap to stop the world, and one tap to aim a single
+// notification at the device named in a support ticket.
+let pushAudience = null;
+let pushTarget = null;
+let pushTargets = [];
+
 async function pushFn(name, payload) {
   const cfg = window.DIZZY_CONFIG || {};
   const { data } = await sb.auth.getSession();
@@ -1973,36 +1981,200 @@ function pushOut(obj) {
   el.style.display = 'block';
   el.textContent = JSON.stringify(obj, null, 2);
 }
+
+// Audience + kill switch. One RPC, so the number and the switch can never
+// disagree: if the header says "12.4k phones" the switch beside it is the one
+// that reaches them.
+async function loadPushAudience() {
+  const line = $('rpAudience');
+  const btn = $('rpSwitch');
+  try {
+    const a = (await rpc('admin_push_audience')) || {};
+    pushAudience = a;
+    const on = a.sending_enabled !== false;
+    if (line) {
+      line.innerHTML = on
+        ? `<b>${fmtNum(a.phones)}</b> phones · <b>${fmtNum(a.people)}</b> people · ` +
+          `${fmtNum(a.android)} Android / ${fmtNum(a.ios)} iOS · ` +
+          `${fmtNum(a.sent_24h)} sent in 24 h` +
+          (a.failed_24h ? ` · <span style="color:var(--red)">${fmtNum(a.failed_24h)} failed</span>` : '')
+        : `⏸ <b style="color:var(--red)">Push is paused</b> — ${esc(a.paused_reason || 'no reason given')} · ` +
+          `${fmtNum(a.phones)} phones waiting`;
+    }
+    if (btn) {
+      btn.textContent = on ? '⏸ Pause all' : '▶ Resume push';
+      btn.style.color = on ? '' : 'var(--acc)';
+    }
+  } catch (e) {
+    if (line) line.innerHTML = 'Audience unavailable: ' + esc(e.message);
+  }
+}
+
+async function togglePushSwitch() {
+  const currentlyOn = !(pushAudience && pushAudience.sending_enabled === false);
+  try {
+    if (currentlyOn) {
+      const ok = await confirmDialog({
+        title: 'Pause every notification?',
+        message: 'The brain and every manual send stop until you resume. Nobody is unsubscribed.',
+        okText: 'Pause all',
+      });
+      if (!ok) return;
+      const reason = prompt('Reason (kept in the admin log):', '') || '';
+      pushAudience = await rpc('admin_push_set_enabled', {
+        p_enabled: false,
+        p_reason: reason,
+      });
+      toast('Push paused', 'warn');
+    } else {
+      pushAudience = await rpc('admin_push_set_enabled', {
+        p_enabled: true,
+        p_reason: '',
+      });
+      toast('Push resumed', 'ok');
+    }
+  } catch (e) {
+    toast('Switch failed: ' + e.message, 'err');
+  }
+  await loadPushAudience();
+  loadPushEvents();
+}
+
+// Paste a ticket code -> the user id push-send needs. The resolver lives in
+// the database (admin_push_resolve), so retired DIZ-codes and @usernames work
+// here exactly like they do on the device card.
+async function findPushTarget() {
+  const box = $('rpTargetOut');
+  const btn = $('rpSendTarget');
+  const q = (($('rpTarget') || {}).value || '').trim();
+  pushTarget = null;
+  pushTargets = [];
+  if (btn) btn.disabled = true;
+  if (!q) {
+    if (box) box.textContent = 'Paste a DIZ-code, @username or user id.';
+    return;
+  }
+  if (box) box.textContent = 'Looking…';
+  try {
+    const rows = await rpc('admin_push_resolve', { p_search: q });
+    pushTargets = Array.isArray(rows) ? rows : [];
+    if (!pushTargets.length) {
+      if (box) {
+        box.innerHTML =
+          '<span style="color:var(--acc)">No device matches that. ' +
+          'If they reinstalled, try the retired code printed in the ticket.</span>';
+      }
+      return;
+    }
+    pushTarget = pushTargets[0];
+    if (btn) btn.disabled = false;
+    if (box) {
+      box.innerHTML = pushTargets.slice(0, 4).map((r, i) => `
+        <div style="display:flex;gap:8px;align-items:center;margin-top:5px;flex-wrap:wrap">
+          <span class="chip">${esc(r.device_code || '—')}</span>
+          <span>${esc(r.username ? '@' + r.username : shortId(r.user_id))}</span>
+          <span class="chip">${fmtNum(r.tokens)} phone${(Number(r.tokens) === 1) ? '' : 's'}</span>
+          <button class="btn btn-ghost btn-sm" onclick="pickPushTarget(${i})">Use</button>
+        </div>`).join('');
+    }
+  } catch (e) {
+    if (box) box.textContent = 'Lookup failed: ' + e.message;
+  }
+}
+
+function pickPushTarget(i) {
+  const row = pushTargets[i];
+  if (!row) return;
+  pushTarget = row;
+  const btn = $('rpSendTarget');
+  if (btn) btn.disabled = false;
+  toast('Aiming at ' + (row.device_code || shortId(row.user_id)), 'info');
+}
+
+async function logAdminPush({ mode, target, kind, title, body, out, dry }) {
+  try {
+    await rpc('admin_push_log', {
+      p_mode: mode,
+      p_target: target || '',
+      p_kind: kind,
+      p_title: title,
+      p_body: body,
+      p_tokens: out.tokens || 0,
+      p_sent: out.sent || 0,
+      p_failed: out.failed || 0,
+      p_dry_run: !!dry,
+      p_error: out.error || '',
+    });
+  } catch (e) {
+    // A send that already happened must never be hidden by a log failure.
+    console.warn('push log failed', e);
+  }
+}
+
 async function sendPush(mode) {
   const title = ($('rpTitle') || {}).value || '';
   const body = ($('rpBody') || {}).value || '';
   const dry = !!($('rpDry') || {}).checked;
+  const kind = ($('rpKind') || {}).value || 'releases';
   if (!title.trim() && !body.trim()) {
     toast('Title or body required', 'warn');
     return;
   }
+
+  const payload = {
+    mode: mode === 'target' ? 'users' : mode,
+    kind,
+    title: title.trim(),
+    body: body.trim(),
+    dry_run: dry,
+  };
+  let target = '';
+
+  if (mode === 'target') {
+    if (!pushTarget || !pushTarget.user_id) {
+      toast('Find a device first', 'warn');
+      return;
+    }
+    payload.user_ids = [pushTarget.user_id];
+    target = pushTarget.device_code || pushTarget.username || pushTarget.user_id;
+    if (!dry) {
+      const ok = await confirmDialog({
+        title: 'Send to ' + target + '?',
+        message: 'One notification, to that account only' +
+          (pushTarget.tokens ? ' (' + pushTarget.tokens + ' phone' + (Number(pushTarget.tokens) === 1 ? '' : 's') + ').' : '.'),
+        okText: 'Send',
+      });
+      if (!ok) return;
+    }
+  }
+
   if (mode === 'broadcast' && !dry) {
+    const n = pushAudience && pushAudience.phones ? pushAudience.phones : 0;
     const ok = await confirmDialog({
       title: 'Broadcast to every phone?',
-      message: 'Every device with notifications enabled gets this right now.',
+      message: (n ? fmtNum(n) + ' phones get this right now. ' : '') +
+        'Every device with notifications enabled gets this.',
       okText: 'Broadcast',
     });
     if (!ok) return;
   }
+
   try {
-    const out = await pushFn('push-send', {
-      mode,
-      kind: ($('rpKind') || {}).value || 'releases',
-      title: title.trim(),
-      body: body.trim(),
-      dry_run: dry,
-    });
+    const out = await pushFn('push-send', payload);
     pushOut(out);
     const label = out.dry_run ? 'previewed' : 'sent';
     toast('Push ' + label + ' · ' + (out.sent || 0) + '/' + (out.tokens || 0), 'ok');
+    await logAdminPush({ mode, target, kind, title, body, out, dry });
     loadPushLog();
+    loadPushEvents();
   } catch (e) {
     toast('Push failed: ' + e.message, 'err');
+    // A refused send is still worth a line: kill switch, quota, bad token.
+    await logAdminPush({
+      mode, target, kind, title, body,
+      out: { error: e.message }, dry,
+    });
+    loadPushEvents();
   }
 }
 async function runBrain() {
@@ -2014,6 +2186,46 @@ async function runBrain() {
     toast('Brain failed: ' + e.message, 'err');
   }
 }
+
+async function loadPushEvents() {
+  const box = $('rpEvents');
+  if (!box) return;
+  box.innerHTML = skLines(3);
+  try {
+    const { data, error } = await sb
+      .from('admin_push_events')
+      .select('id, event, mode, target, title, tokens, sent, failed, dry_run, error, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) throw error;
+    box.innerHTML = (data || []).map((r) => {
+      const isSwitch = r.event === 'pause' || r.event === 'resume';
+      const pill = r.event === 'pause' ? 'p-closed'
+        : r.event === 'resume' ? 'p-live'
+        : r.dry_run ? 'p-lobby' : 'p-live';
+      const what = isSwitch
+        ? (r.event === 'pause' ? 'Push paused' : 'Push resumed')
+        : (r.title || '—');
+      const counts = isSwitch ? '' :
+        `<span class="chip">${fmtNum(r.sent)}/${fmtNum(r.tokens)} sent</span>` +
+        (r.failed ? `<span class="chip" style="color:var(--red)">${fmtNum(r.failed)} failed</span>` : '');
+      return `<div class="ann">
+        <div class="ann-top"><span class="ann-title">${esc(what)}</span>
+          <span class="pill ${pill}">${esc(r.event)}${r.dry_run ? ' · dry' : ''}</span></div>
+        <div class="ann-meta">
+          <span class="chip">${esc(r.mode || '—')}</span>
+          ${r.target ? `<span class="chip">${esc(r.target)}</span>` : ''}
+          ${counts}
+          <span class="chip" title="${esc(fmtAbs(r.created_at))}">${ago(r.created_at)}</span>
+        </div>
+        ${r.error ? `<div class="ann-body" style="opacity:.6">${esc(String(r.error).slice(0, 140))}</div>` : ''}
+      </div>`;
+    }).join('') || emptyState('🧾', 'No admin sends yet', 'Send, pause or resume and it lands here.');
+  } catch (e) {
+    box.innerHTML = '<p class="hint">Actions failed: ' + esc(e.message) + '</p>';
+  }
+}
+
 async function loadPushLog() {
   const box = $('rpLog');
   if (!box) return;
