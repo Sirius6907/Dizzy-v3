@@ -2,7 +2,55 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
-## [1.3.6+1037] - 2026-11-20 - "Real Streams, No Waiting"
+## [1.3.6+1038] - 2026-11-20 - "One App"
+
+### The brand finally moves
+- **A real intro, not a splash** — the app opens on a 3.15 s brand beat: the
+  halo draws, the wordmark sweeps in, the line settles, then it lifts away.
+  It plays *over* Home instead of gating boot, so a cold start is never slower
+  than before.
+- **It knows when to stop** — tap anywhere to skip; with reduced motion on it
+  runs a 620 ms fade instead of the sweep; it plays once per launch.
+- **Cold start is black, not white** — Android's launch theme and the v31
+  splash now match the app, so there is no white flash before the first frame.
+
+### Your queue survives a restart
+- **Pause, close, come back** — the music queue (tracks, order, current
+  position) is saved as you go and restored on the next launch, paused at the
+  exact spot. It never autoplays, so opening the app in a quiet room cannot
+  blast audio.
+
+### Watch party, finished
+- **Pick your voice quality** — High / Balanced / Data saver (48k / 24k / 12k)
+  with echo cancellation, noise suppression and AGC on in every tier. The
+  choice applies on the next join, never mid-call.
+- **Invite from inside the room** — one tap posts the code into room chat; if
+  chat is rate-limited or offline it falls back to the share sheet, then the
+  clipboard. Any member can invite, not just the host.
+- **The join sheet is readable in light theme** — fixed white-on-white text.
+
+### Push you can actually control
+- **One switch stops everything** — a single kill switch in the admin panel
+  pauses every send (cron and manual) without unsubscribing anyone.
+- **One paste finds one phone** — a support ticket's DIZ-code (current or
+  retired), device id, user id or @username resolves to the exact account, so
+  one notification can be aimed instead of broadcast.
+- **Retries instead of silent loss** — FCM 429/503 answers are retried with
+  backoff, so a broadcast no longer quietly drops the tail of the audience.
+- **A receipt for every action** — sends, pauses and resumes land in an admin
+  ledger with who, what, how many, and how it went.
+
+### Profiles that look like people
+- **A real identity block** — the profile page now has a photo (optional,
+  local), monogram fallback, and honest stat tiles instead of placeholders.
+- **Reachable from everywhere** — the account hub and the first-run gate both
+  open it, and a saved custom background loads at boot instead of flashing the
+  default first.
+
+### Playback that keeps running
+- **Media and downloads keep a foreground service** — playback and long
+  downloads survive the app leaving the screen, with a now-playing card you
+  can dismiss.
 
 ### Music starts on the actual track
 - **The extractor was ignoring its own instructions** — `getAudioUrl` accepted
