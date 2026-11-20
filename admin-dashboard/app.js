@@ -1177,11 +1177,44 @@ function stopFleetLive() {
 }
 
 // ── devices (Phase C) ──
+// v1.4.3: each device row now carries its owner's @username and an expandable
+// username log (identity_history kind='username') plus the name a reinstall
+// left behind on previous_user_id. device_id is shown in full inside the
+// expansion so support can quote it; hwid_hash is never returned by the RPC.
+function devNameLog(d) {
+  const hist = Array.isArray(d.username_history) ? d.username_history : [];
+  if (!hist.length) {
+    return '<li class="mut">No username changes recorded for this device yet.</li>';
+  }
+  return hist.map((h) => {
+    const from = h.old_value === 'auto-generated' ? 'auto' : (h.old_value || '—');
+    const to = h.new_value === 'released-by-admin'
+      ? 'released by admin' : (h.new_value || '—');
+    return `<li><span class="mono">${esc(from)} → ${esc(to)}</span>
+      <span class="mut" title="${esc(fmtAbs(h.at))}">· ${ago(h.at)}</span></li>`;
+  }).join('');
+}
+
+function toggleDevDetail(deviceId) {
+  const row = $('devdet-' + deviceId);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+// Jump straight from a device row into the Device logs tab, already filtered
+// to that code. Support used to copy the code across two tabs by hand.
+function openDevLogs(code) {
+  const box = $('dlDevice');
+  if (box) box.value = 'DIZ-' + code;
+  _dlCodePrefix = '';
+  show('devicelogs');
+}
+
 async function loadDevices() {
   const tb = document.querySelector('#devicesTbl tbody');
-  if (tb) tb.innerHTML = skRows(8, 6);
+  if (tb) tb.innerHTML = skRows(8, 7);
   try {
-    const rows = await rpc('admin_devices', { p_limit: 100, p_search: ($('devSearch') || {}).value || '' });
+    const rows = await rpc('admin_devices', { p_limit: 500, p_search: ($('devSearch') || {}).value || '' });
     if (tb) tb.innerHTML = rows.map((d) => {
       const dot = d.online ? '<span class="pill p-live">● online</span>' : '<span class="mut">offline</span>';
       const activity = d.online && d.activity && d.activity !== 'idle'
@@ -1199,13 +1232,53 @@ async function loadDevices() {
       const action = d.revoked_at
         ? `<button class="btn btn-ok btn-sm" onclick="revokeDevice('${d.device_id}',false)">Restore</button>`
         : `<button class="btn btn-danger btn-sm" onclick="revokeDevice('${d.device_id}',true)">Revoke</button>`;
-      return `<tr><td class="mono">${esc(d.device_code)}</td>
+      const who = d.username
+        ? `<strong>@${esc(d.username)}</strong>`
+        : '<span class="mut" title="this device has not claimed a username">no name</span>';
+      const leftBehind = d.previous_username && d.previous_username !== d.username
+        ? `<span class="pill" title="username left behind by the previous owner of this device">was @${esc(d.previous_username)}</span>`
+        : '';
+      const nameLog = Number(d.username_change_count) || 0;
+      const logBtn = nameLog
+        ? `<button class="btn btn-ghost btn-sm" onclick="toggleDevDetail('${esc(d.device_id)}')"
+        title="Show this device's username log">log ${nameLog}</button>`
+        : '';
+      const codeCell = `<span class="mono" style="cursor:pointer"
+        onclick="toggleDevDetail('${esc(d.device_id)}')"
+        title="Show full device ID and username log">${esc(d.device_code)}</span>`;
+      const prevOwner = d.previous_user_id && d.previous_user_id !== d.user_id
+        ? `<div class="mut">Previous owner <span class="mono" title="${esc(d.previous_user_id)}">${esc(shortId(d.previous_user_id))}…</span>
+             ${d.previous_username ? `(@${esc(d.previous_username)})` : ''}</div>`
+        : '';
+      const hits = Number(d.log_hits) || 0;
+      const logRows = Number(d.log_rows) || 0;
+      const errorLine = logRows
+        ? `<div class="mut">Errors <span class="mono">${logRows} kind${logRows === 1 ? '' : 's'} · ${hits} hit${hits === 1 ? '' : 's'}</span>
+             · last ${d.log_last_at ? ago(d.log_last_at) : '—'}</div>`
+        : '<div class="mut">No error reports from this device.</div>';
+      const detail = `<tr id="devdet-${esc(d.device_id)}" style="display:none">
+        <td colspan="7">
+          <div class="mut" style="margin-bottom:6px">
+            Device ID <span class="mono">${esc(d.device_id)}</span> ·
+            Owner <span class="mono" title="${esc(d.user_id)}">${esc(shortId(d.user_id))}…</span>
+            ${d.username ? `(@${esc(d.username)})` : ''}
+            · registered ${ago(d.created_at)}
+          </div>
+          ${prevOwner}
+          <div style="margin:6px 0">${errorLine}
+            <button class="btn btn-ghost btn-sm" onclick="openDevLogs('${esc(d.device_code)}')"
+              title="Open Device logs filtered to this device">Open logs</button></div>
+          <div class="mut" style="margin:6px 0 4px">Username log</div>
+          <ul class="ann-list" style="margin:0;padding-left:18px">${devNameLog(d)}</ul>
+        </td></tr>`;
+      return `<tr><td>${codeCell}</td>
+       <td>${who} ${leftBehind} ${logBtn}</td>
        <td>${esc(d.platform)}</td><td>${esc(d.app_version)}</td>
        <td>${dot} ${badges}</td>
        <td class="mut" title="${esc(fmtAbs(d.last_seen_at))}">${ago(d.last_seen_at)}</td>
-       <td>${action} ${adultBtn}</td></tr>`;
+       <td>${action} ${adultBtn}</td></tr>${detail}`;
     }).join('')
-      || `<tr><td colspan="6">${emptyState('📭', 'No devices yet', 'Devices register on app boot.')}</td></tr>`;
+      || `<tr><td colspan="7">${emptyState('📭', 'No devices yet', 'Devices register on app boot.')}</td></tr>`;
   } catch (e) { toast('Devices failed: ' + e.message, 'err'); }
 }
 
