@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dizzy/design/prism_tokens.dart';
 import '../../services/adult/adult_section_gate.dart';
+import '../adult/adult_heaven_page.dart';
 import '../../widgets/common/offline_aware_scaffold.dart';
 import '../../widgets/prism/prism_card.dart';
 
@@ -263,7 +264,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 builder: (context, hidden, _) => SwitchListTile(
                   title: Text('Private mode', style: TextStyle(color: ink)),
                   subtitle: Text(
-                    'Labels the entry "Display" and blocks screenshots and the recents preview while the 18+ screen is open.',
+                    'Labels the Settings entry "Late Night" and blocks screenshots and the recents preview while the 18+ screen is open.',
                     style: TextStyle(color: inkSoft, fontSize: 12),
                   ),
                   value: hidden,
@@ -301,6 +302,40 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     child: const Text('Check again'),
                   ),
                 ),
+              ),
+              // v1.4.2: once the triple lock is open, the section gets a real
+              // entry point on the page that reports the unlock — the disguised
+              // Settings tile ("Late Night" while private mode is on) is far
+              // too easy to miss.
+              ValueListenableBuilder<bool>(
+                valueListenable: AdultSectionGate.visible,
+                builder: (context, open, _) {
+                  if (!open) return const SizedBox.shrink();
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFE50914),
+                    ),
+                    title: Text(
+                      'Open 18+ Heaven',
+                      style: TextStyle(color: ink),
+                    ),
+                    subtitle: Text(
+                      'Adult-only shelves, one tap away. Also in Settings as '
+                      '"Late Night" while private mode is on.',
+                      style: TextStyle(color: inkSoft, fontSize: 12),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right_rounded,
+                      color: inkSoft,
+                    ),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AdultHeavenPage(),
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 8),
               _sectionTitle('Danger zone'),

@@ -615,8 +615,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // 18+ Heaven: gated entry — renders ONLY when the triple
               // lock is open, so the section is invisible otherwise. Under
-              // private mode the tile is disguised as a plain "Display"
-              // row: no emoji, no badge, no hint of adult content.
+              // private mode the tile is disguised as a bland "Late Night"
+              // row: no emoji, no badge, no hint of adult content. The name
+              // is deliberately not "Display" — that promised real display
+              // settings and left owners hunting for the section.
               ValueListenableBuilder<bool>(
                 valueListenable: AdultSectionGate.visible,
                 builder: (context, open, _) {
@@ -629,16 +631,16 @@ class _SettingsPageState extends State<SettingsPage> {
                         builder: (context, disguised, _) =>
                             _SettingsCategoryTile(
                               icon: disguised
-                                  ? Icons.display_settings_rounded
+                                  ? Icons.nightlight_round
                                   : Icons.no_adult_content_rounded,
                               iconColor: disguised
                                   ? palette.primaryColor
                                   : const Color(0xFFE50914),
                               title: disguised
-                                  ? 'Display'
+                                  ? 'Late Night'
                                   : '🔞 18+ Heaven',
                               subtitle: disguised
-                                  ? 'Screen, playback and layout preferences'
+                                  ? 'After-hours shelf — browsed rows, by mood'
                                   : 'Adult-only browsed rows, category-wise',
                               badgeText: disguised ? null : '18+',
                               badgeColor: disguised
