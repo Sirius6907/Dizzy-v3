@@ -58,6 +58,7 @@ import './services/config/env_service.dart';
 import './services/window/window_service.dart';
 import './services/p2p/p2p_settings_service.dart';
 import './services/discord/discord_rpc_service.dart';
+import './widgets/brand/dizzy_brand_intro.dart';
 import './widgets/updater/update_dialog.dart';
 import './pages/common/device_revoked_screen.dart';
 import './pages/common/ban_notice_screen.dart';
@@ -777,7 +778,11 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
                   },
                   child: MediaQuery.withClampedTextScaling(
                     maxScaleFactor: DizzyA11y.kMaxTextScale,
-                    child: child ?? const SizedBox.shrink(),
+                    // Brand moment sits above the Navigator: it covers every
+                    // route without gating boot, and taps straight through.
+                    child: BrandIntroHost(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               );
