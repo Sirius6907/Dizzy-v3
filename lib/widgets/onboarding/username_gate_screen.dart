@@ -6,9 +6,12 @@ import 'package:flutter/services.dart';
 import '../../design/prism_tokens.dart';
 import '../../pages/my_list/restore_page.dart';
 import '../../services/social/dizzy_social_service.dart';
+import '../../services/social/profile_avatar_service.dart';
 import '../../services/social/username_gate_state.dart';
 import '../../services/theme/app_theme_service.dart';
 import '../prism/prism_button.dart';
+import '../profile/profile_avatar.dart';
+import '../profile/profile_avatar_sheet.dart';
 
 enum UsernameGateMode { claim, welcomeBack }
 
@@ -308,7 +311,7 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _badge('@'),
+        _avatarUsername(_name.text),
         const SizedBox(height: PrismSpace.xl),
         Text(
           _done ? 'You are in.' : 'Pick your name',
@@ -445,7 +448,7 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _badge(p.username.substring(0, 1).toUpperCase()),
+        _avatarUsername(p.username),
         const SizedBox(height: PrismSpace.xl),
         Text(
           'Welcome back',
@@ -516,34 +519,41 @@ class _UsernameGateScreenState extends State<UsernameGateScreen> {
     );
   }
 
-  Widget _badge(String glyph) {
+  /// First-run identity slot. A photo is optional and never required to
+  /// get in, so this is a tappable monogram with an honest caption instead
+  /// of a "upload required" gate. In claim mode the monogram tracks what
+  /// has been typed so far, which makes the circle feel connected to the
+  /// name field right above it.
+  Widget _avatarUsername(String username) {
     return Center(
-      child: Container(
-        width: 88,
-        height: 88,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppThemeService.currentPalette.value.cardBackgroundColor,
-          border: Border.all(
-            color: _isLight ? PrismLight.borderSubtle : Colors.white12,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ProfileAvatar(
+            size: 88,
+            username: username,
+            editable: true,
+            onTap: () => ProfileAvatarSheet.show(context, username: username),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: _accent.withValues(alpha: 0.18),
-              blurRadius: 26,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Text(
-          glyph,
-          style: TextStyle(
-            fontSize: 34,
-            fontWeight: PrismType.wBold,
-            color: _accent,
+          const SizedBox(height: PrismSpace.xs),
+          ValueListenableBuilder<String?>(
+            valueListenable: ProfileAvatarService.path,
+            builder: (context, path, _) {
+              final hasPhoto = (path ?? '').isNotEmpty;
+              return Text(
+                hasPhoto
+                    ? 'Tap to change your photo'
+                    : 'Optional — tap to add a photo',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: PrismType.micro,
+                  color: _inkSoft,
+                  letterSpacing: 0.1,
+                ),
+              );
+            },
           ),
-        ),
+        ],
       ),
     );
   }

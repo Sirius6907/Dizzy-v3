@@ -12,7 +12,10 @@ import 'package:dizzy/services/cloud/announcement_service.dart';
 import 'package:dizzy/services/cloud/cloud_client.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
 import 'package:dizzy/services/device/device_id_service.dart';
+import 'package:dizzy/services/social/dizzy_social_service.dart';
+import 'package:dizzy/services/social/profile_avatar_service.dart';
 import 'package:dizzy/widgets/guide/guide_card.dart';
+import 'package:dizzy/widgets/profile/profile_avatar_sheet.dart';
 import 'package:dizzy/services/updater/app_updater_service.dart';
 import 'package:dizzy/services/updater/update_prefs.dart';
 import 'package:dizzy/services/updater/update_state_machine.dart';
@@ -799,6 +802,20 @@ class _ProfileHubSectionsState extends State<ProfileHubSections> {
           onTap: () => _go(context, const GroupsPage()),
         ),
         _groupLabel('MY STUFF'),
+        ValueListenableBuilder<String?>(
+          valueListenable: ProfileAvatarService.path,
+          builder: (context, photoPath, _) => _sectionCard(
+            icon: Icons.account_circle_rounded,
+            title: 'Profile photo',
+            subtitle: (photoPath ?? '').isNotEmpty
+                ? 'Your own picture · tap to change'
+                : 'Optional — use a photo instead of your initials',
+            onTap: () => ProfileAvatarSheet.show(
+              context,
+              username: DizzySocialService.currentUsername.value,
+            ),
+          ),
+        ),
         _sectionCard(
           icon: Icons.devices_rounded,
           title: 'My devices',
