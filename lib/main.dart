@@ -72,6 +72,7 @@ import './services/social/dizzy_social_service.dart';
 import './services/social/dizzy_friend_service.dart';
 import './services/social/profile_avatar_service.dart';
 import './services/social/social_hub_service.dart';
+import './services/theme/custom_background_service.dart';
 import './rust/frb_generated.dart';
 import './core/error_boundary.dart';
 import './core/nav_key.dart';
@@ -255,6 +256,7 @@ void main() async {
     _safeInit('continue_reading', () => ContinueReadingService.initialize()),
     _safeInit('reader_settings', () => ReaderSettings.initialize()),
     _safeInit('dock_settings', () => DockSettings.initialize()),
+    _safeInit('custom_background', CustomBackgroundService.initialize),
     _safeInit('glass_settings', () => GlassSettings.initialize()),
     _safeInit('home_page_settings', () => HomePageSettings.initialize()),
     _safeInit('dub_mode', () => DubModeService.initialize()),
