@@ -126,6 +126,101 @@ class MainActivity : FlutterActivity() {
         DownloadForegroundService.engine = flutterEngine
         MediaPlaybackService.engine = flutterEngine
 
+        // Phase K1: now-playing media session. Dart owns playback and
+        // publishes what is on deck; MediaPlaybackService renders it as a
+        // MediaStyle notification bound to a MediaSessionCompat and sends
+        // transport presses back over this same channel. This handler is the
+        // only thing that ever starts the service — without it every publish
+        // threw MissingPluginException, so no notification was ever shown and
+        // no lock-screen / Bluetooth controls existed.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MediaPlaybackService.CH).setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "show", "update", "hide" -> {
+                        val hide = call.method == "hide"
+                        val intent = Intent(this, MediaPlaybackService::class.java)
+                            .putExtra("cmd", if (hide) "hide" else "show")
+                        if (!hide) {
+                            val args = call.arguments as? Map<*, *>
+                            intent.putExtra("title", args?.get("title") as? String ?: "Dizzy")
+                            intent.putExtra("subtitle", args?.get("subtitle") as? String)
+                            intent.putExtra("playing", args?.get("playing") as? Boolean ?: false)
+                            intent.putExtra(
+                                "positionMs",
+                                (args?.get("positionMs") as? Number)?.toLong() ?: 0L
+                            )
+                            intent.putExtra(
+                                "durationMs",
+                                (args?.get("durationMs") as? Number)?.toLong() ?: 0L
+                            )
+                            intent.putExtra("art", args?.get("art") as? String)
+                        }
+                        if (hide) {
+                            // No foreground obligation on the way down, and a
+                            // background startService may be refused — stopping
+                            // the service still clears the notification.
+                            try {
+                                startService(intent)
+                            } catch (_: IllegalStateException) {
+                                stopService(Intent(this, MediaPlaybackService::class.java))
+                            }
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent)
+                        } else {
+                            startService(intent)
+                        }
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) {
+                // Android 12+ can refuse a background foreground-start. The
+                // music must keep playing, so report it and let Dart retry.
+                result.error("MEDIA_SERVICE", e.message, null)
+            }
+        }
+
+        // Phase K2: downloads foreground service. Same shape as the media
+        // handler above — Dart publishes one aggregate progress notification
+        // and this is the only thing that starts the service, so without it
+        // DownloadFgBridge.show() threw MissingPluginException and progress
+        // never appeared outside the app.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DownloadForegroundService.CH).setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "show" -> {
+                        val args = call.arguments as? Map<*, *>
+                        val active = (args?.get("active") as? Number)?.toInt() ?: 0
+                        val percent = (args?.get("percent") as? Number)?.toInt() ?: 0
+                        val label = args?.get("label") as? String ?: ""
+                        if (active <= 0) {
+                            stopService(Intent(this, DownloadForegroundService::class.java))
+                        } else {
+                            val intent = Intent(this, DownloadForegroundService::class.java)
+                                .putExtra("active", active)
+                                .putExtra("percent", percent)
+                                .putExtra("label", label)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(intent)
+                            } else {
+                                startService(intent)
+                            }
+                        }
+                        result.success(true)
+                    }
+                    "stop" -> {
+                        stopService(Intent(this, DownloadForegroundService::class.java))
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) {
+                // A refused foreground start must not kill the download
+                // itself; report it so Dart can retry on the next tick.
+                result.error("DOWNLOAD_SERVICE", e.message, null)
+            }
+        }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.sirius6907.dizzyv3/voice").setMethodCallHandler { call, result ->
             when (call.method) {
                 "start" -> {

@@ -248,7 +248,8 @@ class MediaPlaybackService : android.app.Service() {
         art: Bitmap?
     ): Notification {
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            // Flat white glyph — a launcher mipmap renders as a grey square.
+            .setSmallIcon(R.drawable.ic_stat_music)
             .setContentTitle(title)
             .setContentText(subtitle ?: if (playing) "Playing" else "Paused")
             .setOnlyAlertOnce(true)
