@@ -2,6 +2,45 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.3.6+1037] - 2026-11-20 - "Real Streams, No Waiting"
+
+### Music starts on the actual track
+- **The extractor was ignoring its own instructions** — `getAudioUrl` accepted
+  a `verifyStream` flag and never used it, so every resolve probed each
+  candidate against the CDN. The resolver asks for the *unverified* path and
+  allows itself 12 s, while the extractor was spending up to 21 s (3
+  candidates × 7 s) doing exactly the probing it had been told to skip.
+- **The timeout was guaranteed** — on any slow network the resolver gave up,
+  fell through Convertytmp3, and played the 30 s Deezer preview instead of the
+  track. Unverified resolves now return the top-ranked stream immediately and
+  let the player recover through its existing candidate fallback.
+- **`n`-throttled clients are skipped** — a client that only offers throttled
+  URLs no longer wins the rank, so audio does not stream at a crawl.
+- **A real internal deadline** — extraction is capped at 10 s total and each
+  candidate gets only the time that is left, so it cannot outlast the resolver
+  again. Downloads keep the verified path, since they have no fallback.
+
+### Anime sources that still exist
+- **Four dead providers removed** — `anidb.app` now redirects every path to an
+  APK download page, `anineko.to` no longer resolves, `123animehub.cc` does not
+  answer, and `new.vidnest.fun` returns 403 everywhere. They were fanned out on
+  every episode, so each one cost a timeout for nothing.
+- **The sheet closes on time** — each provider is capped at 10 s, and the
+  stream is closed in a `finally` block, so a silent host can no longer leave
+  the source list spinning after every other result has arrived.
+- **No more episode-list call to a dead host** — the details page and modal now
+  count episodes from AniList data, which was the better authority anyway.
+
+### Settings breathes properly
+- **The Downloads card got its gap back** — it was the one row in the list with
+  no spacing above it, so it sat flush against the card before it.
+- **The list uses one rhythm** — gaps now match the card radius instead of the
+  old hardcoded 12 px.
+- **No double surface on switch rows** — switch tiles painted a smaller,
+  differently-rounded rectangle inside their own card, letting the card corners
+  peek out behind them. The card is the only surface now, and the shadow stays
+  inside its gap instead of bleeding onto the next tile.
+
 ## [1.3.5+1036] - 2026-11-17 - "The Two Sources"
 
 ### The app answers from RiveStream and FlaxMovies only
