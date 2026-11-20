@@ -19,6 +19,10 @@
 //   }
 //   → { ok, tokens, sent, failed, disabled, errors }
 //
+// v1.4: `push_settings.sending_enabled = false` answers 409 push_disabled for
+// every real send (dry runs still count), and FCM 429/503 answers are retried
+// twice with a short backoff instead of being counted as dead sends.
+//
 // Tokens that FCM reports as UNREGISTERED / INVALID_ARGUMENT are disabled so
 // the brain never pays for dead devices again.
 
@@ -150,34 +154,57 @@ async function fcmAccessToken(sa: ServiceAccount): Promise<string> {
 
 type SendResult = { ok: boolean; dead?: boolean; status: number; err: string };
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Send one message, surviving FCM's own throttling.
+ *
+ *  A 429 from FCM is a quota answer, not a verdict on the token: the old code
+ *  counted it as a failed send and moved on, so a broadcast that tripped the
+ *  per-project limit quietly lost the tail of the audience. 429 and 503 now
+ *  get up to two more attempts with a short pause (honouring Retry-After when
+ *  FCM sends one), and only the final answer is counted. */
 async function sendOne(
   projectId: string,
   access: string,
   token: string,
   message: Record<string, unknown>,
 ): Promise<SendResult> {
-  try {
-    const res = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${access}`,
-          "Content-Type": "application/json",
+  let last: SendResult = { ok: false, status: 0, err: "not_sent" };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${access}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: { token, ...message } }),
         },
-        body: JSON.stringify({ message: { token, ...message } }),
-      },
-    );
-    if (res.ok) return { ok: true, status: 200, err: "" };
-    const err = (await res.text()).slice(0, 300);
-    const dead =
-      res.status === 404 ||
-      err.includes("UNREGISTERED") ||
-      err.includes("INVALID_ARGUMENT");
-    return { ok: false, dead, status: res.status, err };
-  } catch (e) {
-    return { ok: false, status: 0, err: String(e).slice(0, 200) };
+      );
+      if (res.ok) return { ok: true, status: 200, err: "" };
+      const err = (await res.text()).slice(0, 300);
+      if (res.status === 429 || res.status === 503) {
+        last = { ok: false, status: res.status, err };
+        const retryAfter = Number(res.headers.get("retry-after") ?? "0");
+        const wait = retryAfter > 0
+          ? Math.min(retryAfter * 1000, 4000)
+          : 400 * (attempt + 1);
+        await sleep(wait);
+        continue;
+      }
+      const dead =
+        res.status === 404 ||
+        err.includes("UNREGISTERED") ||
+        err.includes("INVALID_ARGUMENT");
+      return { ok: false, dead, status: res.status, err };
+    } catch (e) {
+      last = { ok: false, status: 0, err: String(e).slice(0, 200) };
+      await sleep(300 * (attempt + 1));
+    }
   }
+  return last;
 }
 
 serve(async (req) => {
@@ -251,6 +278,25 @@ serve(async (req) => {
     }
 
     const db = createClient(url, svcKey);
+
+    // v1.4 kill switch. Read on every call, so "stop sending" is a switch in
+    // the panel rather than a redeploy. A dry run still passes — counting
+    // tokens is not sending — and a missing table (older project) fails open
+    // so this can never break delivery on its own.
+    const { data: settings } = await db
+      .from("push_settings")
+      .select("sending_enabled, paused_reason")
+      .eq("id", 1)
+      .maybeSingle();
+    if (settings?.sending_enabled === false && body?.dry_run !== true) {
+      return json({
+        ok: false,
+        error: "push_disabled",
+        message: settings?.paused_reason ||
+          "Push sending is paused in the admin panel.",
+      }, 409);
+    }
+
     let query = db
       .from("device_tokens")
       .select("token, user_id")
