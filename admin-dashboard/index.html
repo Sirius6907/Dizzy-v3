@@ -271,6 +271,20 @@
             <tbody></tbody>
           </table></div>
         </div>
+        <!-- Phase 3: codes no device can be proven to own. Grouped and shown,
+             not hidden — a pre-registry install has no legacy hash left, so
+             "unlinked" is the honest answer, not a missing row. -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-t"><h3>Unlinked telemetry</h3><p class="sub">Codes with no provable device · grouped by code, never dropped · a future boot that presents the code attaches it</p></div>
+            <div class="card-a"><button class="btn btn-ghost btn-sm" onclick="loadOrphans()">Refresh</button></div>
+          </div>
+          <div class="mut" id="orphanSummary" style="margin:0 0 8px">Loading…</div>
+          <div class="tbl-wrap"><table id="orphanTbl">
+            <thead><tr><th>Code</th><th>Hits</th><th>Kinds</th><th>Screens</th><th>Worst offender</th><th>First seen</th><th>Last seen</th><th>Action</th></tr></thead>
+            <tbody id="orphanBody"></tbody>
+          </table></div>
+        </div>
         <div class="card">
           <div class="card-h">
             <div class="card-t"><h3>Installs</h3><p class="sub">No PII — anonymous device IDs only</p></div>

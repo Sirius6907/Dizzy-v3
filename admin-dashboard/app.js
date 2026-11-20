@@ -126,7 +126,7 @@ function show(name) {
   if (name === 'moderation') { loadRooms(true); loadUserReports(); loadAppeals(); }
   if (name === 'scrapers') loadScrapers();
   if (name === 'overview') startOverviewLive(); else stopOverviewLive();
-  if (name === 'users') { loadUsers(); loadDevices(); startFleetLive(); } else stopFleetLive();
+  if (name === 'users') { loadUsers(); loadDevices(); loadOrphans(); startFleetLive(); } else stopFleetLive();
   if (name === 'usernames') loadUsernames();
   if (name === 'push') { loadAnn(); loadPushLog(); }
   if (name === 'config') loadCfg();
@@ -167,7 +167,7 @@ const RT_MAP = {
 };
 const RT_LOADERS = {
   overview: () => loadUsage(),
-  users: () => { loadFleetLive(); loadDevices(); loadIdentity(); },
+  users: () => { loadFleetLive(); loadDevices(); loadOrphans(); loadIdentity(); },
   devicelogs: () => loadDeviceLogs(),
   moderation: () => { loadUserReports(); loadAppeals(); },
   rooms: () => loadRooms(),
@@ -1256,6 +1256,20 @@ async function loadDevices() {
         ? `<div class="mut">Errors <span class="mono">${logRows} kind${logRows === 1 ? '' : 's'} · ${hits} hit${hits === 1 ? '' : 's'}</span>
              · last ${d.log_last_at ? ago(d.log_last_at) : '—'}</div>`
         : '<div class="mut">No error reports from this device.</div>';
+      // Every code this device has worn. A reinstall mints a new code, and
+      // before the registry existed that silently stranded the old code's
+      // telemetry. Now both are listed and both open their own logs.
+      const codes = Array.isArray(d.codes) ? d.codes : [];
+      const codesBlock = codes.length ? `
+        <div class="mut" style="margin:6px 0 4px">Device codes (${codes.length})</div>
+        <ul class="ann-list" style="margin:0 0 6px;padding-left:18px">${codes.map((c) => `
+          <li><span class="mono">DIZ-${esc(c.code)}</span>
+            ${c.current ? '<span class="pill p-live">current</span>'
+                        : '<span class="pill" title="retired code; telemetry still attributable">retired</span>'}
+            <span class="mut">· ${Number(c.hits) || 0} hits · ${Number(c.rows) || 0} kinds
+              · last ${c.last_seen_at ? ago(c.last_seen_at) : '—'}</span>
+            <button class="btn btn-ghost btn-sm" onclick="openDevLogs('${esc(c.code)}')">logs</button>
+          </li>`).join('')}</ul>` : '';
       const detail = `<tr id="devdet-${esc(d.device_id)}" style="display:none">
         <td colspan="7">
           <div class="mut" style="margin-bottom:6px">
@@ -1268,6 +1282,7 @@ async function loadDevices() {
           <div style="margin:6px 0">${errorLine}
             <button class="btn btn-ghost btn-sm" onclick="openDevLogs('${esc(d.device_code)}')"
               title="Open Device logs filtered to this device">Open logs</button></div>
+          ${codesBlock}
           <div class="mut" style="margin:6px 0 4px">Username log</div>
           <ul class="ann-list" style="margin:0;padding-left:18px">${devNameLog(d)}</ul>
         </td></tr>`;
@@ -1280,6 +1295,58 @@ async function loadDevices() {
     }).join('')
       || `<tr><td colspan="7">${emptyState('📭', 'No devices yet', 'Devices register on app boot.')}</td></tr>`;
   } catch (e) { toast('Devices failed: ' + e.message, 'err'); }
+}
+
+// Phase 3: codes no device can be proven to own. Grouped, never dropped.
+// A pre-registry install left no legacy hash behind, so "unlinked" is the
+// honest answer rather than a hidden bucket. The moment a device boots
+// presenting one of these codes it attaches and the row leaves this list.
+async function loadOrphans() {
+  const tb = $('orphanBody');
+  const sum = $('orphanSummary');
+  if (tb) tb.innerHTML = skRows(5, 8);
+  if (sum) sum.textContent = 'Loading…';
+  try {
+    const data = await rpc('admin_orphan_logs', { p_limit: 200 });
+    const totals = (data && data.totals) || {};
+    const codes = Array.isArray(data && data.codes) ? data.codes : [];
+    // Reuse the device search box: pasting an old code here narrows both lists.
+    const q = String(($('devSearch') || {}).value || '').trim().toLowerCase();
+    const shown = q ? codes.filter((c) => String(c.code).toLowerCase().includes(q)) : codes;
+    if (sum) {
+      const hits = Number(totals.hits) || 0;
+      const rows = Number(totals.rows) || 0;
+      sum.innerHTML = codes.length
+        ? `${Number(totals.codes) || 0} unlinked code${(Number(totals.codes) || 0) === 1 ? '' : 's'}
+           · ${rows} kind${rows === 1 ? '' : 's'} · <b>${hits}</b> hit${hits === 1 ? '' : 's'}
+           · first ${totals.first_at ? esc(fmtAbs(totals.first_at)) : '—'}
+           · last ${totals.last_at ? ago(totals.last_at) : '—'}
+           ${q ? `· ${shown.length} matching “${esc(q)}”` : ''}`
+        : 'No unlinked telemetry — every code has a provable owner.';
+    }
+    if (tb) tb.innerHTML = shown.map((c) => {
+      const top = Array.isArray(c.top) && c.top.length ? c.top[0] : null;
+      const worst = top
+        ? `<span class="pill">${esc(top.code)}</span>
+           <span class="mut">${esc(top.screen)} · ${Number(top.hits) || 0} hits</span>`
+        : '<span class="mut">—</span>';
+      const meta = [c.platform, c.app_version].filter(Boolean).map(esc).join(' · ');
+      return `<tr>
+        <td><span class="mono">DIZ-${esc(c.code)}</span>${meta ? `<div class="mut">${meta}</div>` : ''}</td>
+        <td class="num"><b>${Number(c.hits) || 0}</b></td>
+        <td class="num">${Number(c.rows) || 0}</td>
+        <td class="num">${Number(c.screens) || 0}</td>
+        <td>${worst}</td>
+        <td class="mut" title="${esc(fmtAbs(c.first_at))}">${ago(c.first_at)}</td>
+        <td class="mut" title="${esc(fmtAbs(c.last_at))}">${ago(c.last_at)}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openDevLogs('${esc(c.code)}')"
+          title="Open Device logs filtered to this code">logs</button></td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="8">${emptyState('✔', q ? 'No unlinked code matches' : 'Nothing unlinked', q ? 'Clear the search to see all codes.' : 'Every telemetry code has a device.')}</td></tr>`;
+  } catch (e) {
+    if (sum) sum.textContent = 'Unlinked telemetry unavailable.';
+    toast('Unlinked telemetry failed: ' + e.message, 'err');
+  }
 }
 
 // ── v1.3.5: username ownership ──
