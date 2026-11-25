@@ -19,9 +19,20 @@
 //   }
 //   → { ok, tokens, sent, failed, disabled, errors }
 //
-// v1.4: `push_settings.sending_enabled = false` answers 409 push_disabled for
+// v1.3.6: `push_settings.sending_enabled = false` answers 409 push_disabled for
 // every real send (dry runs still count), and FCM 429/503 answers are retried
 // twice with a short backoff instead of being counted as dead sends.
+//
+// v1.3.7 — "update campaign" mode. A plain broadcast cannot say someone's
+// name, so the app version nudge reads like spam. `mode: "update"` resolves
+// each token's owner @username and each token's own reported app_version, then
+// renders one of four short patterns per person (stable per campaign+user, so
+// the same person always gets the same line and the four lines spread evenly).
+// Every message ends with the plain, unpunny truth: "v1.3.3 -> v1.3.7".
+//   { mode: "update", campaign: "2026-11-26", latest_version: "1.3.7",
+//     android_only: true, dry_run?: boolean }
+// A `campaign` id is single-shot for 20 hours: re-sending the same id is
+// refused (409 campaign_already_sent) so a double tap cannot spam the fleet.
 //
 // Tokens that FCM reports as UNREGISTERED / INVALID_ARGUMENT are disabled so
 // the brain never pays for dead devices again.
@@ -43,6 +54,70 @@ const KINDS = new Set([
 ]);
 
 const MAX_TOKENS = 1000;
+
+/// The four update-nudge lines. English only, 8–10 words once {name} is in,
+/// hook first and the promotion second (the body). The body is also the plain
+/// on-screen text: the version pair is never a joke and never a guess.
+type Pattern = { id: string; title: string; body: string };
+
+const UPDATE_PATTERNS: Pattern[] = [
+  {
+    id: "a",
+    title: "{name}, your Dizzy is wearing old socks 😅",
+    body: "Tap to update — v{from} → v{latest}",
+  },
+  {
+    id: "b",
+    title: "{name}, something new just landed while you were watching",
+    body: "One tap to update — v{from} → v{latest}",
+  },
+  {
+    id: "c",
+    title: "{name}, don't let this old version hold you back",
+    body: "Update now — v{from} → v{latest}",
+  },
+  {
+    id: "d",
+    title: "{name}, we saved you a spot on the new Dizzy",
+    body: "Your update is ready — v{from} → v{latest}",
+  },
+];
+
+/** FNV-1a. Small, stable, and the same answer on every runtime — a person
+ *  must not get a different joke on a retry of the same campaign. */
+function fnv1a(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/** Replace {name}/{from}/{latest}, then repair the grammar a missing name
+ *  leaves behind ("{name}, your…" -> "Your…"). */
+export function renderPattern(tpl: string, vars: Record<string, string>): string {
+  let out = tpl;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.split(`{${k}}`).join(v);
+  }
+  out = out
+    .replace(/\{\w+\}/g, "")            // any var we did not supply
+    .replace(/^\s*[,:—-]\s*/, "")        // leading ", "
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.:;!?])/g, "$1")
+    .trim();
+  if (out) out = out[0].toUpperCase() + out.slice(1);
+  return out;
+}
+
+/** Stable spread across the four lines, skewed by the campaign id so two
+ *  campaigns in a row do not hit the same people with the same joke. */
+export function pickPattern(campaign: string, userId: string): Pattern {
+  const i = fnv1a(`${campaign}:${userId}`) % UPDATE_PATTERNS.length;
+  return UPDATE_PATTERNS[i];
+}
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -246,9 +321,18 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const mode = String(body?.mode ?? "test");
     const kind = KINDS.has(String(body?.kind)) ? String(body.kind) : "releases";
+    const isUpdate = mode === "update";
+    const campaign = text(body?.campaign, 64);
+    const latestVersion = text(body?.latest_version, 32);
+    const androidOnly = body?.android_only === true;
+    if (isUpdate && !latestVersion) {
+      return json({ error: "update_needs_latest_version" }, 400);
+    }
     const title = text(body?.title, 120);
     const messageBody = text(body?.body, 240);
-    if (!title && !messageBody) return json({ error: "empty_message" }, 400);
+    if (!isUpdate && !title && !messageBody) {
+      return json({ error: "empty_message" }, 400);
+    }
 
     const messageId = text(body?.id, 80);
     const extra = (body?.data ?? {}) as Record<string, unknown>;
@@ -258,6 +342,10 @@ serve(async (req) => {
       body: messageBody,
     };
     if (messageId) data.id = messageId;
+    if (isUpdate) {
+      data.latest_version = latestVersion;
+      data.kind = kind === "releases" ? "updates" : kind;
+    }
     for (const k of [
       "entity_type",
       "entity_id",
@@ -297,9 +385,29 @@ serve(async (req) => {
       }, 409);
     }
 
+    // A campaign id is single-shot for 20 hours. The panel asks for a dry run
+    // first; this stops the real send being repeated by a double click, a
+    // refreshed tab, or a retry loop that only saw a timeout.
+    if (isUpdate && campaign && body?.dry_run !== true) {
+      const { data: prior } = await db
+        .from("admin_push_events")
+        .select("id, created_at")
+        .eq("event", "send")
+        .eq("target", campaign)
+        .gt("created_at", new Date(Date.now() - 20 * 3600_000).toISOString())
+        .limit(1);
+      if (prior && prior.length > 0) {
+        return json({
+          ok: false,
+          error: "campaign_already_sent",
+          message: `Campaign ${campaign} was already sent at ${prior[0].created_at}.`,
+        }, 409);
+      }
+    }
+
     let query = db
       .from("device_tokens")
-      .select("token, user_id")
+      .select("token, user_id, platform, app_version")
       .eq("enabled", true)
       .limit(MAX_TOKENS);
     if (mode === "test") {
@@ -311,31 +419,95 @@ serve(async (req) => {
         : [];
       if (ids.length === 0) return json({ error: "no_user_ids" }, 400);
       query = query.in("user_id", ids.slice(0, MAX_TOKENS));
-    } else if (mode !== "broadcast") {
+    } else if (mode !== "broadcast" && mode !== "update") {
       return json({ error: "bad_mode" }, 400);
+    }
+    if (isUpdate && androidOnly) {
+      // D2: the Windows portable ZIP has no updater, so a "please update" nudge
+      // to it is a dead end. Android installs come from the release APK.
+      query = query.eq("platform", "android");
     }
 
     const { data: rows, error } = await query;
     if (error) return json({ error: `db:${error.message}` }, 500);
-    const tokens = (rows ?? []).map((r) => String(r.token));
+    const targets = (rows ?? []).map((r) => ({
+      token: String(r.token),
+      userId: String(r.user_id ?? ""),
+      from: text(r.app_version, 32),
+    }));
     if (body?.dry_run === true) {
-      return json({ ok: true, dry_run: true, tokens: tokens.length });
+      return json({
+        ok: true,
+        dry_run: true,
+        tokens: targets.length,
+        ...(isUpdate
+          ? {
+            latest_version: latestVersion,
+            versions: [...new Set(targets.map((t) => t.from || "?"))].sort(),
+          }
+          : {}),
+      });
     }
-    if (tokens.length === 0) {
+    if (targets.length === 0) {
       return json({ ok: true, tokens: 0, sent: 0, failed: 0, disabled: 0 });
     }
 
+    // One username read for the whole fleet, never one query per phone.
+    const names = new Map<string, string>();
+    if (isUpdate) {
+      const ids = [...new Set(targets.map((t) => t.userId).filter(Boolean))];
+      if (ids.length > 0) {
+        const { data: un } = await db
+          .from("usernames")
+          .select("user_id, username")
+          .in("user_id", ids);
+        for (const row of un ?? []) {
+          const name = text(row.username, 24);
+          if (name) names.set(String(row.user_id), name);
+        }
+      }
+    }
+
     const access = await fcmAccessToken(sa);
-    const message: Record<string, unknown> = buildFcmMessage(title, messageBody, data);
+    const plainMessage: Record<string, unknown> = buildFcmMessage(
+      title,
+      messageBody,
+      data,
+    );
+    const fallbackFrom = text(body?.from_version, 32);
+
+    /// One message per phone in campaign mode: the joke carries the owner's
+    /// own @username and the body carries that phone's own reported version.
+    const messageFor = (t: { userId: string; from: string }) => {
+      if (!isUpdate) return plainMessage;
+      const pattern = pickPattern(campaign || latestVersion, t.userId);
+      const from = t.from || fallbackFrom;
+      const vars = {
+        name: names.get(t.userId) ?? "",
+        latest: latestVersion,
+        from: from || "your version",
+      };
+      const tTitle = text(renderPattern(pattern.title, vars), 120);
+      const tBody = text(renderPattern(pattern.body, vars), 240);
+      const payload: Record<string, string> = {
+        ...data,
+        title: tTitle,
+        body: tBody,
+      };
+      if (from) payload.from_version = from;
+      return buildFcmMessage(tTitle, tBody, payload);
+    };
 
     let sent = 0;
     let failed = 0;
     const deadTokens: string[] = [];
     const errors: string[] = [];
-    for (let i = 0; i < tokens.length; i += 10) {
-      const slice = tokens.slice(i, i + 10);
+    for (let i = 0; i < targets.length; i += 10) {
+      const slice = targets.slice(i, i + 10);
       const results = await Promise.all(
-        slice.map((t) => sendOne(sa.project_id!, access, t, message)),
+        slice.map((t) =>
+          sendOne(sa.project_id!, access, t.token, messageFor(t))
+        ),
       );
       results.forEach((r, idx) => {
         if (r.ok) {
@@ -343,7 +515,7 @@ serve(async (req) => {
           return;
         }
         failed++;
-        if (r.dead) deadTokens.push(slice[idx]);
+        if (r.dead) deadTokens.push(slice[idx].token);
         if (errors.length < 5) errors.push(`${r.status}:${r.err}`);
       });
     }
@@ -355,13 +527,40 @@ serve(async (req) => {
         .in("token", deadTokens);
     }
 
+    // The operator receipt. The panel writes one for manual sends; a campaign
+    // is fired from a script or the panel, so the function writes its own row.
+    // Soft-fail: a missing ledger must never hide a send that already happened.
+    if (isUpdate && campaign) {
+      const versions = [...new Set(targets.map((t) => t.from).filter(Boolean))]
+        .sort()
+        .join(", ");
+      const { error: ledgerError } = await db.from("admin_push_events").insert({
+        actor_id: callerId || null,
+        event: "send",
+        mode: "update",
+        target: campaign.slice(0, 120),
+        kind: "updates",
+        title: `Update campaign ${campaign}`.slice(0, 120),
+        body: `v${versions || "?"} -> v${latestVersion}`.slice(0, 240),
+        tokens: targets.length,
+        sent,
+        failed,
+        dry_run: false,
+        error: errors.join(" ").slice(0, 300),
+      });
+      if (ledgerError) console.error("push ledger:", ledgerError.message);
+    }
+
     return json({
       ok: true,
-      tokens: tokens.length,
+      tokens: targets.length,
       sent,
       failed,
       disabled: deadTokens.length,
       errors,
+      ...(isUpdate
+        ? { campaign: campaign || null, latest_version: latestVersion }
+        : {}),
     });
   } catch (e) {
     return json({ error: String(e).slice(0, 300) }, 500);
