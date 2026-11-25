@@ -10,7 +10,9 @@ import 'package:dizzy/design/prism_shadows.dart';
 import 'package:dizzy/design/prism_tokens.dart';
 import 'package:dizzy/services/cloud/announcement_service.dart';
 import 'package:dizzy/services/cloud/remote_config_service.dart';
+import 'package:dizzy/pages/settings/updates_settings_page.dart';
 import 'package:dizzy/services/theme/app_theme_service.dart';
+import 'package:dizzy/services/updater/app_updater_service.dart';
 import 'package:dizzy/services/updater/update_gate.dart';
 
 /// Phase E1+E4 — single home banner slot above the hero row:
@@ -34,18 +36,39 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
   Set<String> _dismissedAnns = {};
   String _dismissedNotice = '';
 
+  /// Newest version the updater has actually offered this install. The min
+  /// check below only speaks once the *minimum* moves, so with
+  /// min_app_version at 1.3.6 a 1.3.6 phone saw nothing while the release was
+  /// 1.3.7 — exactly the phone the update campaign was nudging.
+  String _offered = '';
+
   @override
   void initState() {
     super.initState();
     _loadDismissals();
     _refreshGate();
+    _onOffered();
     RemoteConfigService.revision.addListener(_refreshGate);
+    AppUpdaterService.offeredVersion.addListener(_onOffered);
   }
 
   @override
   void dispose() {
     RemoteConfigService.revision.removeListener(_refreshGate);
+    AppUpdaterService.offeredVersion.removeListener(_onOffered);
     super.dispose();
+  }
+
+  void _onOffered() {
+    final v = AppUpdaterService.offeredVersion.value;
+    if (!mounted || v == _offered) return;
+    setState(() => _offered = v);
+  }
+
+  void _openUpdates() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const UpdatesSettingsPage()),
+    );
   }
 
   Future<void> _loadDismissals() async {
@@ -251,6 +274,80 @@ class _HomeNoticeBannerState extends State<HomeNoticeBanner> {
                 ),
               ),
             ],
+          ),
+        ),
+      );
+    }
+
+    // 1b. A newer release than the minimum exists (1.3.7 out, min still
+    // 1.3.6). Tappable, because "update available" with nowhere to go is what
+    // the v1.3.7 push did. Hidden while the force banner above is already
+    // asking for an update, so the two never stack.
+    if (!_gate.isBanner && _offered.isNotEmpty) {
+      final label = _offered;
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: DizzySpace.sm),
+          child: InkWell(
+            onTap: _openUpdates,
+            borderRadius: BorderRadius.circular(DizzyRadius.lg),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DizzySpace.md,
+                vertical: DizzySpace.sm,
+              ),
+              decoration: BoxDecoration(
+                gradient: PrismShadows.surfaceGradient(isLight),
+                borderRadius: BorderRadius.circular(DizzyRadius.lg),
+                border: Border.all(
+                  color: isLight
+                      ? PrismLight.borderSubtle
+                      : DizzyGlow.gold.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.system_update_alt_rounded,
+                    color: isLight ? PrismLight.ink : DizzyGlow.gold,
+                    size: 20,
+                  ),
+                  const SizedBox(width: DizzySpace.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Update available — v$label',
+                          style: TextStyle(
+                            color: isLight ? PrismLight.ink : DizzyVoid.bone,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          'Open Updates to install it when you can.',
+                          style: TextStyle(
+                            color: isLight
+                                ? PrismLight.inkSoft
+                                : DizzyVoid.bone.withValues(alpha: 0.65),
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: isLight
+                        ? PrismLight.inkSoft
+                        : DizzyVoid.bone.withValues(alpha: 0.6),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       );

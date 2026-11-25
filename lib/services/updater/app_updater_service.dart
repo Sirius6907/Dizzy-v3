@@ -19,6 +19,18 @@ class AppUpdaterService {
       'https://api.github.com/repos/$githubRepo/releases/latest';
   static const String _keyDismissedVersion = 'dismissed_update_version';
 
+  /// The newest version this install was actually offered (rollout, channel
+  /// and dismissal already applied). Empty until the first successful check.
+  ///
+  /// The Home banner reads it so it can say "v1.3.7 is out" even when
+  /// min_app_version still sits at 1.3.6 — otherwise a phone nudged by the
+  /// update campaign opens the app and finds no mention of the update at all.
+  ///
+  /// Only the *offer* is published, never a version this device has been held
+  /// back from: the banner must not advertise what the rollout gate is
+  /// deliberately not offering.
+  static final ValueNotifier<String> offeredVersion = ValueNotifier<String>('');
+
   /// Channel to read THIS install's own signing-cert fingerprint (MainActivity).
   static const MethodChannel _signingChannel = MethodChannel(
     'com.sirius6907.dizzyv3/signing',
@@ -151,6 +163,8 @@ class AppUpdaterService {
             );
             return null;
           }
+
+          offeredVersion.value = latestVersion;
 
           final assets = data['assets'] as List;
 

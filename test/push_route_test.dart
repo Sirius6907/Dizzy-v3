@@ -82,6 +82,23 @@ void main() {
       final route = PushRoute.resolve(groupId: 'g-1', senderName: 'Aria');
       expect(route.label, 'Aria');
     });
+
+    test('an update push opens the Updates screen', () {
+      // v1.3.7's update campaign shipped with no destination at all: the tap
+      // only foregrounded the app. kind=updates now resolves to a real screen.
+      final route = PushRoute.fromData(const {
+        'kind': 'updates',
+        'latest_version': '1.3.7',
+      });
+      expect(route.target, PushTarget.update);
+      expect(route.opens, isTrue);
+      expect(route.routeName, 'route:update');
+      // A chat still wins over the kind, so a social push never misroutes.
+      expect(
+        PushRoute.resolve(senderUid: 'uid-1', kind: 'updates').target,
+        PushTarget.dm,
+      );
+    });
   });
 
   group('PushRoute.fromData', () {

@@ -7,7 +7,7 @@ library;
 
 /// The screens a push can open. [none] means "recorded, nothing to open" —
 /// the banner still appears, the tap just closes the shade.
-enum PushTarget { none, title, dm, group, room }
+enum PushTarget { none, title, dm, group, room, update }
 
 /// One tap destination.
 ///
@@ -49,6 +49,7 @@ class PushRoute {
     PushTarget.group => 'group:$threadId',
     PushTarget.room => 'room:$threadId',
     PushTarget.title => 'title:$threadId',
+    PushTarget.update => 'update',
     PushTarget.none => '',
   };
 
@@ -58,6 +59,7 @@ class PushRoute {
     PushTarget.group => 'route:group',
     PushTarget.room => 'route:room',
     PushTarget.title => 'route:title',
+    PushTarget.update => 'route:update',
     PushTarget.none => 'route:none',
   };
 
@@ -66,6 +68,11 @@ class PushRoute {
   /// Priority is deliberately "most specific first": a chat push that also
   /// carries a title id must open the chat, not the title, because the person
   /// tapped a message. Room invites outrank title links for the same reason.
+  ///
+  /// `kind=updates` (the update campaign) outranks a bare title id but not a
+  /// chat: v1.3.7 shipped "Update available" pushes with no destination at
+  /// all, so tapping one only foregrounded Dizzy. It now opens the Updates
+  /// screen, which is the one place that can start the download.
   static PushRoute resolve({
     Object? senderUid,
     Object? senderName,
@@ -75,6 +82,7 @@ class PushRoute {
     Object? roomCode,
     Object? entityId,
     Object? poster,
+    Object? kind,
   }) {
     final uid = _trim(senderUid, 64);
     final gid = _trim(groupId, 64);
@@ -105,6 +113,10 @@ class PushRoute {
         label: group.isEmpty ? name : group,
       );
     }
+    final k = _trim(kind, 24).toLowerCase();
+    if (k == 'updates' || k == 'update') {
+      return const PushRoute(target: PushTarget.update);
+    }
     if (entity.isNotEmpty) {
       return PushRoute(
         target: PushTarget.title,
@@ -129,6 +141,7 @@ class PushRoute {
       roomCode: d['room_code'],
       entityId: d['entity_id'],
       poster: d['poster'],
+      kind: d['kind'],
     );
   }
 
@@ -149,6 +162,8 @@ class PushRoute {
       case PushTarget.title:
         out['entity_id'] = threadId;
         if (poster.isNotEmpty) out['poster'] = poster;
+      case PushTarget.update:
+        out['kind'] = 'updates';
       case PushTarget.none:
         break;
     }

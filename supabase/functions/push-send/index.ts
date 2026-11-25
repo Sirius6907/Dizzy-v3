@@ -28,6 +28,8 @@
 // each token's owner @username and each token's own reported app_version, then
 // renders one of four short patterns per person (stable per campaign+user, so
 // the same person always gets the same line and the four lines spread evenly).
+// Only tokens whose reported version is BELOW `latest_version` are targeted,
+// so a phone that already updated is never told to update to what it runs.
 // Every message ends with the plain, unpunny truth: "v1.3.3 -> v1.3.7".
 //   { mode: "update", campaign: "2026-11-26", latest_version: "1.3.7",
 //     android_only: true, dry_run?: boolean }
@@ -39,6 +41,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { compareVersions, shouldNudge, versionPair } from "./version_compare.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -58,28 +61,37 @@ const MAX_TOKENS = 1000;
 /// The four update-nudge lines. English only, 8–10 words once {name} is in,
 /// hook first and the promotion second (the body). The body is also the plain
 /// on-screen text: the version pair is never a joke and never a guess.
+///
+/// No body says "tap": the client has no route for kind=updates, so a tap
+/// only foregrounds Dizzy and the promise would be a lie to the person who
+/// believed it. The update itself lives where it always does — the in-app
+/// update offer at launch and the Home banner.
+///
+/// The version pair is one {versions} placeholder, never a hand-built
+/// "v{from} → v{latest}": a token that never reported a version would render
+/// "v your version → v1.3.7". [versionPair] drops the left side instead.
 type Pattern = { id: string; title: string; body: string };
 
 const UPDATE_PATTERNS: Pattern[] = [
   {
     id: "a",
     title: "{name}, your Dizzy is wearing old socks 😅",
-    body: "Tap to update — v{from} → v{latest}",
+    body: "The new Dizzy is in the app — {versions}",
   },
   {
     id: "b",
     title: "{name}, something new just landed while you were watching",
-    body: "One tap to update — v{from} → v{latest}",
+    body: "Ready for you inside Dizzy — {versions}",
   },
   {
     id: "c",
     title: "{name}, don't let this old version hold you back",
-    body: "Update now — v{from} → v{latest}",
+    body: "Everything new is already here — {versions}",
   },
   {
     id: "d",
     title: "{name}, we saved you a spot on the new Dizzy",
-    body: "Your update is ready — v{from} → v{latest}",
+    body: "Your update is waiting in the app — {versions}",
   },
 ];
 
@@ -94,7 +106,7 @@ function fnv1a(s: string): number {
   return h >>> 0;
 }
 
-/** Replace {name}/{from}/{latest}, then repair the grammar a missing name
+/** Replace {name}/{versions}, then repair the grammar a missing name
  *  leaves behind ("{name}, your…" -> "Your…"). */
 export function renderPattern(tpl: string, vars: Record<string, string>): string {
   let out = tpl;
@@ -435,11 +447,76 @@ serve(async (req) => {
       userId: String(r.user_id ?? ""),
       from: text(r.app_version, 32),
     }));
+    const considered = targets.length;
+    const truncated = (rows ?? []).length >= MAX_TOKENS;
+
+    // A "please update" line must never reach a phone that is already on the
+    // target build — "v1.3.7 -> v1.3.7" is the definition of spam. Filter in
+    // JS because PostgREST cannot compare dotted versions. A token with no
+    // reported version is kept: it predates version reporting, so it is old.
+    // The comparison itself lives in version_compare.ts, with a test.
+    if (isUpdate) {
+      const before = targets.length;
+      const current = targets.filter((t) => shouldNudge(t.from, latestVersion));
+      targets.splice(0, targets.length, ...current);
+      console.log(
+        `update campaign ${campaign || "(no id)"}: ${current.length}/${before} tokens below v${latestVersion}`,
+      );
+    }
+
+    // device_tokens.app_version only moves when a phone re-registers its push
+    // token, and registerToken() skips a token that has not changed. `devices`
+    // is written by device_boot on every launch, so it is the fresher evidence.
+    //
+    // One map, two jobs. `freshest` is the newest version this user's own boots
+    // report (never older than the token column), and it decides both whether a
+    // nudge is still warranted AND which version the message prints — on the
+    // live fleet one token says 1.3.3 while that phone's boot says 1.3.6, and
+    // the body has to say 1.3.6. Soft: a failed read keeps the token (one extra
+    // nudge beats silently dropping the whole fleet).
+    const freshest = new Map<string, string>();
+    if (isUpdate) {
+      for (const t of targets) {
+        if (t.from) freshest.set(t.userId, t.from);
+      }
+      const ids = [...new Set(targets.map((t) => t.userId).filter(Boolean))];
+      if (ids.length > 0) {
+        let bootsQuery = db
+          .from("devices")
+          .select("user_id, app_version, platform")
+          .in("user_id", ids);
+        if (androidOnly) bootsQuery = bootsQuery.eq("platform", "android");
+        const { data: boots, error: bootErr } = await bootsQuery;
+        if (bootErr) {
+          console.error("devices freshness skipped:", bootErr.message);
+        } else {
+          for (const b of boots ?? []) {
+            const uid = String(b.user_id ?? "");
+            const v = text(b.app_version, 32);
+            if (!uid || !v) continue;
+            const prev = freshest.get(uid) ?? "";
+            if (!prev || compareVersions(v, prev) > 0) freshest.set(uid, v);
+          }
+        }
+      }
+      const before = targets.length;
+      const fresh = targets.filter((t) => {
+        const v = freshest.get(t.userId) || t.from;
+        return !v || shouldNudge(v, latestVersion);
+      });
+      targets.splice(0, targets.length, ...fresh);
+      console.log(
+        `campaign ${campaign || "(no id)"}: ${fresh.length}/${before} still below v${latestVersion}`,
+      );
+    }
+
     if (body?.dry_run === true) {
       return json({
         ok: true,
         dry_run: true,
         tokens: targets.length,
+        considered,
+        truncated,
         ...(isUpdate
           ? {
             latest_version: latestVersion,
@@ -468,27 +545,60 @@ serve(async (req) => {
       }
     }
 
+    const fallbackFrom = text(body?.from_version, 32);
+
+    /// What one phone would read. Split out of [messageFor] so a preview can
+    /// return the exact strings with no FCM access token and no network call:
+    /// the operator reads the 16 messages before any phone does.
+    const textFor = (t: { userId: string; from: string }) => {
+      const pattern = pickPattern(campaign || latestVersion, t.userId);
+      const from = freshest.get(t.userId) || t.from || fallbackFrom;
+      const vars = {
+        name: names.get(t.userId) ?? "",
+        versions: versionPair(from, latestVersion),
+      };
+      return {
+        pattern: pattern.id,
+        from,
+        title: text(renderPattern(pattern.title, vars), 120),
+        body: text(renderPattern(pattern.body, vars), 240),
+      };
+    };
+
+    // Preview: every rendered message, nothing sent, nothing written. This is
+    // the answer to "what exactly will land on these phones?" — a dry run only
+    // counts tokens, which cannot catch a broken name, a bad pattern or a
+    // stale version read.
+    if (body?.preview === true) {
+      return json({
+        ok: true,
+        preview: true,
+        tokens: targets.length,
+        considered,
+        truncated,
+        latest_version: latestVersion,
+        messages: isUpdate
+          ? targets.map((t) => ({
+            user_id: t.userId,
+            name: names.get(t.userId) ?? "",
+            ...textFor(t),
+          }))
+          : [{ title, body: messageBody }],
+      });
+    }
+
     const access = await fcmAccessToken(sa);
     const plainMessage: Record<string, unknown> = buildFcmMessage(
       title,
       messageBody,
       data,
     );
-    const fallbackFrom = text(body?.from_version, 32);
 
     /// One message per phone in campaign mode: the joke carries the owner's
     /// own @username and the body carries that phone's own reported version.
     const messageFor = (t: { userId: string; from: string }) => {
       if (!isUpdate) return plainMessage;
-      const pattern = pickPattern(campaign || latestVersion, t.userId);
-      const from = t.from || fallbackFrom;
-      const vars = {
-        name: names.get(t.userId) ?? "",
-        latest: latestVersion,
-        from: from || "your version",
-      };
-      const tTitle = text(renderPattern(pattern.title, vars), 120);
-      const tBody = text(renderPattern(pattern.body, vars), 240);
+      const { title: tTitle, body: tBody, from } = textFor(t);
       const payload: Record<string, string> = {
         ...data,
         title: tTitle,
@@ -497,6 +607,38 @@ serve(async (req) => {
       if (from) payload.from_version = from;
       return buildFcmMessage(tTitle, tBody, payload);
     };
+
+    // The receipt goes in BEFORE the first send. The old order wrote it after
+    // the loop, so a timeout mid-loop left no row, the 20-hour guard had
+    // nothing to see, and a retry could nudge people who had already been
+    // nudged. A push cannot be recalled, so the claim comes first and the
+    // numbers are filled in afterwards.
+    let ledgerId: string | null = null;
+    if (isUpdate && campaign) {
+      const versionsUpFront = [...new Set(targets.map((t) => t.from).filter(Boolean))]
+        .sort()
+        .join(", ");
+      const { data: claim, error: claimError } = await db
+        .from("admin_push_events")
+        .insert({
+          actor_id: callerId || null,
+          event: "send",
+          mode: "update",
+          target: campaign.slice(0, 120),
+          kind: "updates",
+          title: `Update campaign ${campaign}`.slice(0, 120),
+          body: `sending v${versionsUpFront || "?"} -> v${latestVersion}`.slice(0, 240),
+          tokens: targets.length,
+          sent: 0,
+          failed: 0,
+          dry_run: false,
+          error: ""
+        })
+        .select("id")
+        .maybeSingle();
+      if (claimError) console.error("push ledger claim:", claimError.message);
+      ledgerId = claim?.id ? String(claim.id) : null;
+    }
 
     let sent = 0;
     let failed = 0;
@@ -527,33 +669,41 @@ serve(async (req) => {
         .in("token", deadTokens);
     }
 
-    // The operator receipt. The panel writes one for manual sends; a campaign
-    // is fired from a script or the panel, so the function writes its own row.
-    // Soft-fail: a missing ledger must never hide a send that already happened.
+    // Close out the receipt claimed before the loop. If the claim itself failed
+    // (a cold project with no ledger table), fall back to the old write-after
+    // order so the send is still recorded. Soft-fail either way: a missing
+    // ledger must never hide a send that already happened.
     if (isUpdate && campaign) {
       const versions = [...new Set(targets.map((t) => t.from).filter(Boolean))]
         .sort()
         .join(", ");
-      const { error: ledgerError } = await db.from("admin_push_events").insert({
-        actor_id: callerId || null,
-        event: "send",
-        mode: "update",
-        target: campaign.slice(0, 120),
-        kind: "updates",
-        title: `Update campaign ${campaign}`.slice(0, 120),
+      const receipt = {
         body: `v${versions || "?"} -> v${latestVersion}`.slice(0, 240),
         tokens: targets.length,
         sent,
         failed,
-        dry_run: false,
         error: errors.join(" ").slice(0, 300),
-      });
+      };
+      const { error: ledgerError } = ledgerId
+        ? await db.from("admin_push_events").update(receipt).eq("id", ledgerId)
+        : await db.from("admin_push_events").insert({
+          actor_id: callerId || null,
+          event: "send",
+          mode: "update",
+          target: campaign.slice(0, 120),
+          kind: "updates",
+          title: `Update campaign ${campaign}`.slice(0, 120),
+          dry_run: false,
+          ...receipt,
+        });
       if (ledgerError) console.error("push ledger:", ledgerError.message);
     }
 
     return json({
       ok: true,
       tokens: targets.length,
+      considered,
+      truncated,
       sent,
       failed,
       disabled: deadTokens.length,

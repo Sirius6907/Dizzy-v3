@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/nav_key.dart';
 import '../../models/movie/movie.dart';
 import '../../pages/details/details_page.dart';
+import '../../pages/settings/updates_settings_page.dart';
 import '../../pages/settings/watch_party_page.dart';
 import '../../pages/social/direct_message_page.dart';
 import '../../pages/social/group_chat_page.dart';
@@ -267,6 +268,13 @@ class PushService {
   static bool _started = false;
   static bool _granted = false;
   static String? _registeredToken;
+
+  /// Version that went out with [_registeredToken]. A phone keeps its FCM
+  /// token across an app update, so "same token" no longer means "same row":
+  /// the server's device_tokens.app_version would freeze at the build that
+  /// first registered, and the v1.3.7 update campaign would nudge people who
+  /// had already updated (its version filter reads exactly that column).
+  static String? _registeredAppVersion;
   static PushPayload? _pendingTap;
 
   static bool _testMode = false;
@@ -352,8 +360,11 @@ class PushService {
       }
       final token = await (_tokenOverride ?? _fcmToken)();
       if (token == null || token.isEmpty) return false;
-      if (token == _registeredToken) return true;
-      return await _register(token);
+      final appVersion = await (_appVersionOverride ?? _appVersion)();
+      if (token == _registeredToken && appVersion == _registeredAppVersion) {
+        return true;
+      }
+      return await _register(token, version: appVersion);
     } catch (e) {
       AppLog.d('[Push] register failed (soft): $e');
       return false;
@@ -362,8 +373,8 @@ class PushService {
 
   static Future<String?> _fcmToken() => FirebaseMessaging.instance.getToken();
 
-  static Future<bool> _register(String token) async {
-    final appVersion = await (_appVersionOverride ?? _appVersion)();
+  static Future<bool> _register(String token, {String? version}) async {
+    final appVersion = version ?? await (_appVersionOverride ?? _appVersion)();
     final params = <String, dynamic>{
       'p_token': token,
       'p_platform': platformName,
@@ -373,6 +384,7 @@ class PushService {
     final ok = registrar != null ? await registrar(params) : await _rpcRegister(params);
     if (!ok) return false;
     _registeredToken = token;
+    _registeredAppVersion = appVersion;
     return true;
   }
 
@@ -543,6 +555,14 @@ class PushService {
       case PushTarget.room:
         nav.push(MaterialPageRoute(builder: (_) => const WatchPartyPage()));
         break;
+      case PushTarget.update:
+        // The update campaign's tap. Before this the tap fell through to
+        // `none`, so a "please update" notification only foregrounded the app
+        // and left the person on the home screen with no way forward.
+        nav.push(
+          MaterialPageRoute(builder: (_) => const UpdatesSettingsPage()),
+        );
+        break;
       case PushTarget.title:
         final source = payload;
         if (source == null) return;
@@ -694,6 +714,7 @@ class PushService {
     _started = false;
     _granted = false;
     _registeredToken = null;
+    _registeredAppVersion = null;
     _pendingTap = null;
     _tokenOverride = null;
     _appVersionOverride = null;

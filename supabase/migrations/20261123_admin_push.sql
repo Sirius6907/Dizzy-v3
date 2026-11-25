@@ -1,4 +1,4 @@
--- Dizzy v1.4.0 — admin push controls (Phase 4, operator half).
+-- Dizzy v1.3.6 — admin push controls (Phase 4, operator half).
 -- Run AFTER 20261122_admin_device_card.sql:
 --   supabase db query --linked -f supabase/migrations/20261123_admin_push.sql
 --
@@ -284,8 +284,8 @@ grant execute on function public.admin_push_log(
 ) to authenticated, service_role;
 
 comment on table public.push_settings is
-  'v1.4 — one-row kill switch for device push. Read by push-send on every call.';
+  'v1.3.6 — one-row kill switch for device push. Read by push-send on every call.';
 comment on table public.admin_push_events is
-  'v1.4 — one row per human push action (send / pause / resume). push_send_log stays per-user.';
+  'v1.3.6 — one row per human push action (send / pause / resume). push_send_log stays per-user.';
 comment on function public.admin_push_resolve(text) is
-  'v1.4 — DIZ-code, device id, user id or @username -> user ids the push panel can send to.';
+  'v1.3.6 — DIZ-code, device id, user id or @username -> user ids the push panel can send to.';

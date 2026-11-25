@@ -418,6 +418,41 @@
             </div>
           </div>
         </div>
+
+        <!-- v1.3.7: version-aware update campaign, wired to push-send.
+             Preview renders the real messages first; nothing sends until the
+             operator has read them. -->
+        <div class="card" style="margin-top:18px">
+          <div class="card-h"><div class="card-t"><h3>Update campaign <span class="opt">version-aware</span></h3><p class="sub">Only phones below the target version · one shot per campaign per 20 h · preview before send</p></div>
+            <div class="card-a">
+              <button class="btn btn-ghost btn-sm" onclick="loadCampaign()">↻ Re-read versions</button>
+            </div>
+          </div>
+          <div id="rpSurfaces" class="hint" style="margin-bottom:12px">reading versions…</div>
+          <div class="grid2">
+            <div>
+              <label class="fl" for="rpLatest">latest_version <span class="opt">the target build</span></label>
+              <input type="text" id="rpLatest" placeholder="1.3.7">
+              <label class="fl" for="rpCampaign">campaign id <span class="opt">single-shot for 20 h</span></label>
+              <input type="text" id="rpCampaign" placeholder="2026-11-26">
+              <label class="fl" for="rpFromVer">from_version <span class="opt">only for phones with no reported version</span></label>
+              <input type="text" id="rpFromVer" placeholder="(optional)">
+              <label class="fl" style="display:flex;gap:8px;align-items:center;margin-top:10px">
+                <input type="checkbox" id="rpAndroidOnly" style="width:auto" checked> <span>Android only (the Windows ZIP has no updater)</span>
+              </label>
+              <div class="rowbtns" style="margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="previewCampaign()">👁 Preview messages</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendCampaign(true)">🧪 Dry run</button>
+                <button class="btn btn-ok btn-sm" id="rpCampaignSend" onclick="sendCampaign(false)">🚀 Send campaign</button>
+              </div>
+              <pre id="rpOut2" style="display:none"></pre>
+            </div>
+            <div>
+              <div class="card-t"><h3>What each phone will read</h3><p class="sub">Exactly what preview returned · nothing sent</p></div>
+              <div id="rpMessages" class="hint">Press Preview messages.</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ── CONFIG ── -->

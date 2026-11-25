@@ -57,6 +57,38 @@ All notable changes to PlayTorrio V3 will be documented in this file.
   campaign instead of a random one on every retry.
 - **One shot per campaign** — a repeat call within 20 hours is refused with
   `409 campaign_already_sent` and logged, so a retry cannot become spam.
+- **Only old builds are targeted** — a token whose reported `app_version` is not
+  below `latest_version` is dropped before the send, so the four v1.3.6 phones
+  in the fleet were never told to update to the build they already run. The
+  comparison is a tested pure module (`version_compare.ts`).
+- **Preview before send** — `preview: true` returns every rendered
+  name/title/body/version pair and sends nothing. A dry run only counted
+  tokens, which could not catch a missing name or a broken version pair.
+- **Receipt before send** — the `admin_push_events` row is claimed before the
+  first FCM call and filled in afterwards. A timeout mid-loop used to leave no
+  row at all, which let a retry nudge the same phones a second time.
+- **Fresher version evidence** — the campaign prefers the version a phone
+  reported at boot (`devices.app_version`, written on every launch) over the
+  token column, and prints that one. On the live fleet one token said 1.3.3
+  while the phone itself was on 1.3.6; the body now says 1.3.6.
+- **The panel can run the campaign** — the admin dashboard gained an Update
+  campaign card: it reads the GitHub release the landing page links to, shows
+  `min_app_version` beside it, fills the target version, and has Preview / Dry
+  run / Send wired to the same function. Preview renders every message with
+  the recipient's name and printed version, and Send confirms with the real
+  phone count first. Before this the campaign existed only as a curl command.
+- **The tap goes somewhere** — `kind=updates` resolves to a real `PushTarget`
+  that opens the Updates screen. Before this, an update tap fell through to
+  `none` and only foregrounded the app.
+- **The banner stops lying by omission** — Home showed nothing once
+  `min_app_version` stopped moving (1.3.6) even though the release was 1.3.7,
+  so a nudged phone opened the app and found no mention of the update. It now
+  shows the newest *offered* release, tappable, while the min-version force
+  path is untouched.
+- **Version does not freeze at first registration** — a phone keeps its FCM
+  token across an app update, and `registerToken` skipped unchanged tokens, so
+  `device_tokens.app_version` stayed at the old build forever. Version is part
+  of the identity now.
 
 ---
 

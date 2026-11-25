@@ -128,7 +128,7 @@ function show(name) {
   if (name === 'overview') startOverviewLive(); else stopOverviewLive();
   if (name === 'users') { loadUsers(); loadDevices(); loadOrphans(); startFleetLive(); } else stopFleetLive();
   if (name === 'usernames') loadUsernames();
-  if (name === 'push') { loadAnn(); loadPushLog(); loadPushAudience(); loadPushEvents(); }
+  if (name === 'push') { loadAnn(); loadPushLog(); loadPushAudience(); loadPushEvents(); loadCampaign(); }
   if (name === 'config') loadCfg();
   if (name === 'audit') { loadAudit(); loadIdentityTail(); } else stopAuditLive();
   if (name === 'devicelogs') loadDeviceLogs(); else stopDeviceLogsLive();
@@ -2184,6 +2184,136 @@ async function runBrain() {
     toast('Brain preview · ' + (out.users || 0) + ' user(s)', 'info');
   } catch (e) {
     toast('Brain failed: ' + e.message, 'err');
+  }
+}
+
+// ── v1.3.7 update campaign ──
+// One card that sees all four surfaces at once: the GitHub release the site
+// links to, the app's min_app_version, the version the fleet actually reports
+// and the exact text each phone will receive. Preview calls push-send with
+// `preview:true`, which returns messages[] and sends nothing.
+const campaignState = { release: {}, min: '' };
+
+function campaignDefaults() {
+  const c = $('rpCampaign');
+  if (c && !c.value) c.value = new Date().toISOString().slice(0, 10);
+}
+
+async function loadCampaign() {
+  campaignDefaults();
+  const line = $('rpSurfaces');
+  const cfg = window.DIZZY_CONFIG || {};
+  let tag = '';
+  let cfgRows = [];
+  try {
+    const [rel, rows] = await Promise.all([
+      fetch(cfg.url + '/functions/v1/release-latest', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .catch(function () { return {}; }),
+      sb.from('remote_config').select('key,value'),
+    ]);
+    campaignState.release = rel || {};
+    tag = String((rel || {}).tag || '').replace(/^v/, '');
+    cfgRows = (rows && rows.data) || [];
+  } catch (_) {}
+  const m = Object.fromEntries(cfgRows.map(function (r) { return [r.key, r.value]; }));
+  const min = m.min_app_version || '';
+  campaignState.min = min;
+  const latestInput = $('rpLatest');
+  if (latestInput && !latestInput.value && tag) latestInput.value = tag;
+  const phones = pushAudience && pushAudience.phones;
+  if (!line) return;
+  if (!tag && !latestInput.value) {
+    line.innerHTML = '⚠️ GitHub release list unreachable — type the target version yourself.';
+    return;
+  }
+  const drift = min && tag && min !== tag
+    ? ' · <span style="color:var(--acc)">min_app_version (' + esc(min) +
+      ') is not the release (' + esc(tag) + ')</span>'
+    : '';
+  line.innerHTML =
+    'release <b>v' + esc(tag || latestInput.value) + '</b> · ' +
+    'min_app_version <b>' + esc(min || '—') + '</b> · ' +
+    '<b>' + fmtNum(phones || 0) + '</b> phones with push' + drift;
+}
+
+function campaignPayload() {
+  const latest = (($('rpLatest') || {}).value || '').trim().replace(/^v/, '');
+  const campaign = (($('rpCampaign') || {}).value || '').trim();
+  const fromVer = (($('rpFromVer') || {}).value || '').trim();
+  if (!latest) { toast('latest_version required', 'warn'); return null; }
+  if (!campaign) { toast('campaign id required (single-shot key)', 'warn'); return null; }
+  const payload = {
+    mode: 'update',
+    campaign: campaign,
+    latest_version: latest,
+    android_only: !!($('rpAndroidOnly') || {}).checked,
+  };
+  if (fromVer) payload.from_version = fromVer;
+  return payload;
+}
+
+async function previewCampaign() {
+  const payload = campaignPayload();
+  if (!payload) return;
+  const box = $('rpMessages');
+  if (box) box.textContent = 'Rendering…';
+  try {
+    const out = await pushFn('push-send', Object.assign({ preview: true }, payload));
+    const list = out.messages || [];
+    const head = '<div class="hint">' + fmtNum(out.tokens) + ' phone(s) · ' +
+      fmtNum(out.considered) + ' token(s) considered' +
+      (out.truncated ? ' · <span style="color:var(--acc)">TRUNCATED at the cap</span>' : '') +
+      (list.some(function (m) { return !m.name; }) ? ' · some have no username' : '') +
+      '</div>';
+    const body = list.map(function (m, i) {
+      return '<div style="border-top:1px solid rgba(255,255,255,.08);padding:8px 0">' +
+        '<div class="hint">#' + (i + 1) + ' · pattern ' + esc(m.pattern || '?') +
+        ' · ' + (m.from ? 'v' + esc(m.from) : 'no version reported') +
+        ' · ' + esc(m.name || 'no username') + '</div>' +
+        '<div><b>' + esc(m.title) + '</b></div>' +
+        '<div>' + esc(m.body) + '</div></div>';
+    }).join('');
+    if (box) box.innerHTML = head + (body || '<div class="hint">No phones are below this version.</div>');
+    toast('Preview · ' + fmtNum(list.length) + ' message(s), nothing sent', 'ok');
+  } catch (e) {
+    if (box) box.textContent = 'Preview failed: ' + e.message;
+    toast('Preview failed: ' + e.message, 'err');
+  }
+}
+
+async function sendCampaign(dry) {
+  const payload = campaignPayload();
+  if (!payload) return;
+  try {
+    if (!dry) {
+      // Count first so the confirmation names a real number.
+      const pre = await pushFn('push-send', Object.assign({ preview: true }, payload));
+      const n = (pre.messages || []).length;
+      if (!n) { toast('Nobody is below v' + payload.latest_version, 'warn'); return; }
+      const ok = await confirmDialog({
+        title: 'Send the ' + payload.latest_version + ' campaign?',
+        message: n + ' phone(s) get one notification now. Campaign ' + payload.campaign +
+          ' is single-shot for 20 h and a push cannot be recalled.',
+        okText: 'Send to ' + n,
+      });
+      if (!ok) return;
+    }
+    const out = await pushFn('push-send', Object.assign({ dry_run: !!dry }, payload));
+    const pre = $('rpOut2');
+    if (pre) { pre.style.display = 'block'; pre.textContent = JSON.stringify(out, null, 2); }
+    if (dry) {
+      toast('Dry run · ' + fmtNum(out.tokens) + ' target(s), nothing sent', 'ok');
+    } else {
+      toast('Campaign sent · ' + fmtNum(out.sent) + '/' + fmtNum(out.tokens) +
+        (out.failed ? ' · ' + fmtNum(out.failed) + ' failed' : ''), 'ok');
+    }
+    loadPushAudience();
+    loadPushEvents();
+    loadPushLog();
+  } catch (e) {
+    // 409 campaign_already_sent / push_disabled arrive as thrown errors.
+    toast('Campaign refused: ' + e.message, 'err');
   }
 }
 
