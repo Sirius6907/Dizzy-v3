@@ -5,7 +5,9 @@
 
 #define MyAppName      "Dizzy"
 #ifndef MyAppVersion
-#define MyAppVersion   "1.1.3"
+; CI passes /DMyAppVersion=<tag>; this default is only for local manual builds.
+; It must still match pubspec.yaml so a hand-built installer is not a lie.
+#define MyAppVersion   "1.3.7"
 #endif
 #define MyAppPublisher "ayman708-UX"
 #define MyAppExeName   "dizzy.exe"

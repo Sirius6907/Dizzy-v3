@@ -540,7 +540,7 @@ class IptvScraper {
   static bool _isLoadingCloudPortals = false;
 
   static const _catalogSubs = ['IPTV_ZONENEW', 'FreeIPTV', 'iptvguru', 'IPTVfree'];
-  static const _oauthUa = 'Dizzy/1.3.6 (by /u/DizzyApp)';
+  static const _oauthUa = 'Dizzy/1.3.7 (by /u/DizzyApp)';
   static const _oauthClientIds = [
     'ohXpoqrZYub1kg', // Slide for Reddit
     'NOe2iKrPPzwscA', // RedReader

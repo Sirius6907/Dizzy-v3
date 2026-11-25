@@ -2,6 +2,64 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [1.3.7+1039] - 2026-11-26 - "One Tap"
+
+### Consent is one screen, one tap
+- **The four-switch sheet is gone** — first launch now shows one screen that
+  explains, in plain words, why each of the five data categories exists
+  (troubleshooting, monitoring, backend operations) and has exactly one button.
+  Tap it and all five are on.
+- **It cannot be skipped** — the sheet is not dismissible and does not drag
+  away; Accept is the only exit. It appears after the P2P card, so no consent
+  is asked for before the person knows what the app is.
+- **Nothing gets trapped** — every local write behind the button is best-effort,
+  so a failing preference store closes the gate instead of stranding someone on
+  a screen with no second button.
+- **Settings → Privacy is still the way out** — all five switches remain there,
+  and turning one off still stops that upload immediately. The screen says so.
+- **Re-prompts say what they do** — if this install agreed to older wording,
+  the same screen opens again and states plainly that accepting re-enables all
+  five switches, including any that had been turned off.
+
+### The legal text now tells the truth about titles
+- **"Never a title" was wrong** — `user_events` has always stored the name of
+  what you play, add, rate and search for, because that is what makes a
+  recommendation possible. The old wording claimed the opposite. It is now
+  stated once, in both the consent screen and `LegalTerms`, along with what
+  genuinely never leaves the phone (files, messages, contacts, location,
+  advertising ID, and anything from the 18+ section).
+- **Legal version is `2026-11-26`**, so every install sees the corrected text
+  and the new one-tap deal exactly once.
+- **Offline acceptance is not lost** — agreeing with no network writes a
+  pending flag; the server record is retried on the next launch instead of
+  silently never happening.
+
+### Old versions get a door, not a dialog
+- **The update-required screen is now a poster** — clay card, the Dizzy logo,
+  the headline "Update is required to use Dizzy", a plain line that nothing is
+  deleted, and a version pill that shows what this phone has next to the latest
+  build in plain text.
+- **Two honest exits** — `Update now` opens the official latest release (the
+  page that actually carries the APK), and a quiet `Visit official page` link
+  opens the landing page for anyone who wants to read first. No countdown, no
+  fake urgency, no back button.
+- **Android only** — the Windows build is a portable ZIP with no updater, so
+  the blocking gate now early-returns on anything that is not Android. Windows
+  keeps the normal in-app self-update path and is never locked out.
+
+### Owner-side: targeted update campaign (server, not the APK)
+- **`push-send` gained `mode: "update"`** — sends a version-aware campaign to
+  Android devices on an old build. Each line is 8–10 words, uses the person's
+  username (never the device code), follows one of four rotating patterns, and
+  is followed by a plain on-screen line with the current and latest versions.
+- **Deterministic per person** — the pattern is seeded from
+  `campaign:user_id`, so the same person always gets the same line within a
+  campaign instead of a random one on every retry.
+- **One shot per campaign** — a repeat call within 20 hours is refused with
+  `409 campaign_already_sent` and logged, so a retry cannot become spam.
+
+---
+
 ## [1.3.6+1038] - 2026-11-20 - "One App"
 
 ### The brand finally moves
