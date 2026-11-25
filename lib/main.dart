@@ -644,8 +644,14 @@ class _DizzyAppState extends State<DizzyApp> with WidgetsBindingObserver {
 
   /// Phase E1 — blocking screen ONLY when remote config carried a deadline
   /// that has passed (UpdateGate). Offline / no config → never fires.
+  ///
+  /// D2 (2026-11-26): Android only. The Windows build ships as a portable ZIP
+  /// with no updater, so blocking it would leave the user with a download page
+  /// and no way back into the app they already have. Windows keeps the normal
+  /// in-app self-update path (`UpdateOrchestrator`) and is never blocked.
   Future<void> _enforceForceUpdate() async {
     if (_updateBlockedShown) return;
+    if (!Platform.isAndroid) return;
     try {
       final pkg = await PackageInfo.fromPlatform();
       final gate = UpdateGate.evaluate(
