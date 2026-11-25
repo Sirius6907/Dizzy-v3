@@ -17,6 +17,8 @@ regexes = [
   # SharedPreferences pref-keys for the 18+ gate: high-entropy-looking
   # storage names, not credentials (generic-api-key rule false positive).
   '''adult_heaven_[a-z0-9_]+_v1''',
+  # Same class: the legal-acceptance pending flag is a storage name, not a key.
+  '''legal_[a-z0-9_]+_v1''',
 ]
 paths = [
   '''^TempJs\/clickn_step3\.html$''',

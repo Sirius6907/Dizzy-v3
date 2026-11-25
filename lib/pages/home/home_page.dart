@@ -189,14 +189,18 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
 
     // S2 (v1.1.9): consent is explicit and shown once, after other startup UI.
-    // v1.4.3: also re-opened when the legal text moved past the version this
-    // install agreed to — the sheet keeps the saved switches, so a re-prompt
-    // never resets anyone's choices.
+    // v1.4.4 "One App": the gate is now one mandatory screen, so it is shown
+    // after the P2P card and cannot be swiped or tapped away — Accept is the
+    // only exit. A re-prompt (new legal version) opens the same screen and
+    // tells the person, in the screen itself, that accepting re-enables all
+    // five switches.
     if (!CloudAuthService.onboarded.value ||
         LegalAcceptanceService.needsAcceptance) {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
         backgroundColor:
             AppThemeService.currentPalette.value.cardBackgroundColor,
         builder: (_) => const ConsentOnboardingSheet(),

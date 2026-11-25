@@ -25,6 +25,13 @@ class LegalAcceptanceService {
   static const _keyVersion = 'legal_accepted_version_v1';
   static const _keyAt = 'legal_accepted_at_v1';
 
+  /// A version agreed to locally but not yet accepted by the server. Written
+  /// on every accept and cleared only by a successful RPC, so agreeing while
+  /// offline still counts on this phone and the evidence row lands by itself
+  /// on the next launch with a network. Without this, a plane-mode first run
+  /// would show "agreed" forever while the server kept no record of it.
+  static const _keyPending = 'legal_acceptance_pending_v1';
+
   /// Version this install has agreed to, or null if never.
   static final ValueNotifier<String?> acceptedVersion =
       ValueNotifier<String?>(null);
@@ -57,6 +64,7 @@ class LegalAcceptanceService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyVersion, LegalTerms.version);
       await prefs.setString(_keyAt, now.toIso8601String());
+      await prefs.setString(_keyPending, LegalTerms.version);
     } catch (e) {
       AppLog.d('[Legal] local save failed (soft): $e');
     }
@@ -69,6 +77,10 @@ class LegalAcceptanceService {
   static Future<void> refreshFromServer() async {
     if (!CloudClient.isReady) return;
     if (CloudClient.db.auth.currentUser == null) return;
+    // A previous accept may never have reached the server (offline, cold
+    // start, a 5xx). Retry it first — otherwise the local "agreed" and the
+    // server's silence never reconcile.
+    await _retryPending();
     try {
       final res = await CloudClient.db.rpc('my_legal_acceptance');
       if (res is! Map) return;
@@ -89,9 +101,20 @@ class LegalAcceptanceService {
     }
   }
 
-  static Future<void> _push() async {
-    if (!CloudClient.isReady) return;
-    if (CloudClient.db.auth.currentUser == null) return;
+  static Future<void> _retryPending() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = prefs.getString(_keyPending);
+      if (pending == null || pending != LegalTerms.version) return;
+      await _push();
+    } catch (e) {
+      AppLog.d('[Legal] pending retry failed (soft): $e');
+    }
+  }
+
+  static Future<bool> _push() async {
+    if (!CloudClient.isReady) return false;
+    if (CloudClient.db.auth.currentUser == null) return false;
     try {
       await CloudClient.db.rpc('record_acceptance', params: {
         'p_version': LegalTerms.version,
@@ -101,8 +124,20 @@ class LegalAcceptanceService {
         'p_platform': defaultTargetPlatform.name,
         'p_app_version': await _appVersion(),
       });
+      // Only a successful RPC clears the pending flag. Anything else keeps it
+      // for the next launch — a retry is free, a lost consent record is not.
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (prefs.getString(_keyPending) == LegalTerms.version) {
+          await prefs.remove(_keyPending);
+        }
+      } catch (e) {
+        AppLog.d('[Legal] pending clear failed (soft): $e');
+      }
+      return true;
     } catch (e) {
       AppLog.d('[Legal] acceptance push failed (soft): $e');
+      return false;
     }
   }
 

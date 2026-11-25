@@ -22,7 +22,14 @@ class LegalTerms {
   const LegalTerms._();
 
   /// Bump to re-prompt everyone. Format: YYYY-MM-DD of publication.
-  static const String version = '2026-11-20';
+  ///
+  /// 2026-11-26 — one-tap consent. The gate stopped being four opt-in
+  /// switches and became a single "Accept" that turns all five on, so every
+  /// install has to see (and agree to) that new deal. This also carries the
+  /// first honest wording about titles: `user_events` has always stored the
+  /// name of what you play, add, rate and search for, and the old text said
+  /// the opposite.
+  static const String version = '2026-11-26';
   static const String termsVersion = version;
   static const String privacyVersion = version;
 
@@ -51,20 +58,24 @@ class LegalTerms {
     ),
     LegalSection(
       'What never leaves your device',
-      'Your watch history, your files and folders, your messages, your '
-          'contacts, your location and any advertising identifier. Dizzy does '
-          'not read them and has nowhere to send them.',
+      'Your files and folders, your messages, your contacts, your location, '
+          'any advertising identifier, and anything you do inside the 18+ '
+          'section. Dizzy does not read them and has nowhere to send them.',
     ),
     LegalSection(
       'What can leave your device — only if you switch it on',
       'App experience data: install, app version and platform. Taste '
-          'preferences: genre scores such as action:0.8, never a title. Crash '
-          'counts: the kind of problem and the screen it happened on, never a '
-          'title, link or file name. Live activity: what kind of thing you are '
-          'playing (watch, listen, read) so admins can see who is online. Watch '
-          'Party: microphone audio through LiveKit and room membership, only '
-          'while you are in a room. Every one of these has its own switch in '
-          'Settings → Privacy, and switching one off stops that upload.',
+          'preferences: the titles you play, add to your list, rate and search '
+          'for, with their genre, language and a timestamp, plus the rolled-up '
+          'genre scores built from them (such as action:0.8). The title is what '
+          'makes a recommendation possible; nothing from the 18+ section is '
+          'included. Crash counts: the kind of problem and the screen it '
+          'happened on, never a link or file name. Live activity: what kind of '
+          'thing you are playing (watch, listen, read) so admins can see who is '
+          'online. Watch Party: microphone audio through LiveKit and room '
+          'membership, only while you are in a room. Every one of these has '
+          'its own switch in Settings → Privacy, and switching one off stops '
+          'that upload.',
     ),
     LegalSection(
       'Your device code',
