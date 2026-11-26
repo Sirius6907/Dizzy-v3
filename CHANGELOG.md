@@ -2,6 +2,30 @@
 
 All notable changes to PlayTorrio V3 will be documented in this file.
 
+## [Unreleased]
+
+### A campaign you can trial, and a deploy that cannot hit the wrong page
+- **`push-send` v12 sends to two phones first** — `limit`, `device_ids` and
+  `user_ids` narrow the audience, and `canary: true` claims
+  `<campaign>#canary` on the ledger, so a trial does not consume the real
+  send's 20-hour single-shot guard. `limit` takes the oldest reported builds
+  first, in a fixed order, so a retry picks the same phones. The narrowing
+  applies to `preview` and `dry_run` too, so what the operator reads is what
+  those phones get.
+- **The admin card grew the same knobs** — canary size, an optional device-id
+  list, a `Send canary` button, and a **campaign ledger** below the card: every
+  update send with its campaign key, the version pair, `sent/tokens`, `failed`,
+  and an `interrupted` pill when the counts fall short of the target list.
+- **`scripts/assert_release.ps1`** — exits 1 unless the release is published,
+  the four installer/APK assets are attached, `site/releases.json` names the
+  tag, and `release-latest` answers with it (a stale answer inside the
+  5-minute cache is a warning, not a failure).
+- **`scripts/deploy_sites.ps1`** — publishes the landing page from
+  `origin/site/landing-v14` and validates both sites before deploying. `main`'s
+  `site/` folder is the older page, and deploying it on 2026-11-26 replaced the
+  live landing page and dropped its screenshots; the script makes that folder
+  unreachable by accident.
+
 ## [1.3.7+1039] - 2026-11-26 - "One Tap"
 
 ### Consent is one screen, one tap

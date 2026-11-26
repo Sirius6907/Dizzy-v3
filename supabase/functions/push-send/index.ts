@@ -36,12 +36,23 @@
 // A `campaign` id is single-shot for 20 hours: re-sending the same id is
 // refused (409 campaign_already_sent) so a double tap cannot spam the fleet.
 //
+// v12 — canary / targeted send. The same mode can be narrowed before it is
+// fired, so the first two phones are a real send that can be checked:
+//   limit?: number            // cap the audience, oldest builds first
+//   device_ids?: string[]     // only these device_tokens rows
+//   user_ids?: string[]       // only these accounts
+//   canary?: boolean          // claim `<campaign>#canary`, not the campaign
+// A canary ledger key is separate, so trialling two phones does NOT consume
+// the whole-fleet send's 20-hour guard. `preview` and `dry_run` honour the
+// same three filters, so what the operator reads is what those phones get.
+//
 // Tokens that FCM reports as UNREGISTERED / INVALID_ARGUMENT are disabled so
 // the brain never pays for dead devices again.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { compareVersions, shouldNudge, versionPair } from "./version_compare.ts";
+import { asIds, ledgerKey, pickCanary } from "./campaign_targets.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -340,6 +351,18 @@ serve(async (req) => {
     if (isUpdate && !latestVersion) {
       return json({ error: "update_needs_latest_version" }, 400);
     }
+
+    // v12 narrowing. `limit` is a canary knob: a cap of 2 with no ids means
+    // "the two oldest builds on the fleet", which is exactly the trial most
+    // likely to surface a broken payload.
+    const canary = body?.canary === true;
+    const rawLimit = Number(body?.limit ?? 0);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.max(0, Math.min(Math.floor(rawLimit), MAX_TOKENS))
+      : 0;
+    const deviceIds = asIds(body?.device_ids);
+    const targetUserIds = asIds(body?.user_ids);
+    const claimKey = ledgerKey(campaign, canary);
     const title = text(body?.title, 120);
     const messageBody = text(body?.body, 240);
     if (!isUpdate && !title && !messageBody) {
@@ -405,7 +428,7 @@ serve(async (req) => {
         .from("admin_push_events")
         .select("id, created_at")
         .eq("event", "send")
-        .eq("target", campaign)
+        .eq("target", claimKey)
         .gt("created_at", new Date(Date.now() - 20 * 3600_000).toISOString())
         .limit(1);
       if (prior && prior.length > 0) {
@@ -419,7 +442,7 @@ serve(async (req) => {
 
     let query = db
       .from("device_tokens")
-      .select("token, user_id, platform, app_version")
+      .select("id, token, user_id, platform, app_version")
       .eq("enabled", true)
       .limit(MAX_TOKENS);
     if (mode === "test") {
@@ -439,12 +462,21 @@ serve(async (req) => {
       // to it is a dead end. Android installs come from the release APK.
       query = query.eq("platform", "android");
     }
+    // A canary is addressed by device row or by account. Filtering in SQL
+    // keeps the token cap honest: a narrowed send can never be cut off by
+    // MAX_TOKENS before it reaches the phones the operator named.
+    if (deviceIds.length > 0) query = query.in("id", deviceIds);
+    if (targetUserIds.length > 0 && mode !== "test") {
+      query = query.in("user_id", targetUserIds);
+    }
 
     const { data: rows, error } = await query;
     if (error) return json({ error: `db:${error.message}` }, 500);
     const targets = (rows ?? []).map((r) => ({
+      id: String(r.id ?? ""),
       token: String(r.token),
       userId: String(r.user_id ?? ""),
+      platform: text(r.platform, 24),
       from: text(r.app_version, 32),
     }));
     const considered = targets.length;
@@ -510,13 +542,34 @@ serve(async (req) => {
       );
     }
 
+    // Canary cap, applied after every other filter so the cap always lands on
+    // phones that genuinely still need the update.
+    const eligible = targets.length;
+    if (limit > 0) {
+      const picked = pickCanary(targets, limit);
+      targets.splice(0, targets.length, ...picked);
+      console.log(
+        `campaign ${claimKey || "(no id)"}: canary capped to ${targets.length}/${eligible}`,
+      );
+    }
+
     if (body?.dry_run === true) {
       return json({
         ok: true,
         dry_run: true,
         tokens: targets.length,
         considered,
+        eligible,
         truncated,
+        canary,
+        limit,
+        // The exact phones this would fire at, so a canary is chosen with the
+        // operator's eyes open rather than "the first two the database gave".
+        targets: targets.slice(0, 50).map((t) => ({
+          device_id: t.id,
+          platform: t.platform,
+          from: t.from,
+        })),
         ...(isUpdate
           ? {
             latest_version: latestVersion,
@@ -575,11 +628,16 @@ serve(async (req) => {
         preview: true,
         tokens: targets.length,
         considered,
+        eligible,
         truncated,
+        canary,
+        limit,
         latest_version: latestVersion,
         messages: isUpdate
           ? targets.map((t) => ({
             user_id: t.userId,
+            device_id: t.id,
+            platform: t.platform,
             name: names.get(t.userId) ?? "",
             ...textFor(t),
           }))
@@ -624,9 +682,9 @@ serve(async (req) => {
           actor_id: callerId || null,
           event: "send",
           mode: "update",
-          target: campaign.slice(0, 120),
+          target: claimKey.slice(0, 120),
           kind: "updates",
-          title: `Update campaign ${campaign}`.slice(0, 120),
+          title: `Update campaign ${claimKey}`.slice(0, 120),
           body: `sending v${versionsUpFront || "?"} -> v${latestVersion}`.slice(0, 240),
           tokens: targets.length,
           sent: 0,
@@ -690,9 +748,9 @@ serve(async (req) => {
           actor_id: callerId || null,
           event: "send",
           mode: "update",
-          target: campaign.slice(0, 120),
+          target: claimKey.slice(0, 120),
           kind: "updates",
-          title: `Update campaign ${campaign}`.slice(0, 120),
+          title: `Update campaign ${claimKey}`.slice(0, 120),
           dry_run: false,
           ...receipt,
         });
@@ -703,7 +761,10 @@ serve(async (req) => {
       ok: true,
       tokens: targets.length,
       considered,
+      eligible,
       truncated,
+      canary,
+      limit,
       sent,
       failed,
       disabled: deadTokens.length,

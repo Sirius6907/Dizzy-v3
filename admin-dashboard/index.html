@@ -437,12 +437,17 @@
               <input type="text" id="rpCampaign" placeholder="2026-11-26">
               <label class="fl" for="rpFromVer">from_version <span class="opt">only for phones with no reported version</span></label>
               <input type="text" id="rpFromVer" placeholder="(optional)">
+              <label class="fl" for="rpLimit">canary size <span class="opt">0 = whole fleet · oldest builds go first</span></label>
+              <input type="text" id="rpLimit" placeholder="0" inputmode="numeric">
+              <label class="fl" for="rpDeviceIds">device_ids <span class="opt">optional · commas or newlines · canary only</span></label>
+              <input type="text" id="rpDeviceIds" placeholder="(optional)">
               <label class="fl" style="display:flex;gap:8px;align-items:center;margin-top:10px">
                 <input type="checkbox" id="rpAndroidOnly" style="width:auto" checked> <span>Android only (the Windows ZIP has no updater)</span>
               </label>
               <div class="rowbtns" style="margin-top:12px">
                 <button class="btn btn-primary btn-sm" onclick="previewCampaign()">👁 Preview messages</button>
                 <button class="btn btn-ghost btn-sm" onclick="sendCampaign(true)">🧪 Dry run</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendCampaign(false,true)">🐤 Send canary</button>
                 <button class="btn btn-ok btn-sm" id="rpCampaignSend" onclick="sendCampaign(false)">🚀 Send campaign</button>
               </div>
               <pre id="rpOut2" style="display:none"></pre>
@@ -452,6 +457,9 @@
               <div id="rpMessages" class="hint">Press Preview messages.</div>
             </div>
           </div>
+          <div class="rule"></div>
+          <div class="card-t"><h3>Campaign ledger</h3><p class="sub">Every update send with its campaign key, versions and result</p></div>
+          <div id="rpLedger" class="hint">Loading…</div>
         </div>
       </section>
 

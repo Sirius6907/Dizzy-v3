@@ -2222,6 +2222,7 @@ async function loadCampaign() {
   const latestInput = $('rpLatest');
   if (latestInput && !latestInput.value && tag) latestInput.value = tag;
   const phones = pushAudience && pushAudience.phones;
+  loadCampaignLedger();
   if (!line) return;
   if (!tag && !latestInput.value) {
     line.innerHTML = '⚠️ GitHub release list unreachable — type the target version yourself.';
@@ -2250,6 +2251,15 @@ function campaignPayload() {
     android_only: !!($('rpAndroidOnly') || {}).checked,
   };
   if (fromVer) payload.from_version = fromVer;
+  // Canary knobs. A cap with no ids means "the oldest N builds", which is the
+  // trial most likely to surface a broken payload before the fleet sees it.
+  const limit = parseInt((($('rpLimit') || {}).value || '0'), 10) || 0;
+  const ids = (($('rpDeviceIds') || {}).value || '')
+    .split(/[\s,]+/)
+    .map(function (s) { return s.trim(); })
+    .filter(Boolean);
+  if (limit > 0) payload.limit = limit;
+  if (ids.length) payload.device_ids = ids;
   return payload;
 }
 
@@ -2263,14 +2273,17 @@ async function previewCampaign() {
     const list = out.messages || [];
     const head = '<div class="hint">' + fmtNum(out.tokens) + ' phone(s) · ' +
       fmtNum(out.considered) + ' token(s) considered' +
+      (out.limit ? ' · canary capped at ' + fmtNum(out.limit) + ' of ' + fmtNum(out.eligible || out.tokens) : '') +
       (out.truncated ? ' · <span style="color:var(--acc)">TRUNCATED at the cap</span>' : '') +
       (list.some(function (m) { return !m.name; }) ? ' · some have no username' : '') +
       '</div>';
-    const body = list.map(function (m, i) {
+        const body = list.map(function (m, i) {
       return '<div style="border-top:1px solid rgba(255,255,255,.08);padding:8px 0">' +
         '<div class="hint">#' + (i + 1) + ' · pattern ' + esc(m.pattern || '?') +
         ' · ' + (m.from ? 'v' + esc(m.from) : 'no version reported') +
-        ' · ' + esc(m.name || 'no username') + '</div>' +
+        ' · ' + esc(m.name || 'no username') +
+        (m.device_id ? ' · device ' + esc(String(m.device_id).slice(0, 8)) : '') +
+        '</div>' +
         '<div><b>' + esc(m.title) + '</b></div>' +
         '<div>' + esc(m.body) + '</div></div>';
     }).join('');
@@ -2282,9 +2295,12 @@ async function previewCampaign() {
   }
 }
 
-async function sendCampaign(dry) {
+async function sendCampaign(dry, canary) {
   const payload = campaignPayload();
   if (!payload) return;
+  // A canary claims `<campaign>#canary` on the ledger, so this trial does not
+  // burn the whole-fleet send's 20-hour single-shot key.
+  if (canary) payload.canary = true;
   try {
     if (!dry) {
       // Count first so the confirmation names a real number.
@@ -2292,10 +2308,14 @@ async function sendCampaign(dry) {
       const n = (pre.messages || []).length;
       if (!n) { toast('Nobody is below v' + payload.latest_version, 'warn'); return; }
       const ok = await confirmDialog({
-        title: 'Send the ' + payload.latest_version + ' campaign?',
-        message: n + ' phone(s) get one notification now. Campaign ' + payload.campaign +
-          ' is single-shot for 20 h and a push cannot be recalled.',
-        okText: 'Send to ' + n,
+        title: canary
+          ? 'Send a canary to ' + n + ' phone(s)?'
+          : 'Send the ' + payload.latest_version + ' campaign?',
+        message: n + ' phone(s) get one notification now. ' + (canary
+          ? 'Key ' + payload.campaign + '#canary — the full send stays available.'
+          : 'Campaign ' + payload.campaign + ' is single-shot for 20 h.') +
+          ' A push cannot be recalled.',
+        okText: (canary ? 'Canary ' : 'Send to ') + n,
       });
       if (!ok) return;
     }
@@ -2305,15 +2325,57 @@ async function sendCampaign(dry) {
     if (dry) {
       toast('Dry run · ' + fmtNum(out.tokens) + ' target(s), nothing sent', 'ok');
     } else {
-      toast('Campaign sent · ' + fmtNum(out.sent) + '/' + fmtNum(out.tokens) +
+      toast((canary ? 'Canary sent · ' : 'Campaign sent · ') + fmtNum(out.sent) + '/' + fmtNum(out.tokens) +
         (out.failed ? ' · ' + fmtNum(out.failed) + ' failed' : ''), 'ok');
     }
     loadPushAudience();
     loadPushEvents();
     loadPushLog();
+    loadCampaignLedger();
   } catch (e) {
     // 409 campaign_already_sent / push_disabled arrive as thrown errors.
     toast('Campaign refused: ' + e.message, 'err');
+  }
+}
+
+// Every update send the server ever recorded, newest first. The server claims a
+// row before the first FCM call and closes it after the loop, so a row whose
+// sent+failed is short of `tokens` is a send that was interrupted — the one
+// thing an operator has to see after a canary.
+async function loadCampaignLedger() {
+  const box = $('rpLedger');
+  if (!box) return;
+  box.innerHTML = skLines(2);
+  try {
+    const { data, error } = await sb
+      .from('admin_push_events')
+      .select('id, target, title, body, tokens, sent, failed, error, created_at')
+      .eq('event', 'send')
+      .eq('mode', 'update')
+      .order('created_at', { ascending: false })
+      .limit(12);
+    if (error) throw error;
+    box.innerHTML = (data || []).map(function (r) {
+      const isCanary = String(r.target || '').slice(-7) === '#canary';
+      const interrupted = Number(r.tokens) > 0 &&
+        Number(r.sent) + Number(r.failed) < Number(r.tokens);
+      const pill = interrupted ? 'p-closed' : Number(r.sent) > 0 ? 'p-live' : 'p-lobby';
+      return '<div class="ann">' +
+        '<div class="ann-top"><span class="ann-title">' + esc(r.target || '(no campaign id)') +
+          (isCanary ? ' <span class="chip">canary</span>' : '') + '</span>' +
+          '<span class="pill ' + pill + '">' +
+            (interrupted ? 'interrupted' : Number(r.sent) > 0 ? 'sent' : 'no sends') + '</span></div>' +
+        '<div class="ann-meta">' +
+          '<span class="chip">' + fmtNum(r.sent) + '/' + fmtNum(r.tokens) + ' sent</span>' +
+          (Number(r.failed) ? '<span class="chip" style="color:var(--red)">' + fmtNum(r.failed) + ' failed</span>' : '') +
+          (r.body ? '<span class="chip">' + esc(r.body) + '</span>' : '') +
+          '<span class="chip" title="' + esc(fmtAbs(r.created_at)) + '">' + ago(r.created_at) + '</span>' +
+        '</div>' +
+        (r.error ? '<div class="ann-body" style="opacity:.6">' + esc(String(r.error).slice(0, 140)) + '</div>' : '') +
+        '</div>';
+    }).join('') || emptyState('🐤', 'No campaign sent yet', 'Preview, canary, then the full send — each one lands here.');
+  } catch (e) {
+    box.innerHTML = '<p class="hint">Ledger failed: ' + esc(e.message) + '</p>';
   }
 }
 
