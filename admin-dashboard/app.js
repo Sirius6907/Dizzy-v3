@@ -1761,9 +1761,13 @@ async function loadCfg() {
 function pretty(v) {
   try { return JSON.stringify(JSON.parse(v || '{}'), null, 2); } catch (_) { return v || ''; }
 }
+// Only these config values are JSON blobs. Everything else (min_app_version,
+// force_after, update_channel, rollout_percent) is plain text, and parsing it
+// threw, which left the force_after and update_channel Save buttons dead.
+const JSON_CFG_KEYS = ['features', 'notice'];
 async function saveCfg(key, value) {
   try {
-    if (key !== 'min_app_version') JSON.parse(value || '{}');
+    if (JSON_CFG_KEYS.indexOf(key) >= 0) JSON.parse(value || '{}');
     await rpc('admin_set_config', { p_key: key, p_value: value });
     toast(key + ' saved ⚙️', 'ok');
   } catch (e) { toast('Save failed: ' + e.message, 'err'); }
