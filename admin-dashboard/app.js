@@ -2227,6 +2227,7 @@ async function loadCampaign() {
   if (latestInput && !latestInput.value && tag) latestInput.value = tag;
   const phones = pushAudience && pushAudience.phones;
   loadCampaignLedger();
+  loadAdoption(latestInput ? latestInput.value : tag);
   if (!line) return;
   if (!tag && !latestInput.value) {
     line.innerHTML = '⚠️ GitHub release list unreachable — type the target version yourself.';
@@ -2240,6 +2241,48 @@ async function loadCampaign() {
     'release <b>v' + esc(tag || latestInput.value) + '</b> · ' +
     'min_app_version <b>' + esc(min || '—') + '</b> · ' +
     '<b>' + fmtNum(phones || 0) + '</b> phones with push' + drift;
+}
+
+// Who actually moved. The ledger says what was sent; this says what the fleet
+// runs now, so "sent 16" can never be misread as "16 updated". Read-only.
+async function loadAdoption(target) {
+  const box = $('rpAdoption');
+  if (!box) return;
+  box.innerHTML = skLines(2);
+  try {
+    const t = String(target || '').trim().replace(/^v/, '');
+    const a = (await rpc('admin_update_adoption', { p_target: t })) || {};
+    const total = Number(a.total) || 0;
+    const updated = Number(a.updated) || 0;
+    const pending = Number(a.pending) || 0;
+    const cooling = Number(a.cooling) || 0;
+    const pct = total ? Math.round((updated / total) * 100) : 0;
+    const versions = (a.versions || []).slice(0, 12);
+    const maxN = Math.max(1, ...versions.map(function (v) { return Number(v.n) || 0; }));
+    const last = a.last_campaign || null;
+    box.innerHTML =
+      '<div class="bd-group"><div class="bd-l"><span>On ' + esc(a.target || '—') + '</span><span>' +
+        fmtNum(updated) + '/' + fmtNum(total) + ' · ' + pct + '%</span></div>' +
+      '<div class="bd-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="bd-chips" style="margin-top:8px">' +
+        '<span class="chip" style="color:var(--grn)">' + fmtNum(updated) + ' updated</span>' +
+        '<span class="chip">' + fmtNum(pending) + ' still below</span>' +
+        (cooling ? '<span class="chip">' + fmtNum(cooling) + ' in 7-day quiet period</span>' : '') +
+        '<span class="chip">' + fmtNum(Number(a.android) || 0) + ' android</span>' +
+      '</div></div>' +
+      '<div class="bd-group"><div class="bd-l"><span>Reported builds</span><span>' + versions.length + '</span></div>' +
+      versions.map(function (v) {
+        const n = Number(v.n) || 0;
+        return '<div class="bd-row"><span class="nm">' + esc(v.name) + '</span><span class="vl">' + fmtNum(n) + '</span></div>' +
+          '<div class="bd-bar"><i style="width:' + Math.round((n / maxN) * 100) + '%"></i></div>';
+      }).join('') + '</div>' +
+      (last
+        ? '<div class="hint">Last campaign <b>' + esc(last.target || '?') + '</b> · ' +
+          fmtNum(last.sent) + '/' + fmtNum(last.tokens) + ' sent · ' + ago(last.created_at) + '</div>'
+        : '<div class="hint">No update campaign has been sent yet.</div>');
+  } catch (e) {
+    box.innerHTML = '<p class="hint">Adoption unavailable: ' + esc(e.message) + '</p>';
+  }
 }
 
 function campaignPayload() {
@@ -2336,6 +2379,7 @@ async function sendCampaign(dry, canary) {
     loadPushEvents();
     loadPushLog();
     loadCampaignLedger();
+    loadAdoption(($('rpLatest') || {}).value);
   } catch (e) {
     // 409 campaign_already_sent / push_disabled arrive as thrown errors.
     toast('Campaign refused: ' + e.message, 'err');
