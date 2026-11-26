@@ -18,7 +18,39 @@ export type CampaignTarget = {
   userId: string;
   platform: string;
   from: string;
+  /** When this token last received an update nudge, ISO string or empty. */
+  lastNudgedAt?: string;
 };
+
+/** How long a phone is left alone after it was nudged to update.
+ *
+ *  One notification is a reminder; two in a week is spam. The first campaign
+ *  for a release reaches every phone below the target build, so the second
+ *  campaign (a typo fix, a nudge to stragglers) must skip the people who
+ *  already saw the first one. Seven days is the window the owner picked.
+ */
+export const NUDGE_COOLDOWN_DAYS = 7;
+
+/** True while a phone is still inside its post-nudge quiet period.
+ *
+ *  Empty or unparseable timestamps mean "never nudged", which is the common
+ *  case for a fresh column, so they are not cooling down. A timestamp in the
+ *  future (clock skew between Postgres and the function) counts as cooling
+ *  down: skipping one reminder beats sending a duplicate.
+ */
+export function isCoolingDown(
+  lastNudgedAt: string | null | undefined,
+  now: Date,
+  days: number = NUDGE_COOLDOWN_DAYS,
+): boolean {
+  const raw = String(lastNudgedAt ?? "").trim();
+  if (!raw) return false;
+  const last = new Date(raw);
+  const at = last.getTime();
+  if (Number.isNaN(at)) return false;
+  const windowMs = Math.max(0, Number(days) || 0) * 86400000;
+  return now.getTime() - at < windowMs;
+}
 
 /** The ledger `target` string a campaign claims. Empty campaign = no claim. */
 export function ledgerKey(campaign: string, canary: boolean): string {

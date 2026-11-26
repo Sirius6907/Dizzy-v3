@@ -46,13 +46,19 @@
 // the whole-fleet send's 20-hour guard. `preview` and `dry_run` honour the
 // same three filters, so what the operator reads is what those phones get.
 //
+// v13 — nudge cooldown. A phone that received an update push in the last seven
+// days is skipped, so a follow-up campaign cannot read as spam:
+//   skip_cooldown?: boolean   // ignore the quiet period (a real release)
+// Only *delivered* tokens start the quiet period; a failed FCM call stays
+// eligible. `cooldown_skipped` reports how many phones this send left alone.
+//
 // Tokens that FCM reports as UNREGISTERED / INVALID_ARGUMENT are disabled so
 // the brain never pays for dead devices again.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { compareVersions, shouldNudge, versionPair } from "./version_compare.ts";
-import { asIds, ledgerKey, pickCanary } from "./campaign_targets.ts";
+import { asIds, isCoolingDown, ledgerKey, pickCanary } from "./campaign_targets.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -362,6 +368,11 @@ serve(async (req) => {
       : 0;
     const deviceIds = asIds(body?.device_ids);
     const targetUserIds = asIds(body?.user_ids);
+    // A second campaign lands in the same week as the first one, so the fleet
+    // would otherwise read two "please update" lines in three days. Skipping
+    // phone-level on `last_nudged_at` is the whole fix; `skip_cooldown` is the
+    // deliberate override for a real release that must reach everyone.
+    const skipCooldown = body?.skip_cooldown === true;
     const claimKey = ledgerKey(campaign, canary);
     const title = text(body?.title, 120);
     const messageBody = text(body?.body, 240);
@@ -442,7 +453,7 @@ serve(async (req) => {
 
     let query = db
       .from("device_tokens")
-      .select("id, token, user_id, platform, app_version")
+      .select("id, token, user_id, platform, app_version, last_nudged_at")
       .eq("enabled", true)
       .limit(MAX_TOKENS);
     if (mode === "test") {
@@ -478,6 +489,7 @@ serve(async (req) => {
       userId: String(r.user_id ?? ""),
       platform: text(r.platform, 24),
       from: text(r.app_version, 32),
+      lastNudgedAt: text(r.last_nudged_at, 40),
     }));
     const considered = targets.length;
     const truncated = (rows ?? []).length >= MAX_TOKENS;
@@ -542,6 +554,24 @@ serve(async (req) => {
       );
     }
 
+    // Quiet period. A phone nudged in the last week keeps its place in the
+    // fleet but not in this send: two reminders in seven days is spam, and the
+    // owner asked for exactly that guarantee. Runs after the version filters so
+    // the number reported is "phones we would have nudged today".
+    let cooling = 0;
+    if (isUpdate && !skipCooldown) {
+      const now = new Date();
+      const before = targets.length;
+      const warm = targets.filter((t) => !isCoolingDown(t.lastNudgedAt, now));
+      cooling = before - warm.length;
+      targets.splice(0, targets.length, ...warm);
+      if (cooling > 0) {
+        console.log(
+          `campaign ${campaign || "(no id)"}: ${cooling} token(s) skipped, nudged within 7 days`,
+        );
+      }
+    }
+
     // Canary cap, applied after every other filter so the cap always lands on
     // phones that genuinely still need the update.
     const eligible = targets.length;
@@ -563,6 +593,7 @@ serve(async (req) => {
         truncated,
         canary,
         limit,
+        cooldown_skipped: cooling,
         // The exact phones this would fire at, so a canary is chosen with the
         // operator's eyes open rather than "the first two the database gave".
         targets: targets.slice(0, 50).map((t) => ({
@@ -632,6 +663,7 @@ serve(async (req) => {
         truncated,
         canary,
         limit,
+        cooldown_skipped: cooling,
         latest_version: latestVersion,
         messages: isUpdate
           ? targets.map((t) => ({
@@ -701,6 +733,7 @@ serve(async (req) => {
     let sent = 0;
     let failed = 0;
     const deadTokens: string[] = [];
+    const deliveredIds: string[] = [];
     const errors: string[] = [];
     for (let i = 0; i < targets.length; i += 10) {
       const slice = targets.slice(i, i + 10);
@@ -712,12 +745,29 @@ serve(async (req) => {
       results.forEach((r, idx) => {
         if (r.ok) {
           sent++;
+          deliveredIds.push(slice[idx].id);
           return;
         }
         failed++;
         if (r.dead) deadTokens.push(slice[idx].token);
         if (errors.length < 5) errors.push(`${r.status}:${r.err}`);
       });
+    }
+
+    // Start the quiet period only for phones that actually received the push.
+    // A failed delivery must stay eligible for the next campaign, otherwise a
+    // transient FCM error would silence that phone for a week.
+    if (isUpdate && deliveredIds.length > 0) {
+      const stamp = new Date().toISOString();
+      for (let i = 0; i < deliveredIds.length; i += 200) {
+        const { error: cooldownError } = await db
+          .from("device_tokens")
+          .update({ last_nudged_at: stamp })
+          .in("id", deliveredIds.slice(i, i + 200));
+        if (cooldownError) {
+          console.error("nudge cooldown write:", cooldownError.message);
+        }
+      }
     }
 
     if (deadTokens.length > 0) {
@@ -765,6 +815,7 @@ serve(async (req) => {
       truncated,
       canary,
       limit,
+      cooldown_skipped: cooling,
       sent,
       failed,
       disabled: deadTokens.length,

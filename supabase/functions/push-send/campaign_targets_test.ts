@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { asIds, ledgerKey, pickCanary } from "./campaign_targets.ts";
+import { asIds, isCoolingDown, ledgerKey, pickCanary } from "./campaign_targets.ts";
 
 const t = (id: string, from: string) => ({ id, from, token: `tok-${id}`, userId: `u-${id}`, platform: "android" });
 
@@ -56,4 +56,35 @@ test("device ids are trimmed, deduplicated and bounded", () => {
   assert.deepEqual(asIds([" a ", "b", "a", "", null]), ["a", "b"]);
   assert.deepEqual(asIds("a,b"), []);
   assert.equal(asIds(["1", "2", "3"], 2).length, 2);
+});
+
+// The quiet period is what stops two releases in one week from becoming two
+// notifications in one week. The boundary matters: exactly seven days old is
+// eligible again, six days and 23 hours is not.
+const NOW = new Date("2026-11-26T12:00:00Z");
+
+test("a phone nudged today is cooling down", () => {
+  assert.equal(isCoolingDown("2026-11-26T03:09:07Z", NOW), true);
+});
+
+test("a phone nudged seven days ago is eligible again", () => {
+  assert.equal(isCoolingDown("2026-11-19T12:00:00Z", NOW), false);
+  assert.equal(isCoolingDown("2026-11-19T12:00:01Z", NOW), true);
+});
+
+test("never-nudged phones are eligible", () => {
+  assert.equal(isCoolingDown("", NOW), false);
+  assert.equal(isCoolingDown(undefined, NOW), false);
+  assert.equal(isCoolingDown(null, NOW), false);
+  assert.equal(isCoolingDown("not a date", NOW), false);
+});
+
+test("a future timestamp (clock skew) counts as cooling down", () => {
+  assert.equal(isCoolingDown("2026-11-27T12:00:00Z", NOW), true);
+});
+
+test("the window is configurable and zero disables it", () => {
+  assert.equal(isCoolingDown("2026-11-25T12:00:00Z", NOW, 1), false);
+  assert.equal(isCoolingDown("2026-11-25T12:00:00Z", NOW, 7), true);
+  assert.equal(isCoolingDown("2026-11-26T11:59:00Z", NOW, 0), false);
 });
